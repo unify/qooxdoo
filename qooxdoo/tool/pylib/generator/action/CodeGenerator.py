@@ -20,7 +20,7 @@
 ################################################################################
 
 import os, sys, string, types, re, zlib, time
-import urllib, urlparse, optparse, pprint
+import urllib, urlparse, optparse, pprint, time
 import simplejson
 from generator.action.ImageInfo import ImageInfo, ImgInfoFmt
 from generator.config.Lang      import Lang
@@ -871,6 +871,10 @@ class CodeGenerator(object):
         if decodeUrisFile:
             plugCode = filetool.read(self._config.absPath(decodeUrisFile))  # let it bomb if file can't be read
             vals["DecodeUrisPlug"] = plugCode.strip()
+        
+        # Add build details
+        vals["Build"] = "%i" % (time.time()*1000) 
+        vals["Type"] = version
         
         # Locate and load loader basic script
         template = loadTemplate(bootCode)

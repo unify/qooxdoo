@@ -2,7 +2,9 @@
 
 if (!window.qx) window.qx = {};
 
-qx.$$start = new Date();
+qx.$$start = new Date().valueOf();
+qx.$$build = %{Build};
+qx.$$type = "%{Type}";
   
 if (!window.qxsettings) qxsettings = {};
 var settings = %{Settings};
@@ -55,7 +57,6 @@ qx.$$loader = {
 function loadScript(uri, callback) {
   var elem = document.createElement("script");
   elem.charset = "utf-8";
-  elem.src = uri;
   elem.onreadystatechange = elem.onload = function()
   {
     if (!this.readyState || this.readyState == "loaded" || this.readyState == "complete")
@@ -64,6 +65,13 @@ function loadScript(uri, callback) {
       callback();
     }
   };
+
+  if (qx.$$type === "source") {
+    elem.src = uri + "?r=" + qx.$$start;
+  } else {
+    elem.src = uri + "?r=" + qx.$$build;
+  }
+  
   var head = document.getElementsByTagName("head")[0];
   head.appendChild(elem);
 }
