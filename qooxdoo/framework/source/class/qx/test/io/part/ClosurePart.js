@@ -38,7 +38,7 @@ qx.Class.define("qx.test.io.part.ClosurePart",
     {
       qx.test.PART_FILES = [];
       qx.test.Part.LOAD_ORDER = [];
-      this.__dummyLoader = {uris: []};
+      this.__dummyLoader = new qx.test.io.part.MockLoader();
       
       this.__loader = new qx.Part(this.__dummyLoader);
       qx.Part.$$instance = this.__loader;
@@ -272,6 +272,14 @@ qx.Class.define("qx.test.io.part.ClosurePart",
       }, 100);
 
       part.preload();
+      
+      pkg.loadClosure = function() {
+        debugger;
+        self.resume(function() {
+          self.fail("load called twice!");
+        });
+      }
+      
       this.wait();      
     }
   }

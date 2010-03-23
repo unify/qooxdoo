@@ -829,8 +829,13 @@ qx.Class.define("qx.ui.core.Widget",
         if (widgetKey != null) {
           return qx.core.ObjectRegistry.fromHashCode(widgetKey);
         }
-
-        element = element.parentNode;
+      
+        // Fix for FF, which occasionally breaks (BUG#3525)
+        try {
+          element = element.parentNode;
+        } catch (e) {
+          return null;
+        }
       }
       return null;
     },
@@ -1620,18 +1625,6 @@ qx.Class.define("qx.ui.core.Widget",
      */
     __createContentElement : function()
     {
-      var attributes = {};
-  
-      if (qx.core.Variant.isSet("qx.debug", "on")) {
-        attributes.qxType = "content";
-      }
-      
-      var styles = {
-        zIndex: 0,
-        position: "absolute"
-      };      
-      
-      
       var el = this._createContentElement();
 
       if (qx.core.Variant.isSet("qx.debug", "on")) {

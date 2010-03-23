@@ -45,7 +45,10 @@ qx.Bootstrap.define("qx.io.part.ClosurePart",
     __packagesToLoad : 0,
     
 
-    // overridden
+    /**
+     * Method for preloading this part. It initializs the packages to load but 
+     * not to execute the closure when done loading.
+     */
     preload : function() 
     {
       for (var i = 0; i < this._packages.length; i++)
@@ -59,7 +62,7 @@ qx.Bootstrap.define("qx.io.part.ClosurePart",
     
     
     /**
-     * Loads the colsure part including all its packages. The loading will 
+     * Loads the closure part including all its packages. The loading will 
      * be done parallel. After all packages are available, the closures are 
      * executed in the correct order.
      * 
@@ -91,7 +94,7 @@ qx.Bootstrap.define("qx.io.part.ClosurePart",
         }
         
         // Listener for package changes
-        if (pkgReadyState == "initialized" || pkgReadyState == "loading") 
+        if (pkgReadyState == "initialized" || pkgReadyState == "loading") 
         {
           this._loader.addPackageListener(
             pkg, 

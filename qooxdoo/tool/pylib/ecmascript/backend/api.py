@@ -150,7 +150,7 @@ def handleClassDefinition(docTree, item, variant):
         # print "KEY: %s = %s" % (key, valueItem.type)
 
         if key == "extend":
-            if variant == "class":
+            if variant in ("class", "bootstrap"):
                 handleClassExtend(valueItem, classNode, docTree, className)
 
             elif variant == "interface":
@@ -1217,7 +1217,7 @@ def documentApplyMethod(methodNode, prop):
     functionCode = """/**
  * Applies changes of the property value of the property <code>%(shortPropName)s</code>.
  *
- * For further details take a look at the property definition: {@link #%(propName)s}.
+ * For further details take a look at the property definition: {@link #%(shortPropName)s}.
  *
  * @param %(firstParamName)s {%(paramType)s} new value of the property
  * @param %(secondParamName)s {%(paramType)s} previous value of the property (null if it was not yet set).
@@ -1473,6 +1473,9 @@ def packagesToJsonString(node, prefix = "", childPrefix = "  ", newLine="\n", en
 
     return asString
 
+
+##
+# interface function
 
 def getPackageData(node):
     data = {

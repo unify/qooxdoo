@@ -39,6 +39,9 @@ qx.Bootstrap.define("qx.Part",
    */
   construct : function(loader) 
   {
+    // assert: boot part has a single package
+    var bootPackageIndex = loader.parts[loader.boot][0];
+	
     this.__loader = loader;
     
     // initialize the pseudo event listener maps
@@ -52,7 +55,7 @@ qx.Bootstrap.define("qx.Part",
     for (var i=0; i<uris.length; i++)
     {
       var hash = loader.packageHashes[i];
-      var pkg = new qx.io.part.Package(uris[i], hash, i==0);
+      var pkg = new qx.io.part.Package(uris[i], hash, i==bootPackageIndex);
       this.__packages.push(pkg);
     };
     
