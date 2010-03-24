@@ -75,19 +75,21 @@ qx.Class.define("qx.test.Part",
     },
     
     
-    "test: preload a part should load the packages but not eval them" : function()
+    testPreload : function()
     {
       qx.test.PART_FILES = [];
       
       var loader = {
         parts : {
-          "juhu" : [1]
+          "juhu" : [1],
+          "affe" : [0]
         },
         uris : [
           ["boot.js"], [this.getUrl("qx/test/part/file1-closure.js")]
         ],
         closureParts : {"juhu": true},
-        packageHashes : {"1": "file1-closure"}
+        packageHashes : {"1": "file1-closure"},
+        boot: "affe"
       };
       
       var partLoader = new qx.Part(loader);
@@ -95,11 +97,13 @@ qx.Class.define("qx.test.Part",
       
       var self = this;
       var part = partLoader.getParts()["juhu"];
-      setTimeout(function() {
+      window.setTimeout(function() {
         self.resume(function() {
-          self.assertEquals("cached", part.getPackages()[0].getReadyState());
-          self.assertEquals("initialized", part.getReadyState());
           self.assertEquals(0, qx.test.PART_FILES.length);
+          self.assertJsonEquals([], qx.test.PART_FILES);          
+          
+          self.assertEquals("initialized", part.getReadyState());
+          self.assertEquals("cached", part.getPackages()[0].getReadyState());
           
           // execute closure to check if it is the correct one
           part.getPackages()[0].execute();
@@ -108,8 +112,44 @@ qx.Class.define("qx.test.Part",
       }, 300);
       
       partLoader.preload("juhu");
+      
       this.wait();
     },
+    
+    
+    testPreloadCallback : function()
+    {
+      qx.test.PART_FILES = [];
+      
+      var loader = {
+        parts : {
+          "juhu" : [1],
+          "affe" : [0]
+        },
+        uris : [
+          ["boot.js"], [this.getUrl("qx/test/part/file1-closure.js")]
+        ],
+        closureParts : {"juhu": true},
+        packageHashes : {"1": "file1-closure"},
+        boot: "affe"
+      };
+      
+      var partLoader = new qx.Part(loader);
+      qx.Part.$$instance = partLoader;
+      
+      var self = this;      
+      var preloadExecuted = false;
+      partLoader.preload(["affe", "juhu"], function(states) {
+        self.resume(function() {
+          preloadExecuted = true;
+          self.assertEquals(self, this, "context wrong");
+          self.assertEquals("complete", states[0], "states wrong");
+          self.assertEquals("initialized", states[1], "states wrong");
+        }, self);
+      }, this);
+      
+      this.wait();
+    },    
     
     
     "test: preload a part and immediately load it afterwards" : function()
@@ -118,13 +158,15 @@ qx.Class.define("qx.test.Part",
       
       var loader = {
         parts : {
-          "juhu" : [1]
+          "juhu" : [1],
+          "affe" : [0]
         },
         uris : [
           ["boot.js"], [this.getUrl("qx/test/part/file1-closure.js")]
         ],
         closureParts : {"juhu": true},
-        packageHashes : {"1": "file1-closure"}
+        packageHashes : {"1": "file1-closure"},
+        boot: "affe"
       };
       
       var partLoader = new qx.Part(loader);
@@ -132,9 +174,7 @@ qx.Class.define("qx.test.Part",
 
       partLoader.preload("juhu");
 
-      var self = this;
       var part = partLoader.getParts()["juhu"];
-      
       
       part.getPackages()[0].loadClosure = function() {
         self.resume(function() {
@@ -152,8 +192,45 @@ qx.Class.define("qx.test.Part",
         });
       }, 300);
       
+      this.wait();
+    },
+    
+    
+    testRequireState : function() 
+    {
+      qx.test.PART_FILES = [];
+      
+      // create a dummy loader
+      var loader = {
+        parts : {
+          "juhu" : [1],
+          "affe" : [0],
+          "fail" : [2]
+        },
+        uris : [
+          ["boot.js"], [this.getUrl("qx/test/part/file1-closure.js")], ["_fail.js"]
+        ],
+        closureParts : {"juhu": true},
+        packageHashes : {"0": "boot", "1": "file1-closure", "2": "fail"},
+        boot: "affe"
+      };
+      
+      var partLoader = new qx.Part(loader);
+      qx.Part.$$instance = partLoader;
+
+      // preload one part
+      partLoader.preload("juhu");
+      
+      // require all three parts and check the ready states
+      partLoader.require(["affe", "juhu", "fail"], function(states) {
+        this.resume(function() {
+          this.assertEquals(states[0], "complete");
+          this.assertEquals(states[1], "complete");
+          this.assertEquals(states[2], "error");     
+        }, this);
+      }, this);
       
       this.wait();
-    }    
+    }
   }
 });

@@ -45,17 +45,26 @@ qx.Bootstrap.define("qx.io.part.ClosurePart",
     __packagesToLoad : 0,
     
 
-    /**
-     * Method for preloading this part. It initializs the packages to load but 
-     * not to execute the closure when done loading.
-     */
-    preload : function() 
+    // overridden
+    preload : function(callback, self) 
     {
+      // store how many packages are already preloaded
+      var packagesLoaded = 0;
+      var that = this;
+      
       for (var i = 0; i < this._packages.length; i++)
       {
         var pkg = this._packages[i];
         if (pkg.getReadyState() == "initialized") {
-          pkg.loadClosure(this._loader.notifyPackageResult, this._loader);
+          
+          pkg.loadClosure(function(pkg) {
+            packagesLoaded++;
+            that._loader.notifyPackageResult(pkg);
+            // everything loaded?
+            if (packagesLoaded >= that._packages.length) {              
+              callback.call(self);
+            }
+          }, this._loader);
         }
       }
     },
