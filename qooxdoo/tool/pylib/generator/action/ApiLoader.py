@@ -68,6 +68,9 @@ class ApiLoader(object):
         packageEntry = self._docs[packageId]
         
         text = filetool.read(packageEntry["path"])
+        # Add surrounding comment markers for non-javascript files
+        if not packageEntry["path"].endswith(".js"):
+            text = "/*\n" + text + "\n*/"
         node = api.createPackageDoc(text, packageId)
         
         return node

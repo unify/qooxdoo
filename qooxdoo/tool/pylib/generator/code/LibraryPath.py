@@ -67,7 +67,7 @@ class LibraryPath(object):
     _codeExpr = re.compile(r'''qx.(Bootstrap|List|Class|Mixin|Interface|Theme).define\s*\(\s*["']((?u)[^"']+)["']''', re.M)
     _illegalIdentifierExpr = re.compile(lang.IDENTIFIER_ILLEGAL_CHARS)
     _ignoredDirectories    = re.compile(r'%s' % '|'.join(filetool.VERSIONCONTROL_DIR_PATTS), re.I)
-    _docFilename           = "__init__.js"
+    _docFilename           = ["__init__.js","readme.txt"]
 
 
     def getClasses(self):
@@ -178,7 +178,7 @@ class LibraryPath(object):
                 filePackage = filePathId[:filePathId.rfind(".")]
 
                 # Handle doc files
-                if fileName == self._docFilename:
+                if fileName in self._docFilename:
                     fileFor = filePathId[:filePathId.rfind(".")]
                     self._docs[filePackage] = {
                         "relpath" : fileRel,
