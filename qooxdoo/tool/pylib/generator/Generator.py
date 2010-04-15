@@ -21,7 +21,7 @@
 ################################################################################
 
 import re, os, sys, zlib, optparse, types, string, glob
-import functools
+import functools, codecs
 
 from misc import filetool, textutil, util, Path, PathType
 from misc.PathType import PathType
@@ -131,6 +131,11 @@ class Generator(object):
             },
 
             "compile-dist" :
+            {
+              "type" : "JCompileJob",
+            },
+
+            "dashlet" :
             {
               "type" : "JCompileJob",
             },
@@ -611,6 +616,8 @@ class Generator(object):
                 partsConfigFromClassList(excludeWithDeps, script)
 
                 self._codeGenerator.runCompiled(script, self._treeCompiler)
+            if "dashlet" in jobTriggers:
+                self.runDashlet(script)
 
             # debug tasks
             self.runLogDependencies(script)
@@ -1479,6 +1486,13 @@ class Generator(object):
         def fixPng():
             return
 
+        def removeBOM(fpath):
+            content = open(fpath, "rb").read()
+            if content.startswith(codecs.BOM_UTF8):
+                self._console.debug("removing BOM: %s" % filePath)
+                open(fpath, "wb").write(content[len(codecs.BOM_UTF8):])
+            return
+
         # - Main ---------------------------------------------------------------
 
         if not isinstance(self._job.get("fix-files", False), types.DictType):
@@ -1492,16 +1506,27 @@ class Generator(object):
 
         self._console.info("Fixing files: ", False)
         numClasses = len(classes)
+        eolStyle = fixsettings.get("eol-style", "LF")
         for pos, classId in enumerate(classes):
             self._console.progress(pos, numClasses)
-            classEntry = self._classes[classId]
-            filePath   = classEntry['path']
+            classEntry   = self._classes[classId]
+            filePath     = classEntry['path']
             fileEncoding = classEntry['encoding']
             fileContent  = filetool.read(filePath, fileEncoding)
-            fixedContent = textutil.normalizeWhiteSpace(textutil.removeTrailingSpaces(textutil.tab2Space(textutil.any2Unix(fileContent), 2)))
+            # Caveat: as filetool.read already calls any2Unix, converting to LF will
+            # not work as the file content appears unchanged to this function
+            if eolStyle == "CR":
+                fixedContent = textutil.any2Mac(fileContent)
+            elif eolStyle == "CRLF":
+                fixedContent = textutil.any2Dos(fileContent)
+            else:
+                fixedContent = textutil.any2Unix(fileContent)
+            fixedContent = textutil.normalizeWhiteSpace(textutil.removeTrailingSpaces(textutil.tab2Space(fixedContent, 2)))
             if fixedContent != fileContent:
                 self._console.debug("modifying file: %s" % filePath)
-            filetool.save(filePath, fixedContent, fileEncoding)
+                filetool.save(filePath, fixedContent, fileEncoding)
+            # this has to go separate, as it requires binary operation
+            removeBOM(filePath)
 
         self._console.outdent()
 
@@ -1513,6 +1538,21 @@ class Generator(object):
             self._console.outdent()
 
         return
+
+
+    def runDashlet(self, script):
+
+        # - Main ---------------------------------------------------------------
+
+        if not isinstance(self._job.get("dashlet", False), types.DictType):
+            return
+
+        # create dashlet structure
+        # copy source tree
+        # create compiled classes
+
+        return
+
 
 
     def _splitIncludeExcludeList(self, data):

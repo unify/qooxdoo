@@ -1,4 +1,4 @@
-﻿/* ************************************************************************
+/* ************************************************************************
 
    qooxdoo - the new era of web development
 
@@ -107,7 +107,6 @@ qx.Class.define("qx.ui.tabview.TabButton",
     _forwardStates :
     {
       focused : true,
-      hovered : true,
       checked : true
     },
 

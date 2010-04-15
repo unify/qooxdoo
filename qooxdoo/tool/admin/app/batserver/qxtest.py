@@ -673,7 +673,10 @@ class QxTest:
             self.log("No report HTML to send.")
           
           if "reportServerUrl" in self.testConf:
-            self.reportResults(appConf['appName'], testStartDate, dummyLogFile)        
+            try:
+              self.reportResults(appConf['appName'], testStartDate, dummyLogFile)
+            except Exception, e:              
+              self.logError(e, "Sending test results")        
 
         return    
     
@@ -901,7 +904,7 @@ class QxTest:
     return cmd
 
 
-  def reportResults(self, aut, start_date, log_file, ignore=[]):
+  def reportResults(self, aut, start_date, log_file, ignore=None):
     from simulationLogParser import SimulationLogParser
     
     if (self.sim):
