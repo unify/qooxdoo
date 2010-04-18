@@ -960,7 +960,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       // Update inheritable properties
-      this.$$refreshInheritables();
+      qx.core.Property.refresh(this);
 
       // Update visibility cache
       qx.ui.core.queue.Visibility.add(this);
@@ -2744,10 +2744,6 @@ qx.Class.define("qx.ui.core.Widget",
       var selector = this.__appearanceSelector;
       var manager = qx.theme.manager.Appearance.getInstance();
 
-      // Cache deep accessor
-      var styler = qx.core.Property.$$method.setThemed;
-      var unstyler = qx.core.Property.$$method.resetThemed;
-
       // Check for requested selector update
       if (this.__updateSelector)
       {
@@ -2792,32 +2788,21 @@ qx.Class.define("qx.ui.core.Widget",
           for (var prop in oldData)
           {
             if (newData[prop] === undefined) {
-              this[unstyler[prop]]();
-            }
-          }
-        }
-
-        // Check property availability of new data
-        if (qx.core.Variant.isSet("qx.debug", "on"))
-        {
-          for (var prop in newData)
-          {
-            if (!this[styler[prop]]) {
-              throw new Error(this.classname + ' has no themeable property "' + prop + '" while styling ' + selector);
+              this.resetThemedProperty(prop);
             }
           }
         }
 
         // Apply new data
         for (var prop in newData) {
-          newData[prop] === undefined ? this[unstyler[prop]]() : this[styler[prop]](newData[prop]);
+          newData[prop] === undefined ? this.resetThemedProperty(prop) : this.setThemedProperty(prop, newData[prop]);
         }
       }
       else if (oldData)
       {
         // Clear old data
         for (var prop in oldData) {
-          this[unstyler[prop]]();
+          this.resetThemedProperty(prop);
         }
       }
 

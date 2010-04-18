@@ -909,6 +909,12 @@ qx.Class.define("qx.ui.core.LayoutItem",
     },
 
 
+    // NEW for Property System
+    _getParent : function() {
+      return this.$$parent || null;
+    },
+    
+    
     /**
      * Set the parent
      *
