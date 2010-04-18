@@ -153,7 +153,7 @@
  *
  * @internal
  */
-qx.Class.define("qx.core.Property",
+qx.Bootstrap.define("qx.core.Property",
 {
   statics :
   {
