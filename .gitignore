@@ -4,3 +4,4 @@ qooxdoo/application/performance/test
 qooxdoo/application/performance/build
 qooxdoo/application/performance/source/script
 .settings/*
+*.pyc
