@@ -24,6 +24,7 @@
 #require(qx.Interface)
 #require(qx.Mixin)
 #require(qx.core.Property)
+#require(qx.core.PropertyGroup)
 
 #use(qx.lang.Core)
 #use(qx.lang.Generics)
@@ -429,6 +430,47 @@ qx.Bootstrap.define("qx.Class",
       }
 
       return list;
+    },
+
+
+    /**
+     * Returns a list of all inheritable properties supported by the given class
+     * 
+     * Contrary to {@link getProperties} this method caches requests for better performance
+     * in the property system.
+     *
+     * @param clazz {Class} Class to query
+     * @return {Map} All inheritable property names and a dictionary for faster lookup
+     */
+    getInheritableProperties : function(clazz)
+    {
+      if (clazz.$$inheritables) {
+        return clazz.$$inheritables;
+      }
+      
+      var result = clazz.$$inheritables = {};
+
+      var props = clazz.$$properties;
+      if (props) 
+      {
+        for (var name in props) 
+        {
+          if (props[name].inheritable) {
+            result[name] = true;
+          }
+        }
+      }
+        
+      var superClass = clazz.superclass;
+      if (superClass)
+      {
+        var remote = this.getInheritableProperties(superClass);
+        for (var name in remote) {
+          result[name] = true;
+        }
+      }
+      
+      return result;
     },
 
 
@@ -924,7 +966,7 @@ qx.Bootstrap.define("qx.Class",
       }
       else
       {
-        var clazz = {};
+        clazz = {};
 
         if (extend)
         {
@@ -1083,65 +1125,59 @@ qx.Bootstrap.define("qx.Class",
      * @param patch {Boolean ? false} Overwrite property with the limitations of a property
                which means you are able to refine but not to replace (esp. for new properties)
      */
-    __addProperties : function(clazz, properties, patch)
-    {
-      var config;
+     __addProperties : function(clazz, properties, patch)
+     {
+       var config;
 
-      if (patch === undefined) {
-        patch = false;
-      }
+       if (patch === undefined) {
+         patch = false;
+       }
 
-      var proto = clazz.prototype;
-      
-      for (var name in properties)
-      {
-        config = properties[name];
+       var Property = qx.core.Property;
+       var PropertyGroup = qx.core.PropertyGroup;
+       var eventData;
 
-        // Check incoming configuration
-        if (qx.core.Variant.isSet("qx.debug", "on")) {
-          this.__validateProperty(clazz, name, config, patch);
-        }
+       for (var name in properties)
+       {
+         config = properties[name];
 
-        // Store name into configuration
-        config.name = name;
+         // Check incoming configuration
+         if (qx.core.Variant.isSet("qx.debug", "on")) {
+           this.__validateProperty(clazz, name, config, patch);
+         }
 
-        // Add config to local registry
-        if (!config.refine)
-        {
-          if (clazz.$$properties === undefined) {
-            clazz.$$properties = {};
-          }
+         // Store name into configuration
+         config.name = name;
 
-          clazz.$$properties[name] = config;
-        }
+         // Add config to local registry
+         if (!config.refine)
+         {
+           if (clazz.$$properties === undefined) {
+             clazz.$$properties = {};
+           }
 
-        // Store init value to prototype. This makes it possible to
-        // overwrite this value in derived classes.
-        if (config.init !== undefined) {
-          clazz.prototype["$$init_" + name] = config.init;
-        }
+           clazz.$$properties[name] = config;
+         }
 
-        // register event name
-        if (config.event !== undefined) {
-          var event = {}
-          event[config.event] = "qx.event.type.Data";
-          this.__addEvents(clazz, event, patch);
-        }
+         // Register event name
+         if (config.event) 
+         {
+           eventData = {};
+           eventData[config.event] = "qx.event.type.Data";
+           this.__addEvents(clazz, eventData, patch);
+         }
 
-        // Remember inheritable properties
-        if (config.inheritable)
-        {
-          qx.core.Property.$$inheritable[name] = true;
-          if (!proto.$$refreshInheritables) {
-            qx.core.Property.attachRefreshInheritables(clazz);
-          }
-        }
-
-        if (!config.refine) {
-          qx.core.Property.attachMethods(clazz, name, config);
-        }
-      }
-    },
+         // If instances of this class were already created, we
+         // need to attach the new style properties functions, directly.
+         if (config.group) {
+           PropertyGroup.add(clazz, name, config);
+         } else if (config.themeable || config.inheritable || config.deferredInit || qx.core.Property.RUNTIME_OVERRIDE) {  
+           Property.addComplex(clazz, name, config);
+         } else {
+           Property.addSimple(clazz, name, config);
+         }
+       }
+     },
 
     /**
      *
