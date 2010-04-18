@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2009-2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -22,7 +23,6 @@
 /* ************************************************************************
 
 #optional(qx.Interface)
-#use(qx.event.type.Data)
 #use(qx.event.dispatch.Direct)
 
 ************************************************************************ */
@@ -30,12 +30,49 @@
 /**
  * Internal class for handling of dynamic properties. Should only be used
  * through the methods provided by {@link qx.Class}.
+ * 
+ * USAGE
+ * 
+ * * A property needs to be nullable or must have an init value
+ * * Unresolved inheritance falls back to init value or null (if nullable)
+ * 
+ * INTERNALS
+ *
+ * * Internally the system now uses crypted storage fields
+ * * All data is stored on a $$data object on each instance
+ * * Improved inheritance support => Lazy updates on hierarchy updates
+ * * AIR support & better compression => No function compilation
+ * * Property methods are created at declaration. No more waiting for first instance.
+ * 
+ * FUNCTIONAL CHANGES
+ * 
+ * * Inheritance is sorted into priority chain: Has higher priority than init value
+ * * There is not "inherit" special value on "init" value anymore!
+ * * Deferred init is possible when no init value is given at declaration. No need for deferredInit key anymore!
+ *
+ * TODO 
+ * 
+ * * Lay out keywords out of functions e.g. undefined
+ * * Move Property checks to qx.core.Property
+ * * Split Property Class again into Simple/Complex? Might make sense.
+ * 
+ * * Add support for special value "inherit" to user/theme/runtime values
+ * * Take a look at all open or recently closed bugs on the original Property system.
+ * * Add support for check
+ * * Add support for verify
+ * * Add support for transform
+ *  
+ * * Fix unit tests
+ * * Add new unit tests
+ * * Optimize performance
+ */ 
+ 
+/**
+ * Internal class for handling of dynamic properties. Should only be used
+ * through the methods provided by {@link qx.Class}.
  *
  * For a complete documentation of properties take a
  * look at http://qooxdoo.org/documentation/developer_manual/properties.
- *
- *
- * *Normal properties*
  *
  * The <code>properties</code> key in the class definition map of {@link qx.Class#define}
  * is used to generate the properties.
@@ -71,7 +108,7 @@
  *     the method is <code>function(newValue, oldValue)</code>.
  *   </td></tr>
  *   <tr><th>event</th><td>String</td><td>
- *     On change of the property value an event with the given name will be dispatched. The event type is
+ *     On change of the property value an event with the given name will be dispached. The event type is
  *     {@link qx.event.type.Data}.
  *   </td></tr>
  *   <tr><th>themeable</th><td>Boolean</td><td>
@@ -82,11 +119,11 @@
  *     init value, the property will try to get the value from the parent of the current object.
  *   </td></tr>
  *   <tr><th>nullable</th><td>Boolean</td><td>
- *     Whether <code>null</code> is an allowed value of the property. This is complementary to the check
+ *     Whether <code>null</code> is an allowed value of the property. This is complemental to the check
  *     defined using the <code>check</code> key.
  *   </td></tr>
  *   <tr><th>refine</th><td>Boolean</td><td>
- *     Whether the property definition is a refinement of a property in one of the super classes of the class.
+ *     Whether the property definition is a refinemnet of a property in one of the super classes of the class.
  *     Only the <code>init</code> value can be changed using refine.
  *   </td></tr>
  *   <tr><th>transform</th><td>String</td><td>
@@ -114,29 +151,14 @@
  *   </td></tr>
  * </table>
  *
- * *Property groups*
- *
- * Property groups are defined in a similar way but support a different set of keys:
- *
- * <table>
- *   <tr><th>Name</th><th>Type</th><th>Description</th></tr>
- *   <tr><th>group</th><td>String[]</td><td>
- *     A list of property names which should be set using the property group.
- *   </td></tr>
- *   <tr><th>mode</th><td>String</td><td>
- *     If mode is set to <code>"shorthand"</code>, the properties can be set using a CSS like shorthand mode.
- *   </td></tr>
- *   <tr><th>themeable</th><td>Boolean</td><td>
- *     Whether this property can be set using themes.
- *   </td></tr>
- * </table>
- *
  * @internal
  */
-qx.Bootstrap.define("qx.core.Property",
+qx.Class.define("qx.core.Property",
 {
   statics :
   {
+    RUNTIME_OVERRIDE : false,
+  
     /**
      * Built-in checks
      * The keys could be used in the check of the properties
@@ -190,1309 +212,654 @@ qx.Bootstrap.define("qx.core.Property",
     },
 
 
+    __propertyNameToId : {},
+    __propertyId : 0,
+
+
+    /** {Map} Registers all instances which needs an update of their inherited properties. */
+    __structureChanges : {},
+
+    
     /**
-     * Inherit value, used to override defaults etc. to force inheritance
-     * even if property value is not undefined (through multi-values)
-     *
-     * @internal
-     */
-    $$inherit : "inherit",
-
-
-    /**
-     * Caching field names for each property created
-     *
-     * @internal
-     */
-    $$store :
-    {
-      runtime : {},
-      user    : {},
-      theme   : {},
-      inherit : {},
-      init    : {},
-      useinit : {}
-    },
-
-
-    /**
-     * Caching function names for each property created
-     *
-     * @internal
-     */
-    $$method :
-    {
-      get          : {},
-      set          : {},
-      reset        : {},
-      init         : {},
-      refresh      : {},
-      setRuntime   : {},
-      resetRuntime : {},
-      setThemed    : {},
-      resetThemed  : {}
-    },
-
-
-    /**
-     * Supported keys for property defintions
-     *
-     * @internal
-     */
-    $$allowedKeys :
-    {
-      name         : "string",   // String
-      dispose      : "boolean",  // Boolean
-      inheritable  : "boolean",  // Boolean
-      nullable     : "boolean",  // Boolean
-      themeable    : "boolean",  // Boolean
-      refine       : "boolean",  // Boolean
-      init         : null,       // var
-      apply        : "string",   // String
-      event        : "string",   // String
-      check        : null,       // Array, String, Function
-      transform    : "string",   // String
-      deferredInit : "boolean",  // Boolean
-      validate     : null        // String, Function
-    },
-
-
-    /**
-     * Supported keys for property group definitions
-     *
-     * @internal
-     */
-    $$allowedGroupKeys :
-    {
-      name      : "string",   // String
-      group     : "object",   // Array
-      mode      : "string",   // String
-      themeable : "boolean"   // Boolean
-    },
-
-
-    /** Contains names of inheritable properties, filled by {@link qx.Class.define} */
-    $$inheritable : {},
-
-
-    /**
-     * Generate optimized refresh method and  attach it to the class' prototype
+     * Public accessor for refreshing properties on structural changes. Should be 
+     * called by all systems using inheritance and offering some kind of parent-children
+     * relation.
      * 
-     * @param clazz {Clazz} clazz to which the refresher should be added
-     */
-    __executeOptimizedRefresh : function(clazz)
-    {
-      var inheritables = this.__getInheritablesOfClass(clazz);
-                  
-      if (!inheritables.length) {
-        var refresher = qx.lang.Function.empty;
-      } else {
-        refresher = this.__createRefresher(inheritables);
-      }
-      
-      clazz.prototype.$$refreshInheritables = refresher;
-    },
-    
-    
-    /**
-     * Get the names of all inheritable properties of the given class
+     * This method works asynchronously which basically means that updates to the
+     * inheritance are not reflected immediately but with a little offset. This is mainly
+     * for performance reasons as otherwise one may have multiple updates on the same
+     * instances when changes occour.
      * 
-     * @param clazz {Clazz} class to get the inheritable properties of
-     * @return {String[]} List of property names
-     */
-    __getInheritablesOfClass : function(clazz)
+     * @param obj {qx.core.Object} Any valid qooxdoo object
+     */   
+    refresh : function(obj)
     {
-      var inheritable = [];
+      var inheritables = qx.Class.getInheritableProperties(obj.constructor);
       
-      while(clazz)
+      // Only register when the instance has inheritable properties
+      // For this reason the loop breaks out after the first iteration.
+      for (var name in inheritables)
       {
-        var properties = clazz.$$properties;
+        this.__structureChanges[obj.$$hash] = obj;
 
-        if (properties)
-        {
-          for (var name in this.$$inheritable)
-          {
-            // Whether the property is available in this class
-            // and whether it is inheritable in this class as well
-            if (properties[name] && properties[name].inheritable)
-            {
-              inheritable.push(name);
-            }
-          }
-        }
+        if (!this.__doRefreshHandle) {
+          this.__doRefreshHandle = window.setTimeout(this.__doRefresh, 0);
+        }     
 
-        clazz = clazz.superclass;
+        break;
       }
-      
-      return inheritable;
     },
     
     
     /**
-     * Assemble the refresher code and return the generated function
+     * Internal method doing the actual refresh of inherited properties.
      * 
-     * @param inheritables {String[]} list of inheritable properties
+     * Do not call yourself! This should only be used by {@link #refresh}.
      */
-    __createRefresher : function(inheritables)
+    __doRefresh : function()
     {
-      var inherit = this.$$store.inherit;
-      var init = this.$$store.init;
-      var refresh = this.$$method.refresh;
+      // Class references
+      var Class = qx.Class;
+      var Property = qx.core.Property;
 
-      var code = [
-        "var parent = this.getLayoutParent();",
-        "if (!parent) return;"        
-      ];
+      // Load and replace data structure
+      var changed = Property.__structureChanges;
+      Property.__structureChanges = {};
+
+      // Clear flag
+      this.__doRefreshHandle = null;
+
+      // Depth analysis
+      var depths = {}, sorted=[];
+      var hash, depth, current;
       
-      for (var i=0, l=inheritables.length; i<l; i++) 
+      // qx.log.Logger.debug(Property, "Doing depth analysis...")
+      for (hash in changed)
       {
-        var name = inheritables[i];
-        code.push(
-          "var value = parent.", inherit[name],";",
-          "if (value===undefined) value = parent.", init[name], ";",
-          "this.", refresh[name], "(value);"
-        );
+        // Prepare sorted array
+        sorted.push(hash);
+        
+        // Ignore if already cached
+        if (depths[hash] != null) {
+          continue;
+        }
+        
+        current = changed[hash];
+        depth = 0;
+        
+        // Loop up through all parents
+        while (current = current._getParent()) 
+        {
+          depth++;
+          
+          // Make use of pre-cached values
+          if (depths[current.$$hash] != null) 
+          {
+            depth += depths[current.$$hash];
+            break;
+          }         
+        }       
+
+        // Same loop again to cache results in complete hierarchy
+        current = changed[hash];        
+        do {
+          depths[current.$$hash] = depth--;
+        } while ((current = current._getParent()) && depths[current.$$hash] == null) 
       }
+
+      // Do the actual sorting based on depth data
+      sorted.sort(function(a, b) {
+        return depths[a] - depths[b];
+      });
       
-      return new Function(code.join(""));
-    },
-
-    /**
-     * Refreshes widget whose parent has changed (including the children)
-     *
-     * @deprecated qx.core.Property.refresh() is deprecated. Please use the
-     *     member function '$$refreshInheritables()'.
-     * @param widget {qx.ui.core.Widget} the widget
-     * @return {void}
-     */
-    refresh : function(widget) 
-    {
-      if (qx.core.Variant.isSet("qx.debug", "on"))
+      // Process entries
+      qx.log.Logger.debug(Property, "Running inheritance update (" + sorted.length + " items)...");
+      var obj, inheritables, parent, parentInheritables, name;
+      for (var i=0, l=sorted.length; i<l; i++) 
       {
-        qx.log.Logger.deprecatedMethodWarning(
-          arguments.callee,
-          "qx.core.Property.refresh() is deprecated. Please use the member function '$$refreshInheritables()'"
-        );
-      }
+        hash = sorted[i];
+        obj = changed[hash];
+        
+        inheritables = Class.getInheritableProperties(obj.constructor);
+        
+        parent = obj._getParent();
+        parentInheritables = Class.getInheritableProperties(parent.constructor);
 
-      widget.$$refreshInheritables();
-    },
-
-
-    /**
-     * Attach $$refreshInheritables method stub to the given class
-     * 
-     * @param clazz {Clazz} clazz to which the refresher should be added
-     */
-    attachRefreshInheritables : function(clazz)
-    {
-      clazz.prototype.$$refreshInheritables = function() 
-      {
-        qx.core.Property.__executeOptimizedRefresh(clazz);
-        return this.$$refreshInheritables();
+        // Update each inheritable property
+        for (var name in inheritables)
+        {
+          // The parent may not support the property of the child. In this case
+          // updating is not needed or even possible.
+          if (parentInheritables[name]) {
+            obj.refreshProperty(name, parent.get(name));
+          }
+        }
       }
     },
     
     
-    /**
-     * Attach one property to class
-     *
-     * @param clazz {Class} Class to attach properties to
-     * @param name {String} Name of property
-     * @param config {Map} Configuration map of property
-     * @return {void}
-     */
-    attachMethods : function(clazz, name, config)
+    __changeHelper : function(value, oldValue, config)
     {
-      // Divide groups from "normal" properties
-      config.group ?
-        this.__attachGroupMethods(clazz, config, name) :
-        this.__attachPropertyMethods(clazz, config, name);
-    },
+      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
 
-
-    /**
-     * Attach group methods
-     *
-     * @param clazz {Class} Class to attach properties to
-     * @param config {Map} Property configuration
-     * @param name {String} Name of the property
-     * @return {void}
-     */
-    __attachGroupMethods : function(clazz, config, name)
-    {
-      var upname = qx.Bootstrap.firstUp(name);
-      var members = clazz.prototype;
-      var themeable = config.themeable === true;
-
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        if (qx.core.Setting.get("qx.propertyDebugLevel") > 1) {
-          qx.Bootstrap.debug("Generating property group: " + name);
-        }
-      }
-
-      var setter = [];
-      var resetter = [];
-
-      if (themeable)
-      {
-        var styler = [];
-        var unstyler = [];
-      }
-
-      var argHandler = "var a=arguments[0] instanceof Array?arguments[0]:arguments;";
-
-      setter.push(argHandler);
-
-      if (themeable) {
-        styler.push(argHandler);
-      }
-
-      if (config.mode == "shorthand")
-      {
-        var shorthand = "a=qx.lang.Array.fromShortHand(qx.lang.Array.fromArguments(a));";
-        setter.push(shorthand);
-
-        if (themeable) {
-          styler.push(shorthand);
-        }
-      }
-
-      for (var i=0, a=config.group, l=a.length; i<l; i++)
-      {
-        if (qx.core.Variant.isSet("qx.debug", "on"))
-        {
-          if (!this.$$method.set[a[i]]||!this.$$method.reset[a[i]]) {
-            throw new Error("Cannot create property group '" + name + "' including non-existing property '" + a[i] + "'!");
-          }
-        }
-
-        setter.push("this.", this.$$method.set[a[i]], "(a[", i, "]);");
-        resetter.push("this.", this.$$method.reset[a[i]], "();");
-
-        if (themeable)
-        {
-          if (qx.core.Variant.isSet("qx.debug", "on"))
-          {
-            if (!this.$$method.setThemed[a[i]]) {
-              throw new Error("Cannot add the non themable property '" + a[i] + "' to the themable property group '"+ name +"'");
-            }
-          }
-
-          styler.push("this.", this.$$method.setThemed[a[i]], "(a[", i, "]);");
-          unstyler.push("this.", this.$$method.resetThemed[a[i]], "();");
-        }
-      }
-
-      // Attach setter
-      this.$$method.set[name] = "set" + upname;
-      members[this.$$method.set[name]] = new Function(setter.join(""));
-
-      // Attach resetter
-      this.$$method.reset[name] = "reset" + upname;
-      members[this.$$method.reset[name]] = new Function(resetter.join(""));
-
-      if (themeable)
-      {
-        // Attach styler
-        this.$$method.setThemed[name] = "setThemed" + upname;
-        members[this.$$method.setThemed[name]] = new Function(styler.join(""));
-
-        // Attach unstyler
-        this.$$method.resetThemed[name] = "resetThemed" + upname;
-        members[this.$$method.resetThemed[name]] = new Function(unstyler.join(""));
-      }
-    },
-
-
-    /**
-     * Attach property methods
-     *
-     * @param clazz {Class} Class to attach properties to
-     * @param config {Map} Property configuration
-     * @param name {String} Name of the property
-     * @return {void}
-     */
-    __attachPropertyMethods : function(clazz, config, name)
-    {
-      var upname = qx.Bootstrap.firstUp(name);
-      var members = clazz.prototype;
-
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        if (qx.core.Setting.get("qx.propertyDebugLevel") > 1) {
-          qx.Bootstrap.debug("Generating property wrappers: " + name);
-        }
-      }
-
-      // Fill dispose value
-      if (config.dispose === undefined && typeof config.check === "string") {
-        config.dispose = this.__dispose[config.check] || qx.Bootstrap.classIsDefined(config.check) || (qx.Interface && qx.Interface.isDefined(config.check));
-      }
-
-      var method = this.$$method;
-      var store = this.$$store;
-
-      store.runtime[name] = "$$runtime_" + name;
-      store.user[name] = "$$user_" + name;
-      store.theme[name] = "$$theme_" + name;
-      store.init[name] = "$$init_" + name;
-      store.inherit[name] = "$$inherit_" + name;
-      store.useinit[name] = "$$useinit_" + name;
-
-      method.get[name] = "get" + upname;
-      members[method.get[name]] = function() {
-        return qx.core.Property.executeOptimizedGetter(this, clazz, name, "get");
-      }
-
-      method.set[name] = "set" + upname;
-      members[method.set[name]] = function(value) {
-        return qx.core.Property.executeOptimizedSetter(this, clazz, name, "set", arguments);
-      }
-
-      method.reset[name] = "reset" + upname;
-      members[method.reset[name]] = function() {
-        return qx.core.Property.executeOptimizedSetter(this, clazz, name, "reset");
-      }
-
-      if (config.inheritable || config.apply || config.event || config.deferredInit)
-      {
-        method.init[name] = "init" + upname;
-        members[method.init[name]] = function(value) {
-          return qx.core.Property.executeOptimizedSetter(this, clazz, name, "init", arguments);
-        }
-      }
-
-      if (config.inheritable)
-      {
-        method.refresh[name] = "refresh" + upname;
-        members[method.refresh[name]] = function(value) {
-          return qx.core.Property.executeOptimizedSetter(this, clazz, name, "refresh", arguments);
-        }
-      }
-
-      method.setRuntime[name] = "setRuntime" + upname;
-      members[method.setRuntime[name]] = function(value) {
-        return qx.core.Property.executeOptimizedSetter(this, clazz, name, "setRuntime", arguments);
-      }
-
-      method.resetRuntime[name] = "resetRuntime" + upname;
-      members[method.resetRuntime[name]] = function() {
-        return qx.core.Property.executeOptimizedSetter(this, clazz, name, "resetRuntime");
-      }
-
-      if (config.themeable)
-      {
-        method.setThemed[name] = "setThemed" + upname;
-        members[method.setThemed[name]] = function(value) {
-          return qx.core.Property.executeOptimizedSetter(this, clazz, name, "setThemed", arguments);
-        }
-
-        method.resetThemed[name] = "resetThemed" + upname;
-        members[method.resetThemed[name]] = function() {
-          return qx.core.Property.executeOptimizedSetter(this, clazz, name, "resetThemed");
-        }
-      }
-
-      if (config.check === "Boolean")
-      {
-        members["toggle" + upname] = new Function("return this." + method.set[name] + "(!this." + method.get[name] + "())");
-        members["is" + upname] = new Function("return this." + method.get[name] + "()");
-      }
-    },
-
-
-    /** {Map} Internal data field for error messages used by {@link #error} */
-    __errors :
-    {
-      0 : 'Could not change or apply init value after constructing phase!',
-      1 : 'Requires exactly one argument!',
-      2 : 'Undefined value is not allowed!',
-      3 : 'Does not allow any arguments!',
-      4 : 'Null value is not allowed!',
-      5 : 'Is invalid!'
-    },
-
-
-    /**
-     * Error method used by the property system to report errors.
-     *
-     * @param obj {qx.core.Object} Any qooxdoo object
-     * @param id {Integer} Numeric error identifier
-     * @param property {String} Name of the property
-     * @param variant {String} Name of the method variant e.g. "set", "reset", ...
-     * @param value {var} Incoming value
-     */
-    error : function(obj, id, property, variant, value)
-    {
-      var classname = obj.constructor.classname;
-      var msg = "Error in property " + property + " of class " + classname +
-        " in method " + this.$$method[variant][property] + " with incoming value '" + value + "': ";
-
-      throw new Error(msg + (this.__errors[id] || "Unknown reason: " + id));
-    },
-
-
-    /**
-     * Compiles a string builder object to a function, executes the function and
-     * returns the return value.
-     *
-     * @param instance {Object} Instance which have called the original method
-     * @param members {Object} Prototype members map where the new function should be stored
-     * @param name {String} Name of the property
-     * @param variant {String} Function variant e.g. get, set, reset, ...
-     * @param code {Array} Array which contains the code
-     * @param args {arguments} Incoming arguments of wrapper method
-     * @return {var} Return value of the generated function
-     */
-    __unwrapFunctionFromCode : function(instance, members, name, variant, code, args)
-    {
-      var store = this.$$method[variant][name];
-
-      // Output generate code
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        if (qx.core.Setting.get("qx.propertyDebugLevel") > 1) {
-          qx.Bootstrap.debug("Code[" + this.$$method[variant][name] + "]: " + code.join(""));
-        }
-
-        // Overriding temporary wrapper
-        try{
-          members[store] =  new Function("value", code.join(""));
-        } catch(ex) {
-          throw new Error("Malformed generated code to unwrap method: " + this.$$method[variant][name] + "\n" + code.join(""));
-        }
-      }
-      else
-      {
-        members[store] =  new Function("value", code.join(""));
-      }
-
-      // Enable profiling code
-      if (qx.core.Variant.isSet("qx.aspects", "on")) {
-        members[store] = qx.core.Aspect.wrap(instance.classname + "." + store, members[store], "property");
-      }
-
-      qx.Bootstrap.setDisplayName(members[store], instance.classname + ".prototype", store)
-
-      // Executing new function
-      if (args === undefined) {
-        return instance[store]();
-      } else if (qx.core.Variant.isSet("qx.debug", "on")) {
-        return instance[store].apply(instance, args);
-      } else {
-        return instance[store](args[0]);
-      }
-    },
-
-
-    /**
-     * Generates the optimized getter
-     * Supported variants: get
-     *
-     * @param instance {Object} the instance which calls the method
-     * @param clazz {Class} the class which originally defined the property
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     * @return {var} Execute return value of apply generated function, generally the incoming value
-     */
-    executeOptimizedGetter : function(instance, clazz, name, variant)
-    {
-      var config = clazz.$$properties[name];
-      var members = clazz.prototype;
-      var code = [];
-      var store = this.$$store;
-
-      code.push('if(this.', store.runtime[name], '!==undefined)');
-      code.push('return this.', store.runtime[name], ';');
-
-      if (config.inheritable)
-      {
-        code.push('else if(this.', store.inherit[name], '!==undefined)');
-        code.push('return this.', store.inherit[name], ';');
-        code.push('else ');
-      }
-
-      code.push('if(this.', store.user[name], '!==undefined)');
-      code.push('return this.', store.user[name], ';');
-
-      if (config.themeable)
-      {
-        code.push('else if(this.', store.theme[name], '!==undefined)');
-        code.push('return this.', store.theme[name], ';');
-      }
-
-      if (config.deferredInit && config.init === undefined)
-      {
-        code.push('else if(this.', store.init[name], '!==undefined)');
-        code.push('return this.', store.init[name], ';');
-      }
-
-      code.push('else ');
-
-      if (config.init !== undefined)
-      {
-        if (config.inheritable)
-        {
-          code.push('var init=this.', store.init[name], ';');
-
-          if (config.nullable) {
-            code.push('if(init==qx.core.Property.$$inherit)init=null;');
-          } else if (config.init !== undefined) {
-            code.push('return this.', store.init[name], ';');
-          } else {
-            code.push('if(init==qx.core.Property.$$inherit)throw new Error("Inheritable property ', name, ' of an instance of ', clazz.classname, ' is not (yet) ready!");');
-          }
-
-          code.push('return init;');
-        }
-        else
-        {
-          code.push('return this.', store.init[name], ';');
-        }
-      }
-      else if (config.inheritable || config.nullable) {
-        code.push('return null;');
-      } else {
-        code.push('throw new Error("Property ', name, ' of an instance of ', clazz.classname, ' is not (yet) ready!");');
-      }
-
-      return this.__unwrapFunctionFromCode(instance, members, name, variant, code);
-    },
-
-
-    /**
-     * Generates the optimized setter
-     * Supported variants: set, reset, init, refresh, style, unstyle
-     *
-     * @param instance {Object} the instance which calls the method
-     * @param clazz {Class} the class which originally defined the property
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     * @param args {arguments} Incoming arguments of wrapper method
-     * @return {var} Execute return value of apply generated function, generally the incoming value
-     */
-    executeOptimizedSetter : function(instance, clazz, name, variant, args)
-    {
-      var config = clazz.$$properties[name];
-      var members = clazz.prototype;
-      var code = [];
-
-      var incomingValue = variant === "set" || variant === "setThemed" || variant === "setRuntime" || (variant === "init" && config.init === undefined);
-      var hasCallback = config.apply || config.event || config.inheritable;
-
-
-      var store = this.__getStore(variant, name);
-
-      this.__emitSetterPreConditions(code, config, name, variant, incomingValue);
-
-      if (incomingValue) {
-        this.__emitIncomingValueTransformation(code, clazz, config, name);
-      }
-
-      if (hasCallback) {
-        this.__emitOldNewComparison(code, incomingValue, store, variant);
-      }
-
-      if (config.inheritable) {
-        code.push('var inherit=prop.$$inherit;');
-      }
-
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        if (incomingValue) {
-          this.__emitIncomingValueValidation(code, config, clazz, name, variant);
-        }
-      }
-
-      if (!hasCallback) {
-        this.__emitStoreValue(code, name, variant, incomingValue);
-      } else {
-        this.__emitStoreComputedAndOldValue(code, config, name, variant, incomingValue);
-      }
-
-      if (config.inheritable) {
-        this.__emitStoreInheritedPropertyValue(code, config, name, variant);
-      } else if (hasCallback) {
-        this.__emitNormalizeUndefinedValues(code, config, name, variant)
-      }
-
-      if (hasCallback)
-      {
-        this.__emitCallCallback(code, config, name);
-
-        // Refresh children
-        // Requires the parent/children interface
-        if (config.inheritable && members._getChildren) {
-          this.__emitRefreshChildrenValue(code, name);
-        }
-      }
-
-      // Return value
-      if (incomingValue) {
-        code.push('return value;');
-      }
-
-      return this.__unwrapFunctionFromCode(instance, members, name, variant, code, args);
-    },
-
-
-    /**
-     * Get the object to store the value for the given variant
-     *
-     * @param variant {String} Method variant.
-     * @param name {String} name of the property
-     *
-     * @return {Object} the value store
-     */
-    __getStore : function(variant, name)
-    {
-      if (variant === "setRuntime" || variant === "resetRuntime") {
-        var store = this.$$store.runtime[name];
-      } else if (variant === "setThemed" || variant === "resetThemed") {
-        store = this.$$store.theme[name];
-      } else if (variant === "init") {
-        store = this.$$store.init[name];
-      } else {
-        store = this.$$store.user[name];
-      }
-
-      return store;
-    },
-
-
-    /**
-     * Emit code to check the arguments pre-conditions
-     *
-     * @param code {String[]} String array to append the code to
-     * @param config {Object} The property configuration map
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     * @param incomingValue {Boolean} Whether the setter has an incoming value
-     */
-    __emitSetterPreConditions : function(code, config, name, variant, incomingValue)
-    {
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        code.push('var prop=qx.core.Property;');
-
-        if (variant === "init") {
-          code.push('if(this.$$initialized)prop.error(this,0,"', name, '","', variant, '",value);');
-        }
-
-        if (variant === "refresh")
-        {
-          // do nothing
-          // refresh() is internal => no arguments test
-          // also note that refresh() supports "undefined" values
-        }
-        else if (incomingValue)
-        {
-          // Check argument length
-          code.push('if(arguments.length!==1)prop.error(this,1,"', name, '","', variant, '",value);');
-
-          // Undefined check
-          code.push('if(value===undefined)prop.error(this,2,"', name, '","', variant, '",value);');
-        }
-        else
-        {
-          // Check argument length
-          code.push('if(arguments.length!==0)prop.error(this,3,"', name, '","', variant, '",value);');
-        }
-      }
-      else
-      {
-        if (!config.nullable || config.check || config.inheritable) {
-          code.push('var prop=qx.core.Property;');
-        }
-
-        // Undefined check
-        if (variant === "set") {
-          code.push('if(value===undefined)prop.error(this,2,"', name, '","', variant, '",value);');
-        }
-      }
-    },
-
-
-    /**
-     * Emit code to apply the "validate" and "transform" config keys.
-     *
-     * @param code {String[]} String array to append the code to
-     * @param clazz {Class} the class which originally defined the property
-     * @param config {Object} The property configuration map
-     * @param name {String} name of the property
-     */
-    __emitIncomingValueTransformation : function(code, clazz, config, name)
-    {
-      // Call user-provided transform method, if one is provided.  Transform
-      // method should either throw an error or return the new value.
-      if (config.transform) {
-        code.push('value=this.', config.transform, '(value);');
-      }
-
-      // Call user-provided validate method, if one is provided.  Validate
-      // method should either throw an error or do nothing.
-      if (config.validate) {
-        // if it is a string
-        if (typeof config.validate === "string") {
-          code.push('this.', config.validate, '(value);');
-        // if its a function otherwise
-        } else if (config.validate instanceof Function) {
-          code.push(clazz.classname, '.$$properties.', name);
-          code.push('.validate.call(this, value);');
-        }
-      }
-    },
-
-
-    /**
-     * Emit code, which returns if the incoming value equals the current value.
-     *
-     * @param code {String[]} String array to append the code to
-     * @param incomingValue {Boolean} Whether the setter has an incoming value
-     * @param store {Object} The data store to use for the incoming value
-     * @param variant {String} Method variant.
-     */
-    __emitOldNewComparison : function(code, incomingValue, store, variant)
-    {
-      var resetValue = (
-        variant === "reset" ||
-        variant === "resetThemed" ||
-        variant === "resetRuntime"
-      );
-
-      if (incomingValue) {
-        code.push('if(this.', store, '===value)return value;');
-      } else if (resetValue) {
-        code.push('if(this.', store, '===undefined)return;');
-      }
-    },
-
-
-    /**
-     * Emit code, which performs validation of the incoming value according to
-     * the "nullable", "check" and "inheritable" config keys.
-     *
-     * @signature function(code, config, clazz, name, variant)
-     * @param code {String[]} String array to append the code to
-     * @param config {Object} The property configuration map
-     * @param clazz {Class} the class which originally defined the property
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     */
-    __emitIncomingValueValidation : qx.core.Variant.select("qx.debug",
-    {
-      "on" : function(code, config, clazz, name, variant)
-      {
-        // Null check
-        if (!config.nullable) {
-          code.push('if(value===null)prop.error(this,4,"', name, '","', variant, '",value);');
-        }
-
-        // Processing check definition
-        if (config.check !== undefined)
-        {
-          code.push('var msg = "Invalid incoming value for property \''+name+'\' of class \'' + clazz.classname + '\'";');
-
-          // Accept "null"
-          if (config.nullable) {
-            code.push('if(value!==null)');
-          }
-
-          // Inheritable properties always accept "inherit" as value
-          if (config.inheritable) {
-            code.push('if(value!==inherit)');
-          }
-
-          code.push('if(');
-
-          if (this.__checks[config.check] !== undefined)
-          {
-            code.push('!(', this.__checks[config.check], ')');
-          }
-          else if (qx.Class.isDefined(config.check))
-          {
-            code.push('qx.core.Assert.assertInstance(value, qx.Class.getByName("', config.check, '"), msg)');
-          }
-          else if (qx.Interface && qx.Interface.isDefined(config.check))
-          {
-            code.push('qx.core.Assert.assertInterface(value, qx.Interface.getByName("', config.check, '"), msg)');
-          }
-          else if (typeof config.check === "function")
-          {
-            code.push('!', clazz.classname, '.$$properties.', name);
-            code.push('.check.call(this, value)');
-          }
-          else if (typeof config.check === "string")
-          {
-            code.push('!(', config.check, ')');
-          }
-          else if (config.check instanceof Array)
-          {
-            code.push('qx.core.Assert.assertInArray(value, ', clazz.classname, '.$$properties.', name, '.check, msg)');
-          }
-          else
-          {
-            throw new Error("Could not add check to property " + name + " of class " + clazz.classname);
-          }
-
-          code.push(')prop.error(this,5,"', name, '","', variant, '",value);');
-        }
-      },
-
-      "off" : undefined
-    }),
-
-
-    /**
-     * Emit code to store the incoming value
-     *
-     * @param code {String[]} String array to append the code to
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     * @param incomingValue {Boolean} Whether the setter has an incoming value
-     */
-    __emitStoreValue : function(code, name, variant, incomingValue)
-    {
-      if (variant === "setRuntime")
-      {
-        code.push('this.', this.$$store.runtime[name], '=value;');
-      }
-      else if (variant === "resetRuntime")
-      {
-        code.push('if(this.', this.$$store.runtime[name], '!==undefined)');
-        code.push('delete this.', this.$$store.runtime[name], ';');
-      }
-      else if (variant === "set")
-      {
-        code.push('this.', this.$$store.user[name], '=value;');
-      }
-      else if (variant === "reset")
-      {
-        code.push('if(this.', this.$$store.user[name], '!==undefined)');
-        code.push('delete this.', this.$$store.user[name], ';');
-      }
-      else if (variant === "setThemed")
-      {
-        code.push('this.', this.$$store.theme[name], '=value;');
-      }
-      else if (variant === "resetThemed")
-      {
-        code.push('if(this.', this.$$store.theme[name], '!==undefined)');
-        code.push('delete this.', this.$$store.theme[name], ';');
-      }
-      else if (variant === "init" && incomingValue)
-      {
-        code.push('this.', this.$$store.init[name], '=value;');
-      }
-    },
-
-
-    /**
-     * Emit code to store the incoming value and compute the "old" and "computed"
-     * values.
-     *
-     * @param code {String[]} String array to append the code to
-     * @param config {Object} The property configuration map
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     * @param incomingValue {Boolean} Whether the setter has an incoming value
-     */
-    __emitStoreComputedAndOldValue : function(code, config, name, variant, incomingValue)
-    {
-      if (config.inheritable) {
-        code.push('var computed, old=this.', this.$$store.inherit[name], ';');
-      } else {
-        code.push('var computed, old;');
-      }
-
-
-      // OLD = RUNTIME VALUE
-      code.push('if(this.', this.$$store.runtime[name], '!==undefined){');
-
-      if (variant === "setRuntime")
-      {
-        // Replace it with new value
-        code.push('computed=this.', this.$$store.runtime[name], '=value;');
-      }
-      else if (variant === "resetRuntime")
-      {
-        // Delete field
-        code.push('delete this.', this.$$store.runtime[name], ';');
-
-        // Complex compution of new value
-        code.push('if(this.', this.$$store.user[name], '!==undefined)')
-        code.push('computed=this.', this.$$store.user[name], ';');
-        code.push('else if(this.', this.$$store.theme[name], '!==undefined)');
-        code.push('computed=this.', this.$$store.theme[name], ';');
-        code.push('else if(this.', this.$$store.init[name], '!==undefined){');
-        code.push('computed=this.', this.$$store.init[name], ';');
-        code.push('this.', this.$$store.useinit[name], '=true;');
-        code.push('}');
-      }
-      else
-      {
-        // Use runtime value as it has higher priority
-        code.push('old=computed=this.', this.$$store.runtime[name], ';');
-
-        // Store incoming value
-        if (variant === "set")
-        {
-          code.push('this.', this.$$store.user[name], '=value;');
-        }
-        else if (variant === "reset")
-        {
-          code.push('delete this.', this.$$store.user[name], ';');
-        }
-        else if (variant === "setThemed")
-        {
-          code.push('this.', this.$$store.theme[name], '=value;');
-        }
-        else if (variant === "resetThemed")
-        {
-          code.push('delete this.', this.$$store.theme[name], ';');
-        }
-        else if (variant === "init" && incomingValue)
-        {
-          code.push('this.', this.$$store.init[name], '=value;');
-        }
-      }
-
-      code.push('}');
-
-
-      // OLD = USER VALUE
-      code.push('else if(this.', this.$$store.user[name], '!==undefined){');
-
-      if (variant === "set")
-      {
-        if (!config.inheritable)
-        {
-          // Remember old value
-          code.push('old=this.', this.$$store.user[name], ';');
-        }
-
-        // Replace it with new value
-        code.push('computed=this.', this.$$store.user[name], '=value;');
-      }
-      else if (variant === "reset")
-      {
-        if (!config.inheritable)
-        {
-          // Remember old value
-          code.push('old=this.', this.$$store.user[name], ';');
-        }
-
-        // Delete field
-        code.push('delete this.', this.$$store.user[name], ';');
-
-        // Complex compution of new value
-        code.push('if(this.', this.$$store.runtime[name], '!==undefined)')
-        code.push('computed=this.', this.$$store.runtime[name], ';');
-        code.push('if(this.', this.$$store.theme[name], '!==undefined)');
-        code.push('computed=this.', this.$$store.theme[name], ';');
-        code.push('else if(this.', this.$$store.init[name], '!==undefined){');
-        code.push('computed=this.', this.$$store.init[name], ';');
-        code.push('this.', this.$$store.useinit[name], '=true;');
-        code.push('}');
-      }
-      else
-      {
-        if (variant === "setRuntime")
-        {
-          // Use runtime value where it has higher priority
-          code.push('computed=this.', this.$$store.runtime[name], '=value;');
-        }
-        else if (config.inheritable)
-        {
-          // Use user value where it has higher priority
-          code.push('computed=this.', this.$$store.user[name], ';');
-        }
-        else
-        {
-          // Use user value where it has higher priority
-          code.push('old=computed=this.', this.$$store.user[name], ';');
-        }
-
-        // Store incoming value
-        if (variant === "setThemed")
-        {
-          code.push('this.', this.$$store.theme[name], '=value;');
-        }
-        else if (variant === "resetThemed")
-        {
-          code.push('delete this.', this.$$store.theme[name], ';');
-        }
-        else if (variant === "init" && incomingValue)
-        {
-          code.push('this.', this.$$store.init[name], '=value;');
-        }
-      }
-
-      code.push('}');
-
-
-      // OLD = THEMED VALUE
-      if (config.themeable)
-      {
-        code.push('else if(this.', this.$$store.theme[name], '!==undefined){');
-
-        if (!config.inheritable)
-        {
-          code.push('old=this.', this.$$store.theme[name], ';');
-        }
-
-        if (variant === "setRuntime")
-        {
-          code.push('computed=this.', this.$$store.runtime[name], '=value;');
-        }
-
-        else if (variant === "set")
-        {
-          code.push('computed=this.', this.$$store.user[name], '=value;');
-        }
-
-        // reset() is impossible, because the user has higher priority than
-        // the themed value, so the themed value has no chance to ever get used,
-        // when there is a user value, too.
-
-        else if (variant === "setThemed")
-        {
-          code.push('computed=this.', this.$$store.theme[name], '=value;');
-        }
-        else if (variant === "resetThemed")
-        {
-          // Delete entry
-          code.push('delete this.', this.$$store.theme[name], ';');
-
-          // Fallback to init value
-          code.push('if(this.', this.$$store.init[name], '!==undefined){');
-            code.push('computed=this.', this.$$store.init[name], ';');
-            code.push('this.', this.$$store.useinit[name], '=true;');
-          code.push('}');
-        }
-        else if (variant === "init")
-        {
-          if (incomingValue) {
-            code.push('this.', this.$$store.init[name], '=value;');
-          }
-
-          code.push('computed=this.', this.$$store.theme[name], ';');
-        }
-        else if (variant === "refresh")
-        {
-          code.push('computed=this.', this.$$store.theme[name], ';');
-        }
-
-        code.push('}');
-      }
-
-
-      // OLD = INIT VALUE
-      code.push('else if(this.', this.$$store.useinit[name], '){');
-
-      if (!config.inheritable) {
-        code.push('old=this.', this.$$store.init[name], ';');
-      }
-
-      if (variant === "init")
-      {
-        if (incomingValue) {
-          code.push('computed=this.', this.$$store.init[name], '=value;');
-        } else {
-          code.push('computed=this.', this.$$store.init[name], ';');
-        }
-
-        // useinit flag is already initialized
-      }
-
-      // reset(), resetRuntime() and resetStyle() are impossible, because the user and themed values have a
-      // higher priority than the init value, so the init value has no chance to ever get used,
-      // when there is a user or themed value, too.
-
-      else if (variant === "set" || variant === "setRuntime" || variant === "setThemed" || variant === "refresh")
-      {
-        code.push('delete this.', this.$$store.useinit[name], ';');
-
-        if (variant === "setRuntime") {
-          code.push('computed=this.', this.$$store.runtime[name], '=value;');
-        } else if (variant === "set") {
-          code.push('computed=this.', this.$$store.user[name], '=value;');
-        } else if (variant === "setThemed") {
-          code.push('computed=this.', this.$$store.theme[name], '=value;');
-        } else if (variant === "refresh") {
-          code.push('computed=this.', this.$$store.init[name], ';');
-        }
-      }
-
-      code.push('}');
-
-
-      // OLD = NONE
-
-      // reset(), resetRuntime() and resetStyle() are impossible because otherwise there
-      // is already an old value
-      if (variant === "set" || variant === "setRuntime" || variant === "setThemed" || variant === "init")
-      {
-        code.push('else{');
-
-        if (variant === "setRuntime")
-        {
-          code.push('computed=this.', this.$$store.runtime[name], '=value;');
-        }
-
-        else if (variant === "set")
-        {
-          code.push('computed=this.', this.$$store.user[name], '=value;');
-        }
-
-        else if (variant === "setThemed")
-        {
-          code.push('computed=this.', this.$$store.theme[name], '=value;');
-        }
-
-        else if (variant === "init")
-        {
-          if (incomingValue) {
-            code.push('computed=this.', this.$$store.init[name], '=value;');
-          } else {
-            code.push('computed=this.', this.$$store.init[name], ';');
-          }
-
-          code.push('this.', this.$$store.useinit[name], '=true;');
-        }
-
-        // refresh() will work with the undefined value, later
-        code.push('}');
-      }
-    },
-
-
-    /**
-     * Emit code to store the value of an inheritable property
-     *
-     * @param code {String[]} String array to append the code to
-     * @param config {Object} The property configuration map
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     */
-    __emitStoreInheritedPropertyValue : function(code, config, name, variant)
-    {
-      code.push('if(computed===undefined||computed===inherit){');
-
-      if (variant === "refresh") {
-        code.push('computed=value;');
-      } else {
-        code.push('var pa=this.getLayoutParent();if(pa)computed=pa.', this.$$store.inherit[name], ';');
-      }
-
-      // Fallback to init value if inheritance was unsuccessful
-      code.push('if((computed===undefined||computed===inherit)&&');
-      code.push('this.', this.$$store.init[name], '!==undefined&&');
-      code.push('this.', this.$$store.init[name], '!==inherit){');
-        code.push('computed=this.', this.$$store.init[name], ';');
-        code.push('this.', this.$$store.useinit[name], '=true;');
-      code.push('}else{');
-      code.push('delete this.', this.$$store.useinit[name], ';}');
-
-      code.push('}');
-
-      // Compare old/new computed value
-      code.push('if(old===computed)return value;');
-
-      // Note: At this point computed can be "inherit" or "undefined".
-
-      // Normalize "inherit" to undefined and delete inherited value
-      code.push('if(computed===inherit){');
-      code.push('computed=undefined;delete this.', this.$$store.inherit[name], ';');
-      code.push('}');
-
-      // Only delete inherited value
-      code.push('else if(computed===undefined)');
-      code.push('delete this.', this.$$store.inherit[name], ';');
-
-      // Store inherited value
-      code.push('else this.', this.$$store.inherit[name], '=computed;');
-
-      // Protect against normalization
-      code.push('var backup=computed;');
-
-      // After storage finally normalize computed and old value
-      if (config.init !== undefined && variant !== "init") {
-        code.push('if(old===undefined)old=this.', this.$$store.init[name], ";");
-      } else {
-        code.push('if(old===undefined)old=null;');
-      }
-      code.push('if(computed===undefined||computed==inherit)computed=null;');
-    },
-
-
-    /**
-     * Emit code to normalize the old and incoming values from undefined to
-     * <code>null</code>.
-     *
-     * @param code {String[]} String array to append the code to
-     * @param config {Object} The property configuration map
-     * @param name {String} name of the property
-     * @param variant {String} Method variant.
-     */
-    __emitNormalizeUndefinedValues : function(code, config, name, variant)
-    {
-      // Properties which are not inheritable have no possibility to get
-      // undefined at this position. (Hint: set(), setRuntime() and setThemed() only allow non undefined values)
-      if (variant !== "set" && variant !== "setRuntime" && variant !== "setThemed") {
-        code.push('if(computed===undefined)computed=null;');
-      }
-
-      // Compare old/new computed value
-      code.push('if(old===computed)return value;');
-
-      // Normalize old value
-      if (config.init !== undefined && variant !== "init") {
-        code.push('if(old===undefined)old=this.', this.$$store.init[name], ";");
-      } else {
-        code.push('if(old===undefined)old=null;');
-      }
-    },
-
-
-    /**
-     * Emit code to call the apply method and fire the change event
-     *
-     * @param code {String[]} String array to append the code to
-     * @param config {Object} The property configuration map
-     * @param name {String} name of the property
-     */
-    __emitCallCallback : function(code, config, name)
-    {
-      // Execute user configured setter
+      // Call apply
       if (config.apply) {
-        code.push('this.', config.apply, '(computed, old, "', name, '");');
+        this[config.apply](value, oldValue, config.name);
       }
 
       // Fire event
       if (config.event) {
-        code.push(
-          "var reg=qx.event.Registration;",
-          "if(reg.hasListener(this, '", config.event, "')){",
-          "reg.fireEvent(this, '", config.event, "', qx.event.type.Data, [computed, old]", ")}"
-        );
+        this.fireDataEvent(config.event, value, oldValue);
       }
-    },
+      
+      // Inheritance support
+      if (config.inheritable)
+      {
+        // TODO: Replace protected method call
+        if (this._getChildren)
+        {
+          // Clone children for increased runtime security
+          var children = this._getChildren().concat();
+          var refreshMethod = "refresh" + config.up;
+          var child;
+          
+          for (var i=0, l=children.length; i<l; i++) 
+          {
+            child = children[i];
+            child[refreshMethod] && child[refreshMethod](value);
+          }           
+        }
+        else if (qx.core.Variant.isSet("qx.debug", "on")) {
+          this.error("Missing _getChildren() implementation to support property inheritance!");
+        }         
+      }
+    }, 
+    
+     
+    addSimple : function(clazz, name, config)
+    {
+      /*
+      ---------------------------------------------------------------------------
+         INTRO: IDENTICAL BETWEEN SIMPLE AND COMPLEX
+      ---------------------------------------------------------------------------
+      */
+            
+      // Generate property ID
+      var db = this.__propertyNameToId;
+      var id = db[name];
+      if (!id) {
+        id = db[name] = this.__propertyId;
+      }
+      
+      // Store init value (shared data between instances)
+      var members = clazz.prototype;
+      if (config.init !== undefined) 
+      {
+        var initField = "$$init" + id;
+        members[initField] = config.init;
+      }
+      
+      // Refined properties are only allowed to change the class-wide init value
+      // of a previously defined property.
+      if (config.refine) {
+        return;
+      }
+      
+      // Precalc
+      var up = config.up = name.charAt(0).toUpperCase() + name.substring(1);
+         
+      // Shorthands: Better compression/obfuscation/performance
+      var changeHelper = this.__changeHelper;
+      var nullable = config.nullable;
+      
+      
+      
+            
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS
+      ---------------------------------------------------------------------------
+      */      
+      
+      var id = this.__propertyId++;
+      qx.log.Logger.debug(clazz, "Simple property: " + name + "[" + id + "]");
+      
+      members["get" + up] = function() 
+      {
+        if (qx.core.Variant.isSet("qx.debug", "on")) 
+        {
+          if (arguments.length != 0) {
+            throw new Error("Called get method of property " + name + " with too many arguments!")
+          }
+        }
+         
+        var context = this;         
+        var data = context.$$data;
+        if (data) {
+          var value = data[id];
+        }
+        
+        if (value === undefined) 
+        {
+          if (initField) {
+            return context[initField];
+          }            
+          
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (!nullable) {
+              context.error("Missing value for: " + name + " (during get())");
+            }
+          }  
+          
+          value = null;          
+        }
+        
+        return value;          
+      };
+      
+      if (initField)
+      {
+        members["init" + up] = function()
+        {
+          var context = this;
+          var data = context.$$data;
+          
+          // Check whether there is already local data (which is higher prio than init data)
+          if (data && data[id] !== undefined) {
+            return;
+          }
+          
+          // Call change helper with value from shared class data
+          changeHelper.call(context, this[initField], undefined, config);
+        };
+      }      
+      
+      members["set" + up] = function(value)
+      {
+        if (qx.core.Variant.isSet("qx.debug", "on")) 
+        {
+          if (arguments.length == 0) {
+            throw new Error("Called set method of property " + name + " with no arguments!")
+          }
+          
+          if (arguments.length > 1) {
+            throw new Error("Called set method of property " + name + " with too many arguments!")
+          }
+        }
+        
+        var context = this;
+        var data = context.$$data;
+        if (!data) {
+          data = context.$$data = {};
+        } else {
+          var old = data[id];
+        }
 
+        if (value !== old) 
+        {
+          if (old === undefined && initField) {
+            old = context[initField];
+          }
+          
+          data[id] = value;
+          changeHelper.call(context, value, old, config);
+        }        
+      };
+      
+      members["reset" + up] = function()
+      {
+        if (qx.core.Variant.isSet("qx.debug", "on")) 
+        {
+          if (arguments.length != 0) {
+            throw new Error("Called reset method of property " + name + " with too many arguments!")
+          }
+        }
+
+        var context = this;
+        var data = context.$$data;
+        if (!data) {
+          return;
+        }
+        
+        var old = data[id];
+        var value = undefined;
+
+        if (old !== value) 
+        {
+          data[id] = value;
+          
+          if (initField) {
+            value = context[initField];
+          }
+          else if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            // Still no value. We warn about that the property is not nullable.
+            if (!nullable) {
+              context.error("Missing value for: " + name + " (during reset())");
+            }
+          }    
+          
+          changeHelper.call(context, value, old, config);
+        }             
+      };   
+      
+      if (config.check === "Boolean") 
+      {
+        members["toggle" + up] = function() {
+          this["set" + up](this["get" + up]());
+        }
+
+        members["is" + up] = members["get" + up];
+      }       
+    },
+    
 
     /**
-     * Emit code to update the inherited values of child objects
-     *
-     * @param code {String[]} String array to append the code to
-     * @param name {String} name of the property
+     * Adds a new property to the given class.
+     * 
      */
-    __emitRefreshChildrenValue : function(code, name)
+    addComplex : function(clazz, name, config)
     {
-      code.push('var a=this._getChildren();if(a)for(var i=0,l=a.length;i<l;i++){');
-      code.push('if(a[i].', this.$$method.refresh[name], ')a[i].', this.$$method.refresh[name], '(backup);');
-      code.push('}');
+      /*
+      ---------------------------------------------------------------------------
+         INTRO: IDENTICAL BETWEEN SIMPLE AND COMPLEX
+      ---------------------------------------------------------------------------
+      */
+            
+      // Generate property ID
+      var db = this.__propertyNameToId;
+      var id = db[name];
+      if (!id) {
+        id = db[name] = this.__propertyId;
+      }
+      
+      // Store init value (shared data between instances)
+      var members = clazz.prototype;
+      if (config.init !== undefined) 
+      {
+        var initField = "$$init" + id;
+        members[initField] = config.init;
+      }
+      
+      // Refined properties are only allowed to change the class-wide init value
+      // of a previously defined property.
+      if (config.refine) {
+        return;
+      }
+   
+      // Precalc
+      var up = config.up = name.charAt(0).toUpperCase() + name.substring(1);
+         
+      // Shorthands: Better compression/obfuscation/performance
+      var changeHelper = this.__changeHelper;
+      var nullable = config.nullable; 
+      
+      
+
+              
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS
+      ---------------------------------------------------------------------------
+      */
+
+      var setter = function(modifyPriority)
+      {
+        return function(newValue)
+        {
+          if (qx.core.Variant.isSet("qx.debug", "on")) 
+          {
+            if (arguments.length == 0) {
+              throw new Error("Called set method of property " + name + " with no arguments!")
+            }
+            
+            if (arguments.length > 1) {
+              throw new Error("Called set method of property " + name + " with too many arguments!")
+            }
+          }
+          
+          var context = this;
+          var current = context.$$current;
+          if (!current) {
+            current = context.$$current = {};
+          }
+          var data = context.$$data;
+          if (!data) {
+            data = context.$$data = {};
+          }
+          
+          // context.debug("Save " + name + "[" + modifyPriority + "]=" + newValue);
+
+          // Read old value
+          var oldPriority = current[id];
+          if (oldPriority != null) {
+            var oldValue = data[id+oldPriority];
+          }
+          
+          // Store new value
+          data[id+modifyPriority] = newValue;
+          
+          // Ignore lower-priority changes
+          if (oldPriority == null || oldPriority <= modifyPriority) 
+          {
+            // Whether the storage field was changed
+            if (oldPriority !== modifyPriority) {
+              current[id] = modifyPriority;
+            }
+
+            // Fallback to init value on prototype chain (when supported)
+            // This is always the value on the current class, not explicitely the
+            // class which creates the property. This is mainly for supporting
+            // init value overrides with "refined" properties
+            if (oldValue === undefined && initField) {
+              oldValue = context[initField];
+            }
+
+            // this.debug("Value Compare: " + newValue + " !== " + oldValue);
+            // Whether the value has been modified
+            if (newValue !== oldValue) {
+              changeHelper.call(context, newValue, oldValue, config);
+            }     
+          }
+        };      
+      };
+
+          
+      var resetter = function(modifyPriority)
+      {
+        return function(value)
+        {
+          if (qx.core.Variant.isSet("qx.debug", "on")) 
+          {
+            if (arguments.length != 0) {
+              throw new Error("Called reset method of property " + name + " with too many arguments!")
+            }
+          }
+          
+          var context = this;
+          var current = context.$$current;
+          if (!current) {
+            return;
+          }
+          var data = context.$$data;        
+          
+          // context.debug("Delete " + name + "[" + modifyPriority + "]");
+
+          // Only need to react when current field is resetted
+          var oldPriority = current[id];
+          if (oldPriority === modifyPriority) 
+          {
+            // Read old value
+            var oldValue = data[id+oldPriority];            
+            
+            // We lost the current value, now we need to find the next stored value
+            var newValue;
+            for (var newPriority=modifyPriority-1; newPriority>=0; newPriority--)
+            {
+              newValue = data[id+newPriority];
+              if (newValue !== undefined) {
+                break;
+              }             
+            }
+            
+            // No value has been found
+            if (newValue === undefined) 
+            {
+              newPriority = undefined;
+              
+              // Let's try the class-wide init value
+              if (initField) {
+                newValue = context[initField];
+              }
+              else if (qx.core.Variant.isSet("qx.debug", "on"))
+              {
+                // Still no value. We warn about that the property is not nullable.
+                if (!nullable) {
+                  context.error("Missing value for: " + name + " (during reset())");
+                }
+              }
+            }
+            
+            // Update current field
+            current[id] = newPriority;
+          }
+          
+          // Remove value from store
+          // This is placed here, because we need to keep the old value first
+          // and only want to do this when needed.
+          // Do not use delete operator as this is not good for performance:
+          // just modifying the value to undefined is enough.
+          data[id+modifyPriority] = undefined;
+
+          // Only need to react when current field is resetted
+          if (oldPriority === modifyPriority && oldValue !== newValue) {         
+            changeHelper.call(context, value, oldValue, config);
+          }
+        };
+      };      
+      
+      
+      
+      
+      /*
+      ---------------------------------------------------------------------------
+         ATTACH METHODS
+      ---------------------------------------------------------------------------
+      */      
+      
+      // Add getter
+      members["get" + up] = function()
+      {
+        if (qx.core.Variant.isSet("qx.debug", "on")) 
+        {
+          if (arguments.length != 0) {
+            throw new Error("Called get method of property " + name + " with too many arguments!")
+          }
+        }
+                
+        var context = this;
+        var current = context.$$current;
+        if (current) {
+          var currentPrio = current[id];
+        }        
+        
+        if (currentPrio == null) 
+        {
+          // Fallback to init value on prototype chain (when supported)
+          // This is always the value on the current class, not explicitely the
+          // class which creates the property. This is mainly for supporting
+          // init value overrides with "refined" properties
+          if (initField) {
+            return context[initField];
+          }
+          
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (!nullable) {
+              context.error("Missing value for: " + name + " (during get())");
+            }
+          }
+                    
+          return null;
+        }
+
+        return context.$$data[id+currentPrio];
+      };
+      
+      
+      var currentPriority = 0;
+      
+      // There are exactly two types of init methods:
+      // 1. Initializing the value given in the property configuration
+      //    (calling apply methods, firing events, etc.)
+      // 2. Initializing the value during instance creation 
+      //    (useful for reference values which should not be shared between all instances)
+      if (initField)
+      {
+        members["init" + up] = function()
+        {
+          var context = this;
+          var current = context.$$current;
+          if (current) 
+          {
+            // Check whether there is already another value assigned.
+            // In this case the whole function could be left early.
+            var oldPriority = current[id];
+            if (oldPriority != null) {
+              return;
+            }            
+          }
+          
+          // Call change helper with value from shared class data
+          changeHelper.call(context, this[initField], undefined, config);
+        };
+      }
+      
+      // When we do not have a init value at configuration level, we allow 
+      // the user to submit an init value during constructor phase. But as this
+      // is not needed very often there is a special option "deferredInit" to enable it.
+      else if (config.deferredInit === true) 
+      {
+        members["init" + up] = setter(currentPriority);
+        currentPriority++;
+      }
+            
+      if (config.inheritable) 
+      {
+        members["refresh" + up] = setter(currentPriority);
+        currentPriority++;
+      }
+
+      if (config.themeable)
+      {
+        members["setThemed" + up] = setter(currentPriority);
+        members["resetThemed" + up] = resetter(currentPriority);
+        currentPriority++;
+      }
+
+      members["set" + up] = setter(currentPriority);
+      members["reset" + up] = resetter(currentPriority);
+      currentPriority++;
+      
+      if (this.RUNTIME_OVERRIDE)
+      {
+        members["setRuntime" + up] = setter(currentPriority);
+        members["resetRuntime" + up] = resetter(currentPriority);
+        // currentPriority++; (last entry)
+      }
+      
+      if (config.check === "Boolean") 
+      {
+        members["toggle" + up] = function() {
+          this["set" + up](this["get" + up]());
+        }
+
+        members["is" + up] = members["get" + up];
+      }
+      
+      qx.log.Logger.debug(clazz, "Complex property: " + name + "[" + id + "](" + currentPriority + ")");
+      this.__propertyId += currentPriority;
     }
   }
 });
