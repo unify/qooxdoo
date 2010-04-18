@@ -192,11 +192,55 @@ qx.Class.define("qx.core.Object",
     },
 
 
+
     /*
     ---------------------------------------------------------------------------
       COMMON SETTER/GETTER/RESETTER SUPPORT
     ---------------------------------------------------------------------------
     */
+    
+    /** {Map} Maps a name of a property to the setter to call for changes */
+    __methodNames : 
+    {
+      set : {},
+      get : {},
+      reset : {},
+      setThemed : {},
+      resetThemed : {},
+      refresh : {}
+    },
+    
+    
+    /**
+     * Returns the name of the method to call for a specific type of function and property.
+     * 
+     * @return {String} Name of the method to call
+     */
+    __getPropertyMethod : function(type, prop)
+    {
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (prop == null) {
+          throw new Error("Missing property name to look for: " + type);
+        }
+      }
+      
+      var names = this.__methodNames[type];
+      var method = names[prop];
+      if (!method) {
+        method = names[prop] = type + qx.Bootstrap.firstUp(prop);
+      }
+      
+      if (qx.core.Variant.isSet("qx.debug", "on")) 
+      {
+        if (!this[method]) {
+          throw new Error('Missing property "' + prop + '" (tried to call the type "' + type + '") on "' + this.classname + '"!');
+        }
+      }
+      
+      return method;    
+    },
+    
 
     /**
      * Sets multiple properties at once by using a property list or
@@ -206,55 +250,24 @@ qx.Class.define("qx.core.Object",
      *
      * @param data {Map | String} a map of property values. The key is the name of the property.
      * @param value {var?} the value, only used when <code>data</code> is a string.
-     * @return {Object} this instance.
-     * @throws an Exception if a property defined does not exist
+     * @return {Object} this instance (when called with a map of key-values) or 
+     *    the configured value as by the setter when called with a single value.
+     * @throws Exception if a property defined does not exist
      */
     set : function(data, value)
     {
-      var setter = qx.core.Property.$$method.set;
-
-      if (qx.Bootstrap.isString(data))
+      if (qx.lang.Type.isString(data)) 
       {
-        if (!this[setter[data]])
-        {
-          if (this["set" + qx.Bootstrap.firstUp(data)] != undefined) {
-            this["set" + qx.Bootstrap.firstUp(data)](value);
-            return;
-          }
-
-          if (qx.core.Variant.isSet("qx.debug", "on"))
-          {
-            qx.Bootstrap.error("No such property: " + data);
-            return this;
-          }
-        }
-
-
-        return this[setter[data]](value);
+        return this[this.__getPropertyMethod("set", data)](value);
       }
       else
       {
-        for (var prop in data)
-        {
-          if (!this[setter[prop]])
-          {
-            if (this["set" + qx.Bootstrap.firstUp(prop)] != undefined) {
-              this["set" + qx.Bootstrap.firstUp(prop)](data[prop]);
-              continue;
-            }
-
-            if (qx.core.Variant.isSet("qx.debug", "on"))
-            {
-              qx.Bootstrap.error("No such property: " + prop);
-              return this;
-            }
-          }
-
-          this[setter[prop]](data[prop]);
+        for (var prop in data) {
+          this.set(prop, data[prop]);
         }
-
-        return this;
       }
+      
+      return this;
     },
 
 
@@ -266,25 +279,8 @@ qx.Class.define("qx.core.Object",
      * @return {var} The value of the value
      * @throws an Exception if a property defined does not exist
      */
-    get : function(prop)
-    {
-      var getter = qx.core.Property.$$method.get;
-
-      if (!this[getter[prop]])
-      {
-        if (this["get" + qx.Bootstrap.firstUp(prop)] != undefined) {
-          return this["get" + qx.Bootstrap.firstUp(prop)]();
-        }
-
-        if (qx.core.Variant.isSet("qx.debug", "on"))
-        {
-          qx.Bootstrap.error("No such property: " + prop);
-          return this;
-        }
-      }
-
-
-      return this[getter[prop]]();
+    get : function(prop) {
+      return this[this.__getPropertyMethod("get", prop)]();
     },
 
 
@@ -295,29 +291,50 @@ qx.Class.define("qx.core.Object",
      * @param prop {String} Name of the property.
      * @throws an Exception if a property defined does not exist
      */
-    reset : function(prop)
-    {
-      var resetter = qx.core.Property.$$method.reset;
-
-      if (!this[resetter[prop]])
-      {
-        if (this["reset" + qx.Bootstrap.firstUp(prop)] != undefined) {
-          this["reset" + qx.Bootstrap.firstUp(prop)]();
-          return;
-        }
-
-        if (qx.core.Variant.isSet("qx.debug", "on"))
-        {
-          qx.Bootstrap.error("No such property: " + prop);
-          return this;
-        }
-      }
-
-
-      this[resetter[prop]]();
+    reset : function(prop) {
+      return this[this.__getPropertyMethod("reset", prop)]();
     },
 
 
+    /**
+     * Sets the themed value of the given property.
+     *
+     * This is internal only! Please do not use in application code.
+     * 
+     * @param prop {String} Name of the property.
+     * @param value {var} Value for the property.
+     * @throws an Exception if the given property does not exist
+     */
+    setThemedProperty : function(prop, value) {
+      return this[this.__getPropertyMethod("setThemed", prop)](value);
+    },
+    
+    
+    /**
+     * Resets the value of the given property. 
+     * 
+     * This is internal only! Please do not use in application code.
+     *
+     * @param prop {String} Name of the property.
+     * @throws an Exception if the given property does not exist
+     */
+    resetThemedProperty : function(prop) {
+      return this[this.__getPropertyMethod("resetThemed", prop)]();
+    },    
+    
+    
+    /**
+     * Refreshes the value of the given property (through inheritance).
+     * 
+     * This is internal only! Please do not use in application code.
+     *
+     * @param prop {String} Name of the property.
+     * @param value {var} Value for the property.
+     * @throws an Exception if the given property does not exist
+     */    
+    refreshProperty : function(prop, value) {
+      return this[this.__getPropertyMethod("refresh", prop)](value);
+    },
 
 
 

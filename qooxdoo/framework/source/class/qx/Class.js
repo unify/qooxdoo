@@ -1179,88 +1179,133 @@ qx.Bootstrap.define("qx.Class",
        }
      },
 
-    /**
-     *
-     * @param clazz {Class} class to add property to
-     * @param name {String} name of the property
-     * @param config {Map} configuration map
-     * @param patch {Boolean ? false} enable refine/patch?
-     */
-    __validateProperty : qx.core.Variant.select("qx.debug",
-    {
-      "on": function(clazz, name, config, patch)
-      {
-        var has = this.hasProperty(clazz, name);
+     /**
+      * Supported keys for property defintions
+      *
+      * @internal
+      */
+     __propertyKeys :qx.core.Variant.select("qx.debug",
+     {
+       "on" : 
+       {
+         name         : "string",   // String
+         dispose      : "boolean",  // Boolean
+         inheritable  : "boolean",  // Boolean
+         nullable     : "boolean",  // Boolean
+         themeable    : "boolean",  // Boolean
+         refine       : "boolean",  // Boolean
+         init         : null,       // var
+         apply        : "string",   // String
+         event        : "string",   // String
+         check        : null,       // Array, String, Function
+         transform    : "string",   // String
+         deferredInit : "boolean",  // Boolean
+         validate     : null,       // String, Function,
+         up           : "string"    // Name (Dynamically created)  
+       },
 
-        if (has)
-        {
-          var existingProperty = this.getPropertyDefinition(clazz, name);
+       "default" : null
+     }),
 
-          if (config.refine && existingProperty.init === undefined) {
-            throw new Error("Could not refine a init value if there was previously no init value defined. Property '" + name + "' of class '" + clazz.classname + "'.");
-          }
-        }
 
-        if (!has && config.refine) {
-          throw new Error("Could not refine non-existent property: '" + name + "' of class: '" + clazz.classname + "'!");
-        }
+     /**
+      * Supported keys for property group definitions
+      *
+      * @internal
+      */
+     __propertyGroupKeys : qx.core.Variant.select("qx.debug",
+     {
+       "on" : {
+         name      : "string",   // String
+         group     : "object",   // Array
+         mode      : "string",   // String
+         themeable : "boolean"   // Boolean
+       },
 
-        if (has && !patch) {
-          throw new Error("Class " + clazz.classname + " already has a property: " + name + "!");
-        }
+       "default" : null
+     }),
 
-        if (has && patch)
-        {
-          if (!config.refine) {
-            throw new Error('Could not refine property "' + name + '" without a "refine" flag in the property definition! This class: ' + clazz.classname + ', original class: ' + this.getByProperty(clazz, name).classname + '.');
-          }
+     /**
+      *
+      * @param clazz {Class} class to add property to
+      * @param name {String} name of the property
+      * @param config {Map} configuration map
+      * @param patch {Boolean ? false} enable refine/patch?
+      */
+     __validateProperty : qx.core.Variant.select("qx.debug",
+     {
+       "on": function(clazz, name, config, patch)
+       {
+         var has = this.hasProperty(clazz, name);
 
-          for (var key in config)
-          {
-            if (key !== "init" && key !== "refine") {
-              throw new Error("Class " + clazz.classname + " could not refine property: " + name + "! Key: " + key + " could not be refined!");
-            }
-          }
-        }
+         if (has)
+         {
+           var existingProperty = this.getPropertyDefinition(clazz, name);
 
-        // Check 0.7 keys
-        var allowed = config.group ? qx.core.Property.$$allowedGroupKeys : qx.core.Property.$$allowedKeys;
-        for (var key in config)
-        {
-          if (allowed[key] === undefined) {
-            throw new Error('The configuration key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '" is not allowed!');
-          }
+           if (config.refine && existingProperty.init === undefined) {
+             throw new Error("Could not refine a init value if there was previously no init value defined. Property '" + name + "' of class '" + clazz.classname + "'.");
+           }
+         }
 
-          if (config[key] === undefined) {
-            throw new Error('Invalid key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '"! The value is undefined: ' + config[key]);
-          }
+         if (!has && config.refine) {
+           throw new Error("Could not refine non-existent property: " + name + "!");
+         }
 
-          if (allowed[key] !== null && typeof config[key] !== allowed[key]) {
-            throw new Error('Invalid type of key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '"! The type of the key must be "' + allowed[key] + '"!');
-          }
-        }
+         if (has && !patch) {
+           throw new Error("Class " + clazz.classname + " already has a property: " + name + "!");
+         }
 
-        if (config.transform != null)
-        {
-          if (!(typeof config.transform == "string")) {
-            throw new Error('Invalid transform definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String.');
-          }
-        }
+         if (has && patch)
+         {
+           if (!config.refine) {
+             throw new Error('Could not refine property "' + name + '" without a "refine" flag in the property definition! This class: ' + clazz.classname + ', original class: ' + this.getByProperty(clazz, name).classname + '.');
+           }
 
-        if (config.check != null)
-        {
-          if (
-            !qx.Bootstrap.isString(config.check) &&
-            !qx.Bootstrap.isArray(config.check) &&
-            !qx.Bootstrap.isFunction(config.check)
-          ) {
-            throw new Error('Invalid check definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String, Array or Function.');
-          }
-        }
-      },
+           for (var key in config)
+           {
+             if (key !== "init" && key !== "refine") {
+               throw new Error("Class " + clazz.classname + " could not refine property: " + name + "! Key: " + key + " could not be refined!");
+             }
+           }
+         }
 
-      "default" : null
-    }),
+         var allowed = config.group ? this.__propertyGroupKeys : this.__propertyKeys;
+         for (var key in config)
+         {
+           if (allowed[key] === undefined) {
+             throw new Error('The configuration key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '" is not allowed!');
+           }
+
+           if (config[key] === undefined) {
+             throw new Error('Invalid key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '"! The value is undefined: ' + config[key]);
+           }
+
+           if (allowed[key] !== null && typeof config[key] !== allowed[key]) {
+             throw new Error('Invalid type of key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '"! The type of the key must be "' + allowed[key] + '"!');
+           }
+         }
+
+         if (config.transform != null)
+         {
+           if (typeof config.transform !== "string") {
+             throw new Error('Invalid transform definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String.');
+           }
+         }
+
+         if (config.check != null)
+         {
+           if (
+             !qx.lang.Type.isString(config.check) &&
+             !qx.lang.Type.isArray(config.check) &&
+             !qx.lang.Type.isFunction(config.check)
+           ) {
+             throw new Error('Invalid check definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String, Array or Function.');
+           }
+         }
+       },
+
+       "default" : null
+     }),
 
 
     /**

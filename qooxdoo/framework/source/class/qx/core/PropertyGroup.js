@@ -50,7 +50,7 @@ qx.Bootstrap.define("qx.core.PropertyGroup",
 	{
 		add : function(clazz, name, config)
 	  {
-	    var upname = qx.lang.String.firstUp(name);
+	    var upname = qx.Bootstrap.firstUp(name);
 	    var members = clazz.prototype;
 
 	    // Cache often used data fields
