@@ -20,7 +20,7 @@
 ################################################################################
 
 import os, sys, string, types, re, zlib, time
-import urllib, urlparse, optparse, pprint, time
+import urllib, urlparse, optparse, pprint
 import simplejson
 from generator.action.ImageInfo import ImageInfo, ImgInfoFmt
 from generator.config.Lang      import Lang
@@ -912,7 +912,7 @@ class CodeGenerator(object):
             vals["DecodeUrisPlug"] = plugCode.strip()
         
         # Add build details
-        vals["Build"] = "%i" % (time.time()*1000) 
+        vals["Build"] = int(time.time()*1000) 
         vals["Type"] = version
         
         # Locate and load loader basic script
