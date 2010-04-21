@@ -20,56 +20,48 @@
 ################################################################################
 
 ##
-#<h2>Module Description</h2>
-#<pre>
-# NAME
-#  module.py -- module short description
-#
-# SYNTAX
-#  module.py --help
-#
-#  or
-#
-#  import module
-#  result = module.func()
-#
-# DESCRIPTION
-#  The module module does blah.
-#
-# CAVEATS
-#
-# KNOWN ISSUES
-#  There are no known issues.
-#</pre>
+# This module contains a collection of helper functions to work with the
+# JavaScript syntax tree.
 ##
-
-"""
-This module contains a collection of helper functions to work with the
-JavaScript syntax tree.
-"""
 
 import re
 from ecmascript.frontend import tree, tokenizer, treegenerator
 
+##
+# Finds the next qx.*.define in the given tree
 
 def findQxDefine(rootNode):
-    if rootNode.type == "variable":
+    for node in nodeIterator(rootNode, ["variable"]):
+        if isQxDefine(node):
+            return node.parent.parent
+        
+    return None
+
+
+##
+# Finds all the qx.*.define in the given tree
+
+def findQxDefineR(rootNode):
+    for node in nodeIterator(rootNode, ["variable"]):
+        if isQxDefine(node):
+            yield node.parent.parent
+        
+
+##
+# Checks if the given node is a qx.*.define function invocation
+
+def isQxDefine(node):
+    if node.type == "variable":
         try:
-            variableName = (assembleVariable(rootNode))[0]
+            variableName = (assembleVariable(node))[0]
         except tree.NodeAccessException:
-            return None
+            return False
 
         if variableName in ["qx.Bootstrap.define", "qx.Class.define", "qx.Interface.define", "qx.Mixin.define", "qx.List.define", "qx.Theme.define"]:
-            if rootNode.parent.parent.type == "call" and rootNode.parent.type == "operand":
-                return rootNode.parent.parent
+            if node.hasParentContext("call/operand"):
+                return True
 
-    if rootNode.hasChildren():
-        for child in rootNode.children:
-            foundNode = findQxDefine(child)
-            if foundNode is not None:
-                return foundNode
-    else:
-        return None
+    return False
         
         
 ##
@@ -558,7 +550,7 @@ def getClassMap(classNode):
     # get top-level class map
     mapNode = selectNode(classNode, "params/map")
 
-    if mapNode.type != "map":
+    if not mapNode or mapNode.type != "map":
         raise tree.NodeAccessException("Expected a map node!", mapNode)
 
     if mapNode.hasChildren():
