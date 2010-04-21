@@ -413,12 +413,19 @@ class QxTest:
       else:  
         # generate the application
         self.log("Generating %s application." %target)
-        buildcmd = os.path.join(buildConf["stageDir"], target + "application", "generate.py")
-        if target == "bom":
-          status, std, err = invokePiped(buildcmd + " build")
+        
+        if target == "contribution":
+          buildcmd = os.path.join(buildConf["stageDir"], target + "application", "trunk", "demo", "default", "generate.py")
         else:
-          status, std, err = invokePiped(buildcmd + " build,source-all")
-
+          buildcmd = os.path.join(buildConf["stageDir"], target + "application", "generate.py")
+        
+        if target == "bom":
+          buildcmd += " build"
+        else:
+          buildcmd += " build,source-all"
+        
+        status, std, err = invokePiped(buildcmd)
+        
         if status > 0:          
           self.logBuildErrors(buildLogFile, target, buildcmd, err)              
           self.buildStatus[target]["BuildError"] = "Unknown build error"
@@ -946,7 +953,7 @@ class QxTest:
     try:
         response = urllib2.urlopen(req)    
     except urllib2.URLError, e:
-        self.log("Unable to contact report server: Error %s" %e.code)
+        self.log("Unable to contact report server: Error %s" %e.reason)
         errorFile = open("error.html", "w")
         errorFile.write(e.read())
         errorFile.close()
