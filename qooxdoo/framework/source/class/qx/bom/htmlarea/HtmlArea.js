@@ -81,11 +81,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     // set the optional style information - if available
     this.__styleInformation = qx.bom.htmlarea.HtmlArea.__formatStyleInformation(styleInformation);
 
-    // Check for available content
-    if (typeof value === "string") {
+    // Check content
+    if (qx.lang.Type.isString(value)) {
       this.__value = value;
     }
-
 
     /*
      * "Fix" Keycode to identifier mapping in opera to suit the needs
@@ -385,6 +384,14 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
             // Current attribute
             var a;
 
+            if (qx.core.Variant.isSet("qx.client", "gecko"))
+            {
+              // we can leave out all auto-generated empty span elements which are marked dirty
+              if (tag == "span" && len == 1 && attrs[0].name == "_moz_dirty" && root.childNodes.length == 0) {
+                return "";
+              }
+            }
+
             for (i = 0; i < len; i++)
             {
               a = attrs[i];
@@ -642,11 +649,11 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
 
       return /^(body|td|th|caption|fieldset|div)$/.test(node);
     },
-    
-    
+
+
     /**
      * Checks of the given node is headline node.
-     * 
+     *
      * @param node {Node} Node to check
      * @return {Boolean} whether it is a headline node
      */
@@ -655,10 +662,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       if (!qx.dom.Node.isElement(node)) {
         return false;
       }
-      
+
       var nodeName = qx.dom.Node.getName(node);
 
-      return /^h[1-6]$/.test(nodeName); 
+      return /^h[1-6]$/.test(nodeName);
     }
  },
 
@@ -732,8 +739,8 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       check : "Boolean",
       init  : true
     },
-    
-    
+
+
     /**
      * Whether to use the native contextmenu or to block it and use own event
      */
@@ -741,6 +748,26 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     {
       check : "Boolean",
       init : false
+    },
+    
+    
+    /**
+     * Default font family to use when e.g. user removes all content
+     */
+    defaultFontFamily :
+    {
+      check : "String",
+      init : "Verdana"
+    },
+    
+    
+    /**
+     * Default font size to use when e.g. user removes all content
+     */
+    defaultFontSize :
+    {
+      check : "Integer",
+      init : 4
     }
   },
 
@@ -904,15 +931,41 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      */
     setValue : function(value)
     {
-       if (typeof value === "string")
-       {
-         this.__value = value;
+      if (qx.lang.Type.isString(value))
+      {
+        this.__value = value;
 
-         var doc = this._getIframeDocument();
-         if (doc && doc.body) {
-           doc.body.innerHTML = value;
-         }
-       }
+        var doc = this._getIframeDocument();
+        if (doc && doc.body) {
+          doc.body.innerHTML = this.__generateDefaultContent(value);
+        }
+      }
+    },
+    
+    
+    /**
+     * Generates the default content and inserts the given string
+     * 
+     * @param value {String} string to insert into the default content
+     */
+    __generateDefaultContent : function(value)
+    {
+      // TODO need bogus node for Firefox 2.x
+      var zeroWidthNoBreakSpace = value.length == 0 ? "\ufeff" : "";
+      var idForFontElement = qx.core.Variant.isSet("qx.client", "gecko|webkit") ? 'id="__elementToFocus__"' : '';
+      
+      var defaultContent = '<p>' + 
+                           '<span style="font-family:' +
+                            this.getDefaultFontFamily() + '">' +
+                           '<font ' + idForFontElement + ' size="' +
+                           this.getDefaultFontSize() +'">' + 
+                           value + 
+                           zeroWidthNoBreakSpace + 
+                           '</font>' +
+                           '</span>' +
+                           '</p>';
+      
+      return defaultContent; 
     },
 
 
@@ -1488,9 +1541,9 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      */
     __renderContent : function()
     {
-      var value = this.getValue();
+      var value = this.__generateDefaultContent(this.getValue());
 
-      if (typeof value == "string")
+      if (qx.lang.Type.isString(value))
       {
         var doc = this._getIframeDocument();
         try
@@ -1519,8 +1572,8 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       this.__addMouseListeners();
       this.__addFocusListeners();
     },
-    
-    
+
+
     /**
      * Add key event listeners to the body element
      */
@@ -1542,11 +1595,11 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     {
       var Registration = qx.event.Registration;
       var doc = this._getIframeDocument();
-      
+
       var focusBlurTarget = qx.bom.client.Engine.WEBKIT ? this._getIframeWindow() : doc.body;
       Registration.addListener(focusBlurTarget, "focus", this._handleFocusEvent, this);
       Registration.addListener(focusBlurTarget, "blur", this._handleBlurEvent, this);
-      
+
       Registration.addListener(doc, "focusout",  this._handleFocusOutEvent, this);
     },
 
@@ -1557,10 +1610,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     __addMouseListeners : function()
     {
       // The mouse events are primarily needed to examine the current cursor context.
-      // The cursor context examines if the current text node is formatted in any 
-      // manner like bold or italic. An event is thrown to e.g. activate/deactivate 
+      // The cursor context examines if the current text node is formatted in any
+      // manner like bold or italic. An event is thrown to e.g. activate/deactivate
       // toolbar buttons.
-      // Additionally the mouseup at document level is necessary for gecko and 
+      // Additionally the mouseup at document level is necessary for gecko and
       // webkit to reset the focus (see Bug #2896).
       var Registration = qx.event.Registration;
       var doc = this._getIframeDocument();
@@ -1779,14 +1832,14 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
                 if (qx.core.Variant.isSet("qx.client", "webkit"))
                 {
                   this.__insertWebkitLineBreak();
-  
+
                   e.preventDefault();
                   e.stopPropagation();
                 }
-                else 
+                else
                 {
                   var rng = this.__createRange(this.getSelection());
-                  
+
                   if (rng)
                   {
                     rng.collapse(true);
@@ -2325,6 +2378,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       this.__mouseUpOnBody = true;
 
       this.__startExamineCursorContext();
+      
+      if (!this.__isContentAvailable()) {
+        this.__resetToDefaultContentAndSelect();
+      }
     },
 
 
@@ -2334,7 +2391,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      * to receive the keypress events correctly.
      *
      * @param e {qx.event.type.Mouse} mouse event instance
-     * 
+     *
      * @signature function(e)
      * @return {void}
      */
@@ -2355,7 +2412,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      * If the property {@link nativeContextMenu} is set to <code>false</code> this handler method
      * stops the browser from displaying the native context menu and fires an own event for the
      * application developers to position their own (qooxdoo) contextmenu.
-     * 
+     *
      * Fires a data event with the following data:
      *
      *   * x - absolute x coordinate
@@ -2363,7 +2420,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      *   * relX - relative x coordinate
      *   * relY - relative y coordinate
      *   * target - DOM element target
-     *   
+     *
      * Otherwise the native browser contextmenu is shown as usual.
      *
      * @param e {Object} Event object
@@ -2375,10 +2432,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       {
         var relX = e.getViewportLeft();
         var relY = e.getViewportTop();
-  
+
         var absX = qx.bom.element.Location.getLeft(this.__widget) + relX;
         var absY = qx.bom.element.Location.getTop(this.__widget) + relY;
-  
+
         var data = {
           x: absX,
           y: absY,
@@ -2386,10 +2443,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
           relY: relY,
           target: e.getTarget()
         };
-  
+
         e.preventDefault();
         e.stopPropagation();
-  
+
         qx.event.Timer.once(function() {
           this.fireDataEvent("contextmenu", data);
         }, this, 0);
@@ -2796,6 +2853,160 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
 
       "default" : qx.lang.Function.returnFalse
     }),
+    
+    
+    /*
+      -----------------------------------------------------------------------------
+      FOCUS MANAGEMENT
+      -----------------------------------------------------------------------------
+    */
+    
+    /**
+     * Can be used to set the user focus to the content. Also used when the "TAB" key is used to 
+     * tab into the component. This method is also called by the {@link qx.ui.embed.HtmlArea} widget. 
+     * 
+     * @signature function()
+     */
+    focusContent : qx.core.Variant.select("qx.client",
+    { 
+      "gecko" : function()
+      {
+        var contentDocument = this.getContentDocument();
+        contentDocument.documentElement.focus();
+        
+        var elementToFocus = contentDocument.getElementById("__elementToFocus__");
+        if (elementToFocus)
+        {
+          qx.bom.element.Attribute.reset(elementToFocus, "id");
+          qx.bom.Selection.set(elementToFocus, 0, 0);
+        }
+        else {
+          this.__checkForContentAndSetDefaultContent();
+        }
+      },
+      
+      "webkit" : function()
+      {
+        qx.bom.Element.focus(this.getContentBody());
+        qx.bom.Element.focus(this.getContentWindow());
+        
+        var elementToFocus = this.getContentDocument().getElementById("__elementToFocus__");
+        if (elementToFocus) {
+          qx.bom.element.Attribute.reset(elementToFocus, "id");
+        }
+        
+        this.__checkForContentAndSetDefaultContent();       
+      },
+
+      "opera" : function()
+      {
+        qx.bom.Element.focus(this.getContentWindow());
+        qx.bom.Element.focus(this.getContentBody());
+        
+        this.__checkForContentAndSetDefaultContent();
+      },
+      
+      "default" : function()
+      {
+        qx.bom.Element.focus(this.getContentBody());
+        
+        this.__checkForContentAndSetDefaultContent();
+      }
+    }),
+    
+    
+    /**
+     * Helper method which checks if content is available and if not sets the default content.
+     */
+    __checkForContentAndSetDefaultContent : function()
+    {
+      if (!this.__isContentAvailable()) {
+        this.__resetToDefaultContentAndSelect();
+      }
+    },
+    
+    
+    /**
+     * Checks whether content is available
+     * 
+     * @signature function()
+     */
+    __isContentAvailable : qx.core.Variant.select("qx.client", 
+    {
+      "gecko" : function()
+      {
+        var childElements = qx.dom.Hierarchy.getChildElements(this.getContentBody());
+        
+        if (childElements.length == 0) {
+          return false;
+        } else if (childElements.length == 1) {
+          // consider a BR element with "_moz_dirty" attribute as empty content
+          return !(childElements[0] && qx.dom.Node.isNodeName(childElements[0], "br") && 
+                   qx.bom.element.Attribute.get(childElements[0], "_moz_dirty") != null);
+        } else {
+          return true; 
+        }
+      },
+      
+      "webkit" : function()
+      {
+        var childElements = qx.dom.Hierarchy.getChildElements(this.getContentBody());
+        
+        if (childElements.length == 0) {
+          return false;
+        } else if (childElements.length == 1) {
+          // consider a solely BR element as empty content
+          return !(childElements[0] && qx.dom.Node.isNodeName(childElements[0], "br"));
+        } else {
+          return true; 
+        }
+      },
+      
+      "default" : function()
+      {
+        var childElements = qx.dom.Hierarchy.getChildElements(this.getContentBody());
+        
+        if (childElements.length == 0) {
+          return false;
+        } else if (childElements.length == 1) {
+          return !(childElements[0] && qx.dom.Node.isNodeName(childElements[0], "p") && 
+                   childElements[0].firstChild == null); 
+        } else {
+          return true;
+        }
+      }
+    }),
+    
+    
+    /**
+     * Resets the content and selects the default focus node
+     * 
+     * @signature function
+     */
+    __resetToDefaultContentAndSelect : qx.core.Variant.select("qx.client",
+    {
+      "gecko|webkit" : function()
+      {
+        this.getContentDocument().body.innerHTML = this.__generateDefaultContent("");
+      
+        var elementToFocus = this.getContentDocument().getElementById("__elementToFocus__");
+        qx.bom.element.Attribute.reset(elementToFocus, "id");
+        qx.bom.Selection.set(elementToFocus, 0, 0);
+      },
+      
+      "default" : function()
+      {
+        var firstParagraph = qx.dom.Hierarchy.getFirstDescendant(this.getContentBody());
+        
+        if (qx.dom.Node.isNodeName(firstParagraph, "p"))
+        {
+          qx.bom.element.Style.set(firstParagraph, "font-family", this.getDefaultFontFamily());
+          qx.bom.element.Style.set(firstParagraph, "font-size", this.getDefaultFontSize());
+        }          
+      }
+    }),
+    
+    
 
     /*
       -----------------------------------------------------------------------------
@@ -2851,6 +3062,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       }
       this._processingExamineCursorContext = true;
 
+      if (!this.__isContentAvailable()) {
+        this.__resetToDefaultContentAndSelect();
+      }
+      
       var focusNode = this.getFocusNode();
       if (focusNode == null) {
         return;
@@ -2861,23 +3076,23 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       }
 
       var doc = this._getIframeDocument();
-      var focusNodeStyle = qx.core.Variant.isSet("qx.client", "mshtml") ? 
-                           focusNode.currentStyle : 
+      var focusNodeStyle = qx.core.Variant.isSet("qx.client", "mshtml") ?
+                           focusNode.currentStyle :
                            doc.defaultView.getComputedStyle(focusNode, null);
 
       var isBold = false;
       var isItalic = false;
       var isUnderline = false;
       var isStrikeThrough = false;
-      
+
       var unorderedList = false;
       var orderedList = false;
-      
+
       var justifyLeft = false;
       var justifyCenter = false;
       var justifyRight = false;
       var justifyFull = false;
-      
+
       var fontSize = null;
       var computedFontSize = null;
       var fontFamily = null;
@@ -2889,10 +3104,10 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
           isItalic = focusNodeStyle.fontStyle == "italic";
           isUnderline = focusNodeStyle.textDecoration.indexOf("underline") !== -1;
           isStrikeThrough = focusNodeStyle.textDecoration.indexOf("line-through") !== -1;
-          
+
           fontSize = focusNodeStyle.fontSize;
           fontFamily = focusNodeStyle.fontFamily;
-          
+
           justifyLeft = focusNodeStyle.textAlign == "left";
           justifyCenter = focusNodeStyle.textAlign == "center";
           justifyRight = focusNodeStyle.textAlign == "right";
@@ -2903,16 +3118,16 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
           isItalic = focusNodeStyle.getPropertyValue("font-style") == "italic";
           isUnderline = focusNodeStyle.getPropertyValue("text-decoration").indexOf("underline") !== -1;
           isStrikeThrough = focusNodeStyle.getPropertyValue("text-decoration").indexOf("line-through") !== -1;
-          
+
           fontSize = focusNodeStyle.getPropertyValue("font-size");
           fontFamily = focusNodeStyle.getPropertyValue("font-family");
-          
+
           justifyLeft = focusNodeStyle.getPropertyValue("text-align") == "left";
           justifyCenter = focusNodeStyle.getPropertyValue("text-align") == "center";
           justifyRight = focusNodeStyle.getPropertyValue("text-align") == "right";
           justifyFull = focusNodeStyle.getPropertyValue("text-align") == "justify";
         }
-        
+
         if (qx.core.Variant.isSet("qx.client", "mshtml|opera")) {
           isBold = focusNodeStyle.fontWeight == 700;
         } else {
@@ -2921,17 +3136,17 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
         }
       }
 
-      // Traverse the DOM to get the result, instead of using the CSS-Properties. 
+      // Traverse the DOM to get the result, instead of using the CSS-Properties.
       // In this case the CSS-Properties are not useful, e.g. Gecko always reports
-      // "disc" for "list-style-type" even if it is normal text. ("disc" is the 
+      // "disc" for "list-style-type" even if it is normal text. ("disc" is the
       // initial value)
-      // Traverse the DOM upwards to determine if the focusNode is inside an 
+      // Traverse the DOM upwards to determine if the focusNode is inside an
       // ordered/unordered list
       var node = focusNode;
 
-      // only traverse the DOM upwards if were are not already within the body 
+      // only traverse the DOM upwards if were are not already within the body
       // element or at the top of the document
-      if (node != null && node.parentNode != null && 
+      if (node != null && node.parentNode != null &&
           !qx.dom.Node.isDocument(node.parentNode))
       {
         while (node != null && !qx.dom.Node.isNodeName(node, "body"))
@@ -3063,7 +3278,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      * Browser-specific implementation to get the current range contents
      *
      * @param range {Range object} Native range object
-     * 
+     *
      * @signature function(range)
      * @return {String} range contents
      */
@@ -3147,7 +3362,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
         var focusNode = this.getFocusNode();
 
         // check if the caret is within a word
-        return sel && this.isSelectionCollapsed() && focusNode != null && 
+        return sel && this.isSelectionCollapsed() && focusNode != null &&
                qx.dom.Node.isText(focusNode) && sel.anchorOffset < focusNode.length;
       },
 
@@ -3198,7 +3413,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      * Returns a range for the current selection
      *
      * @param sel {Selection} current selection object
-     * 
+     *
      * @signature function(sel)
      * @return {Range?null} Range object or null if the document is not available
      */
@@ -3295,7 +3510,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     */
     /**
      * Returns the node where the selection ends
-     * 
+     *
      * @signature function()
      * @return {Element?null} Focus node or null if no range is available
      */
@@ -3313,7 +3528,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
              // It seems that even for selection of type "None",
              // there _is_ a correct parent element
              rng = this.__createRange(sel);
-             
+
              if (rng)
              {
                rng.collapse(false);
@@ -3322,7 +3537,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
                return null;
              }
            break;
-           
+
            case "Control":
              rng = this.__createRange(sel);
 

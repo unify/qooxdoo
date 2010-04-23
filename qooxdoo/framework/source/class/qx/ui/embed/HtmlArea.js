@@ -65,7 +65,7 @@ qx.Class.define("qx.ui.embed.HtmlArea",
   construct : function(value, styleInformation, source)
   {
     this.__postPonedProperties = {};
-    
+
     // **********************************************************************
     //   INIT
     // **********************************************************************
@@ -278,7 +278,36 @@ qx.Class.define("qx.ui.embed.HtmlArea",
     {
       refine : true,
       init   : "htmlarea"
-    }      
+    },
+    
+    /**
+     * Default font family to use when e.g. user removes all content
+     */
+    defaultFontFamily :
+    {
+      check : "String",
+      init : "Verdana",
+      apply : "_applyDefaultFontFamily"
+    },
+
+    /**
+     * Default font family to use when e.g. user removes all content
+     */
+    defaultFontSize :
+    {
+      check : "Integer",
+      init : 4,
+      apply : "_applyDefaultFontSize"
+    },
+
+    /**
+     * Focusable
+     */
+    focusable :
+    {
+      refine : true,
+      init : true 
+    }
   },
 
 
@@ -374,6 +403,26 @@ qx.Class.define("qx.ui.embed.HtmlArea",
       }
     },
     
+    
+    _applyDefaultFontFamily : function(value, old)
+    {
+      if (this.__editorComponent != null) {
+        this.__editorComponent.setDefaultFontFamily(value);
+      } else {
+        this.__postPonedProperties["DefaultFontFamily"] = value;
+      }
+    },
+    
+    
+    _applyDefaultFontSize : function(value, old)
+    {
+      if (this.__editorComponent != null) {
+        this.__editorComponent.setDefaultFontSize(value);
+      } else {
+        this.__postPonedProperties["DefaultFontSize"] = value;
+      }
+    },
+
     // overridden
     _applyNativeContextMenu : function(value, old)
     {
@@ -1012,7 +1061,7 @@ qx.Class.define("qx.ui.embed.HtmlArea",
      * @param url {String} url of the background image to set
      * @param repeat {String} repeat mode. Possible values are "repeat|repeat-x|repeat-y|no-repeat".
      *                                     Default value is "no-repeat"
-     * @param position {String?Array} Position of the background image. 
+     * @param position {String?Array} Position of the background image.
      *                                Possible values are "|top|bottom|center|left|right|right top|left top|left bottom|right bottom" or
      *                                an array consisting of two values for x and
      *                                y coordinate. Both values have to define the
@@ -1170,7 +1219,7 @@ qx.Class.define("qx.ui.embed.HtmlArea",
     */
 
     /**
-     * returns the range of the current selection
+     * Returns the range of the current selection
      *
      * @return {Range?null} Range object or null if not initialized
      */
@@ -1258,10 +1307,46 @@ qx.Class.define("qx.ui.embed.HtmlArea",
       if (this.__blockerElement) {
         this.__blockerElement.setStyle("display", "none");
       }
+    },
+    
+    
+    /*
+    -----------------------------------------------------------------------------
+      FOCUS MANAGEMENT
+    -----------------------------------------------------------------------------
+    */
+    
+    // overridden
+    focus : function()
+    {
+      this.base(arguments);
+      
+      this.__focusContent();
+    },   
+    
+    // overridden
+    tabFocus : function()
+    {
+      this.base(arguments);
+      
+      this.__focusContent();
+    },
+
+
+    /**
+     * Focus the document content
+     */
+    __focusContent : function()
+    {
+      if (this.__editorComponent != null) {
+        qx.event.Timer.once(function() {
+          this.__editorComponent.focusContent();
+        }, this, 0);
+      }
     }
-
-
   },
+  
+  
 
 
   /*

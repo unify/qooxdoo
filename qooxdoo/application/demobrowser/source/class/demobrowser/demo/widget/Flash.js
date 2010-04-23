@@ -13,7 +13,7 @@
      See the LICENSE file in the project's top-level directory for details.
 
    Authors:
-     * Christian Schmidt (chris_schmidt)
+     * Christian Hagendorn (chris_schmidt)
 
 ************************************************************************ */
 
@@ -97,7 +97,7 @@ qx.Class.define("demobrowser.demo.widget.Flash",
         variables : variables
       });
       flash.getContentElement().setParam("bgcolor", "#FF6600");
-      
+
       container.add(flash, {flex: 1});
 
       var button = new qx.ui.form.Button("Show Flash Player version");

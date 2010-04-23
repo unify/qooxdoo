@@ -724,10 +724,9 @@ qx.Class.define("qx.core.Object",
         clazz = clazz.superclass;
       }
 
-      // remove all property references
-      var properties = qx.Class.getProperties(this.constructor);
-      for (var i = 0, l = properties.length; i < l; i++) {
-        delete this["$$user_" + properties[i]];
+      // remove all property references for IE6 and FF2
+      if (this.__removePropertyReferences) {
+        this.__removePropertyReferences();
       }
 
       // Additional checks
@@ -750,9 +749,19 @@ qx.Class.define("qx.core.Object",
                 continue;
               }
 
-              if (value instanceof qx.core.Object || qx.core.Setting.get("qx.disposerDebugLevel") > 1) {
-                qx.Bootstrap.warn(this, "Missing destruct definition for '" + key + "' in " + this.classname + "[" + this.toHashCode() + "]: " + value);
-                delete this[key];
+              var ff2 = navigator.userAgent.indexOf("rv:1.8.1") != -1;
+              var ie6 = navigator.userAgent.indexOf("MSIE 6.0") != -1;
+              // keep the old behavior for IE6 and FF2
+              if (ff2 || ie6) {
+                if (value instanceof qx.core.Object || qx.core.Setting.get("qx.disposerDebugLevel") > 1) {
+                  qx.Bootstrap.warn(this, "Missing destruct definition for '" + key + "' in " + this.classname + "[" + this.toHashCode() + "]: " + value);
+                  delete this[key];
+                }
+              } else {
+                if (qx.core.Setting.get("qx.disposerDebugLevel") > 1) {
+                  qx.Bootstrap.warn(this, "Missing destruct definition for '" + key + "' in " + this.classname + "[" + this.toHashCode() + "]: " + value);
+                  delete this[key];
+                }
               }
             }
           }
@@ -761,6 +770,27 @@ qx.Class.define("qx.core.Object",
     },
 
 
+    /**
+     * Possible reference to special method for IE6 and FF2
+     * {@link #__removePropertyReferencesOld}
+     *
+     * @signature function()
+     */
+    __removePropertyReferences : null,
+
+
+    /**
+     * Special method for IE6 and FF2 which removes all $$user_ references
+     * set up by the properties.
+     * @signature function()
+     */
+    __removePropertyReferencesOld : function() {
+      // remove all property references
+      var properties = qx.Class.getProperties(this.constructor);
+      for (var i = 0, l = properties.length; i < l; i++) {
+        delete this["$$user_" + properties[i]];
+      }
+    },
 
 
     /*
@@ -776,7 +806,7 @@ qx.Class.define("qx.core.Object",
      * @deprecated Performance: Don't use '_disposeFields' - instead
      *      assign directly to <code>null</code>
      */
-    _disposeFields : function(varargs) 
+    _disposeFields : function(varargs)
     {
       qx.Bootstrap.warn("Don't use '_disposeFields' - instead assign directly to 'null'");
       qx.util.DisposeUtil.disposeFields(this, arguments);
@@ -792,8 +822,8 @@ qx.Class.define("qx.core.Object",
     _disposeObjects : function(varargs) {
       qx.util.DisposeUtil.disposeObjects(this, arguments);
     },
-    
-    
+
+
     /**
      * Disconnects and disposes given singleton objects from instance.
      * Only works with qx.core.Object based objects e.g. Widgets.
@@ -802,7 +832,7 @@ qx.Class.define("qx.core.Object",
      */
     _disposeSingletonObjects : function(varargs) {
       qx.util.DisposeUtil.disposeObjects(this, arguments, true);
-    },    
+    },
 
 
     /**
@@ -849,11 +879,21 @@ qx.Class.define("qx.core.Object",
   *****************************************************************************
   */
 
-  defer : function(statics)
+  defer : function(statics, proto)
   {
     // add asserts into each debug build
     if (qx.core.Variant.isSet("qx.debug", "on")) {
       qx.Class.include(statics, qx.core.MAssert);
+    }
+
+    // special treatment for IE6 and FF2
+    var ie6 = navigator.userAgent.indexOf("MSIE 6.0") != -1;
+    var ff2 = navigator.userAgent.indexOf("rv:1.8.1") != -1;
+
+    // patch the remove property method for IE6 and FF2
+    if (ie6 || ff2) {
+      proto.__removePropertyReferences = proto.__removePropertyReferencesOld;
+      // debugger;
     }
   },
 
@@ -869,8 +909,10 @@ qx.Class.define("qx.core.Object",
 
   destruct : function()
   {
-    // Cleanup event listeners
-    qx.event.Registration.removeAllListeners(this);
+    if (!qx.core.ObjectRegistry.inShutDown) {
+      // Cleanup event listeners
+      qx.event.Registration.removeAllListeners(this);
+    }
 
     // Cleanup object registry
     qx.core.ObjectRegistry.unregister(this);
@@ -897,7 +939,7 @@ qx.Class.define("qx.core.Object",
         for (var name in properties)
         {
           // dispose is @deprecated with 1.1
-          if (properties[name].dispose || properties[name].dereference) {
+          if (properties[name].dispose || properties[name].dereference) {
             this[storeUser[name]] = this[storeTheme[name]] = this[storeInherit[name]] = this[storeUseinit[name]] = this[storeInit[name]] = undefined;
           }
         }
