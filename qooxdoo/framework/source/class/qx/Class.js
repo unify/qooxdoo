@@ -166,13 +166,22 @@ qx.Bootstrap.define("qx.Class",
       }
 
       // Normalize type
+      var implicitType = false;
       if (!config.hasOwnProperty("extend") && !config.type) {
         config.type = "static";
+        implicitType = true;
       }
 
       // Validate incoming data
       if (qx.core.Variant.isSet("qx.debug", "on")) {
-        this.__validateConfig(name, config);
+        try {
+          this.__validateConfig(name, config);
+        } catch(ex) {
+          if (implicitType) {
+            ex.message = 'Assumed static class because no "extend" key was found. ' + ex.message;
+          }
+          throw ex;
+        }
       }
 
       // Create the class
@@ -235,7 +244,7 @@ qx.Bootstrap.define("qx.Class",
         this.__validateAbstractInterfaces(clazz);
       }
 
-      
+
       // Process defer
       if (config.defer)
       {
@@ -253,17 +262,17 @@ qx.Bootstrap.define("qx.Class",
           }
         });
       }
-      
+
       return clazz;
     },
 
 
     /**
      * Removes a class from qooxdoo defined by {@link #define}
-     * 
+     *
      * @param name {String} Name of the class
      */
-    undefine : function(name) 
+    undefine : function(name)
     {
       // first, delete the class from the registry
       delete this.$$registry[name];
@@ -274,8 +283,8 @@ qx.Bootstrap.define("qx.Class",
       for (var i = 0; i < ns.length; i++) {
         objects.push(objects[i][ns[i]]);
       }
-      
-      // go through all objects and check for the constructor or empty namespaces 
+
+      // go through all objects and check for the constructor or empty namespaces
       for (var i = objects.length - 1; i >= 1; i--) {
         var last = objects[i];
         var parent = objects[i - 1];
@@ -286,8 +295,8 @@ qx.Bootstrap.define("qx.Class",
         }
       };
     },
-    
-    
+
+
     /**
      * Whether the given class exists
      *
@@ -938,12 +947,12 @@ qx.Bootstrap.define("qx.Class",
           } else {
             clazz = construct;
           }
-          
+
           // Add singleton getInstance()
           if (type === "singleton") {
             clazz.getInstance = this.getInstance;
-          }          
-          
+          }
+
           qx.Bootstrap.setDisplayName(construct, name, "constructor");
         }
 
@@ -1092,7 +1101,7 @@ qx.Bootstrap.define("qx.Class",
       }
 
       var proto = clazz.prototype;
-      
+
       for (var name in properties)
       {
         config = properties[name];
@@ -1367,14 +1376,14 @@ qx.Bootstrap.define("qx.Class",
      * Wrap the constructor of an already existing clazz. This function will
      * replace all references to the existing constructor with the new wrapped
      * constructor.
-     * 
-     * @param clazz {Class} The class to wrap 
+     *
+     * @param clazz {Class} The class to wrap
      */
     __retrospectWrapConstruct : function(clazz)
     {
       var name = clazz.classname
       var wrapper = this.__wrapConstructor(clazz, name, clazz.$$classtype);
-      
+
       // copy all keys from the wrapped constructor to the wrapper
       for (var i=0, a=qx.Bootstrap.getKeys(clazz), l=a.length; i<l; i++)
       {
@@ -1399,8 +1408,8 @@ qx.Bootstrap.define("qx.Class",
             method.self = wrapper;
           }
         }
-      }      
-     
+      }
+
       // fix base and superclass references in all defined classes
       for(var key in this.$$registry)
       {
@@ -1408,31 +1417,31 @@ qx.Bootstrap.define("qx.Class",
         if (!construct) {
           continue;
         }
-        
+
         if (construct.base == clazz) {
           construct.base = wrapper;
         }
         if (construct.superclass == clazz) {
           construct.superclass = wrapper;
         }
-        
-        if (construct.$$original) 
+
+        if (construct.$$original)
         {
           if (construct.$$original.base == clazz) {
             construct.$$original.base = wrapper;
           }
           if (construct.$$original.superclass == clazz) {
             construct.$$original.superclass = wrapper;
-          }         
+          }
         }
       }
       qx.Bootstrap.createNamespace(name, wrapper);
       this.$$registry[name] = wrapper;
-      
+
       return wrapper;
     },
-    
-    
+
+
     /**
      * Include all features of the mixin into the given class (recursive).
      *
@@ -1453,11 +1462,11 @@ qx.Bootstrap.define("qx.Class",
         return;
       }
 
-      var isConstructorWrapped = clazz.$$original; 
+      var isConstructorWrapped = clazz.$$original;
       if (mixin.$$constructor && !isConstructorWrapped) {
         clazz = this.__retrospectWrapConstruct(clazz);
       }
-      
+
       // Attach content
       var list = qx.Mixin.flatten([mixin]);
       var entry;
@@ -1533,7 +1542,7 @@ qx.Bootstrap.define("qx.Class",
 
     /**
      * Checks if the constructor needs to be wrapped.
-     * 
+     *
      * @param base {Class} The base class.
      * @param mixins {Mixin[]} All mixins which should be included.
      * @return {Boolean} true, if the constructor needs to be wrapped.
@@ -1543,7 +1552,7 @@ qx.Bootstrap.define("qx.Class",
       if (qx.core.Variant.isSet("qx.debug", "on")) {
         return true;
       }
-      
+
       // Check for base class mixin constructors
       if (base && base.$$includes)
       {
@@ -1555,7 +1564,7 @@ qx.Bootstrap.define("qx.Class",
           }
         }
       }
-      
+
       // check for direct mixin constructors
       if (mixins)
       {
@@ -1567,7 +1576,7 @@ qx.Bootstrap.define("qx.Class",
           }
         }
       }
-      
+
       return false;
     },
 

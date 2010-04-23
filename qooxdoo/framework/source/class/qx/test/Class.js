@@ -185,10 +185,9 @@ qx.Class.define("qx.test.Class",
       };
     },
 
-    /* disabled acc. to state of bug #1433
-    testMissingExtendKey : function()
+    testInvalidImplicitStatic : function()
     {
-      // missing "extend" key should cause an exception
+      // different error message if no "extend" key was configured
       if (this.isDebugOn())
       {
         this.assertException(function() {
@@ -198,17 +197,16 @@ qx.Class.define("qx.test.Class",
               qx.ui.core.MChildrenHandling
             ]
           });
-        }, Error, new RegExp('.*has to extend at least.*'));
+        }, Error, new RegExp('Assumed static class.*'));
       }
     },
-    */
 
     testSetting : function()
     {
       qx.Class.define("qx.Setting1", { settings : { "qx.juhu" : "kinners" } });
 
       this.assertEquals("kinners", qx.core.Setting.get("qx.juhu"));
-      
+
       qx.Class.undefine("qx.Setting1");
     },
 
@@ -247,7 +245,7 @@ qx.Class.define("qx.test.Class",
         },
         Error, "Forbidden variant");
       };
-      
+
       qx.Class.undefine("qx.Variant1");
     },
 
@@ -332,26 +330,26 @@ qx.Class.define("qx.test.Class",
     {
       this.assertTrue(qx.Class.isSubClassOf(qx.ui.core.Widget, qx.core.Object));
     },
-    
-    
+
+
     testClassUndefine : function() {
       qx.Class.define("qx.test.u.u.Undefine", {
         extend : qx.core.Object
       });
       this.assertNotUndefined(qx.test.u.u.Undefine);
-      
+
       qx.Class.undefine("qx.test.u.u.Undefine");
       this.assertUndefined(qx.test["u"]);
     },
-    
-    
-    testPatch : function() 
+
+
+    testPatch : function()
     {
       qx.Mixin.define("qx.MyMixin", {
         properties : {
           "property" : {init: "p"}
         },
-        
+
         members : {
           getP : function() {
             return "p";
@@ -366,19 +364,19 @@ qx.Class.define("qx.test.Class",
       qx.Class.patch(qx.MyClass, qx.MyMixin);
 
       var o = new qx.MyClass();
-      
+
       // just check of the properties are ok
       this.assertEquals("p", o.getProperty());
-      this.assertEquals("p", o.getP());      
-      
+      this.assertEquals("p", o.getP());
+
       // clean up
       o.dispose();
       qx.Class.undefine("qx.MyClass");
-      qx.Class.undefine("qx.MyMixin");      
+      qx.Class.undefine("qx.MyMixin");
     },
-    
-    
-    testPatchWithConstructor : function() 
+
+
+    testPatchWithConstructor : function()
     {
       qx.Mixin.define("qx.MyMixin", {
         construct : function() {
@@ -387,7 +385,7 @@ qx.Class.define("qx.test.Class",
         properties : {
           "property" : {init: "p"}
         },
-        
+
         members : {
           getP : function() {
             return this.__p;
@@ -402,24 +400,24 @@ qx.Class.define("qx.test.Class",
       qx.Class.patch(qx.MyClass, qx.MyMixin);
 
       var o = new qx.MyClass();
-      
+
       // just check of the properties are ok
       this.assertEquals("p", o.getProperty());
-      this.assertEquals("p", o.getP());      
-      
+      this.assertEquals("p", o.getP());
+
       // clean up
       o.dispose();
       qx.Class.undefine("qx.MyClass");
-      qx.Class.undefine("qx.MyMixin");      
+      qx.Class.undefine("qx.MyMixin");
     },
-    
-    
+
+
     testInclude : function() {
       qx.Mixin.define("qx.MyMixin", {
         properties : {
           "property" : {init: "p"}
         },
-        
+
         members : {
           getP : function() {
             return "p";
@@ -434,18 +432,18 @@ qx.Class.define("qx.test.Class",
       qx.Class.include(qx.MyClass, qx.MyMixin);
 
       var o = new qx.MyClass();
-      
+
       // just check of the properties are ok
       this.assertEquals("p", o.getProperty());
-      this.assertEquals("p", o.getP());      
-      
+      this.assertEquals("p", o.getP());
+
       // clean up
       o.dispose();
       qx.Class.undefine("qx.MyClass");
-      qx.Class.undefine("qx.MyMixin");      
+      qx.Class.undefine("qx.MyMixin");
     },
-    
-    
+
+
     testIncludeWithConstructor : function() {
       qx.Mixin.define("qx.MyMixin", {
         construct : function() {
@@ -454,7 +452,7 @@ qx.Class.define("qx.test.Class",
         properties : {
           "property" : {init: "p"}
         },
-        
+
         members : {
           getP : function() {
             return this.__p;
@@ -469,35 +467,35 @@ qx.Class.define("qx.test.Class",
       qx.Class.include(qx.MyClass, qx.MyMixin);
 
       var o = new qx.MyClass();
-      
+
       // just check of the properties are ok
       this.assertEquals("p", o.getProperty());
-      this.assertEquals("p", o.getP());      
-      
+      this.assertEquals("p", o.getP());
+
       // clean up
       o.dispose();
       qx.Class.undefine("qx.MyClass");
-      qx.Class.undefine("qx.MyMixin");      
+      qx.Class.undefine("qx.MyMixin");
     },
-    
-    
+
+
     "test: instantiate class in defer and access property" : function()
     {
       var self = this;
-      
+
       qx.Class.define("qx.DeferFoo", {
         extend: qx.core.Object,
         properties : {
-          juhu : {}          
+          juhu : {}
         },
         defer : function() {
           var df = new qx.DeferFoo();
-          
+
           df.setJuhu("23");
           self.assertEquals("23", df.getJuhu());
         }
       });
-      
+
       qx.Class.undefine("qx.DeferFoo");
     }
   }

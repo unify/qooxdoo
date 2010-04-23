@@ -16,17 +16,17 @@
      * Martin Wittemann (martinwittemann)
      * Sebastian Werner (wpbasti)
      * Jonathan Weiß (jonathan_rass)
-     * Christian Schmidt (chris_schmidt)
+     * Christian Hagendorn (chris_schmidt)
 
 ************************************************************************ */
 
 /**
  * A form widget which allows a single selection. Looks somewhat like
  * a normal button, but opens a list of items to select when clicking on it.
- * 
+ *
  * @childControl spacer {qx.ui.core.Spacer} flexible spacer widget
  * @childControl atom {qx.ui.basic.Atom} shows the text and icon of the content
- * @childControl arrow {qx.ui.basic.Image} shows the arrow to open the popup 
+ * @childControl arrow {qx.ui.basic.Image} shows the arrow to open the popup
  */
 qx.Class.define("qx.ui.form.SelectBox",
 {

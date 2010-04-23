@@ -13,7 +13,7 @@
      See the LICENSE file in the project's top-level directory for details.
 
    Authors:
-     * Christian Schmidt (chris_schmidt)
+     * Christian Hagendorn (chris_schmidt)
 
 ************************************************************************ */
 
@@ -29,7 +29,7 @@ qx.Class.define("inspector.components.InspectorModel",
 
   /**
    * Constructs the model.
-   * 
+   *
    * @param application {inspector.Application} the inspector application.
    */
   construct : function(application) {
@@ -50,7 +50,7 @@ qx.Class.define("inspector.components.InspectorModel",
   members :
   {
     /**
-     * {qx.core.ObjectRegestry} the instance to the object registry from the 
+     * {qx.core.ObjectRegestry} the instance to the object registry from the
      * inspected application.
      */
     __objectRegistry : null,
