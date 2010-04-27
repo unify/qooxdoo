@@ -459,6 +459,11 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
               if (!value) {
                 continue;
               }
+              
+              // ignore focus marker
+              if (name == "id" && value == "__elementToFocus__") {
+                continue;
+              }
 
               // Ignore qooxdoo attributes (for example $$hash)
               if (name.charAt(0) === "$") {
@@ -950,7 +955,15 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
      */
     __generateDefaultContent : function(value)
     {
-      // TODO need bogus node for Firefox 2.x
+      // bogus node for Firefox 2.x
+      var bogusNode = "";
+      if (qx.core.Variant.isSet("qx.client","gecko"))
+      {
+        if (qx.bom.client.Browser.VERSION <= 2) {
+          bogusNode += '<br _moz_editor_bogus_node="TRUE" _moz_dirty=""/>';
+        }
+      }
+      
       var zeroWidthNoBreakSpace = value.length == 0 ? "\ufeff" : "";
       var idForFontElement = qx.core.Variant.isSet("qx.client", "gecko|webkit") ? 'id="__elementToFocus__"' : '';
       
@@ -958,7 +971,8 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
                            '<span style="font-family:' +
                             this.getDefaultFontFamily() + '">' +
                            '<font ' + idForFontElement + ' size="' +
-                           this.getDefaultFontSize() +'">' + 
+                           this.getDefaultFontSize() +'">' +
+                           bogusNode + 
                            value + 
                            zeroWidthNoBreakSpace + 
                            '</font>' +
@@ -2327,6 +2341,16 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     _handleFocusEvent : function(e)
     {
       this.__storedSelectedHtml = null;
+      
+      if (qx.core.Variant.isSet("qx.client","gecko|webkit"))
+      {
+        // Remove element to focus, as the editor is focused for the first time
+        // and the element is not needed anymore.
+        var elementToFocus = this.getContentDocument().getElementById("__elementToFocus__");
+        if (elementToFocus) {
+          qx.bom.element.Attribute.reset(elementToFocus, "id");
+        }
+      }
 
       this.fireEvent("focused");
     },
@@ -2378,10 +2402,6 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       this.__mouseUpOnBody = true;
 
       this.__startExamineCursorContext();
-      
-      if (!this.__isContentAvailable()) {
-        this.__resetToDefaultContentAndSelect();
-      }
     },
 
 
@@ -2862,6 +2882,23 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     */
     
     /**
+     * Convenient function to select an element. The "set" method of qx.bom.Selection is not 
+     * sufficient here. It does select the element, but does not show the caret.
+     *
+     * @param element {Element} DOM element to select
+     */
+    _selectElement : function(element)
+    {
+      var selection = this.getContentWindow().getSelection();
+      var range =  this.getContentDocument().createRange();
+    
+      range.setStart(element, 0);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    },
+
+    
+    /**
      * Can be used to set the user focus to the content. Also used when the "TAB" key is used to 
      * tab into the component. This method is also called by the {@link qx.ui.embed.HtmlArea} widget. 
      * 
@@ -2872,23 +2909,22 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       "gecko" : function()
       {
         var contentDocument = this.getContentDocument();
-        contentDocument.documentElement.focus();
-        
         var elementToFocus = contentDocument.getElementById("__elementToFocus__");
-        if (elementToFocus)
-        {
-          qx.bom.element.Attribute.reset(elementToFocus, "id");
-          qx.bom.Selection.set(elementToFocus, 0, 0);
-        }
-        else {
+        
+        this.getContentWindow().focus();
+        qx.bom.Element.focus(this.getContentBody());
+
+        if (elementToFocus) {
+          this._selectElement(elementToFocus);
+        } else {
           this.__checkForContentAndSetDefaultContent();
         }
       },
       
       "webkit" : function()
       {
-        qx.bom.Element.focus(this.getContentBody());
         qx.bom.Element.focus(this.getContentWindow());
+        qx.bom.Element.focus(this.getContentBody());
         
         var elementToFocus = this.getContentDocument().getElementById("__elementToFocus__");
         if (elementToFocus) {
@@ -2935,14 +2971,16 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
     {
       "gecko" : function()
       {
-        var childElements = qx.dom.Hierarchy.getChildElements(this.getContentBody());
+        // important to check for all childNodes (text nodes inclusive) rather than only check for
+        // child element nodes
+        var childs = this.getContentBody().childNodes;
         
-        if (childElements.length == 0) {
+        if (childs.length == 0) {
           return false;
-        } else if (childElements.length == 1) {
+        } else if (childs.length == 1) {
           // consider a BR element with "_moz_dirty" attribute as empty content
-          return !(childElements[0] && qx.dom.Node.isNodeName(childElements[0], "br") && 
-                   qx.bom.element.Attribute.get(childElements[0], "_moz_dirty") != null);
+          return !(childs[0] && qx.dom.Node.isNodeName(childs[0], "br") && 
+                   qx.bom.element.Attribute.get(childs[0], "_moz_dirty") != null);
         } else {
           return true; 
         }
@@ -2950,13 +2988,15 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       
       "webkit" : function()
       {
-        var childElements = qx.dom.Hierarchy.getChildElements(this.getContentBody());
+        // important to check for all childNodes (text nodes inclusive) rather than only check for
+        // child element nodes
+        var childs = this.getContentBody().childNodes;
         
-        if (childElements.length == 0) {
+        if (childs.length == 0) {
           return false;
-        } else if (childElements.length == 1) {
+        } else if (childs.length == 1) {
           // consider a solely BR element as empty content
-          return !(childElements[0] && qx.dom.Node.isNodeName(childElements[0], "br"));
+          return !(childs[0] && qx.dom.Node.isNodeName(childs[0], "br"));
         } else {
           return true; 
         }
@@ -2964,13 +3004,15 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       
       "default" : function()
       {
-        var childElements = qx.dom.Hierarchy.getChildElements(this.getContentBody());
+        // important to check for all childNodes (text nodes inclusive) rather than only check for
+        // child element nodes
+        var childs = this.getContentBody().childNodes;
         
-        if (childElements.length == 0) {
+        if (childs.length == 0) {
           return false;
-        } else if (childElements.length == 1) {
-          return !(childElements[0] && qx.dom.Node.isNodeName(childElements[0], "p") && 
-                   childElements[0].firstChild == null); 
+        } else if (childs.length == 1) {
+          return !(childs[0] && qx.dom.Node.isNodeName(childs[0], "p") && 
+                   childs[0].firstChild == null); 
         } else {
           return true;
         }
@@ -2991,7 +3033,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       
         var elementToFocus = this.getContentDocument().getElementById("__elementToFocus__");
         qx.bom.element.Attribute.reset(elementToFocus, "id");
-        qx.bom.Selection.set(elementToFocus, 0, 0);
+        this._selectElement(elementToFocus);
       },
       
       "default" : function()
