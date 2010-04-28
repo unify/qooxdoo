@@ -167,8 +167,8 @@ qx.Class.define("qx.io.HttpRequest",
      */
     mime :
     {
-      check : [ "text/plain", "text/javascript", "application/json", "application/xml", "text/html" ],
-      init : "text/plain"
+      check : [ "application/json", "application/xml", "text/plain", "text/javascript", "text/html" ],
+      init : "application/json"
     },
 
 
@@ -387,7 +387,7 @@ qx.Class.define("qx.io.HttpRequest",
     getDuration : function() 
     {
       var req = this.__req;
-      return req ? req.getDuration() : null,
+      return req ? req.getDuration() : null;
     },
 
 
