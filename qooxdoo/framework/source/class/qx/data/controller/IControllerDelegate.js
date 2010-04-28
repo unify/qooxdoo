@@ -33,7 +33,7 @@ qx.Interface.define("qx.data.controller.IControllerDelegate",
   members :
   {
     /**
-     * Gives the user the opertunity to set individual styles and properties
+     * Gives the user the opportunity to set individual styles and properties
      * on the by the controller created widgets.
      *
      * @param item {var} Item to modify.
@@ -75,7 +75,7 @@ qx.Interface.define("qx.data.controller.IControllerDelegate",
      *
      * @param controller {var} The currently used controller.
      * @param item {qx.ui.core.Widget} The created and used item.
-     * @param id {number} The id for the binding.
+     * @param id {Number} The id for the binding.
      */
     bindItem : function(controller, item, id) {}
   }

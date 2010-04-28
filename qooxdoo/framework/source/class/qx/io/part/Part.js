@@ -107,8 +107,13 @@ qx.Bootstrap.define("qx.io.part.Part",
     preload : function(callback, self) {
       // Just do nothing because you can not preload regular parts.
       // Also, loading the part here is not a good idea beacue it could break
-      // the load order of the packages if someone uses preload right after loading
-      // another part.
+      // the load order of the packages if someone uses preload right after
+      // loading another part. So we just invoke the callback async.
+      if (callback) {
+        window.setTimeout(function() {
+          callback.call(self, this);
+        }, 0);
+      }
     },
 
 

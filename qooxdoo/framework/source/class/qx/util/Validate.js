@@ -51,11 +51,8 @@
  * Because the methods without the check prefix return a validation method,
  * the function must be called at the property definition. So don't forget the
  * ending brackets for those methods without parameters!
- * For the right usage, take a additionally look at the documentation of the
+ * For the correct usage, take an additional look at the documentation of the
  * {@link qx.core.Property} class.
- *
- * @experimental Used as a base for the data binding. Perhaps the API can change
- * during the development process of the data binding components.
  */
 qx.Class.define("qx.util.Validate",
 {

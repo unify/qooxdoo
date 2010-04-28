@@ -600,6 +600,8 @@ qx.Class.define("playground.Application",
 
       // build the code to run
       var code = this.__editor.getCode();
+      // special replacement for unicode "zero width space" [BUG #3635]
+      code = code.replace("\u200b", "");
       code = 'this.info("' + this.tr("Starting application").toString() +
         " '" + this.getName() + "'" + ' ...");\n' +
         (code || "") +
