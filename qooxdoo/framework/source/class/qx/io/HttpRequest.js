@@ -209,8 +209,8 @@ qx.Class.define("qx.io.HttpRequest",
      */
     auth :
     {
-      check : [ "basic" ],
-      nullable : true
+      check : [ "http", "basic" ],
+      init : "http"
     },
 
 
@@ -536,9 +536,6 @@ qx.Class.define("qx.io.HttpRequest",
       if (this.getRefresh()) {
         req.setRequestHeader("If-Modified-Since",  qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT" );
       }
-
-      // Set header so the called script knows that it's an XMLHttpRequest
-      req.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
       // Set content type to post data type
       if (this.getMethod() === "POST") {
