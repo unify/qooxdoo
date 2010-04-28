@@ -205,16 +205,6 @@ qx.Class.define("qx.io.HttpRequest",
 
 
     /**
-     * Authentification method to use.
-     */
-    auth :
-    {
-      check : [ "http", "basic" ],
-      init : "http"
-    },
-
-
-    /**
      * Number of milliseconds before the request is being timed out.
      */
     timeout :
@@ -505,19 +495,6 @@ qx.Class.define("qx.io.HttpRequest",
       req.onerror = qx.lang.Function.bind(this.__onerror, this);
       req.onabort = qx.lang.Function.bind(this.__onabort, this);
 
-      // Authentification
-      var username = this.getUsername();
-      var password = this.getPassword();
-
-      if (this.getAuth() == "basic")
-      {
-        // Add headers
-        req.setRequestHeader('Authorization', 'Basic ' + qx.util.Base64.encode(username + ':' + password));
-
-        // Reset them afterwards
-        username = password = null;
-      }
-
       // Read url
       var url = this.getUrl();
 
@@ -525,7 +502,7 @@ qx.Class.define("qx.io.HttpRequest",
       req.timeout = this.getTimeout();
 
       // Open request
-      req.open(this.getMethod(), url, this.getAsync(), username, password);
+      req.open(this.getMethod(), url, this.getAsync(), this.getUsername(), this.getPassword());
 
       // Add cache control hint
       if (!this.getCache()) {
