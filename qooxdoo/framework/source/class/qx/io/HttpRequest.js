@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2010 Deutsche Telekom AG, http://www.telekom.com
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -18,17 +19,16 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL - NOT READY FOR PRODUCTION
- *
  * A more comfortable HTTP request object than the native one under
  * {@link qx.bom.Request}.
  *
  * Converts the whole communication into a qooxdoo style class with
  * real properties. The class also fires events to allow easy access
  * to status changes.
- *
- * Automatically adds a few HTTP headers to requests depending on
- * the configuration.
+ * 
+ * Caution: This class automatically disposes itself after 
+ * the load/error/abort/timeout events have been fired. Access to request specific
+ * properties is only possible during event listeners and not afterwards
  */
 qx.Class.define("qx.io.HttpRequest",
 {
@@ -87,8 +87,8 @@ qx.Class.define("qx.io.HttpRequest",
     /** Fires when the request change its state, data field contains the state. */
     "change" : "qx.event.type.Data",
 
-    /** Fires when the request reached the timeout limit. */
-    "timeout" : "qx.event.type.Event",
+    /** Fires when the request reached the timeout limit. Contains the duration at which the timeout was fired. */
+    "timeout" : "qx.event.type.Data",
 
     /** Fires when the request was completed successfully. */
     "load" : "qx.event.type.Event",
@@ -438,6 +438,8 @@ qx.Class.define("qx.io.HttpRequest",
         return false;
       }
 
+      // Hint: modified might be 'null' but as 'null' values are never stored it is a comparison
+      // of 'null' and 'undefined' which is false when using the identity operator.
       var modified = req.getResponseHeader("Last-Modified");
       return req.status === 304 || qx.io.HttpRequest.__modified[this.getUrl()] === modified;
     },
@@ -492,14 +494,12 @@ qx.Class.define("qx.io.HttpRequest",
      * * 3 = loading result
      * * 4 = done
      *
-     * @return {Integer} Ready state of the request
+     * @return {Integer|null} Ready state of the request
      */
     getReadyState : function()
     {
       var req = this.__req;
-      if (req) {
-        return req.readyState;
-      }
+      return req ? req.readyState : null;
     },
 
 
@@ -545,8 +545,14 @@ qx.Class.define("qx.io.HttpRequest",
       }
 
       // Add modified since hint
-      if (this.getRefresh()) {
-        req.setRequestHeader("If-Modified-Since", qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT");
+      if (this.getRefresh()) 
+      {
+        var since = qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT";       
+        if (qx.core.Variant.isSet("qx.debug", "on")) {
+          this.debug("Refresh if modified since: " + since);
+        }
+        
+        req.setRequestHeader("If-Modified-Since", since);
       }
 
       // Set content type to post data type
@@ -596,21 +602,8 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onchange : function()
-    {
-      // Fire user event
+    __onchange : function() {
       this.fireDataEvent("change", this.getReadyState());
-
-      // Store modification date
-      // It is important that this is stored after the user event.
-      // Otherwise the modification field gets written to early.
-      if (this.getRefresh() && this.getReadyState() === 4 && this.isSuccessful())
-      {
-        var modified = this.getResponseHeader("Last-Modified");
-        if (modified) {
-          qx.io.HttpRequest.__modified[this.getUrl()] = modified;
-        }
-      }
     },
 
 
@@ -620,7 +613,7 @@ qx.Class.define("qx.io.HttpRequest",
      * @signature function()
      */
     __ontimeout : function() {
-      this.fireEvent("timeout");
+      this.fireDataEvent("timeout", this.getDuration());
     },
 
 
@@ -629,8 +622,24 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onload : function() {
+    __onload : function() 
+    {
+      // Load modification data before user fired event
+      if (this.getRefresh() && this.getReadyState() == 4 && this.isSuccessful()) 
+      {
+        var modified = this.getResponseHeader("Last-Modified");
+        var url = this.getUrl();
+      }
+      
       this.fireEvent("load");
+
+      // Store modification date
+      // It is important that this is stored after the user event.
+      // Otherwise the modification field gets written to early and every 
+      // request is reported as being non-modified in application code.
+      if (modified) {
+        qx.io.HttpRequest.__modified[url] = modified;
+      }
     },
 
 
