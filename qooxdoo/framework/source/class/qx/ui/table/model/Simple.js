@@ -100,7 +100,7 @@ qx.Class.define("qx.ui.table.model.Simple",
 
 
     /**
-     * Default descendeing sort method to use if no custom method has been
+     * Default descending sort method to use if no custom method has been
      * provided.
      *
      * @param row1 {var} first row
@@ -189,9 +189,9 @@ qx.Class.define("qx.ui.table.model.Simple",
 
 
     /**
-     * Gets the whole data as array of maps.
+     * Gets the whole data as an array of maps.
      *
-     * @note Individual items are get using getRowDataAsMap().
+     * Note: Individual items are retrieved by {@link #getRowDataAsMap}.
      */
     getDataAsMapArray: function() {
       var len = this.getRowCount();
@@ -348,7 +348,7 @@ qx.Class.define("qx.ui.table.model.Simple",
      *   row2.
      *
      *   If this parameter is a Map, it shall have two properties: "ascending"
-     *   and "descending". The property valuee of each is a comparator
+     *   and "descending". The property value of each is a comparator
      *   function, as described above.
      *
      *   If only the "ascending" function is provided (i.e. this parameter is

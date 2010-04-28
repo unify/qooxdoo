@@ -209,7 +209,6 @@ qx.Class.define("demobrowser.DemoBrowser",
 
     this.__menuElements =
     [
-      this._runbutton,
       this.__sobutt,
       this.__playgroundButton,
       this.__viewPart,
@@ -455,7 +454,7 @@ qx.Class.define("demobrowser.DemoBrowser",
       if (qx.core.Variant.isSet("qx.contrib", "off"))
       {
         var themeMenu = new qx.ui.menu.Menu;
-        
+
         this.__themeMenu = themeMenu;
 
         var t1 = new qx.ui.menu.RadioButton("Modern Theme");
@@ -1003,7 +1002,7 @@ qx.Class.define("demobrowser.DemoBrowser",
         if (qx.core.Variant.isSet("qx.contrib", "off")) {
           selectedVersion = true;
         }
-        
+
         if (tags != null) {
           for (var j = 0; j < tags.length; j++) {
             inTags = !!tags[j].match(searchRegExp);
@@ -1324,10 +1323,10 @@ qx.Class.define("demobrowser.DemoBrowser",
      * Diables all menu buttons which functionality only works with a selected
      * demo.
      */
-    disableMenuButtons : function() 
+    disableMenuButtons : function()
     {
-      var elements = this.__menuElements;      
-      for(i=0; i<elements.length; i++) {
+      var elements = this.__menuElements;
+      for(var i=0; i<elements.length; i++) {
         elements[i].setEnabled(false);
       }
     },
@@ -1337,8 +1336,8 @@ qx.Class.define("demobrowser.DemoBrowser",
      * demo.
      */
     enableMenuButtons : function() {
-      var elements = this.__menuElements;      
-      for(i=0; i<elements.length; i++) {
+      var elements = this.__menuElements;
+      for(var i=0; i<elements.length; i++) {
         elements[i].setEnabled(true);
       }
     },
