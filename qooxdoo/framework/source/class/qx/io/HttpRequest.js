@@ -429,19 +429,19 @@ qx.Class.define("qx.io.HttpRequest",
     /**
      * Whether the currently running or finished request returns modified results.
      *
-     * @return {Boolean} Returns <code>true</code> when the request contains modified results.
+     * @return {Boolean|null} Returns <code>true</code> when the request contains modified results. 
+     *     Returns <code>null</code>when the request is not yet ready.
      */
-    isNotModified : function()
+    isModified : function()
     {
       var req = this.__req;
       if (!req) {
-        return false;
+        return null;
       }
 
       // Hint: modified might be 'null' but as 'null' values are never stored it is a comparison
       // of 'null' and 'undefined' which is false when using the identity operator.
-      var modified = req.getResponseHeader("Last-Modified");
-      return req.status === 304 || qx.io.HttpRequest.__modified[this.getUrl()] === modified;
+      return !(req.status === 304 || req.getResponseHeader("Last-Modified") === qx.io.HttpRequest.__modified[this.getUrl()]);
     },
 
 
