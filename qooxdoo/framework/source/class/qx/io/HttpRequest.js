@@ -209,8 +209,8 @@ qx.Class.define("qx.io.HttpRequest",
      */
     auth :
     {
-      check : [ "http", "basic" ],
-      init : "http"
+      check : [ "basic" ],
+      nullable : true
     },
 
 
@@ -390,6 +390,18 @@ qx.Class.define("qx.io.HttpRequest",
     */
 
     /**
+     * Returns the duration the request needed to communicate to the server
+     * 
+     * @return {Integer|null} The duration in milliseconds or <code>null</code> if data is not available (yet)
+     */
+    getDuration : function() 
+    {
+      var req = this.__req;
+      return req ? req.getDuration() : null,
+    },
+
+
+    /**
      * Whether the currently running or finished request returns modified results.
      *
      * @return {Boolean} Returns <code>true</code> when the request contains modified results.
@@ -397,7 +409,6 @@ qx.Class.define("qx.io.HttpRequest",
     isNotModified : function()
     {
       var req = this.__req;
-
       if (!req) {
         return false;
       }
@@ -597,11 +608,18 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __ontimeout : qx.event.GlobalError.observeMethod(function()
-    {
-      if (this.hasListener("timeout")) {
-        this.fireEvent("timeout");
-      }
+    __ontimeout : qx.event.GlobalError.observeMethod(function() {
+      this.fireEvent("timeout");
+    }),
+
+
+    /**
+     * Internal load listener
+     *
+     * @signature function()
+     */
+    __onload : qx.event.GlobalError.observeMethod(function() {
+      this.fireEvent("load");
     }),
 
 
@@ -610,37 +628,18 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onload : qx.event.GlobalError.observeMethod(function()
-    {
-      if (this.hasListener("load")) {
-        this.fireEvent("load");
-      }
+    __onerror : qx.event.GlobalError.observeMethod(function() {
+      this.fireEvent("error");
     }),
 
 
     /**
-     * Internal timeout listener
+     * Internal abort listener
      *
      * @signature function()
      */
-    __onerror : qx.event.GlobalError.observeMethod(function()
-    {
-      if (this.hasListener("error")) {
-        this.fireEvent("error");
-      }
-    }),
-
-
-    /**
-     * Internal timeout listener
-     *
-     * @signature function()
-     */
-    __onabort : qx.event.GlobalError.observeMethod(function()
-    {
-      if (this.hasListener("abort")) {
-        this.fireEvent("abort");
-      }
+    __onabort : qx.event.GlobalError.observeMethod(function() {
+      this.fireEvent("abort");
     })
   },
 

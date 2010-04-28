@@ -359,6 +359,16 @@ qx.Class.define("qx.bom.Request",
     },
 
 
+    /**
+     * Returns the duration the request needed for completion
+     * 
+     * @return {Integer|null} The duration in milliseconds or <code>null</code> if data is not available (yet)
+     */
+    getDuration : function() {
+      return this.__duration;
+    },
+
+
 
 
 
@@ -591,6 +601,13 @@ qx.Class.define("qx.bom.Request",
     }),
 
 
+    /** {Integer} Start point of communication in milliseconds */
+    __start : null,
+
+    /** {Integer} Duration of communication in milliseconds */
+    __duration : null,
+
+
     /**
      * Internal helper to "fire" the onreadystatechange function
      *
@@ -598,20 +615,28 @@ qx.Class.define("qx.bom.Request",
      */
     __fireReadyStateChange : function()
     {
+      var readyState = this.readyState;
+  
       // BUGFIX: Some browsers (Internet Explorer, Gecko) fire OPEN readystate twice
-      if (this.__lastFired === this.readyState) {
+      if (this.__lastFired === readyState) {
         return;
+      }
+
+      if (readyState === 1) {
+        this.__start = (new Date).valueOf();
       }
 
       // Execute onreadystatechange
       this.onreadystatechange();
 
       // Store last fired
-      this.__lastFired = this.readyState;
+      this.__lastFired = readyState;
 
       // Fire other events
-      if (this.readyState === 4)
+      if (readyState === 4)
       {
+        this.__duration = (new Date).valueOf() - this.__start;
+  
         if (this.isSuccessful()) {
           this.onload();
         } else {
