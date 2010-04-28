@@ -237,18 +237,18 @@ qx.Class.define("qx.bom.Request",
 
       // Prepare listeners
       this.__stateListener = qx.lang.Function.bind(this.__onNativeReadyStateChange, this);
-      this.__timeoutListener = qx.lang.Function.bind(this.__onNativeTimeout, this);
 
       // Register native listeners
-      this.__xmlhttp.onreadystatechange = this.__stateListener;
+      var xmlhttp = this.__xmlhttp;
+      xmlhttp.onreadystatechange = this.__stateListener;
 
       // Natively open request
       if (arguments.length > 4) {
-        this.__xmlhttp.open(method, url, async, username, password);
+        xmlhttp.open(method, url, async, username, password);
       } else if (arguments.length > 3) {
-        this.__xmlhttp.open(method, url, async, username);
+        xmlhttp.open(method, url, async, username);
       } else {
-        this.__xmlhttp.open(method, url, async);
+        xmlhttp.open(method, url, async);
       }
 
       // BUGFIX: Gecko - missing readystatechange calls in synchronous requests
@@ -290,11 +290,16 @@ qx.Class.define("qx.bom.Request",
         this.__xmlhttp.setRequestHeader(label, headers[label]);
       }
 
+      // Remember time of starting the request
+      this.__start = (new Date).valueOf();
+
       // Attach timeout
-      if (this.timeout != null && this.timeout > 0) {
+      if (this.timeout != null && this.timeout > 0) 
+      {
+        this.__timeoutListener = qx.lang.Function.bind(this.__onNativeTimeout, this);
         this.__timeoutHandle = window.setTimeout(this.__timeoutListener, this.timeout);
       }
-
+  
       // Finally send using native method
       this.__xmlhttp.send(data);
 
@@ -620,10 +625,6 @@ qx.Class.define("qx.bom.Request",
       // BUGFIX: Some browsers (Internet Explorer, Gecko) fire OPEN readystate twice
       if (this.__lastFired === readyState) {
         return;
-      }
-
-      if (readyState === 1) {
-        this.__start = (new Date).valueOf();
       }
 
       // Execute onreadystatechange

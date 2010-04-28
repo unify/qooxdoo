@@ -49,7 +49,7 @@ qx.Class.define("qx.io.HttpRequest",
   {
     this.base(arguments);
 
-    // Header cache
+    // Initialize header cache
     this.__headers = {};
 
     // Add url
@@ -113,35 +113,15 @@ qx.Class.define("qx.io.HttpRequest",
   properties :
   {
     /**
-     * Allow the request to be successful only if the response has changed since
-     * the last request. This is done by checking the Last-Modified header. Default
-     * value is false, ignoring the header.
+     * Target url to issue the request to.
      */
-    refresh :
+    url :
     {
-      check : "Boolean",
-      init : false
+      check : "String",
+      init : ""
     },
 
-
-    /**
-     * Data which should be send to the server.
-     *
-     * Supported types:
-     *
-     * String => Encode data using UTF-8 for transmission.
-     *
-     * Document => Serialize data into a namespace well-formed XML document and
-     *   encoded using the encoding given by data.xmlEncoding, if specified, or
-     *   UTF-8 otherwise. Or, if this fails because the Document cannot be
-     *   serialized act as if data is null.
-     */
-    data :
-    {
-      nullable : true
-    },
-
-
+  
     /**
      * Determines what type of request to issue (GET or POST).
      */
@@ -160,25 +140,43 @@ qx.Class.define("qx.io.HttpRequest",
       check : "Boolean",
       init : true
     },
-
-
+    
+    
     /**
-     * Response mimetype
+     * Data which should be send to the server.
+     *
+     * Supported types:
+     *
+     * String => Encode data using UTF-8 for transmission.
+     *
+     * Document => Serialize data into a namespace well-formed XML document and
+     *   encoded using the encoding given by data.xmlEncoding, if specified, or
+     *   UTF-8 otherwise. Or, if this fails because the Document cannot be
+     *   serialized act as if data is null.
      */
-    mime :
+    data :
     {
-      check : [ "application/json", "application/xml", "text/plain", "text/javascript", "text/html" ],
-      init : "application/json"
+      nullable : true
     },
 
 
-    /**
-     * Target url to issue the request to.
+    /** 
+     * Request mime type
      */
-    url :
+    requestType :
     {
-      check : "String",
-      init : ""
+      check : ["application/x-www-form-urlencoded", "application/json", "application/xml", "text/plain", "text/javascript", "text/html" ],
+      init : "application/x-www-form-urlencoded"
+    },
+        
+
+    /**
+     * Response mime type
+     */
+    responseType :
+    {
+      check : [ "application/json", "application/xml", "text/plain", "text/javascript", "text/html" ],
+      init : "application/json"
     },
 
 
@@ -206,18 +204,31 @@ qx.Class.define("qx.io.HttpRequest",
 
     /**
      * Number of milliseconds before the request is being timed out.
+     * 
+     * Defaults to 10 seconds
      */
     timeout :
     {
       check : "Integer",
-      nullable : true
+      nullable : false,
+      init : 10000
     },
 
 
     /**
-     * Setting the value to <i>false</i> adds a parameter "nocache" to the request
-     * with a value of the current time. Setting the value to <i>false</i> removes
-     * the parameter.
+     * Allow the request to be successful only if the response has changed since
+     * the last request. This is done by checking the Last-Modified header. Default
+     * value is false, ignoring the header.
+     */
+    refresh :
+    {
+      check : "Boolean",
+      init : false
+    },
+
+
+    /**
+     * Controls whether cached data is OK
      */
     cache :
     {
@@ -237,7 +248,7 @@ qx.Class.define("qx.io.HttpRequest",
 
   members :
   {
-    /** {qx.bom.Request} Contains the low-level request instance */
+    /** {qx.bom.Request} Holds the low-level request instance */
     __req : null,
 
     /** {Map} Stores the headers send for the request */
@@ -253,12 +264,36 @@ qx.Class.define("qx.io.HttpRequest",
 
     /**
      * Assigns a label/value pair to the header to be sent with a request
+     * 
+     * Please do prefer properties over headers if possible. The header labels
+     * "Cache-Control", "If-Modified-Since", "Content-Type" and "Accept" are blocked
+     * here for example.
      *
      * @param label {String} Name of the header label
      * @param value {String} Value of the header field
      * @return {void}
      */
-    setRequestHeader : function(label, value) {
+    setRequestHeader : function(label, value) 
+    {
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (label == "Cache-Control") {
+          throw new Error("Configured 'Cache-Control' through headers. Please use setCache() instead!");
+        }
+
+        if (label == "If-Modified-Since") {
+          throw new Error("Configured 'If-Modified-Since' through headers. Please use setRefresh() instead!");
+        }
+        
+        if (label == "Content-Type") {
+          throw new Error("Configured 'Content-Type' through headers. Please use setRequestType() instead!");
+        }
+
+        if (label == "Accept") {
+          throw new Error("Configured 'Accept' through headers. Please use setResponseType() instead!");
+        }
+      }
+        
       this.__headers[label] = value;
     },
 
@@ -511,21 +546,21 @@ qx.Class.define("qx.io.HttpRequest",
 
       // Add modified since hint
       if (this.getRefresh()) {
-        req.setRequestHeader("If-Modified-Since",  qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT" );
+        req.setRequestHeader("If-Modified-Since", qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT");
       }
 
       // Set content type to post data type
       if (this.getMethod() === "POST") {
-        req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        req.setRequestHeader("Content-Type", this.getRequestType());
       }
 
       // Set accept header to selected mimetype
-      req.setRequestHeader("Accept", this.getMime());
+      req.setRequestHeader("Accept", this.getResponseType());
 
       // Synchronize headers
       var headers = this.__headers;
-      for (var name in headers) {
-        req.setRequestHeader(name, headers[name]);
+      for (var label in headers) {
+        req.setRequestHeader(name, headers[label]);
       }
 
       // Finally send request
@@ -542,6 +577,8 @@ qx.Class.define("qx.io.HttpRequest",
     {
       if (this.__req) {
         this.__req.abort();
+      } else if (qx.core.Variant.isSet("qx.debug", "on")) {
+        throw new Error("Not able to abort a non-running request.");
       }
     },
 
@@ -559,7 +596,7 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onchange : qx.event.GlobalError.observeMethod(function()
+    __onchange : function()
     {
       // Fire user event
       this.fireDataEvent("change", this.getReadyState());
@@ -574,7 +611,7 @@ qx.Class.define("qx.io.HttpRequest",
           qx.io.HttpRequest.__modified[this.getUrl()] = modified;
         }
       }
-    }),
+    },
 
 
     /**
@@ -582,9 +619,9 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __ontimeout : qx.event.GlobalError.observeMethod(function() {
+    __ontimeout : function() {
       this.fireEvent("timeout");
-    }),
+    },
 
 
     /**
@@ -592,9 +629,9 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onload : qx.event.GlobalError.observeMethod(function() {
+    __onload : function() {
       this.fireEvent("load");
-    }),
+    },
 
 
     /**
@@ -602,9 +639,9 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onerror : qx.event.GlobalError.observeMethod(function() {
+    __onerror : function() {
       this.fireEvent("error");
-    }),
+    },
 
 
     /**
@@ -612,9 +649,9 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onabort : qx.event.GlobalError.observeMethod(function() {
+    __onabort : function() {
       this.fireEvent("abort");
-    })
+    }
   },
 
 
@@ -627,7 +664,10 @@ qx.Class.define("qx.io.HttpRequest",
 
   destruct : function()
   {
-    this._disposeObjects("__req");
-    this.__headers = null;
+    if (this.__req)
+    {
+      this.__req.dispose();
+      this.__req = null;
+    }
   }
 });
