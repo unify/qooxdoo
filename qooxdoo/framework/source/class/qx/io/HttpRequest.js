@@ -70,7 +70,37 @@ qx.Class.define("qx.io.HttpRequest",
   statics :
   {
     /** Cached for modification dates of already loaded URLs */
-    __modified : {}
+    __modified : {},
+
+    /**
+     * Syncs a modification date from e.g. a business object
+     * 
+     * This is especially useful when having implemented some kind of caching
+     * using localStorage, sessionStorage etc. in such an layer. In this case
+     * it might useful to bring it in sync with this class to omit 
+     * unnecessary data transfers.
+     * 
+     * @param url {String} Any valid URL
+     * @param modification {String} A modification data as send with the 
+     *   "Last-Modified" header by the server.
+     */
+    sync : function(url, modification) {
+      this.__modified[url] = modification;
+    },
+    
+    
+    /**
+     * Clears the modification data stored for the given URL. 
+     * 
+     * This is especially useful when having implemented some kind of caching
+     * using localStorage, sessionStorage etc. in e.g. an business object. In this case
+     * it might useful to bring the caching layer in sync with the request
+     * class. For example when clearing the cache in the business object this
+     * class also should be informed as no data is anymore available.
+     */ 
+    clear : function(url) {
+      delete this.__modified[url];
+    }
   },
 
 
@@ -548,10 +578,6 @@ qx.Class.define("qx.io.HttpRequest",
       if (this.getRefresh()) 
       {
         var since = qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT";       
-        if (qx.core.Variant.isSet("qx.debug", "on")) {
-          this.debug("Refresh if modified since: " + since);
-        }
-        
         req.setRequestHeader("If-Modified-Since", since);
       }
 
