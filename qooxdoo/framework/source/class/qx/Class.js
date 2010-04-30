@@ -1190,6 +1190,7 @@ qx.Bootstrap.define("qx.Class",
        {
          name         : "string",   // String
          dispose      : "boolean",  // Boolean
+         dereference  : "boolean",  // Boolean
          inheritable  : "boolean",  // Boolean
          nullable     : "boolean",  // Boolean
          themeable    : "boolean",  // Boolean
