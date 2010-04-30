@@ -724,11 +724,6 @@ qx.Class.define("qx.core.Object",
         clazz = clazz.superclass;
       }
 
-      // remove all property references for IE6 and FF2
-      if (this.__removePropertyReferences) {
-        this.__removePropertyReferences();
-      }
-
       // Additional checks
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
@@ -769,28 +764,6 @@ qx.Class.define("qx.core.Object",
       }
     },
 
-
-    /**
-     * Possible reference to special method for IE6 and FF2
-     * {@link #__removePropertyReferencesOld}
-     *
-     * @signature function()
-     */
-    __removePropertyReferences : null,
-
-
-    /**
-     * Special method for IE6 and FF2 which removes all $$user_ references
-     * set up by the properties.
-     * @signature function()
-     */
-    __removePropertyReferencesOld : function() {
-      // remove all property references
-      var properties = qx.Class.getProperties(this.constructor);
-      for (var i = 0, l = properties.length; i < l; i++) {
-        delete this["$$user_" + properties[i]];
-      }
-    },
 
 
     /*
@@ -885,16 +858,6 @@ qx.Class.define("qx.core.Object",
     if (qx.core.Variant.isSet("qx.debug", "on")) {
       qx.Class.include(statics, qx.core.MAssert);
     }
-
-    // special treatment for IE6 and FF2
-    var ie6 = navigator.userAgent.indexOf("MSIE 6.0") != -1;
-    var ff2 = navigator.userAgent.indexOf("rv:1.8.1") != -1;
-
-    // patch the remove property method for IE6 and FF2
-    if (ie6 || ff2) {
-      proto.__removePropertyReferences = proto.__removePropertyReferencesOld;
-      // debugger;
-    }
   },
 
 
@@ -922,33 +885,5 @@ qx.Class.define("qx.core.Object",
 
     // Cleanup user data
     this.__userData = null;
-
-    // Cleanup properties
-    // TODO: Is this really needed for non DOM/JS links?
-    var clazz = this.constructor;
-    var properties;
-    var store = qx.core.Property.$$store;
-    var storeUser = store.user;
-    var storeTheme = store.theme;
-    var storeInherit = store.inherit;
-    var storeUseinit = store.useinit;
-    var storeInit = store.init;
-
-    while(clazz)
-    {
-      properties = clazz.$$properties;
-      if (properties)
-      {
-        for (var name in properties)
-        {
-          // dispose is @deprecated with 1.1
-          if (properties[name].dispose || properties[name].dereference) {
-            this[storeUser[name]] = this[storeTheme[name]] = this[storeInherit[name]] = this[storeUseinit[name]] = this[storeInit[name]] = undefined;
-          }
-        }
-      }
-
-      clazz = clazz.superclass;
-    }
   }
 });
