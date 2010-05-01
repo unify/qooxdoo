@@ -167,7 +167,7 @@ qx.Class.define("qx.io.remote.transport.XmlHttp",
       // --------------------------------------
       //   Adding URL parameters
       // --------------------------------------
-      var vParameters = this.getParameters(false);
+      var vParameters = this.getParameters();
       var vParametersList = [];
 
       for (var vId in vParameters)
@@ -195,7 +195,7 @@ qx.Class.define("qx.io.remote.transport.XmlHttp",
       // --------------------------------------------------------
       if (this.getData() === null)
       {
-        var vParameters = this.getParameters(true);
+        var vParameters = this.getParameters();
         var vParametersList = [];
 
         for (var vId in vParameters)
