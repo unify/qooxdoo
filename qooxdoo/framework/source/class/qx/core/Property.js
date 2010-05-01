@@ -205,13 +205,16 @@ qx.Bootstrap.define("qx.core.Property",
     __getter : {},
     __refresher : {},
     
-    __refreshList : {},
+    __refreshList : null,
         
     
   
     mark : function(obj)
     {
       var db = this.__refreshList;
+      if (!db) {
+        db = this.__refreshList = {};
+      }
       var hash = obj.$$hash;      
       if (db[hash]) {
         return;
@@ -219,10 +222,13 @@ qx.Bootstrap.define("qx.core.Property",
       
       var clazz = obj.constructor;
       var inheritables = clazz.$$inheritables || qx.Class.getInheritableProperties(clazz);
-      if (inheritables.length > 0) 
+      
+      // Loop is quite a hack to quickly check for length > 0
+      for (var prop in inheritables)
       {
         db[hash] = obj;
         qx.ui.core.queue.Manager.scheduleFlush("inheritance");
+        break;
       }
     },
     
@@ -231,13 +237,17 @@ qx.Bootstrap.define("qx.core.Property",
     {
       var start = new Date;
 
+      // Replace public list with new list while keeping current one in memory
       var db = this.__refreshList;
-      this.__refreshList = {};
+      this.__refreshList = null;
       
+      // Some shorthands for optimal performance
       var qxClass = qx.Class;
       var qxBootstrap = qx.Bootstrap;
       var getterDB = this.__getter;
       var refresherDB = this.__refresher;
+      
+      // Real work
       var obj, clazz, inheritables, parent, getter, prop, upname;
       for (var key in db) 
       {
@@ -273,7 +283,7 @@ qx.Bootstrap.define("qx.core.Property",
     
     __changeHelper : function(value, oldValue, config)
     {
-      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
+      this.debug("Change " + config.name + ": " + oldValue + " => " + value);
 
       // Call apply
       if (config.apply) {
