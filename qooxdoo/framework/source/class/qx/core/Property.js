@@ -422,18 +422,21 @@ qx.Bootstrap.define("qx.core.Property",
       */      
       
       var id = this.__propertyId++;
-      qx.log.Logger.debug(clazz, "Simple property: " + name + "[" + id + "]");
+      //qx.log.Logger.debug(clazz, "Simple property: " + name + "[" + id + "]");
       
       members["get" + up] = function() 
       {
+        var context = this;    
+        
         if (qx.core.Variant.isSet("qx.debug", "on")) 
         {
-          if (arguments.length != 0) {
-            throw new Error("Called get method of property " + name + " with too many arguments!")
+          if (arguments.length != 0) 
+          {
+            context.warn("Called get method of property " + name + " with too many arguments!");
+            context.trace();
           }
         }
          
-        var context = this;         
         var data = context.$$data;
         if (data) {
           var value = data[id];
@@ -477,18 +480,21 @@ qx.Bootstrap.define("qx.core.Property",
       
       members["set" + up] = function(value)
       {
+        var context = this;
+
         if (qx.core.Variant.isSet("qx.debug", "on")) 
         {
           if (arguments.length == 0) {
-            throw new Error("Called set method of property " + name + " with no arguments!")
+            throw new Error("Called set method of property " + name + " with no arguments!");
           }
           
-          if (arguments.length > 1) {
-            throw new Error("Called set method of property " + name + " with too many arguments!")
+          if (arguments.length > 1) 
+          {
+            context.warn("Called set method of property " + name + " with too many arguments!");
+            context.trace();
           }
         }
         
-        var context = this;
         var data = context.$$data;
         if (!data) {
           data = context.$$data = {};
@@ -509,14 +515,17 @@ qx.Bootstrap.define("qx.core.Property",
       
       members["reset" + up] = function()
       {
+        var context = this;
+
         if (qx.core.Variant.isSet("qx.debug", "on")) 
         {
-          if (arguments.length != 0) {
-            throw new Error("Called reset method of property " + name + " with too many arguments!")
+          if (arguments.length != 0) 
+          {
+            context.warn("Called reset method of property " + name + " with too many arguments!");
+            context.trace();
           }
         }
 
-        var context = this;
         var data = context.$$data;
         if (!data) {
           return;
@@ -608,18 +617,21 @@ qx.Bootstrap.define("qx.core.Property",
       {
         return function(newValue)
         {
+          var context = this;
+
           if (qx.core.Variant.isSet("qx.debug", "on")) 
           {
             if (arguments.length == 0) {
-              throw new Error("Called set method of property " + name + " with no arguments!")
+              throw new Error("Called set method of property " + name + " with no arguments!");
             }
             
-            if (arguments.length > 1) {
-              throw new Error("Called set method of property " + name + " with too many arguments!")
+            if (arguments.length > 1) 
+            {
+              context.warn("Called set method of property " + name + " with too many arguments!");
+              context.trace();
             }
           }
           
-          var context = this;
           var current = context.$$current;
           if (!current) {
             current = context.$$current = {};
@@ -670,14 +682,17 @@ qx.Bootstrap.define("qx.core.Property",
       {
         return function(value)
         {
+          var context = this;
+
           if (qx.core.Variant.isSet("qx.debug", "on")) 
           {
-            if (arguments.length != 0) {
-              throw new Error("Called reset method of property " + name + " with too many arguments!")
+            if (arguments.length != 0) 
+            {
+              context.warn("Called reset method of property " + name + " with too many arguments!");
+              context.trace();
             }
           }
           
-          var context = this;
           var current = context.$$current;
           if (!current) {
             return;
@@ -751,14 +766,17 @@ qx.Bootstrap.define("qx.core.Property",
       // Add getter
       members["get" + up] = function()
       {
+        var context = this;
+
         if (qx.core.Variant.isSet("qx.debug", "on")) 
         {
-          if (arguments.length != 0) {
-            throw new Error("Called get method of property " + name + " with too many arguments!")
+          if (arguments.length != 0) 
+          {
+            context.warn("Called get method of property " + name + " with too many arguments!");
+            context.trace();
           }
         }
                 
-        var context = this;
         var current = context.$$current;
         if (current) {
           var currentPrio = current[id];
@@ -858,7 +876,7 @@ qx.Bootstrap.define("qx.core.Property",
         members["is" + up] = members["get" + up];
       }
       
-      qx.log.Logger.debug(clazz, "Complex property: " + name + "[" + id + "](" + currentPriority + ")");
+      // qx.log.Logger.debug(clazz, "Complex property: " + name + "[" + id + "](" + currentPriority + ")");
       this.__propertyId += currentPriority;
     }
   }
