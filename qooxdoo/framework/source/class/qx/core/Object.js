@@ -21,7 +21,7 @@
 
 /* ************************************************************************
 
-#require(qx.core.Property)
+#require(qx.core.property.Simple)
 #require(qx.core.ObjectRegistry)
 #use(qx.event.dispatch.Direct)
 #use(qx.event.handler.Object)
@@ -171,6 +171,10 @@ qx.Class.define("qx.core.Object",
      */
     clone : function()
     {
+      // TODO PROPERTY
+      throw new Error("clone() needs reimplementation");
+      
+      /*
       var clazz = this.constructor
       var clone = new clazz;
       var props = qx.Class.getProperties(clazz);
@@ -189,6 +193,7 @@ qx.Class.define("qx.core.Object",
 
       // Return clone
       return clone;
+      */
     },
 
 

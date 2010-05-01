@@ -44,7 +44,7 @@
  * 
  * @internal
  */
-qx.Bootstrap.define("qx.core.PropertyGroup",
+qx.Bootstrap.define("qx.core.property.Group",
 {
 	statics:
 	{

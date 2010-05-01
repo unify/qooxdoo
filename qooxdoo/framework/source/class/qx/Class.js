@@ -23,8 +23,10 @@
 #require(qx.core.Setting)
 #require(qx.Interface)
 #require(qx.Mixin)
-#require(qx.core.Property)
-#require(qx.core.PropertyGroup)
+#require(qx.core.property.Core)
+#require(qx.core.property.Simple)
+#require(qx.core.property.Multi)
+#require(qx.core.property.Group)
 
 #use(qx.lang.Core)
 #use(qx.lang.Generics)
@@ -135,7 +137,7 @@ qx.Bootstrap.define("qx.Class",
      *       <tr><th>construct</th><td>Function</td><td>The constructor of the class.</td></tr>
      *       <tr><th>statics</th><td>Map</td><td>Map of static members of the class.</td></tr>
      *       <tr><th>properties</th><td>Map</td><td>Map of property definitions. For a description of the format of a property definition see
-     *           {@link qx.core.Property}.</td></tr>
+     *           {@link qx.core.property}.</td></tr>
      *       <tr><th>members</th><td>Map</td><td>Map of instance members of the class.</td></tr>
      *       <tr><th>settings</th><td>Map</td><td>Map of settings for this class. For a description of the format of a setting see
      *           {@link qx.core.Setting}.</td></tr>
@@ -1134,8 +1136,9 @@ qx.Bootstrap.define("qx.Class",
          patch = false;
        }
 
-       var Property = qx.core.Property;
-       var PropertyGroup = qx.core.PropertyGroup;
+       var SimpleProperty = qx.core.property.Simple;
+       var MultiProperty = qx.core.property.Multi;
+       var PropertyGroup = qx.core.property.Group;
        var eventData;
 
        for (var name in properties)
@@ -1172,10 +1175,10 @@ qx.Bootstrap.define("qx.Class",
          // need to attach the new style properties functions, directly.
          if (config.group) {
            PropertyGroup.add(clazz, name, config);
-         } else if (config.themeable || config.inheritable || config.deferredInit || qx.core.Property.RUNTIME_OVERRIDE) {  
-           Property.addComplex(clazz, name, config);
+         } else if (config.themeable || config.inheritable || config.deferredInit || qx.core.property.Core.RUNTIME_OVERRIDE) {  
+           MultiProperty.add(clazz, name, config);
          } else {
-           Property.addSimple(clazz, name, config);
+           SimpleProperty.add(clazz, name, config);
          }
        }
      },

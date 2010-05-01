@@ -118,7 +118,7 @@ qx.Class.define("qx.ui.core.queue.Manager",
           if (jobs.inheritance)
           {
             delete jobs.inheritance;
-            qx.core.Property.flush();
+            qx.core.property.Multi.flush();
           }
 
           // Defer layout as long as possible

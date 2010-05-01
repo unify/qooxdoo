@@ -72,7 +72,7 @@ qx.Bootstrap.define("qx.Mixin",
      *     </td></tr>
      *     <tr><th>members</th><td>Map</td><td>Map of members of the mixin.</td></tr>
      *     <tr><th>properties</th><td>Map</td><td>Map of property definitions. For a description of the format of a property definition see
-     *           {@link qx.core.Property}.</td></tr>
+     *           {@link qx.core.property}.</td></tr>
      *     <tr><th>events</th><td>Map</td><td>
      *         Map of events the mixin fires. The keys are the names of the events and the values are
      *         corresponding event type classes.
