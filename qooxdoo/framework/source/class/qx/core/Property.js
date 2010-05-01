@@ -331,7 +331,7 @@ qx.Bootstrap.define("qx.core.Property",
           // The parent may not support the property of the child. In this case
           // updating is not needed or even possible.
           if (parentInheritables[name]) {
-            obj.refreshProperty(name, parent.get(name));
+            obj["refresh" + qx.Bootstrap.firstUp(name)](parent.get(name));
           }
         }
       }

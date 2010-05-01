@@ -6,7 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
-     2009 Sebastian Werner, http://sebastian-werner.net
+     2009-2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -21,7 +21,7 @@
 ************************************************************************ */
 
 /**
- * Internal class for handling of dynamic properties. Should only be used
+ * Internal class for handling of dynamic property groups. Should only be used
  * through the methods provided by {@link qx.Class}.
  *
  * For a complete documentation of properties take a
@@ -48,22 +48,47 @@ qx.Bootstrap.define("qx.core.PropertyGroup",
 {
 	statics:
 	{
+	  /**
+	   * Adds a new property group to the given class
+	   * 
+	   * @param clazz {Class} Class to add the property group to
+	   * @param name {String} Name of property group
+	   * @param config {Map} Configuration map
+	   */
 		add : function(clazz, name, config)
 	  {
 	    var upname = qx.Bootstrap.firstUp(name);
 	    var members = clazz.prototype;
 
-	    // Cache often used data fields
+      this.__add(upname, config, members);
+	    if (config.themeable) {
+        this.__add(upname, config, members, "themed");
+	    }
+	  },
+
+
+	  /**
+	   * Helper method to attach group methods to the class
+	   * 
+	   * @param upname {String} Name of property (first character upper-case)
+	   * @param config {Map} Configuration map
+	   * @param members {Map} Member map to add to
+	   * @param type {String} One of "" or "Themed"
+	   */
+	  __add : function(upname, config, members, variant)
+	  {
 	    var shorthand = config.mode == "shorthand";
 	    var group = config.group;
 	    var length = group.length;
-
+	    var LangArray = qx.lang.Array;
+	    var upvariant = variant ? qx.Bootstrap.firstUp(variant) : "";
+	    
 	    // Attach setter
-	    members["set"+upname] = function()
+	    members["set" + upvariant + upname] = function(first)
 	    {
-	      var data = arguments[0] instanceof Array ? arguments[0] : qx.lang.Array.fromArguments(arguments);
+	      var data = first instanceof Array ? first : LangArray.fromArguments(arguments);
 	      if (shorthand) {
-	        data = qx.lang.Array.fromShortHand(data);
+	        data = LangArray.fromShortHand(data);
 	      }
 
 	      var map = {};
@@ -71,43 +96,16 @@ qx.Bootstrap.define("qx.core.PropertyGroup",
 	        map[group[i]] = data[i];
 	      }
 
-	      this.set(map);
+	      this.set(map, undefined, variant);
 	    };
 
 	    // Attach resetter
-	    members["reset"+upname] = function()
+	    members["reset" + upvariant + upname] = function()
 	    {
 	      for (var i=0; i<length; i++) {
-	        this.reset(group[i]);
+	        this.reset(group[i], variant);
 	      }        
-	    };
-
-	    if (config.themeable)
-	    {
-	      // Attach themed setter
-	      members["setThemed"+upname] = function()
-	      {
-		      var data = arguments[0] instanceof Array ? arguments[0] : qx.lang.Array.fromArguments(arguments);
-		      if (shorthand) {
-		        data = qx.lang.Array.fromShortHand(data);
-		      }
-
-	        var map = {};
-	        for (var i=0; i<length; i++) {
-	          map[group[i]] = data[i];
-	        }
-
-	        this.set(map, null, "setThemed");
-	      };
-
-	      // Attach themed resetter
-	      members["resetThemed"+upname] = function()
-	      {
-	        for (var i=0; i<length; i++) {
-	          this.reset(group[i], "resetThemed");
-	        }        
-	      };        
-	    }
-	  }		
+	    };	    
+	  }	  		
 	}
 });
