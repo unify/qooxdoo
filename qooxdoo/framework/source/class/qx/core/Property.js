@@ -199,47 +199,72 @@ qx.Bootstrap.define("qx.core.Property",
     },
 
 
-    /**
-     * Contains types from {@link #__checks} list which need to be disposed
-     */
-    __dispose :
-    {
-      "Node"      : true,
-      "Element"   : true,
-      "Document"  : true,
-      "Window"    : true,
-      "Event"     : true
-    },
-
-
     __propertyNameToId : {},
     __propertyId : 0,
 
-
-    /** {Map} Registers all instances which needs an update of their inherited properties. */
-    __structureChanges : {},
-
+    __getter : {},
+    __refresher : {},
     
-    /**
-     * Public accessor for refreshing properties on structural changes. Should be 
-     * called by all systems using inheritance and offering some kind of parent-children
-     * relation.
-     * 
-     * This method works asynchronously which basically means that updates to the
-     * inheritance are not reflected immediately but with a little offset. This is mainly
-     * for performance reasons as otherwise one may have multiple updates on the same
-     * instances when changes occour.
-     * 
-     * @param obj {qx.core.Object} Any valid qooxdoo object
-     */   
-    refresh : function(obj)
+    __refreshList : {},
+        
+    
+  
+    mark : function(obj)
     {
+      var db = this.__refreshList;
+      var hash = obj.$$hash;      
+      if (db[hash]) {
+        return;
+      }
+      
       var clazz = obj.constructor;
-      var props = qx.Class.getInheritableProperties(clazz);
+      var inheritables = qx.Class.getInheritableProperties(clazz);
+      if (inheritables.length == 0) 
+      {
+        obj.debug("Zero inheritables!");
+        return;
+      }
       
-      obj.debug("Check: " + props.length + " properties...");
+      db[hash] = obj;
+      qx.ui.core.queue.Manager.scheduleFlush("inheritance");
+    },
+    
+    
+    flush : function()
+    {
+      var db = this.__refreshList;
+      qx.log.Logger.debug("Flushing..." + qx.lang.Object.getKeys(db).length);
+
+      this.__refreshList = {};
       
-      
+      var qxClass = qx.Class;
+      var qxBootstrap = qx.Bootstrap;
+      var getterDB = this.__getter;
+      var refresherDB = this.__refresher;
+      var obj, clazz, inheritables, parent, getter, prop, upname;
+      for (var key in db) 
+      {
+        obj = db[key];
+        
+        clazz = obj.constructor;
+        inheritables = qxClass.getInheritableProperties(clazz);
+        parent = obj.getLayoutParent();
+
+        for (prop in inheritables)
+        {
+          getter = getterDB[prop] 
+          if (!getter) 
+          {
+            upname = qxBootstrap.firstUp(prop);
+            getterDB[prop] = getter = "get" + upname;
+            refresherDB[prop] = "refresh" + upname;
+          }
+
+          if (parent[getter]) {
+            obj[refresherDB[prop]](parent[getter]());
+          }
+        }
+      }
     },
     
     

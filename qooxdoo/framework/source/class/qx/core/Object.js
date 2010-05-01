@@ -295,6 +295,8 @@ qx.Class.define("qx.core.Object",
       
       return this[method]();      
     },
+    
+
 
 
 

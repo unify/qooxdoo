@@ -114,9 +114,15 @@ qx.Class.define("qx.ui.core.queue.Manager",
             delete jobs.appearance;
             qx.ui.core.queue.Appearance.flush();
           }
+          
+          if (jobs.inheritance)
+          {
+            delete jobs.inheritance;
+            qx.core.Property.flush();
+          }
 
           // Defer layout as long as possible
-          if (jobs.widget || jobs.visibility || jobs.appearance) {
+          if (jobs.widget || jobs.visibility || jobs.appearance || jobs.inheritance) {
             continue;
           }
 

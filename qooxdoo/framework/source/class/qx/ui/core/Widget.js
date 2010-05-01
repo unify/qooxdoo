@@ -960,7 +960,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       // Update inheritable properties
-      qx.core.Property.refresh(this);
+      qx.core.Property.mark(this);
 
       // Update visibility cache
       qx.ui.core.queue.Visibility.add(this);
