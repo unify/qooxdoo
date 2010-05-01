@@ -2788,21 +2788,21 @@ qx.Class.define("qx.ui.core.Widget",
           for (var prop in oldData)
           {
             if (newData[prop] === undefined) {
-              this.resetThemedProperty(prop);
+              this.reset(prop, "themed");
             }
           }
         }
 
         // Apply new data
         for (var prop in newData) {
-          newData[prop] === undefined ? this.resetThemedProperty(prop) : this.setThemedProperty(prop, newData[prop]);
+          newData[prop] === undefined ? this.reset(prop, "themed") : this.set(prop, newData[prop], "themed");
         }
       }
       else if (oldData)
       {
         // Clear old data
         for (var prop in oldData) {
-          this.resetThemedProperty(prop);
+          this.reset(prop, "themed");
         }
       }
 
