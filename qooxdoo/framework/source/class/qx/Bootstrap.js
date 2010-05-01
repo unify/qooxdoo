@@ -510,12 +510,8 @@ qx.Bootstrap.define("qx.Bootstrap",
     firstUp : function(str) 
     {
       var cache = qx.Bootstrap.__firstUp;
+
       var value = cache[str];
-
-      if (!str) {
-        qx.log.Logger.trace()
-      }
-
       if (value != null) {
         return value
       } else {
