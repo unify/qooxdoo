@@ -172,8 +172,12 @@ qx.Class.define("qx.ui.form.Button",
 
     /**
      * Completely reset the button (remove all states)
+     * 
+     * HELL: Where was this method from? We really need support
+     * for "final" attributes in API doc to omit people from
+     * overwriting essential methods.
      */
-    reset : function()
+    reset___ : function()
     {
       this.removeState("pressed");
       this.removeState("abandoned");
@@ -229,7 +233,7 @@ qx.Class.define("qx.ui.form.Button",
       if (!this.isEnabled() || e.getTarget() !== this) {
         return;
       }
-
+      
       this.removeState("hovered");
 
       if (this.hasState("pressed"))
