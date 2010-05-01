@@ -218,15 +218,12 @@ qx.Bootstrap.define("qx.core.Property",
       }
       
       var clazz = obj.constructor;
-      var inheritables = qx.Class.getInheritableProperties(clazz);
-      if (inheritables.length == 0) 
+      var inheritables = clazz.$$inheritables || qx.Class.getInheritableProperties(clazz);
+      if (inheritables.length > 0) 
       {
-        obj.debug("Zero inheritables!");
-        return;
+        db[hash] = obj;
+        qx.ui.core.queue.Manager.scheduleFlush("inheritance");
       }
-      
-      db[hash] = obj;
-      qx.ui.core.queue.Manager.scheduleFlush("inheritance");
     },
     
     
