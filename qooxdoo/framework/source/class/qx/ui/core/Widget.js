@@ -2639,7 +2639,7 @@ qx.Class.define("qx.ui.core.Widget",
       if (!states || !states[state]) {
         return;
       }
-
+      
       // Clear state and queue
       delete this.__states[state];
 
@@ -2748,7 +2748,7 @@ qx.Class.define("qx.ui.core.Widget",
       if (this.__updateSelector)
       {
         // Clear flag
-        delete this.__updateSelector;
+        this.__updateSelector = null;
 
         // Check if the selector was created previously
         if (selector)

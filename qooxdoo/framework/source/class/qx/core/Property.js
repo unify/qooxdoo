@@ -283,7 +283,7 @@ qx.Bootstrap.define("qx.core.Property",
     
     __changeHelper : function(value, oldValue, config)
     {
-      this.debug("Change " + config.name + ": " + oldValue + " => " + value);
+      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
 
       // Call apply
       if (config.apply) {
