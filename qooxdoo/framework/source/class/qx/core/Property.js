@@ -499,7 +499,7 @@ qx.Bootstrap.define("qx.core.Property",
       if (config.check === "Boolean") 
       {
         members["toggle" + up] = function() {
-          this["set" + up](this["get" + up]());
+          this["set" + up](!this["get" + up]());
         }
 
         members["is" + up] = members["get" + up];
@@ -813,7 +813,7 @@ qx.Bootstrap.define("qx.core.Property",
       if (config.check === "Boolean") 
       {
         members["toggle" + up] = function() {
-          this["set" + up](this["get" + up]());
+          this["set" + up](!this["get" + up]());
         }
 
         members["is" + up] = members["get" + up];
