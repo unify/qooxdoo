@@ -450,6 +450,7 @@ qx.Bootstrap.define("qx.Class",
       
       var result = clazz.$$inheritables = {};
 
+      // Find all local properties which are inheritable
       var props = clazz.$$properties;
       if (props) 
       {
@@ -462,9 +463,9 @@ qx.Bootstrap.define("qx.Class",
       }
         
       var superClass = clazz.superclass;
-      if (superClass)
+      if (superClass && superClass !== Object)
       {
-        var remote = this.getInheritableProperties(superClass);
+        var remote = superClass.$$inheritables || this.getInheritableProperties(superClass);
         for (var name in remote) {
           result[name] = true;
         }

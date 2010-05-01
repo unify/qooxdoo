@@ -232,9 +232,9 @@ qx.Bootstrap.define("qx.core.Property",
     
     flush : function()
     {
-      var db = this.__refreshList;
-      qx.log.Logger.debug("Flushing..." + qx.lang.Object.getKeys(db).length);
+      var start = new Date;
 
+      var db = this.__refreshList;
       this.__refreshList = {};
       
       var qxClass = qx.Class;
@@ -247,9 +247,12 @@ qx.Bootstrap.define("qx.core.Property",
         obj = db[key];
         
         clazz = obj.constructor;
-        inheritables = qxClass.getInheritableProperties(clazz);
-        parent = obj.getLayoutParent();
 
+        // Shorthand provided by qx.Class to omit function call
+        inheritables = clazz.$$inheritables || qxClass.getInheritableProperties(clazz);
+
+        // Loop through properties
+        parent = obj.getLayoutParent();
         for (prop in inheritables)
         {
           getter = getterDB[prop] 
@@ -265,6 +268,8 @@ qx.Bootstrap.define("qx.core.Property",
           }
         }
       }
+      
+      qx.log.Logger.debug(this, "Flushed " + qx.lang.Object.getKeys(db).length + " objects in: " + (new Date - start) + "ms");
     },
     
     
