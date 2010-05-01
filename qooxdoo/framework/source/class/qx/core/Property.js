@@ -234,108 +234,14 @@ qx.Bootstrap.define("qx.core.Property",
      */   
     refresh : function(obj)
     {
-      var inheritables = qx.Class.getInheritableProperties(obj.constructor);
+      var clazz = obj.constructor;
+      var props = qx.Class.getInheritableProperties(clazz);
       
-      // Only register when the instance has inheritable properties
-      // For this reason the loop breaks out after the first iteration.
-      for (var name in inheritables)
-      {
-        this.__structureChanges[obj.$$hash] = obj;
-
-        if (!this.__doRefreshHandle) {
-          this.__doRefreshHandle = window.setTimeout(this.__doRefresh, 0);
-        }     
-
-        break;
-      }
+      obj.debug("Check: " + props.length + " properties...");
+      
+      
     },
     
-    
-    /**
-     * Internal method doing the actual refresh of inherited properties.
-     * 
-     * Do not call yourself! This should only be used by {@link #refresh}.
-     */
-    __doRefresh : function()
-    {
-      // Class references
-      var Class = qx.Class;
-      var Property = qx.core.Property;
-
-      // Load and replace data structure
-      var changed = Property.__structureChanges;
-      Property.__structureChanges = {};
-
-      // Clear flag
-      this.__doRefreshHandle = null;
-
-      // Depth analysis
-      var depths = {}, sorted=[];
-      var hash, depth, current;
-      
-      // qx.log.Logger.debug(Property, "Doing depth analysis...")
-      for (hash in changed)
-      {
-        // Prepare sorted array
-        sorted.push(hash);
-        
-        // Ignore if already cached
-        if (depths[hash] != null) {
-          continue;
-        }
-        
-        current = changed[hash];
-        depth = 0;
-        
-        // Loop up through all parents
-        while (current = current._getParent()) 
-        {
-          depth++;
-          
-          // Make use of pre-cached values
-          if (depths[current.$$hash] != null) 
-          {
-            depth += depths[current.$$hash];
-            break;
-          }         
-        }       
-
-        // Same loop again to cache results in complete hierarchy
-        current = changed[hash];        
-        do {
-          depths[current.$$hash] = depth--;
-        } while ((current = current._getParent()) && depths[current.$$hash] == null) 
-      }
-
-      // Do the actual sorting based on depth data
-      sorted.sort(function(a, b) {
-        return depths[a] - depths[b];
-      });
-      
-      // Process entries
-      qx.log.Logger.debug(Property, "Running inheritance update (" + sorted.length + " items)...");
-      var obj, inheritables, parent, parentInheritables, name;
-      for (var i=0, l=sorted.length; i<l; i++) 
-      {
-        hash = sorted[i];
-        obj = changed[hash];
-        
-        inheritables = Class.getInheritableProperties(obj.constructor);
-        
-        parent = obj._getParent();
-        parentInheritables = Class.getInheritableProperties(parent.constructor);
-
-        // Update each inheritable property
-        for (var name in inheritables)
-        {
-          // The parent may not support the property of the child. In this case
-          // updating is not needed or even possible.
-          if (parentInheritables[name]) {
-            obj["refresh" + qx.Bootstrap.firstUp(name)](parent.get(name));
-          }
-        }
-      }
-    },
     
     
     __changeHelper : function(value, oldValue, config)
