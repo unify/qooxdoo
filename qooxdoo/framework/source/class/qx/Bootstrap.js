@@ -497,7 +497,9 @@ qx.Bootstrap.define("qx.Bootstrap",
       STRING UTILITY FUNCTIONS
     ---------------------------------------------------------------------------
     */
-
+    
+    /** {Map} Global cache for firstUp() calls. */
+    __firstUp : {},
 
     /**
      * Convert the first character of the string to upper case.
@@ -505,8 +507,20 @@ qx.Bootstrap.define("qx.Bootstrap",
      * @param str {String} the string
      * @return {String} the string with a upper case first character
      */
-    firstUp : function(str) {
-      return str.charAt(0).toUpperCase() + str.substr(1);
+    firstUp : function(str) 
+    {
+      var cache = qx.Bootstrap.__firstUp;
+      var value = cache[str];
+
+      if (!str) {
+        qx.log.Logger.trace()
+      }
+
+      if (value != null) {
+        return value
+      } else {
+        return cache[str] = str.charAt(0).toUpperCase() + str.substr(1);
+      }
     },
 
 
