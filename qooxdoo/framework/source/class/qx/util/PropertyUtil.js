@@ -197,13 +197,10 @@ qx.Class.define("qx.util.PropertyUtil",
      *
      * @param object {Object} The object to access
      * @param propertyName {String} The name of the property
-    * @param value {var} The value to set
-     * @return {void}
+     * @param value {var} The value to set
      */
-    setThemed : function(object, propertyName, value)
-    {
-      var styler = qx.core.Property.$$method.setThemed;
-      object[styler[propertyName]](value);
+    setThemed : function(object, propertyName, value) {
+      return object.set(propertyName, value, "themed");
     },
 
     /**
@@ -211,12 +208,9 @@ qx.Class.define("qx.util.PropertyUtil",
     *
     * @param object {Object} The object to access
     * @param propertyName {String} The name of the property
-    * @return {void}
     */
-    resetThemed : function(object, propertyName)
-    {
-      var unstyler = qx.core.Property.$$method.resetThemed;
-      object[unstyler[propertyName]]();
+    resetThemed : function(object, propertyName) {
+      return object.reset(propertyName, "themed");
     }
   }
 });
