@@ -899,6 +899,10 @@ class CodeGenerator(object):
             plugCode = filetool.read(self._config.absPath(decodeUrisFile))  # let it bomb if file can't be read
             vals["DecodeUrisPlug"] = plugCode.strip()
         
+        # Add build details
+        vals["Build"] = int(time.time()*1000) 
+        vals["Type"] = version
+        
         # Locate and load loader basic script
         template = loadTemplate(bootCode)
 

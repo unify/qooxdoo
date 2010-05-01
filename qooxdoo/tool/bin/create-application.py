@@ -80,7 +80,7 @@ def createApplication(options):
             sys.exit(1)
 
 
-    outDir = os.path.join(out, options.name)
+    outDir = os.path.abspath(os.path.join(out, options.name))
     copySkeleton(options.skeleton_path, options.type, outDir, options.namespace)
 
     if options.type == "contribution":

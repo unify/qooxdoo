@@ -237,18 +237,18 @@ qx.Class.define("qx.bom.Request",
 
       // Prepare listeners
       this.__stateListener = qx.lang.Function.bind(this.__onNativeReadyStateChange, this);
-      this.__timeoutListener = qx.lang.Function.bind(this.__onNativeTimeout, this);
 
       // Register native listeners
-      this.__xmlhttp.onreadystatechange = this.__stateListener;
+      var xmlhttp = this.__xmlhttp;
+      xmlhttp.onreadystatechange = this.__stateListener;
 
       // Natively open request
       if (arguments.length > 4) {
-        this.__xmlhttp.open(method, url, async, username, password);
+        xmlhttp.open(method, url, async, username, password);
       } else if (arguments.length > 3) {
-        this.__xmlhttp.open(method, url, async, username);
+        xmlhttp.open(method, url, async, username);
       } else {
-        this.__xmlhttp.open(method, url, async);
+        xmlhttp.open(method, url, async);
       }
 
       // BUGFIX: Gecko - missing readystatechange calls in synchronous requests
@@ -290,11 +290,16 @@ qx.Class.define("qx.bom.Request",
         this.__xmlhttp.setRequestHeader(label, headers[label]);
       }
 
+      // Remember time of starting the request
+      this.__start = (new Date).valueOf();
+
       // Attach timeout
-      if (this.timeout != null && this.timeout > 0) {
+      if (this.timeout != null && this.timeout > 0) 
+      {
+        this.__timeoutListener = qx.lang.Function.bind(this.__onNativeTimeout, this);
         this.__timeoutHandle = window.setTimeout(this.__timeoutListener, this.timeout);
       }
-
+  
       // Finally send using native method
       this.__xmlhttp.send(data);
 
@@ -356,6 +361,16 @@ qx.Class.define("qx.bom.Request",
 
       // Cleanup listeners etc.
       this.dispose();
+    },
+
+
+    /**
+     * Returns the duration the request needed for completion
+     * 
+     * @return {Integer|null} The duration in milliseconds or <code>null</code> if data is not available (yet)
+     */
+    getDuration : function() {
+      return this.__duration;
     },
 
 
@@ -591,6 +606,13 @@ qx.Class.define("qx.bom.Request",
     }),
 
 
+    /** {Integer} Start point of communication in milliseconds */
+    __start : null,
+
+    /** {Integer} Duration of communication in milliseconds */
+    __duration : null,
+
+
     /**
      * Internal helper to "fire" the onreadystatechange function
      *
@@ -598,8 +620,10 @@ qx.Class.define("qx.bom.Request",
      */
     __fireReadyStateChange : function()
     {
+      var readyState = this.readyState;
+  
       // BUGFIX: Some browsers (Internet Explorer, Gecko) fire OPEN readystate twice
-      if (this.__lastFired === this.readyState) {
+      if (this.__lastFired === readyState) {
         return;
       }
 
@@ -607,11 +631,13 @@ qx.Class.define("qx.bom.Request",
       this.onreadystatechange();
 
       // Store last fired
-      this.__lastFired = this.readyState;
+      this.__lastFired = readyState;
 
       // Fire other events
-      if (this.readyState === 4)
+      if (readyState === 4)
       {
+        this.__duration = (new Date).valueOf() - this.__start;
+  
         if (this.isSuccessful()) {
           this.onload();
         } else {

@@ -6,7 +6,6 @@ qooxdoo/component/*/source/script
 qooxdoo/application/*/build
 qooxdoo/component/*/build
 
-
 .settings/*
 *.pyc
 .DS_Store
