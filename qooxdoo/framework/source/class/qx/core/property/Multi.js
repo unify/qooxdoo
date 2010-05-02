@@ -357,7 +357,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       /*
       ---------------------------------------------------------------------------
-         FACTORY METHODS :: SETTER
+         FACTORY METHODS :: ATTACH METHODS
       ---------------------------------------------------------------------------
       */
       
@@ -432,9 +432,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
         members["is" + up] = members["get" + up];
       }
-      
-      // qx.log.Logger.debug(clazz, "Complex property: " + name + "[" + id + "](" + currentPriority + ")");
-      //qx.core.property.Core.$$propertyId += currentPriority;
     }    
   }
 });
