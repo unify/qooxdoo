@@ -657,10 +657,12 @@ qx.Bootstrap.define("qx.Bootstrap",
      */
     getPropertyDefinition : function(clazz, name)
     {
+      var props;
       while (clazz)
       {
-        if (clazz.$$properties && clazz.$$properties[name]) {
-          return clazz.$$properties[name];
+        props = clazz.$$properties;
+        if (props && props[name]) {
+          return props[name];
         }
 
         clazz = clazz.superclass;

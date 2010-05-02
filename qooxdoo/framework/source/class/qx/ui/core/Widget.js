@@ -2745,7 +2745,6 @@ qx.Class.define("qx.ui.core.Widget",
     {
       var manager = qx.theme.manager.Appearance.getInstance();
 
-
       var states = this.__states;
       var structureSelector = this.__structureSelector;
       
@@ -2784,11 +2783,45 @@ qx.Class.define("qx.ui.core.Widget",
         }
       }
       
+      // Shorthand for cache
       var styleCache = qx.ui.core.Widget.__styleCache;
+      
+      // Compute new styles
       var newSelector = structureSelector + stateSelector;
       var newStyles = styleCache[newSelector];
-      if (!newStyles) {
+      if (!newStyles) 
+      {
         newStyles = styleCache[newSelector] = manager.styleFrom(structureSelector, states, null, this.getAppearance());
+        var propertyGroup;
+        
+        for (var prop in newStyles)
+        {
+          var config = qx.Bootstrap.getPropertyDefinition(this.constructor, prop);
+          if (config.group)
+          {
+            // Expand shorthands
+            if (config.mode == "shorthand") {
+              newStyles[prop] = qx.lang.Array.fromShortHand(newStyles[prop]);
+            }
+            
+            propertyGroup = config.group;
+            for (var i=0, l=propertyGroup.length; i<l; i++) 
+            {
+              var expandProp = propertyGroup[i];
+              
+              // There might occour the problem that the expanded property name is already
+              // in use. We need to find out whether the group or the other value is higher
+              // in priority: For maps we use the idea that the priority is increases with
+              // position in the map (e.g. using for-in loops)
+              var conflictValue = newStyles[expandProp];
+              if (conflictValue === undefined || qx.lang.Object.findWinnerKey(newStyles, prop, expandProp) === expandProp) {
+                newStyles[propertyGroup[i]] = newStyles[prop][i];
+              }
+            }
+            
+            delete newStyles[prop];
+          }
+        }
       }
       
       // Read out old data
@@ -2807,31 +2840,8 @@ qx.Class.define("qx.ui.core.Widget",
     
     getAppearanceValue : function(prop)
     {
-      var manager = qx.theme.manager.Appearance.getInstance();
       var selector = this.__appearanceSelector;
-      var states = this.__states;
-      var styles = manager.styleFrom(selector, states, null, this.getAppearance());
-
-      // Easy lookup
-      var value = styles[prop];
-      if (value !== undefined) {
-        return value;
-      }
-      
-      // Try to resolve property from groups
-      var config = qx.Class.getPropertyGroupWithProperty(prop, this.constructor);
-      if (config)
-      {
-        var values = styles[config.name];
-        if (values) 
-        {
-          if (config.mode == "shorthand") {
-            values = qx.lang.Array.fromShortHand(values);
-          }
-          
-          return values[config.group.indexOf(prop)];
-        }
-      }
+      return selector ? qx.ui.core.Widget.__styleCache[selector][prop] : undefined;
     },
 
 

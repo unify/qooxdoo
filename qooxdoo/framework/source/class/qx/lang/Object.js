@@ -150,6 +150,29 @@ qx.Class.define("qx.lang.Object",
     getKeysAsString : qx.Bootstrap.getKeysAsString,
 
 
+    findWinnerKey : function(map, key1, key2)
+    {
+      if (!(key1 in map)) {
+        return key2 in map ? key2 : null;
+      }
+
+      if (!(key2 in map)) {
+        return key1 in map ? key1 : null;
+      }
+      
+      for (var key in map) 
+      {
+        if (key == key1) {
+          return key1;
+        } else if (key == key2) {
+          return key2;
+        }
+      }
+      
+      return null;      
+    },
+    
+
     /**
      * Get the values of a map as array
      *
