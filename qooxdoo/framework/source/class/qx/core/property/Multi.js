@@ -169,7 +169,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       if (!id) 
       {
         id = db[name] = qx.core.property.Core.ID;
-        qx.core.property.Core.ID+=5;
+        qx.core.property.Core.ID+=10;
       }
       
       // Store init value (shared data between instances)
@@ -212,10 +212,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
             qx.core.property.Debug.checkSetter(context, config, arguments);
           }
           
-          var current = context.$$current;
-          if (!current) {
-            current = context.$$current = {};
-          }
           var data = context.$$data;
           if (!data) {
             data = context.$$data = {};
@@ -224,7 +220,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // context.debug("Save " + name + "[" + modifyPriority + "]=" + newValue);
 
           // Read old value
-          var oldPriority = current[id];
+          var oldPriority = data[id];
           if (oldPriority != null) {
             var oldValue = data[id+oldPriority];
           }
@@ -237,7 +233,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             // Whether the storage field was changed
             if (oldPriority !== modifyPriority) {
-              current[id] = modifyPriority;
+              data[id] = modifyPriority;
             }
 
             // Fallback to init value on prototype chain (when supported)
@@ -275,16 +271,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
             qx.core.property.Debug.checkResetter(context, config, arguments);
           }
           
-          var current = context.$$current;
-          if (!current) {
-            return;
-          }
           var data = context.$$data;        
           
           // context.debug("Delete " + name + "[" + modifyPriority + "]");
 
           // Only need to react when current field is resetted
-          var oldPriority = current[id];
+          var oldPriority = data[id];
           if (oldPriority === modifyPriority) 
           {
             // Read old value
@@ -319,7 +311,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             }
             
             // Update current field
-            current[id] = newPriority;
+            data[id] = newPriority;
           }
           
           // Remove value from store
@@ -352,11 +344,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
         if (qx.core.Variant.isSet("qx.debug", "on")) {
           qx.core.property.Debug.checkGetter(context, config, arguments);
         }
+        
+        this.debug("GET: " + name);
                 
-        var current = context.$$current;
-        if (current) {
-          var currentPrio = current[id];
-        }        
+        var data = context.$$data;
+        var currentPrio = data && data[id];
         
         if (currentPrio == null) 
         {
@@ -378,7 +370,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           return null;
         }
 
-        return context.$$data[id+currentPrio];
+        return data[id+currentPrio];
       };
       
       
@@ -389,7 +381,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
       ---------------------------------------------------------------------------
       */
       
-      var currentPriority = 0;
+      // Start with 1 because first field is occupied by pointer to current field
+      var currentPriority = 1;
       
       members["get" + up] = getter;
 
@@ -403,12 +396,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
         members["init" + up] = function()
         {
           var context = this;
-          var current = context.$$current;
-          if (current) 
+          var data = context.$$data;
+          if (data) 
           {
             // Check whether there is already another value assigned.
             // In this case the whole function could be left early.
-            var oldPriority = current[id];
+            var oldPriority = data[id];
             if (oldPriority != null) {
               return;
             }            
@@ -452,6 +445,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // currentPriority++; (last entry)
       }
       
+      
+      
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS :: GOODIES
+      ---------------------------------------------------------------------------
+      */
+            
       if (config.check === "Boolean") 
       {
         members["toggle" + up] = function() {
