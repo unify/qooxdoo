@@ -225,7 +225,7 @@ qx.Class.define("qx.theme.manager.Appearance",
           unique += ":" + sum;
         }
       }
-
+      
       // Using cache if available
       var cache = this.__styleCache;
       if (cache[unique] !== undefined) {

@@ -221,12 +221,20 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
           // Read old value
           var oldPriority = data[id];
-          if (oldPriority != null) {
-            var oldValue = data[id+oldPriority];
+          if (oldPriority != null) 
+          {
+            if (oldPriority == 3) {
+              var oldValue = null;//this.getAppearanceValue(name);
+              // TODO: Access to old value              
+            } else {
+              var oldValue = data[id+oldPriority];
+            }            
           }
           
           // Store new value
-          data[id+modifyPriority] = newValue;
+          if (modifyPriority != 3) {
+            data[id+modifyPriority] = newValue;
+          }
           
           // Ignore lower-priority changes
           if (oldPriority == null || oldPriority <= modifyPriority) 
@@ -280,7 +288,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
           if (oldPriority === modifyPriority) 
           {
             // Read old value
-            var oldValue = data[id+oldPriority];            
+            if (oldPriority == 3) {
+              var oldValue = null;//this.getAppearanceValue(name);
+              // TODO: Access to old value
+            } else {
+              var oldValue = data[id+oldPriority];
+            }
             
             // We lost the current value, now we need to find the next stored value
             var newValue;
@@ -319,7 +332,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // and only want to do this when needed.
           // Do not use delete operator as this is not good for performance:
           // just modifying the value to undefined is enough.
-          data[id+modifyPriority] = undefined;
+          if (modifyPriority != 3) {
+            data[id+modifyPriority] = undefined;
+          }          
 
           // Only need to react when current field is resetted
           if (oldPriority === modifyPriority && oldValue !== newValue) {         

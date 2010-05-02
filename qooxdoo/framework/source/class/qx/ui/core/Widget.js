@@ -2817,6 +2817,7 @@ qx.Class.define("qx.ui.core.Widget",
       var selector = this.__appearanceSelector;
       var states = this.__states;
       var styles = manager.styleFrom(selector, states, null, this.getAppearance());
+      console.debug(JSON.stringify(styles));
 
       // Easy lookup
       var value = styles[prop];
