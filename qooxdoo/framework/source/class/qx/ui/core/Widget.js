@@ -2809,6 +2809,36 @@ qx.Class.define("qx.ui.core.Widget",
 
       this.fireDataEvent("syncAppearance", this.__states);
     },
+    
+    
+    getAppearanceValue : function(prop)
+    {
+      var manager = qx.theme.manager.Appearance.getInstance();
+      var selector = this.__appearanceSelector;
+      var states = this.__states;
+      var styles = manager.styleFrom(selector, states, null, this.getAppearance());
+
+      // Easy lookup
+      var value = styles[prop];
+      if (value !== undefined) {
+        return value;
+      }
+      
+      // Try to resolve property from groups
+      var config = qx.Class.getPropertyGroupWithProperty(prop, this.constructor);
+      if (config)
+      {
+        var values = styles[config.name];
+        if (values) 
+        {
+          if (config.mode == "shorthand") {
+            values = qx.lang.Array.fromShortHand(values);
+          }
+          
+          return values[config.group.indexOf(prop)];
+        }
+      }
+    },
 
 
     // property apply

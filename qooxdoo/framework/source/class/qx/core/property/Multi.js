@@ -345,11 +345,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
           qx.core.property.Debug.checkGetter(context, config, arguments);
         }
         
-        this.debug("GET: " + name);
-                
         var data = context.$$data;
+
         var currentPrio = data && data[id];
-        
         if (currentPrio == null) 
         {
           // Fallback to init value on prototype chain (when supported)
@@ -369,8 +367,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
                     
           return null;
         }
-
-        return data[id+currentPrio];
+        
+        // Special get() support for themable properties
+        if (currentPrio == 3) {
+          return context.getAppearanceValue(name);
+        } else {
+          return data[id+currentPrio];
+        }
       };
       
       

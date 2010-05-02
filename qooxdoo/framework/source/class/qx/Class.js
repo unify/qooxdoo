@@ -433,6 +433,31 @@ qx.Bootstrap.define("qx.Class",
 
       return list;
     },
+    
+    
+    getPropertyGroupWithProperty : function(prop, clazz)
+    {
+      var groups, group, config;
+      
+      while (clazz)
+      {
+        groups = clazz.$$propertyGroups;
+        if (groups) 
+        {
+          for (group in groups)
+          {
+            config = groups[group];
+            if (config.group.indexOf(prop) != -1) {
+              return config;
+            }
+          }
+        }
+
+        clazz = clazz.superclass;
+      }
+
+      return null;
+    },
 
 
     /**

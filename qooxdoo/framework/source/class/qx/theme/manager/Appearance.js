@@ -249,7 +249,7 @@ qx.Class.define("qx.theme.manager.Appearance",
         // for property groups or properties which includes other
         // properties when modified.
         var local = entry.style(states);
-
+        
         // Gather included data
         var incl;
         if (entry.include) {

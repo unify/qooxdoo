@@ -60,6 +60,12 @@ qx.Bootstrap.define("qx.core.property.Group",
 	    var upname = qx.Bootstrap.firstUp(name);
 	    var members = clazz.prototype;
 
+	    var groups = clazz.$$propertyGroups;
+	    if (!groups) {
+	      groups = clazz.$$propertyGroups = {};
+	    }
+	    clazz.$$propertyGroups[name] = config;	   
+
       this.__add(upname, config, members);
 	    if (config.themeable) {
         this.__add(upname, config, members, "themed");
