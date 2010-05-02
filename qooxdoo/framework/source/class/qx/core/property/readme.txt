@@ -23,6 +23,8 @@ TODO
 * Add support for check
 * Add support for verify
 
+* Change: mode=shorthand to shorthand=true in group definition
+
 For a complete documentation of properties take a
 look at http://qooxdoo.org/documentation/developer_manual/properties.
 
