@@ -184,8 +184,10 @@ qx.Bootstrap.define("qx.core.property.Simple",
       // as in this case this is typicall on different classes.
       var db = this.__propertyNameToId;
       var id = db[name];
-      if (!id) {
-        id = db[name] = qx.core.property.Core.$$propertyId++;
+      if (!id) 
+      {
+        id = db[name] = qx.core.property.Core.ID;
+        qx.core.property.Core.ID++
       }
       
       // Store init value (shared data between instances)
@@ -203,7 +205,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       }
       
       // Precalc
-      var up = config.up = name.charAt(0).toUpperCase() + name.substring(1);
+      var up = config.up = qx.Bootstrap.firstUp(name);
          
       // Shorthands: Better compression/obfuscation/performance
       var changeHelper = this.__changeHelper;

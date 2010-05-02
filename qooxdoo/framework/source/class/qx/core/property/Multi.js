@@ -138,9 +138,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // At any moment we add more features, we need to increase the increment as well!
       var db = this.__propertyNameToId;
       var id = db[name];
-      if (!id) {
-        id = db[name] = qx.core.property.Core.$$propertyId;
-        qx.core.property.Core.$$propertyId+=5;
+      if (!id) 
+      {
+        id = db[name] = qx.core.property.Core.ID;
+        qx.core.property.Core.ID+=5;
       }
       
       // Store init value (shared data between instances)
@@ -158,7 +159,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       }
    
       // Precalc
-      var up = config.up = name.charAt(0).toUpperCase() + name.substring(1);
+      var up = config.up = qx.Bootstrap.firstUp(name);
          
       // Shorthands: Better compression/obfuscation/performance
       var changeHelper = this.__changeHelper;

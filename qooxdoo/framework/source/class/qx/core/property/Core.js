@@ -4,13 +4,13 @@ qx.Bootstrap.define("qx.core.property.Core",
   {
     RUNTIME_OVERRIDE : false,
   
-    $$propertyId : 0,
+    ID : 0,
   
     /**
      * Built-in checks
      * The keys could be used in the check of the properties
      */
-    __checks :
+    CHECKS :
     {
       "Boolean"   : 'qx.core.Assert.assertBoolean(value, msg) || true',
       "String"    : 'qx.core.Assert.assertString(value, msg) || true',
