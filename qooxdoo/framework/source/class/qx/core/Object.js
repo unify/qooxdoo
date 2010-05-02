@@ -220,13 +220,13 @@ qx.Class.define("qx.core.Object",
     set : function(data, value, variant)
     {
       var Bootstrap = qx.Bootstrap;
-      var prefix = "set" + (variant ? Bootstrap.firstUp(variant) : "");
+      var prefix = "set" + (variant ? Bootstrap.$$firstUp[variant] || Bootstrap.firstUp(variant) : "");
       var method;
       var self = this;
       
       if (typeof data === "string")
       {
-        method = prefix + Bootstrap.firstUp(data);
+        method = prefix + (Bootstrap.$$firstUp[data] || Bootstrap.firstUp(data));
         if (qx.core.Variant.isSet("qx.debug", "on")) 
         {
           if (!self[method]) {
@@ -240,7 +240,7 @@ qx.Class.define("qx.core.Object",
       {
         for (var prop in data)
         {
-          method = prefix + Bootstrap.firstUp(prop);
+          method = prefix + (Bootstrap.$$firstUp[prop] || Bootstrap.firstUp(prop));
           if (qx.core.Variant.isSet("qx.debug", "on")) 
           {
             if (!self[method]) {
@@ -266,8 +266,8 @@ qx.Class.define("qx.core.Object",
     reset : function(prop, variant) 
     {
       var Bootstrap = qx.Bootstrap;
-      var prefix = "reset" + (variant ? Bootstrap.firstUp(variant) : "");
-      var method = prefix + Bootstrap.firstUp(prop);
+      var prefix = "reset" + (variant ? Bootstrap.$$firstUp[variant] || Bootstrap.firstUp(variant) : "");
+      var method = prefix + (Bootstrap.$$firstUp[prop] || Bootstrap.firstUp(prop));
       
       if (qx.core.Variant.isSet("qx.debug", "on")) 
       {
@@ -290,7 +290,8 @@ qx.Class.define("qx.core.Object",
      */
     get : function(prop) 
     {
-      var method = "get" + qx.Bootstrap.firstUp(prop);
+      var Bootstrap = qx.Bootstrap;
+      var method = "get" + (Bootstrap.$$firstUp[prop] || qx.Bootstrap.firstUp(prop));
       if (qx.core.Variant.isSet("qx.debug", "on")) 
       {
         if (!this[method]) {

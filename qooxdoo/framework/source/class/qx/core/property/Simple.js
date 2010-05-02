@@ -205,7 +205,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       }
       
       // Precalc
-      var up = config.up = qx.Bootstrap.firstUp(name);
+      var up = config.up = qx.Bootstrap.$$firstUp[name] || qx.Bootstrap.firstUp(name);
          
       // Shorthands: Better compression/obfuscation/performance
       var changeHelper = this.__changeHelper;
