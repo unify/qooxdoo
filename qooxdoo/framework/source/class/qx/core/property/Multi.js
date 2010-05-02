@@ -381,9 +381,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
       ---------------------------------------------------------------------------
       */
       
-      // Start with 1 because first field is occupied by pointer to current field
-      var currentPriority = 1;
-      
       members["get" + up] = getter;
 
       // There are exactly two types of init methods:
@@ -417,32 +414,27 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // is not needed very often there is a special option "deferredInit" to enable it.
       else if (config.deferredInit === true) 
       {
-        members["init" + up] = setter(currentPriority);
-        currentPriority++;
+        members["init" + up] = setter(1);
       }
             
       if (config.inheritable) 
       {
-        members["refresh" + up] = setter(currentPriority);
-        currentPriority++;
+        members["refresh" + up] = setter(2);
       }
 
       if (config.themeable)
       {
-        members["setThemed" + up] = setter(currentPriority);
-        members["resetThemed" + up] = resetter(currentPriority);
-        currentPriority++;
+        members["setThemed" + up] = setter(3);
+        members["resetThemed" + up] = resetter(3);
       }
 
-      members["set" + up] = setter(currentPriority);
-      members["reset" + up] = resetter(currentPriority);
-      currentPriority++;
+      members["set" + up] = setter(4);
+      members["reset" + up] = resetter(4);
       
       if (this.RUNTIME_OVERRIDE)
       {
-        members["setRuntime" + up] = setter(currentPriority);
-        members["resetRuntime" + up] = resetter(currentPriority);
-        // currentPriority++; (last entry)
+        members["setRuntime" + up] = setter(5);
+        members["resetRuntime" + up] = resetter(5);
       }
       
       
