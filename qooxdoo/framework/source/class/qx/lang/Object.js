@@ -150,6 +150,16 @@ qx.Class.define("qx.lang.Object",
     getKeysAsString : qx.Bootstrap.getKeysAsString,
 
 
+    /**
+     * Checks two keys for their position in the map. This is useful
+     * for finding the key which has higher priority than the other.
+     * Might be useful for conflict resolution.
+     * 
+     * @param map {Map} Incoming data structure
+     * @param key1 {String} First key
+     * @param key2 {String} Second key
+     * @return {String|null} The winner key or <code>null</code> 
+     */
     findWinnerKey : function(map, key1, key2)
     {
       if (!(key1 in map)) {
