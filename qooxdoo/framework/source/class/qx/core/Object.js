@@ -212,25 +212,23 @@ qx.Class.define("qx.core.Object",
      *
      * @param data {Map | String} a map of property values. The key is the name of the property.
      * @param value {var?} the value, only used when <code>data</code> is a string.
-     * @param variant {String} One of "" or "Themed" (more maybe later)
      * @return {Object} this instance (when called with a map of key-values) or 
      *    the configured value as by the setter when called with a single value.
      * @throws Exception if a property defined does not exist
      */
-    set : function(data, value, variant)
+    set : function(data, value)
     {
       var Bootstrap = qx.Bootstrap;
-      var prefix = "set" + (variant ? Bootstrap.$$firstUp[variant] || Bootstrap.firstUp(variant) : "");
       var method;
       var self = this;
       
       if (typeof data === "string")
       {
-        method = prefix + (Bootstrap.$$firstUp[data] || Bootstrap.firstUp(data));
+        method = "set" + (Bootstrap.$$firstUp[data] || Bootstrap.firstUp(data));
         if (qx.core.Variant.isSet("qx.debug", "on")) 
         {
           if (!self[method]) {
-            throw new Error(this.toString() + " Could not find generic setter for: " + data + " (" + variant + ")");
+            throw new Error(this.toString() + " Could not find generic setter for: " + data);
           }
         }
         
@@ -240,11 +238,11 @@ qx.Class.define("qx.core.Object",
       {
         for (var prop in data)
         {
-          method = prefix + (Bootstrap.$$firstUp[prop] || Bootstrap.firstUp(prop));
+          method = "set" + (Bootstrap.$$firstUp[prop] || Bootstrap.firstUp(prop));
           if (qx.core.Variant.isSet("qx.debug", "on")) 
           {
             if (!self[method]) {
-              throw new Error(this.toString() + " Could not find generic setter for: " + prop + " (" + variant + ")");
+              throw new Error(this.toString() + " Could not find generic setter for: " + prop);
             }
           }
           
@@ -263,16 +261,15 @@ qx.Class.define("qx.core.Object",
      * @param prop {String} Name of the property.
      * @throws an Exception if a property defined does not exist
      */
-    reset : function(prop, variant) 
+    reset : function(prop) 
     {
       var Bootstrap = qx.Bootstrap;
-      var prefix = "reset" + (variant ? Bootstrap.$$firstUp[variant] || Bootstrap.firstUp(variant) : "");
-      var method = prefix + (Bootstrap.$$firstUp[prop] || Bootstrap.firstUp(prop));
+      var method = "reset" + (Bootstrap.$$firstUp[prop] || Bootstrap.firstUp(prop));
       
       if (qx.core.Variant.isSet("qx.debug", "on")) 
       {
         if (!this[method]) {
-          throw new Error(this.toString() + " Could not find generic resetter for: " + prop + " (" + variant + ")");
+          throw new Error(this.toString() + " Could not find generic resetter for: " + prop);
         }
       }
       

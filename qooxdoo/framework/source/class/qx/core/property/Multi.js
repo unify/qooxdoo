@@ -147,6 +147,105 @@ qx.Bootstrap.define("qx.core.property.Multi",
     
     __propertyNameToId : {},    
     
+    
+    importThemed : function(obj, newStyles, oldStyles)
+    {
+      var data = obj.$$data;
+      var nameToId = this.__propertyNameToId;
+      var id, newValue, oldValue, storedPrio, initField;
+      var themedPrio = 3;
+      var Bootstrap = qx.Bootstrap;
+      
+      if (!data) {
+        data = obj.$$data = {};
+      }
+      
+      for (var prop in newStyles) 
+      {
+        id = nameToId[prop];
+        
+        storedPrio = data[id];
+        
+        // Ignore if there is a higher priorized value
+        if (storedPrio > themedPrio) {
+          continue;
+        }
+        
+        newValue = newStyles[prop];
+        
+        // If nothing is set at the moment and no new value is given
+        // then simply ignore the property for the moment
+        if (storedPrio === undefined && newValue === undefined) {
+          continue;
+        }
+        
+        // Whether we are overwriting an old value (the typical case on state changes)
+        if (storedPrio == themedPrio) 
+        {
+          oldValue = oldStyles[prop];
+          if (newValue === oldValue) {
+            continue;
+          }
+        }
+        else
+        {
+          if (storedPrio != null) {
+            oldValue = data[id+storedPrio];
+          } else {
+            oldValue = undefined;
+          }
+        }
+        
+        // Read property config
+        var config = Bootstrap.getPropertyDefinition(obj.constructor, prop);
+        
+        // Reset implementation block
+        if (newValue === undefined) 
+        {
+          for (var newPriority=themedPrio-1; newPriority>0; newPriority--)
+          {
+            newValue = data[id+newPriority];
+            if (newValue !== undefined) {
+              break;
+            }
+          }
+          
+          // No value has been found
+          if (newValue === undefined) 
+          {
+            newPriority = undefined;
+            
+            // Let's try the class-wide init value
+            initField = "$$init" + id; 
+            if (initField) {
+              newValue = obj[initField];
+            }
+            else if (qx.core.Variant.isSet("qx.debug", "on"))
+            {
+              // Still no value. We warn about that the property is not nullable.
+              if (!config.nullable) {
+                obj.error("Missing value for: " + name + " (during reset() - from theme system)");
+              }
+            }
+          }          
+
+          // Be sure that priority is right
+          data[id] = newPriority;
+        }
+        
+        // Set implementation block
+        else
+        {
+          // Be sure that priority is right
+          data[id] = themedPrio;
+        } 
+
+        // Call change helper
+        this.__changeHelper.call(obj, newValue, oldValue, config);
+      }
+    },
+    
+    
     /**
      * Adds a new property to the given class.
      * 
@@ -440,11 +539,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
         members["refresh" + up] = setter(2);
       }
 
+      // Prio field is still there, but we update these values via importStyles()
+      /*
       if (config.themeable)
       {
         members["setThemed" + up] = setter(3);
         members["resetThemed" + up] = resetter(3);
       }
+      */
 
       members["set" + up] = setter(4);
       members["reset" + up] = resetter(4);
@@ -469,7 +571,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           this["set" + up](!this["get" + up]());
         }
 
-        members["is" + up] = members["get" + up];
+        members["is" + up] = getter;
       }
     }    
   }

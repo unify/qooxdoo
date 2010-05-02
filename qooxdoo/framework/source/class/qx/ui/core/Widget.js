@@ -811,6 +811,8 @@ qx.Class.define("qx.ui.core.Widget",
 
   statics :
   {
+    __styleCache : {},
+    
     /** Whether the widget should print out hints and debug messages */
     DEBUG : false,
 
@@ -2741,73 +2743,65 @@ qx.Class.define("qx.ui.core.Widget",
      */
     syncAppearance : function()
     {
-      var states = this.__states;
-      var selector = this.__appearanceSelector;
       var manager = qx.theme.manager.Appearance.getInstance();
 
-      // Check for requested selector update
-      if (this.__updateSelector)
-      {
-        // Clear flag
-        this.__updateSelector = null;
 
-        // Check if the selector was created previously
-        if (selector)
+      var states = this.__states;
+      var structureSelector = this.__structureSelector;
+      
+      // Build structure selector
+      if (!structureSelector)
+      {
+        if (this.$$subparent)
         {
-          // Query old selector
-          var oldData = manager.styleFrom(selector, states, null, this.getAppearance());
+          var obj = this;
+          var id = [];
 
-          // Clear current selector (to force recompute)
-          if (oldData) {
-            selector = null;
-          }
+          do {
+            id.push(obj.$$subcontrol||obj.getAppearance());
+          } while (obj = obj.$$subparent);
+
+          // Combine parent control IDs, add top level appearance, filter result
+          // to not include positioning information anymore (e.g. #3)
+          structureSelector = id.reverse().join("/").replace(/#[0-9]+/g, "");
         }
-      }
-
-      // Build selector
-      if (!selector)
-      {
-        var obj = this;
-        var id = [];
-
-        do {
-          id.push(obj.$$subcontrol||obj.getAppearance());
-        } while (obj = obj.$$subparent);
-
-        // Combine parent control IDs, add top level appearance, filter result
-        // to not include positioning information anymore (e.g. #3)
-        selector = this.__appearanceSelector = id.reverse().join("/").replace(/#[0-9]+/g, "");
+        else
+        {
+          structureSelector = this.getAppearance();
+        }
       }
 
       // Query current selector
-      var newData = manager.styleFrom(selector, states, null, this.getAppearance());
-
-      if (newData)
+      var stateSelector = "";
+      if (states) 
       {
-        if (oldData)
-        {
-          for (var prop in oldData)
-          {
-            if (newData[prop] === undefined) {
-              this.reset(prop, "themed");
-            }
-          }
-        }
-
-        // Apply new data
-        for (var prop in newData) {
-          newData[prop] === undefined ? this.reset(prop, "themed") : this.set(prop, newData[prop], "themed");
+        var stateKeys = qx.Bootstrap.getKeys(states);
+        var stateLength = stateKeys.length;
+        if (stateLength == 1) {
+          stateSelector = "." + stateKeys[0];
+        } else if (stateLength > 1) {
+          stateSelector = "." + stateKeys.sort().join(".");
         }
       }
-      else if (oldData)
-      {
-        // Clear old data
-        for (var prop in oldData) {
-          this.reset(prop, "themed");
-        }
+      
+      var styleCache = qx.ui.core.Widget.__styleCache;
+      var newSelector = structureSelector + stateSelector;
+      var newStyles = styleCache[newSelector];
+      if (!newStyles) {
+        newStyles = styleCache[newSelector] = manager.styleFrom(structureSelector, states, null, this.getAppearance());
       }
+      
+      // Read out old data
+      // Hint: We can access the cache here without checking, because we
+      // had already accessed this in an earlier run (it's old data)
+      var oldSelector = this.__appearanceSelector;
+      var oldStyles = styleCache[oldSelector];
+      
+      // Store new selector
+      this.__appearanceSelector = newSelector;
 
-      this.fireDataEvent("syncAppearance", this.__states);
+      // Apply new data
+      qx.core.property.Multi.importThemed(this, newStyles, oldStyles);
     },
     
     
@@ -2817,7 +2811,6 @@ qx.Class.define("qx.ui.core.Widget",
       var selector = this.__appearanceSelector;
       var states = this.__states;
       var styles = manager.styleFrom(selector, states, null, this.getAppearance());
-      console.debug(JSON.stringify(styles));
 
       // Easy lookup
       var value = styles[prop];
