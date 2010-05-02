@@ -148,26 +148,38 @@ qx.Bootstrap.define("qx.core.property.Multi",
     __propertyNameToId : {},    
     
     
+    /**
+     * Imports a list of themed styles from the appearance system
+     * 
+     * @param obj {qx.ui.core.Widget} Any widget
+     * @param newStyles {Map} Map of properties to apply
+     * @param oldStyles {Map} Map of previous property values
+     */
     importThemed : function(obj, newStyles, oldStyles)
     {
-      var data = obj.$$data;
+      // TODO: Make this hard-coded thingy configurable... somehow
+      var themedPriority = 3;
+
+      // Translate name to pre-cached ID
       var nameToId = this.__propertyNameToId;
-      var id, newValue, oldValue, storedPrio, initField;
-      var themedPrio = 3;
-      var Bootstrap = qx.Bootstrap;
       
+      // Check existence of data structure
+      var data = obj.$$data;
       if (!data) {
         data = obj.$$data = {};
       }
+
+      var id, newValue, oldValue, storedPriority, initField;
+      var Bootstrap = qx.Bootstrap;
       
       for (var prop in newStyles) 
       {
         id = nameToId[prop];
         
-        storedPrio = data[id];
+        storedPriority = data[id];
         
         // Ignore if there is a higher priorized value
-        if (storedPrio > themedPrio) {
+        if (storedPriority > themedPriority) {
           continue;
         }
         
@@ -175,12 +187,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
         
         // If nothing is set at the moment and no new value is given
         // then simply ignore the property for the moment
-        if (storedPrio === undefined && newValue === undefined) {
+        if (storedPriority === undefined && newValue === undefined) {
           continue;
         }
         
         // Whether we are overwriting an old value (the typical case on state changes)
-        if (storedPrio == themedPrio) 
+        if (storedPriority == themedPriority) 
         {
           oldValue = oldStyles[prop];
           if (newValue === oldValue) {
@@ -189,8 +201,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         else
         {
-          if (storedPrio != null) {
-            oldValue = data[id+storedPrio];
+          if (storedPriority != null) {
+            oldValue = data[id+storedPriority];
           } else {
             oldValue = undefined;
           }
@@ -202,7 +214,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // Reset implementation block
         if (newValue === undefined) 
         {
-          for (var newPriority=themedPrio-1; newPriority>0; newPriority--)
+          for (var newPriority=themedPriority-1; newPriority>0; newPriority--)
           {
             newValue = data[id+newPriority];
             if (newValue !== undefined) {
@@ -234,10 +246,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Set implementation block
-        else
+        else if (storedPriority != themedPriority)
         {
-          // Be sure that priority is right
-          data[id] = themedPrio;
+          data[id] = themedPriority;
         } 
 
         // Call change helper
@@ -323,8 +334,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           if (oldPriority != null) 
           {
             if (oldPriority == 3) {
-              var oldValue = null;//this.getAppearanceValue(name);
-              // TODO: Access to old value              
+              var oldValue = this.getAppearanceValue(name);
             } else {
               var oldValue = data[id+oldPriority];
             }            
@@ -388,8 +398,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             // Read old value
             if (oldPriority == 3) {
-              var oldValue = null;//this.getAppearanceValue(name);
-              // TODO: Access to old value
+              var oldValue = this.getAppearanceValue(name);
             } else {
               var oldValue = data[id+oldPriority];
             }
@@ -461,8 +470,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
         
         var data = context.$$data;
 
-        var currentPrio = data && data[id];
-        if (currentPrio == null) 
+        var currentPriority = data && data[id];
+        if (currentPriority == null) 
         {
           // Fallback to init value on prototype chain (when supported)
           // This is always the value on the current class, not explicitely the
@@ -483,10 +492,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Special get() support for themable properties
-        if (currentPrio == 3) {
+        if (currentPriority == 3) {
           return context.getAppearanceValue(name);
         } else {
-          return data[id+currentPrio];
+          return data[id+currentPriority];
         }
       };
       
