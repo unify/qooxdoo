@@ -180,17 +180,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
         {
           var context = this;
 
-          if (qx.core.Variant.isSet("qx.debug", "on")) 
-          {
-            if (arguments.length == 0) {
-              throw new Error("Called set method of property " + name + " with no arguments!");
-            }
-            
-            if (arguments.length > 1) 
-            {
-              context.warn("Called set method of property " + name + " with too many arguments!");
-              context.trace();
-            }
+          if (qx.core.Variant.isSet("qx.debug", "on")) {
+            qx.core.property.Debug.checkSetter(context, config, arguments);
           }
           
           var current = context.$$current;
@@ -252,13 +243,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
         {
           var context = this;
 
-          if (qx.core.Variant.isSet("qx.debug", "on")) 
-          {
-            if (arguments.length != 0) 
-            {
-              context.warn("Called reset method of property " + name + " with too many arguments!");
-              context.trace();
-            }
+          if (qx.core.Variant.isSet("qx.debug", "on")) {
+            qx.core.property.Debug.checkResetter(context, config, arguments);
           }
           
           var current = context.$$current;
@@ -335,13 +321,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
       {
         var context = this;
 
-        if (qx.core.Variant.isSet("qx.debug", "on")) 
-        {
-          if (arguments.length != 0) 
-          {
-            context.warn("Called get method of property " + name + " with too many arguments!");
-            context.trace();
-          }
+        if (qx.core.Variant.isSet("qx.debug", "on")) {
+          qx.core.property.Debug.checkGetter(context, config, arguments);
         }
                 
         var current = context.$$current;
