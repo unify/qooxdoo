@@ -4,7 +4,6 @@ qx.Bootstrap.define("qx.core.property.Core",
   {
     RUNTIME_OVERRIDE : false,
   
-    $$propertyNameToId : {},
     $$propertyId : 0,
   
     /**

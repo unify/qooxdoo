@@ -53,11 +53,8 @@
  * TODO 
  * 
  * * Lay out keywords out of functions e.g. undefined
- * * Move Property checks to qx.core.Property
- * * Split Property Class again into Simple/Complex? Might make sense.
  * 
  * * Add support for special value "inherit" to user/theme/runtime values
- * * Take a look at all open or recently closed bugs on the original Property system.
  * * Add support for check
  * * Add support for verify
  * * Add support for transform
@@ -172,20 +169,23 @@ qx.Bootstrap.define("qx.core.property.Simple",
       }
     }, 
     
+    __propertyNameToId : {},
      
     add : function(clazz, name, config)
     {
       /*
       ---------------------------------------------------------------------------
-         INTRO: IDENTICAL BETWEEN SIMPLE AND COMPLEX
+         INTRO
       ---------------------------------------------------------------------------
       */
             
       // Generate property ID
-      var db = qx.core.property.Core.$$propertyNameToId;
+      // Identically named property might store data on the same field
+      // as in this case this is typicall on different classes.
+      var db = this.__propertyNameToId;
       var id = db[name];
       if (!id) {
-        id = db[name] = qx.core.property.Core.$$propertyId;
+        id = db[name] = qx.core.property.Core.$$propertyId++;
       }
       
       // Store init value (shared data between instances)
@@ -208,18 +208,15 @@ qx.Bootstrap.define("qx.core.property.Simple",
       // Shorthands: Better compression/obfuscation/performance
       var changeHelper = this.__changeHelper;
       var nullable = config.nullable;
-      
-      
-      
-            
+
+
+
+
       /*
       ---------------------------------------------------------------------------
-         FACTORY METHODS
+         FACTORY METHODS :: GET
       ---------------------------------------------------------------------------
       */      
-      
-      var id = qx.core.property.Core.$$propertyId++;
-      //qx.log.Logger.debug(clazz, "Simple property: " + name + "[" + id + "]");
       
       members["get" + up] = function() 
       {
@@ -275,6 +272,14 @@ qx.Bootstrap.define("qx.core.property.Simple",
         };
       }      
       
+      
+      
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS :: SET
+      ---------------------------------------------------------------------------
+      */      
+      
       members["set" + up] = function(value)
       {
         var context = this;
@@ -309,6 +314,14 @@ qx.Bootstrap.define("qx.core.property.Simple",
           changeHelper.call(context, value, old, config);
         }        
       };
+      
+      
+      
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS :: RESET
+      ---------------------------------------------------------------------------
+      */      
       
       members["reset" + up] = function()
       {
@@ -349,6 +362,14 @@ qx.Bootstrap.define("qx.core.property.Simple",
           changeHelper.call(context, value, old, config);
         }             
       };   
+      
+      
+      
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS :: GOODIES
+      ---------------------------------------------------------------------------
+      */      
       
       if (config.check === "Boolean") 
       {

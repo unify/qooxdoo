@@ -115,8 +115,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
           this.error("Missing _getChildren() implementation to support property inheritance!");
         }         
       }
-    },    
+    },
     
+    __propertyNameToId : {},    
     
     /**
      * Adds a new property to the given class.
@@ -126,15 +127,20 @@ qx.Bootstrap.define("qx.core.property.Multi",
     {
       /*
       ---------------------------------------------------------------------------
-         INTRO: IDENTICAL BETWEEN SIMPLE AND COMPLEX
+         INTRO: IDENTICAL BETWEEN SIMPLE AND MULTI
       ---------------------------------------------------------------------------
       */
             
       // Generate property ID
-      var db = qx.core.property.Core.$$propertyNameToId;
+      // Identically named property might store data on the same field
+      // as in this case this is typicall on different classes.
+      // We reserve five slots for storing data: init, theme, inheritance, override, user
+      // At any moment we add more features, we need to increase the increment as well!
+      var db = this.__propertyNameToId;
       var id = db[name];
       if (!id) {
         id = db[name] = qx.core.property.Core.$$propertyId;
+        qx.core.property.Core.$$propertyId+=5;
       }
       
       // Store init value (shared data between instances)
@@ -163,7 +169,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
               
       /*
       ---------------------------------------------------------------------------
-         FACTORY METHODS
+         FACTORY METHODS :: SETTER
       ---------------------------------------------------------------------------
       */
 
@@ -231,6 +237,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
         };      
       };
 
+
+
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS :: RESETTER
+      ---------------------------------------------------------------------------
+      */
           
       var resetter = function(modifyPriority)
       {
@@ -313,12 +326,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       /*
       ---------------------------------------------------------------------------
-         ATTACH METHODS
+         FACTORY METHODS :: GETTER
       ---------------------------------------------------------------------------
-      */      
-      
-      // Add getter
-      members["get" + up] = function()
+      */
+
+      var getter = function()
       {
         var context = this;
 
@@ -360,8 +372,17 @@ qx.Bootstrap.define("qx.core.property.Multi",
       };
       
       
+      
+      /*
+      ---------------------------------------------------------------------------
+         FACTORY METHODS :: SETTER
+      ---------------------------------------------------------------------------
+      */
+      
       var currentPriority = 0;
       
+      members["get" + up] = getter;
+
       // There are exactly two types of init methods:
       // 1. Initializing the value given in the property configuration
       //    (calling apply methods, firing events, etc.)
@@ -431,7 +452,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       }
       
       // qx.log.Logger.debug(clazz, "Complex property: " + name + "[" + id + "](" + currentPriority + ")");
-      qx.core.property.Core.$$propertyId += currentPriority;
+      //qx.core.property.Core.$$propertyId += currentPriority;
     }    
   }
 });
