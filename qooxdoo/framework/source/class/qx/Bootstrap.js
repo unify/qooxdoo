@@ -290,8 +290,13 @@ qx.Bootstrap.define("qx.Bootstrap",
      * @param name {String} class name to resolve
      * @return {Class} the class
      */
-    getByName : function(name) {
-      return qx.Bootstrap.$$registry[name];
+    getByName : function(name, errorMsg) 
+    {
+      var clazz = qx.Bootstrap.$$registry[name];
+      if (!clazz && errorMsg) {
+        throw new Error("Missing class: " + name + "! " + errorMsg);
+      }
+      return clazz;
     },
 
 
