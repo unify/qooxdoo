@@ -5,7 +5,7 @@
    http://qooxdoo.org
 
    Copyright:
-     2009 Sebastian Werner, http://sebastian-werner.net
+     2009-2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -33,17 +33,18 @@
 
 /* ************************************************************************
 
+#optional(qx.bom.Element)
+#optional(qx.bom.Input)
+#optional(qx.bom.element.Location)
+ 
 #require(qx.type.BaseArray)
 
 #require(qx.bom.Document)
-#require(qx.bom.Element)
-#require(qx.bom.Input)
 #require(qx.bom.Viewport)
 #require(qx.bom.Selector)
 
 #require(qx.bom.element.Attribute)
 #require(qx.bom.element.Class)
-#require(qx.bom.element.Location)
 #require(qx.bom.element.Style)
 
 ************************************************************************ */
@@ -64,6 +65,10 @@
       var length = this.length;
       if (length > 0)
       {
+        if (typeof clazz == "string") {
+          clazz = qx.Class.getByName(clazz, "qx.bom.Collection.setter()");
+        }
+
         var ptn = clazz[method];
         for (var i=0; i<length; i++)
         {
@@ -93,6 +98,10 @@
     {
       if (this.length > 0)
       {
+        if (typeof clazz == "string") {
+          clazz = qx.Class.getByName(clazz, "qx.bom.Collection.getter()");
+        }
+         
         var ret = this[0].nodeType === 1 ?
           clazz[method](this[0], arg1, arg2, arg3, arg4, arg5, arg6) : null;
 
@@ -435,7 +444,7 @@
        * @param value {String|Number|Array} Value to apply to each element
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setValue : setter(qx.bom.Input, "setValue"),
+      setValue : setter("qx.bom.Input", "setValue"),
 
       /**
        * Returns the currently configured value of the first
@@ -450,7 +459,7 @@
        * @signature function()
        * @return {String|Array} The value of the first element.
        */
-       getValue : getter(qx.bom.Input, "getValue"),
+       getValue : getter("qx.bom.Input", "getValue"),
 
 
 
@@ -560,7 +569,7 @@
        *   <code>right</code> and <code>bottom</code> which contains the distance
        *   of the element relative to the document.
        */
-      getOffset : getter(qx.bom.element.Location, "get"),
+      getOffset : getter("qx.bom.element.Location", "get"),
 
       /**
        * Returns the distance between the first element of the collection to its offset parent.
@@ -568,7 +577,7 @@
        * @return {Map} Returns a map with <code>left</code> and <code>top</code>
        *   which contains the distance of the elements from each other.
        */
-      getPosition : getter(qx.bom.element.Location, "getPosition"),
+      getPosition : getter("qx.bom.element.Location", "getPosition"),
 
       /**
        * Detects the offset parent of the first element
@@ -576,7 +585,7 @@
        * @signature function()
        * @return {Collection} Detected offset parent encapsulated into a new collection instance
        */
-      getOffsetParent : getter(qx.bom.element.Location, "getOffsetParent"),
+      getOffsetParent : getter("qx.bom.element.Location", "getOffsetParent"),
 
 
       /**
@@ -817,7 +826,7 @@
        *       to attach the event handler to the bubbling phase.
        * @return {Collection} The collection is returned for chaining proposes
        */
-      addListener : setter(qx.bom.Element, "addListener"),
+      addListener : setter("qx.bom.Element", "addListener"),
 
       /**
        * Removes an event listener from the selected elements.
@@ -834,7 +843,7 @@
        *       the bubbling or of the capturing phase.
        * @return {Collection} The collection is returned for chaining proposes
        */
-      removeListener : setter(qx.bom.Element, "removeListener"),
+      removeListener : setter("qx.bom.Element", "removeListener"),
 
 
 
@@ -1897,7 +1906,10 @@
        */
       clone : function(events)
       {
-        var Element = qx.bom.Element;
+        var Element = qx.Class.getByName("qx.bom.Element");
+				if (!Element) {
+					throw new Error("Missing class: qx.bom.Element!");
+				}
 
         return events ?
           this.map(function(elem) { return Element.clone(elem, true); }) :
