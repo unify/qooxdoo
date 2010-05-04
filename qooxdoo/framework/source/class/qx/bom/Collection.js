@@ -44,8 +44,8 @@
 #require(qx.bom.Selector)
 
 #require(qx.bom.element.Attribute)
-#require(qx.bom.element.Class)
-#require(qx.bom.element.Style)
+#require(qx.bom.element2.Class)
+#require(qx.bom.element2.Style)
 
 ************************************************************************ */
 
@@ -371,7 +371,7 @@
        * @param name {String} The class name to add
        * @return {Collection} The collection is returned for chaining proposes
        */
-      addClass : setter(qx.bom.element.Class, "add"),
+      addClass : setter(qx.bom.element2.Class, "add"),
 
       /**
        * Gets the classname of the first selected element
@@ -379,7 +379,7 @@
        * @signature function()
        * @return {String} The retrieved classname
        */
-      getClass : getter(qx.bom.element.Class, "get"),
+      getClass : getter(qx.bom.element2.Class, "get"),
 
       /**
        * Whether the first selected element has the given className.
@@ -388,7 +388,7 @@
        * @param name {String} The class name to check for
        * @return {Boolean} true when the element has the given classname
        */
-      hasClass : getter(qx.bom.element.Class, "has"),
+      hasClass : getter(qx.bom.element2.Class, "has"),
 
       /**
        * Removes a className from the given element
@@ -397,7 +397,7 @@
        * @param name {String} The class name to remove
        * @return {Collection} The collection is returned for chaining proposes
        */
-      removeClass : setter(qx.bom.element.Class, "remove"),
+      removeClass : setter(qx.bom.element2.Class, "remove"),
 
       /**
        * Replaces the first given class name with the second one
@@ -407,7 +407,7 @@
        * @param newName {String} The class name to add
        * @return {Collection} The collection is returned for chaining proposes
        */
-      replaceClass : setter(qx.bom.element.Class, "replace"),
+      replaceClass : setter(qx.bom.element2.Class, "replace"),
 
       /**
        * Toggles a className of the selected elements
@@ -416,7 +416,7 @@
        * @param name {String} The class name to toggle
        * @return {Collection} The collection is returned for chaining proposes
        */
-      toggleClass : setter(qx.bom.element.Class, "toggle"),
+      toggleClass : setter(qx.bom.element2.Class, "toggle"),
 
 
 
@@ -481,7 +481,7 @@
        * @param value {var} The value for the given style
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setStyle : setter(qx.bom.element.Style, "set"),
+      setStyle : setter(qx.bom.element2.Style, "set"),
 
       /**
        * Convenience method to modify a set of styles at once.
@@ -491,7 +491,7 @@
        *    and the value is the value to use.
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setStyles : setter(qx.bom.element.Style, "setStyles"),
+      setStyles : setter(qx.bom.element2.Style, "setStyles"),
 
       /**
        * Reset the given style property
@@ -501,7 +501,7 @@
        * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
        * @return {Collection} The collection is returned for chaining proposes
        */
-      resetStyle : setter(qx.bom.element.Style, "reset"),
+      resetStyle : setter(qx.bom.element2.Style, "reset"),
 
        /**
         * Figures out the value of the given style property of
@@ -509,10 +509,10 @@
         *
         * @signature function(name, mode)
         * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
-        * @param mode {Number} Choose one of the modes supported by {@link qx.bom.element.Style#get}
+        * @param mode {Number} Choose one of the modes supported by {@link qx.bom.element2.Style#get}
         * @return {var} The value of the style property
         */
-      getStyle : getter(qx.bom.element.Style, "get"),
+      getStyle : getter(qx.bom.element2.Style, "get"),
 
 
 
@@ -531,7 +531,7 @@
        * @param value {String} The full CSS string
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setCss : setter(qx.bom.element.Style, "setCss"),
+      setCss : setter(qx.bom.element2.Style, "setCss"),
 
       /**
        * Returns the full content of the style attribute of the first element
@@ -540,7 +540,7 @@
        * @signature function()
        * @return {String} the full CSS string
        */
-      getCss : setter(qx.bom.element.Style, "getCss"),
+      getCss : setter(qx.bom.element2.Style, "getCss"),
 
 
 

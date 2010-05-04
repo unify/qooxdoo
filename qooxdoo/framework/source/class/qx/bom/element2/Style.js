@@ -25,13 +25,8 @@
  * * Better/Faster at supporting vendor prefixes. 
  * * No special IE handling for computed values (pixel values)
  * * No stringify support (compile())
- * * No CSS/style attribute support (setCss())
  * * No sub-modules: cursor, overflow, box sizing, etc.
  * * No dependencies
- * 
- * TODO:
- * 
- * * Opacity support for IE
  */
 qx.Class.define("qx.bom.element2.Style",
 {
@@ -57,6 +52,45 @@ qx.Class.define("qx.bom.element2.Style",
 			"webkit" : "Webkit",
 			"opera" : "O"
 		}),	
+		
+		
+    /**
+     * Set the full CSS content of the style attribute
+     *
+     * @param element {Element} The DOM element to modify
+     * @param value {String} The full CSS string
+     * @signature function(element, value)
+     * @return {void}
+     */
+    setCss : qx.core.Variant.select("qx.client",
+    {
+      "mshtml" : function(element, value) {
+        element.style.cssText = value;
+      },
+
+      "default" : function(element, value) {
+        element.setAttribute("style", value);
+      }
+    }),
+
+
+    /**
+     * Returns the full content of the style attribute.
+     *
+     * @param element {Element} The DOM element to query
+     * @return {String} the full CSS string
+     * @signature function(element)
+     */
+    getCss : qx.core.Variant.select("qx.client",
+    {
+      "mshtml" : function(element) {
+        return element.style.cssText.toLowerCase();
+      },
+
+      "default" : function(element) {
+        return element.getAttribute("style");
+      }
+    }),
 		
 
 		/**
@@ -99,21 +133,40 @@ qx.Class.define("qx.bom.element2.Style",
 		
 	
 		/**
-		 * Sets a new style property
+		 * Sets a new style property. If you want to modify
+		 * multiple styles at once it's a lot faster to use a map
+		 * as second argument.
 		 * 
 		 * @param elem {Element} DOM element to modify
-		 * @param name {String} Style name
+		 * @param name {String|Map} Style name or Map of styles/values to apply
 		 * @param value {String} Style value
 		 * @return {Class} Returns the class for further modifications
 		 */
 		set : function(elem, name, value)
 		{
 			var style = elem.style;
-
-			// Find real name, apply if supported
-			name = style[name] !== undefined && name || this.__nameCache[name] || this.property(name);
-			if (name) {
-				style[name] = value;
+			var names = this.__nameCache;
+			
+			if (typeof name == "string")
+			{
+				// Find real name, apply if supported
+				name = style[name] !== undefined && name || names[name] || this.property(name);
+				if (name) {
+					style[name] = value == null ? "" : value;
+				}
+			}
+			else
+			{
+				for (var key in name)
+				{
+					// Find real name, apply if supported
+					key = style[key] !== undefined && key || names[key] || this.property(key);
+					if (key) 
+					{
+						value = name[key];
+						style[key] = value == null ? "" : value;
+					}
+				}				
 			}
 			
 			// Chaining support
