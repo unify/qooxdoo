@@ -122,7 +122,7 @@ qx.Class.define("qx.lang.String",
      * @return {String} the trimmed string
      */
     trimLeft : function(str) {
-      return str.replace(/^\s+/, "");
+      return str.trimLeft ? str.trimLeft() : str.replace(/^\s+/, "");
     },
 
 
@@ -133,7 +133,7 @@ qx.Class.define("qx.lang.String",
      * @return {String} the trimmed string
      */
     trimRight : function(str) {
-      return str.replace(/\s+$/, "");
+      return str.trimRight ? str.trimRight() : str.replace(/\s+$/, "");
     },
 
 
@@ -144,7 +144,7 @@ qx.Class.define("qx.lang.String",
      * @return {String} the trimmed string
      */
     trim : function(str) {
-      return str.replace(/^\s+|\s+$/g, "");
+      return str.trim ? str.trim() : str.replace(/^\s+|\s+$/g, "");
     },
 
 
