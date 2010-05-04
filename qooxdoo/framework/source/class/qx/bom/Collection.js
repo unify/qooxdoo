@@ -44,6 +44,7 @@
 #require(qx.bom.Selector)
 
 #require(qx.bom.element.Attribute)
+
 #require(qx.bom.element2.Class)
 #require(qx.bom.element2.Style)
 
@@ -685,126 +686,6 @@
 
 
 
-
-      /*
-      ---------------------------------------------------------------------------
-         CSS: WIDTH AND HEIGHT
-      ---------------------------------------------------------------------------
-      */
-
-      /**
-       * Returns the width of the first element in the collection.
-       *
-       * This is the rendered width of the element which includes borders and
-       * paddings like the <code>offsetWidth</code> property in plain HTML.
-       *
-       * @return {Integer} The width of the first element
-       */
-      getWidth : function()
-      {
-        var obj = this[0];
-        var Node = qx.dom.Node;
-
-        if (obj)
-        {
-          if (Node.isElement(obj)) {
-            return qx.bom.element.Dimension.getWidth(obj);
-          } else if (Node.isDocument(obj)) {
-            return qx.bom.Document.getWidth(Node.getWindow(obj));
-          } else if (Node.isWindow(obj)) {
-            return qx.bom.Viewport.getWidth(obj);
-          }
-        }
-
-        return null;
-      },
-
-
-      /**
-       * Returns the content width of the first element in the collection.
-       *
-       * The content width is basically the maximum
-       * width used or the maximum width which can be used by the content. This
-       * excludes all kind of styles of the element like borders, paddings, margins,
-       * and even scrollbars.
-       *
-       * Please note that with visible scrollbars the content width returned
-       * may be larger than the box width returned via {@link #getWidth}.
-       *
-       * Only works for DOM elements and not for the window object or the document
-       * object!
-       *
-       * @return {Integer} Computed content width
-       */
-      getContentWidth : function()
-      {
-        var obj = this[0];
-        if (qx.dom.Node.isElement(obj)) {
-          return qx.bom.element.Dimension.getContentWidth(obj);
-        }
-
-        return null;
-      },
-
-
-      /**
-       * Returns the height of the first element in the collection.
-       *
-       * This is the rendered height of the element which includes borders and
-       * paddings like the <code>offsetHeight</code> property in plain HTML.
-       *
-       * @return {Integer} The height of the first element
-       */
-      getHeight : function()
-      {
-        var obj = this[0];
-        var Node = qx.dom.Node;
-
-        if (obj)
-        {
-          if (Node.isElement(obj)) {
-            return qx.bom.element.Dimension.getHeight(obj);
-          } else if (Node.isDocument(obj)) {
-            return qx.bom.Document.getHeight(Node.getWindow(obj));
-          } else if (Node.isWindow(obj)) {
-            return qx.bom.Viewport.getHeight(obj);
-          }
-        }
-
-        return null;
-      },
-
-
-      /**
-       * Returns the content height of the first element in the collection.
-       *
-       * The content height is basically the maximum
-       * height used or the maximum height which can be used by the content. This
-       * excludes all kind of styles of the element like borders, paddings, margins,
-       * and even scrollbars.
-       *
-       * Please note that with visible scrollbars the content height returned
-       * may be larger than the box width returned via {@link #getWidth}.
-       *
-       * Only works for DOM elements and not for the window object or the document
-       * object!
-       *
-       * @return {Integer} Computed content height
-       */
-      getContentHeight : function()
-      {
-        var obj = this[0];
-        if (qx.dom.Node.isElement(obj)) {
-          return qx.bom.element.Dimension.getContentHeight(obj);
-        }
-
-        return null;
-      },
-
-
-
-
-
       /*
       ---------------------------------------------------------------------------
          EVENTS
@@ -844,8 +725,6 @@
        * @return {Collection} The collection is returned for chaining proposes
        */
       removeListener : setter("qx.bom.Element", "removeListener"),
-
-
 
 
 
