@@ -42,18 +42,25 @@ qx.Class.define("qx.bom.element2.Class",
 {
   statics :
   {
+    /** {RegExp} Matches special spaces in class names */
     __rclass : /[\n\t]/g,
+
+    /** {RegExp} Divider between class names */
     __rspace : /\s+/,
     
-    
-
+    /**
+     * Whether the given element has the given cSS class
+     * 
+     * @param elem {Element} DOM element to query
+     * @param value {String} Class name to query for
+     */
     has : function(elem, value) 
     {
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
-        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class.");
-        qx.core.Assert.assertString(value, "Invalid class name to check for");
-        qx.core.Assert.assertMatch(value, /^[a-zA-Z][a-zA-Z0-9-]+$/);
+        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class!");
+        qx.core.Assert.assertString(value, "Invalid class name to check for!");
+        qx.core.Assert.assertMatch(value, /^[a-zA-Z][a-zA-Z0-9-]+$/, "Supports single value class names only!");
       }
       
       if ((" " + elem.className + " ").replace(this.__rclass, " ").indexOf(" " + value + " ") > -1) {
@@ -76,8 +83,8 @@ qx.Class.define("qx.bom.element2.Class",
     {
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
-        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class.");
-        qx.core.Assert.assertString(classes, "Invalid class name to add to element.");
+        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class!");
+        qx.core.Assert.assertString(classes, "Invalid class name to add to element!");
       }
 
       if (!elem.className) 
@@ -116,8 +123,8 @@ qx.Class.define("qx.bom.element2.Class",
     {
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
-        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class.");
-        qx.core.Assert.assertString(classes, "Invalid class name to add to element.");
+        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class!");
+        qx.core.Assert.assertString(classes, "Invalid class name to add to element!");
       }
             
       if (!elem.className) {
