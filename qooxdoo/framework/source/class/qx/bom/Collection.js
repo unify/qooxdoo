@@ -519,49 +519,6 @@
 
       /*
       ---------------------------------------------------------------------------
-         EVENTS
-      ---------------------------------------------------------------------------
-      */
-
-      /**
-       * Add an event listener to the selected elements. The event listener is passed an
-       * instance of {@link Event} containing all relevant information
-       * about the event as parameter.
-       *
-       * @signature function(type, listener, self, capture)
-       * @param type {String} Name of the event e.g. "click", "keydown", ...
-       * @param listener {Function} Event listener function
-       * @param self {Object} Reference to the 'this' variable inside
-       *       the event listener.
-       * @param capture {Boolean} Whether to attach the event to the
-       *       capturing phase of the bubbling phase of the event. The default is
-       *       to attach the event handler to the bubbling phase.
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      addListener : setter("qx.bom.Element", "addListener"),
-
-      /**
-       * Removes an event listener from the selected elements.
-       *
-       * Note: All registered event listeners will automatically be removed from
-       *   the DOM at page unload so it is not necessary to detach events yourself.
-       *
-       * @signature function(type, listener, self, capture)
-       * @param type {String} Name of the event
-       * @param listener {Function} The pointer to the event listener
-       * @param self {Object} Reference to the 'this' variable inside
-       *       the event listener.
-       * @param capture {Boolean} Whether to remove the event listener of
-       *       the bubbling or of the capturing phase.
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      removeListener : setter("qx.bom.Element", "removeListener"),
-
-
-
-
-      /*
-      ---------------------------------------------------------------------------
          TRAVERSING: FILTERING
       ---------------------------------------------------------------------------
       */
