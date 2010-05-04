@@ -42,7 +42,6 @@
 qx.Class.define("qx.core.Object",
 {
   extend : Object,
-  include : [qx.data.MBinding],
 
 
 
@@ -150,46 +149,6 @@ qx.Class.define("qx.core.Object",
       return args.callee.self;
     },
 
-
-
-
-
-    /*
-    ---------------------------------------------------------------------------
-      CLONE SUPPORT
-    ---------------------------------------------------------------------------
-    */
-
-    /**
-     * EXPERIMENTAL - NOT READY FOR PRODUCTION
-     *
-     * Returns a clone of this object. Copies over all user configured
-     * property values. Do not configure a parent nor apply the appearance
-     * styles directly.
-     *
-     * @return {qx.core.Object} The clone
-     */
-    clone : function()
-    {
-      var clazz = this.constructor
-      var clone = new clazz;
-      var props = qx.Class.getProperties(clazz);
-      var user = qx.core.Property.$$store.user;
-      var setter = qx.core.Property.$$method.set;
-      var name;
-
-      // Iterate through properties
-      for (var i=0, l=props.length; i<l; i++)
-      {
-        name = props[i];
-        if (this.hasOwnProperty(user[name])) {
-          clone[setter[name]](this[user[name]]);
-        }
-      }
-
-      // Return clone
-      return clone;
-    },
 
 
     /*
@@ -555,10 +514,7 @@ qx.Class.define("qx.core.Object",
      */
     getUserData : function(key)
     {
-      if (!this.__userData) {
-        return null;
-      }
-      var data = this.__userData[key];
+      var data = this.__userData && this.__userData[key];
       return data === undefined ? null : data;
     },
 
@@ -632,8 +588,6 @@ qx.Class.define("qx.core.Object",
     trace : function() {
       this.__Logger.trace(this);
     },
-
-
 
 
 
