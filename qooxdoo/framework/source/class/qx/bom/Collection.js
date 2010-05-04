@@ -466,7 +466,6 @@
 
 
 
-
       /*
       ---------------------------------------------------------------------------
          CSS: CORE
@@ -514,34 +513,6 @@
         * @return {var} The value of the style property
         */
       getStyle : getter(qx.bom.element2.Style, "get"),
-
-
-
-
-      /*
-      ---------------------------------------------------------------------------
-         CSS: SHEET
-      ---------------------------------------------------------------------------
-      */
-
-      /**
-       * Set the full CSS content of the style attribute for all elements in the
-       * collection.
-       *
-       * @signature function(value)
-       * @param value {String} The full CSS string
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      setCss : setter(qx.bom.element2.Style, "setCss"),
-
-      /**
-       * Returns the full content of the style attribute of the first element
-       * in the collection.
-       *
-       * @signature function()
-       * @return {String} the full CSS string
-       */
-      getCss : setter(qx.bom.element2.Style, "getCss"),
 
 
 

@@ -54,44 +54,6 @@ qx.Class.define("qx.bom.element2.Style",
 		}),	
 		
 		
-    /**
-     * Set the full CSS content of the style attribute
-     *
-     * @param element {Element} The DOM element to modify
-     * @param value {String} The full CSS string
-     * @signature function(element, value)
-     * @return {void}
-     */
-    setCss : qx.core.Variant.select("qx.client",
-    {
-      "mshtml" : function(element, value) {
-        element.style.cssText = value;
-      },
-
-      "default" : function(element, value) {
-        element.setAttribute("style", value);
-      }
-    }),
-
-
-    /**
-     * Returns the full content of the style attribute.
-     *
-     * @param element {Element} The DOM element to query
-     * @return {String} the full CSS string
-     * @signature function(element)
-     */
-    getCss : qx.core.Variant.select("qx.client",
-    {
-      "mshtml" : function(element) {
-        return element.style.cssText.toLowerCase();
-      },
-
-      "default" : function(element) {
-        return element.getAttribute("style");
-      }
-    }),
-		
 
 		/**
 		 * Returns the current property value on the given element.
