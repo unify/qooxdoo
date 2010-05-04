@@ -20,7 +20,7 @@
 /**
  * Rewritten support for applying style properties.
  * 
- * Differences to qooxdoo's implementation:
+ * Differences to old implementation:
  * 
  * * Better/Faster at supporting vendor prefixes. 
  * * No special IE handling for computed values (pixel values)
@@ -117,7 +117,7 @@ qx.Class.define("qx.bom.element2.Style",
 			
 			// Fast-path: local styles
 			if (!computed) {
-				return elem[name];
+				return style[name];
 			}
 			
 			// Check support for computed style, fall back to cascaded styles
