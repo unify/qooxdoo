@@ -35,7 +35,6 @@
 
 #### OPTIONALS: Add these classes to enable specific features
 #optional(qx.bom.Element)
-#optional(qx.bom.Input)
  
 #require(qx.type.BaseArray)
 #require(qx.bom.Selector)
@@ -61,10 +60,6 @@
       var length = this.length;
       if (length > 0)
       {
-        if (typeof clazz == "string") {
-          clazz = qx.Class.getByName(clazz, "qx.bom.Collection.setter()");
-        }
-
         var ptn = clazz[method];
         for (var i=0; i<length; i++)
         {
@@ -94,10 +89,6 @@
     {
       if (this.length > 0)
       {
-        if (typeof clazz == "string") {
-          clazz = qx.Class.getByName(clazz, "qx.bom.Collection.getter()");
-        }
-         
         var ret = this[0].nodeType === 1 ?
           clazz[method](this[0], arg1, arg2, arg3, arg4, arg5, arg6) : null;
 
@@ -440,7 +431,7 @@
        * @param value {String|Number|Array} Value to apply to each element
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setValue : setter("qx.bom.Input", "setValue"),
+      setValue : setter(qx.bom.Input, "setValue"),
 
       /**
        * Returns the currently configured value of the first
@@ -455,7 +446,7 @@
        * @signature function()
        * @return {String|Array} The value of the first element.
        */
-       getValue : getter("qx.bom.Input", "getValue"),
+       getValue : getter(qx.bom.Input, "getValue"),
 
 
 
@@ -974,12 +965,11 @@
         var element = this[0];
         var doc = element.ownerDocument || element;
 
-        // Create fragment, cleanup HTML and extract scripts
-        var fragment = doc.createDocumentFragment();
-        var scripts = qx.bom.Html.clean(args, doc, fragment);
-        var first = fragment.firstChild;
+        // Cleanup HTML and create a fragment
+        var fragment = qx.bom.Html.clean(args, doc, true);
 
         // Process fragment content
+        var first = fragment.firstChild;
         if (first)
         {
           // Clone every fragment except the last one
@@ -989,31 +979,6 @@
           }
 
           callback.call(this, this[last], fragment);
-        }
-
-        // Process script elements
-        if (scripts)
-        {
-          var script;
-          var Loader = qx.io.ScriptLoader;
-          var Func = qx.lang.Function;
-
-          for (var i=0, l=scripts.length; i<l; i++)
-          {
-            script = scripts[i];
-
-            // Executing script code or loading source depending on element configuration
-            if (script.src) {
-              Loader.get().load(script.src);
-            } else {
-              Func.globalEval(script.text || script.textContent || script.innerHTML || "");
-            }
-
-            // Removing element from old parent
-            if (script.parentNode) {
-              script.parentNode.removeChild(script);
-            }
-          }
         }
 
         return this;
@@ -1569,9 +1534,9 @@
       clone : function(events)
       {
         var Element = qx.Class.getByName("qx.bom.Element");
-				if (!Element) {
-					throw new Error("Missing class: qx.bom.Element!");
-				}
+        if (!Element) {
+          throw new Error("Missing class: qx.bom.Element!");
+        }
 
         return events ?
           this.map(function(elem) { return Element.clone(elem, true); }) :
