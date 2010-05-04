@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2009-2010 Deutsche Telekom AG, Germany, http://www.telekom.com
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -260,6 +261,47 @@ qx.Class.define("qx.bom.Viewport",
       "default" : function(win) {
         return (win||window).pageYOffset;
       }
-    })
+    }),
+
+
+    /**
+     * Returns the screen rotation. This might be one of <code>0</code>,
+     * <code>90</code> and <code>-90</code>. The last one is not supported
+     * on all platforms.
+     *
+     * @param win {Window?window} The window to query
+     * @return {Integer} The screen rotation
+     */
+    getOrientation : function(win)
+    {
+      var orientation = (win||window).orientation;
+      if (orientation == null) {
+        orientation = this.getWidth(win) > this.getHeight(win) ? 90 : 0;
+      }
+
+      return orientation;
+    },
+
+
+    /**
+     * Whether the screen is rotated to being in landscape mode.
+     *
+     * @param win {Window?window} The window to query
+     * @return {Boolean} <code>true</code> when the screen is rotated to landscape.
+     */
+    isLandscape : function(win) {
+      return Math.abs(this.getOrientation(win)) == 90;
+    },
+
+
+    /**
+     * Whether the screen is rotated to being in portrait mode.
+     *
+     * @param win {Window?window} The window to query
+     * @return {Boolean} <code>true</code> when the screen is rotated to portrait.
+     */
+    isPortrait : function(win) {
+      return this.getOrientation(win) == 0;
+    }
   }
 });
