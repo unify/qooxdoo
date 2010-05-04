@@ -32,26 +32,10 @@ qx.Class.define("qx.bom.Element",
   {
     /*
     ---------------------------------------------------------------------------
-      CREATION
+      UTILITIES
     ---------------------------------------------------------------------------
     */
-
-    /** {Map} A list of all attributes which needs to be part of the initial element to work correctly */
-    __initialAttributes :
-    {
-      "onload" : true,
-      "onpropertychange" : true,
-      "oninput" : true,
-      "onchange" : true,
-      "name" : true,
-      "type" : true,
-      "checked" : true,
-      "disabled" : true
-    },
-
-    __helperElement : {},
-
-
+	
     /**
      * Creates and returns an DOM helper element.
      *
@@ -81,6 +65,30 @@ qx.Class.define("qx.bom.Element",
 
       return qx.bom.Element.__helperElement[key];
     },
+
+
+
+	
+    /*
+    ---------------------------------------------------------------------------
+      CREATION
+    ---------------------------------------------------------------------------
+    */
+
+    /** {Map} A list of all attributes which needs to be part of the initial element to work correctly */
+    __initialAttributes :
+    {
+      "onload" : true,
+      "onpropertychange" : true,
+      "oninput" : true,
+      "onchange" : true,
+      "name" : true,
+      "type" : true,
+      "checked" : true,
+      "disabled" : true
+    },
+
+    __helperElement : {},
 
 
     /**
