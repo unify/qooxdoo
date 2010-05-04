@@ -33,20 +33,15 @@
 
 /* ************************************************************************
 
+#### OPTIONALS: Add these classes to enable specific features
 #optional(qx.bom.Element)
 #optional(qx.bom.Input)
-#optional(qx.bom.element.Location)
  
 #require(qx.type.BaseArray)
-
-#require(qx.bom.Document)
-#require(qx.bom.Viewport)
 #require(qx.bom.Selector)
-
-#require(qx.bom.element.Attribute)
-
 #require(qx.bom.element2.Class)
 #require(qx.bom.element2.Style)
+#require(qx.bom.element.Attribute)
 
 ************************************************************************ */
 
