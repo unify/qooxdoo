@@ -14,6 +14,23 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
+     
+   ======================================================================
+
+   This class contains code based on the following work:
+
+   * jQuery
+     http://jquery.com
+     Version 1.4.2
+
+     Copyright:
+       John Resig
+ 
+     License:
+       MIT+GPL: http://jquery.org/license
+
+     Authors:
+       * John Resig
 
 ************************************************************************ */
 
@@ -23,69 +40,107 @@
  */
 qx.Class.define("qx.bom.element2.Class",
 {
-	statics :
-	{
-		/** {RegExp} Regular expressions to split class names */
-		__splitter : /\s+/g,
+  statics :
+  {
+    __rclass : /[\n\t]/g,
+    __rspace : /\s+/,
+    
+    
 
-		/** {RegExp} String trim regular expression. */
-		__trim : /^\s+|\s+$/g,
+    has : function(elem, value) 
+    {
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class.");
+        qx.core.Assert.assertString(value, "Invalid class name to check for");
+        qx.core.Assert.assertMatch(value, /^[a-zA-Z][a-zA-Z0-9-]+$/);
+      }
+      
+      if ((" " + elem.className + " ").replace(this.__rclass, " ").indexOf(" " + value + " ") > -1) {
+        return true;
+      }
 
-
-		/**
-		 * Adds one or multiple classes to the given element
-		 *
-		 * @param elem {Element} DOM element to modify
-		 * @param classes {String[]|varargs} List of classes to add. Could be
-		 *		an array or a list or arguments.
-		 * @return {String} The resulting class name which was applied
-		 */
-		add : function(elem, classes)
-		{
-			if (typeof classes !== "object") {
-				classes = Array.prototype.slice.call(arguments, 1);
-			}
-
-			var old=elem.className, keys={}, result;
-			if (old)
-			{
-				result = old.split(this.__splitter);
-				for (var i=0, l=result.length; i<l; i++) {
-					keys[result[i]] = true;
-				}
-
-				for (var i=0, l=classes.length; i<l; i++)
-				{
-					if (!keys[classes[i]]) {
-						result.push(classes[i]);
-					}
-				}
-			}
-			else
-			{
-				result = classes;
-			}
-
-			return elem.className = result.join(" ");
-		},
+      return false;
+    },
 
 
-		/**
-		 * Removes one or multiple classes from the given element
-		 *
-		 * @param elem {Element} DOM element to modify
-		 * @param classes {String[]|varargs} List of classes to remove. Could be
-		 *		an array or a list or arguments.
-		 * @return {String} The resulting class name which was applied
-		 */
-		remove : function(elem, classes)
-		{
-			if (typeof classes !== "object") {
-				classes = Array.prototype.slice.call(arguments, 1);
-			}
+    /**
+     * Adds one or multiple classes to the given element
+     *
+     * @param elem {Element} DOM element to modify
+     * @param classes {String} List of classes to add. One or 
+     *    multiple classes in a single string.
+     * @return {String} The resulting class name which was applied
+     */
+    add : function(elem, classes)
+    {
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class.");
+        qx.core.Assert.assertString(classes, "Invalid class name to add to element.");
+      }
 
-			var reg = new RegExp("\\b" + classes.join("\\b|\\b") + "\\b", "g");
-			return elem.className = elem.className.replace(reg, "").replace(this.__trim, "").replace(this.__splitter, " ");
-		}
-	}
+      if (!elem.className) 
+      {
+        elem.className = classes;
+      } 
+      else 
+      {
+        var classNames = classes.split(this.__rspace);
+        var className = " " + elem.className + " ";
+        var setClass = elem.className;
+
+        for (var i=0, l=classNames.length; i<l; i++) 
+        {
+          if (className.indexOf(" " + classNames[i] + " ") < 0) {
+            setClass += " " + classNames[i];
+          }
+        }
+        
+        elem.className = qx.lang.String.trim(setClass);
+      }
+      
+      return elem.className;
+    },
+
+
+    /**
+     * Removes one or multiple classes from the given element
+     *
+     * @param elem {Element} DOM element to modify
+     * @param classes {String[]|varargs} List of classes to remove. One or 
+     *    multiple classes in a single string.
+     * @return {String} The resulting class name which was applied
+     */
+    remove : function(elem, classes)
+    {
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class.");
+        qx.core.Assert.assertString(classes, "Invalid class name to add to element.");
+      }
+            
+      if (!elem.className) {
+        return;
+      }
+
+      if (classes) 
+      {
+        var classNames = classes.split(this.__rspace);
+        var setClass = (" " + elem.className + " ").replace(this.__rclass, " ");
+        
+        for (var i=0, l=classNames.length; i<l; i++) {
+          setClass = setClass.replace(" " + classNames[i] + " ", " ");
+        }
+        
+        elem.className = qx.lang.String.trim(setClass);
+      } 
+      else
+      {
+        elem.className = "";
+      }
+      
+      return elem.className;
+    }
+  }
 });
