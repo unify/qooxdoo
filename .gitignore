@@ -1,6 +1,7 @@
 *.pyc
 qooxdoo/framework/cache
 qooxdoo/application/playground/test
+qooxdoo/application/feedreader/api
 qooxdoo/application/performance/test
 qooxdoo/application/performance/build
 qooxdoo/application/portal/build
