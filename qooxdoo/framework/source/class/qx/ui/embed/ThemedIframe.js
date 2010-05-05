@@ -231,7 +231,7 @@ qx.Class.define("qx.ui.embed.ThemedIframe",
       try
       {
         var body = this._getIframeElement().getBody();
-        qx.bom.Element.addListener(body, "mousewheel", this._onMouseWheel, this);
+        qx.event.Registration.addListener(body, "mousewheel", this._onMouseWheel, this);
       } catch (e) {
         this._disableScollbars();
       }

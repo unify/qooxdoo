@@ -59,7 +59,7 @@ qx.Class.define("qx.ui.menu.Manager",
     Registration.addListener(el, "keypress", this._onKeyPress, this, true);
 
     // Hide all when the window is blurred
-    qx.bom.Element.addListener(window, "blur", this.hideAll, this);
+    qx.event.Registration.addListener(window, "blur", this.hideAll, this);
 
     // Create open timer
     this.__openTimer = new qx.event.Timer;
@@ -835,6 +835,9 @@ qx.Class.define("qx.ui.menu.Manager",
   {
     var Registration = qx.event.Registration;
     var el = document.body;
+
+    // Hide all when the window is blurred
+    Registration.removeListener(window, "blur", this.hideAll, this);
 
     // React on mousedown/mouseup events
     Registration.removeListener(window.document.documentElement, "mousedown", this._onMouseDown, this, true);
