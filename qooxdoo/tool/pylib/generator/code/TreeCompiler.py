@@ -92,7 +92,7 @@ class TreeCompiler(object):
         for pos, classId in enumerate(classes):
             # self._console.progress(pos, length)
             compiled = self.getCompiled(classId, variants, optimize, format)
-            print "    - %s/%s: %s => %s bytes" % (str(pos).zfill(3), length, classId, len(compiled))
+            print "    - %s/%s: %s => %s bytes" % (str(pos+1).zfill(3), length, classId, len(compiled))
             content += compiled
             
         return content
