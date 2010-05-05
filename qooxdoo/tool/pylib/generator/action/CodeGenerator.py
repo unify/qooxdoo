@@ -138,8 +138,8 @@ class CodeGenerator(object):
             return data
 
         def compilePackage(packageIndex, package):
-            self._console.info("Compiling package #%s:" % packageIndex, False)
-            self._console.indent()
+            #self._console.info("Compiling package #%s:" % packageIndex, False)
+            #self._console.indent()
 
             # Compile file content
             pkgCode = self._treeCompiler.compileClasses(package.classes, variants, optimize, format)
@@ -156,8 +156,8 @@ class CodeGenerator(object):
             #
             package.hash = hash  # to fill qx.$$loader.packageHashes in generateBootScript()
 
-            self._console.debug("Done: %s" % self._computeContentSize(compiledContent))
-            self._console.outdent()
+            #self._console.debug("Done: %s" % self._computeContentSize(compiledContent))
+            #self._console.outdent()
 
             return compiledContent
 

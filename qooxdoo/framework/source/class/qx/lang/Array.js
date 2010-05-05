@@ -80,10 +80,6 @@ qx.Class.define("qx.lang.Array",
         return object;
       }
 
-      if (qx.Class.hasInterface(object, qx.data.IListData)) {
-        var object = object.toArray();
-      }
-
       // Create from given constructor
       var ret = new constructor;
 

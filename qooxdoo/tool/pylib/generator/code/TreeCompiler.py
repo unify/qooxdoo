@@ -90,8 +90,10 @@ class TreeCompiler(object):
         length = len(classes)
         
         for pos, classId in enumerate(classes):
-            self._console.progress(pos, length)
-            content += self.getCompiled(classId, variants, optimize, format)
+            # self._console.progress(pos, length)
+            compiled = self.getCompiled(classId, variants, optimize, format)
+            print "    - %s/%s: %s => %s bytes" % (str(pos+1).zfill(3), length, classId, len(compiled))
+            content += compiled
             
         return content
 

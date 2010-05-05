@@ -79,12 +79,13 @@ qx.Class.define("qx.log.appender.RingBuffer",
     {
       var maxMessages = this.getMaxMessages();
 
-      if (this.__history.length < maxMessages) {
-        this.__history.push(entry);
+			var history = this.__history;
+      if (history.length < maxMessages) {
+        history.push(entry);
       }
       else
       {
-        this.__history[this.__nextIndexToStoreTo++] = entry;
+        history[this.__nextIndexToStoreTo++] = entry;
 
         if (this.__nextIndexToStoreTo >= maxMessages) {
           this.__nextIndexToStoreTo = 0;
@@ -112,27 +113,28 @@ qx.Class.define("qx.log.appender.RingBuffer",
      */
     retrieveLogEvents : function(count)
     {
-      if (count > this.__history.length) {
-        count = this.__history.length;
+			var history = this.__history;
+      if (count > history.length) {
+        count = history.length;
       }
 
-      if (this.__history.length == this.getMaxMessages()) {
+      if (history.length == this.getMaxMessages()) {
         var indexOfYoungestElementInHistory = this.__nextIndexToStoreTo - 1;
       } else {
-        indexOfYoungestElementInHistory = this.__history.length - 1;
+        indexOfYoungestElementInHistory = history.length - 1;
       }
       var startIndex = indexOfYoungestElementInHistory - count + 1;
 
       if (startIndex < 0) {
-        startIndex += this.__history.length;
+        startIndex += history.length;
       }
 
       var result;
 
       if (startIndex <= indexOfYoungestElementInHistory) {
-        result = this.__history.slice(startIndex, indexOfYoungestElementInHistory + 1);
+        result = history.slice(startIndex, indexOfYoungestElementInHistory + 1);
       } else {
-        result = this.__history.slice(startIndex, this.__history.length).concat(this.__history.slice(0, indexOfYoungestElementInHistory + 1));
+        result = history.slice(startIndex, history.length).concat(history.slice(0, indexOfYoungestElementInHistory + 1));
       }
 
       return result;

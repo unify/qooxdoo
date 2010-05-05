@@ -5,7 +5,7 @@
    http://qooxdoo.org
 
    Copyright:
-     2009 Sebastian Werner, http://sebastian-werner.net
+     2009-2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -33,18 +33,14 @@
 
 /* ************************************************************************
 
+#### OPTIONALS: Add these classes to enable specific features
+#optional(qx.bom.Element)
+ 
 #require(qx.type.BaseArray)
-
-#require(qx.bom.Document)
-#require(qx.bom.Element)
-#require(qx.bom.Input)
-#require(qx.bom.Viewport)
 #require(qx.bom.Selector)
-
+#require(qx.bom.element2.Class)
+#require(qx.bom.element2.Style)
 #require(qx.bom.element.Attribute)
-#require(qx.bom.element.Class)
-#require(qx.bom.element.Location)
-#require(qx.bom.element.Style)
 
 ************************************************************************ */
 
@@ -106,6 +102,13 @@
       return null;
     };
   };
+
+
+	var bomClass = qx.bom.element2.Class;
+	var bomAttribute = qx.bom.element.Attribute;
+	var bomInput = qx.bom.Input;
+	var bomStyle = qx.bom.element2.Style;
+	var bomSelector = qx.bom.Selector;
 
 
   /**
@@ -207,7 +210,7 @@
        */
       query : function(selector, context)
       {
-        var arr = qx.bom.Selector.query(selector, context);
+        var arr = bomSelector.query(selector, context);
         return qx.lang.Array.cast(arr, qx.bom.Collection);
       },
 
@@ -325,7 +328,7 @@
        * @param value {var} New value of the attribute
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setAttribute : setter(qx.bom.element.Attribute, "set"),
+      setAttribute : setter(bomAttribute, "set"),
 
       /**
        * Reset the given attribute on all selected elements.
@@ -334,7 +337,7 @@
        * @param name {String} Name of the attribute
        * @return {Collection} The collection is returned for chaining proposes
        */
-      resetAttribute : setter(qx.bom.element.Attribute, "reset"),
+      resetAttribute : setter(bomAttribute, "reset"),
 
        /**
         * Figures out the value of the given attribute of
@@ -344,7 +347,7 @@
         * @param name {String} Name of the attribute
         * @return {var} The value of the attribute
         */
-      getAttribute : getter(qx.bom.element.Attribute, "get"),
+      getAttribute : getter(bomAttribute, "get"),
 
 
 
@@ -362,7 +365,7 @@
        * @param name {String} The class name to add
        * @return {Collection} The collection is returned for chaining proposes
        */
-      addClass : setter(qx.bom.element.Class, "add"),
+      addClass : setter(bomClass, "add"),
 
       /**
        * Gets the classname of the first selected element
@@ -370,7 +373,7 @@
        * @signature function()
        * @return {String} The retrieved classname
        */
-      getClass : getter(qx.bom.element.Class, "get"),
+      getClass : getter(bomClass, "get"),
 
       /**
        * Whether the first selected element has the given className.
@@ -379,7 +382,7 @@
        * @param name {String} The class name to check for
        * @return {Boolean} true when the element has the given classname
        */
-      hasClass : getter(qx.bom.element.Class, "has"),
+      hasClass : getter(bomClass, "has"),
 
       /**
        * Removes a className from the given element
@@ -388,7 +391,7 @@
        * @param name {String} The class name to remove
        * @return {Collection} The collection is returned for chaining proposes
        */
-      removeClass : setter(qx.bom.element.Class, "remove"),
+      removeClass : setter(bomClass, "remove"),
 
       /**
        * Replaces the first given class name with the second one
@@ -398,7 +401,7 @@
        * @param newName {String} The class name to add
        * @return {Collection} The collection is returned for chaining proposes
        */
-      replaceClass : setter(qx.bom.element.Class, "replace"),
+      replaceClass : setter(bomClass, "replace"),
 
       /**
        * Toggles a className of the selected elements
@@ -407,7 +410,7 @@
        * @param name {String} The class name to toggle
        * @return {Collection} The collection is returned for chaining proposes
        */
-      toggleClass : setter(qx.bom.element.Class, "toggle"),
+      toggleClass : setter(bomClass, "toggle"),
 
 
 
@@ -435,7 +438,7 @@
        * @param value {String|Number|Array} Value to apply to each element
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setValue : setter(qx.bom.Input, "setValue"),
+      setValue : setter(bomInput, "setValue"),
 
       /**
        * Returns the currently configured value of the first
@@ -450,8 +453,7 @@
        * @signature function()
        * @return {String|Array} The value of the first element.
        */
-       getValue : getter(qx.bom.Input, "getValue"),
-
+       getValue : getter(bomInput, "getValue"),
 
 
 
@@ -468,31 +470,11 @@
        * on all selected elements.
        *
        * @signature function(name, value)
-       * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
-       * @param value {var} The value for the given style
+		 	 * @param name {String|Map} Style name or Map of styles/values to apply
+		   * @param value {String} Style value
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setStyle : setter(qx.bom.element.Style, "set"),
-
-      /**
-       * Convenience method to modify a set of styles at once.
-       *
-       * @signature function(styles)
-       * @param styles {Map} a map where the key is the name of the property
-       *    and the value is the value to use.
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      setStyles : setter(qx.bom.element.Style, "setStyles"),
-
-      /**
-       * Reset the given style property
-       * on all selected elements.
-       *
-       * @signature function(name)
-       * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      resetStyle : setter(qx.bom.element.Style, "reset"),
+      setStyle : setter(bomStyle, "set"),
 
        /**
         * Figures out the value of the given style property of
@@ -500,343 +482,10 @@
         *
         * @signature function(name, mode)
         * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
-        * @param mode {Number} Choose one of the modes supported by {@link qx.bom.element.Style#get}
+        * @param mode {Number} Choose one of the modes supported by {@link qx.bom.element2.Style#get}
         * @return {var} The value of the style property
         */
-      getStyle : getter(qx.bom.element.Style, "get"),
-
-
-
-
-      /*
-      ---------------------------------------------------------------------------
-         CSS: SHEET
-      ---------------------------------------------------------------------------
-      */
-
-      /**
-       * Set the full CSS content of the style attribute for all elements in the
-       * collection.
-       *
-       * @signature function(value)
-       * @param value {String} The full CSS string
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      setCss : setter(qx.bom.element.Style, "setCss"),
-
-      /**
-       * Returns the full content of the style attribute of the first element
-       * in the collection.
-       *
-       * @signature function()
-       * @return {String} the full CSS string
-       */
-      getCss : setter(qx.bom.element.Style, "getCss"),
-
-
-
-
-      /*
-      ---------------------------------------------------------------------------
-         CSS: POSITIONING
-      ---------------------------------------------------------------------------
-      */
-
-      /**
-       * Computes the location of the first element in context of
-       * the document dimensions.
-       *
-       * Supported modes:
-       *
-       * * <code>margin</code>: Calculate from the margin box of the element (bigger than the visual appearance: including margins of given element)
-       * * <code>box</code>: Calculates the offset box of the element (default, uses the same size as visible)
-       * * <code>border</code>: Calculate the border box (useful to align to border edges of two elements).
-       * * <code>scroll</code>: Calculate the scroll box (relevant for absolute positioned content).
-       * * <code>padding</code>: Calculate the padding box (relevant for static/relative positioned content).
-       *
-       * @signature function(mode)
-       * @param mode {String?box} A supported option. See comment above.
-       * @return {Map} Returns a map with <code>left</code>, <code>top</code>,
-       *   <code>right</code> and <code>bottom</code> which contains the distance
-       *   of the element relative to the document.
-       */
-      getOffset : getter(qx.bom.element.Location, "get"),
-
-      /**
-       * Returns the distance between the first element of the collection to its offset parent.
-       *
-       * @return {Map} Returns a map with <code>left</code> and <code>top</code>
-       *   which contains the distance of the elements from each other.
-       */
-      getPosition : getter(qx.bom.element.Location, "getPosition"),
-
-      /**
-       * Detects the offset parent of the first element
-       *
-       * @signature function()
-       * @return {Collection} Detected offset parent encapsulated into a new collection instance
-       */
-      getOffsetParent : getter(qx.bom.element.Location, "getOffsetParent"),
-
-
-      /**
-       * Scrolls the elements of the collection to the given coordinate.
-       *
-       * @param value {Integer} Left scroll position
-       * @return {Collection} This collection for chaining
-       */
-      setScrollLeft : function(value)
-      {
-        var Node = qx.dom.Node;
-
-        for (var i=0, l=this.length, obj; i<l; i++)
-        {
-          obj = this[i];
-
-          if (Node.isElement(obj)) {
-            obj.scrollLeft = value;
-          } else if (Node.isWindow(obj)) {
-            obj.scrollTo(value, this.getScrollTop(obj));
-          } else if (Node.isDocument(obj)) {
-            Node.getWindow(obj).scrollTo(value, this.getScrollTop(obj));
-          }
-        }
-
-        return this;
-      },
-
-
-      /**
-       * Scrolls the elements of the collection to the given coordinate.
-       *
-       * @param value {Integer} Top scroll position
-       * @return {Collection} This collection for chaining
-       */
-      setScrollTop : function(value)
-      {
-        var Node = qx.dom.Node;
-
-        for (var i=0, l=this.length, obj; i<l; i++)
-        {
-          obj = this[i];
-
-          if (Node.isElement(obj)) {
-            obj.scrollTop = value;
-          } else if (Node.isWindow(obj)) {
-            obj.scrollTo(this.getScrollLeft(obj), value);
-          } else if (Node.isDocument(obj)) {
-            Node.getWindow(obj).scrollTo(this.getScrollLeft(obj), value);
-          }
-        }
-
-        return this;
-      },
-
-
-      /**
-       * Returns the left scroll position of the first element in the collection.
-       *
-       * @return {Integer} Current left scroll position
-       */
-      getScrollLeft : function()
-      {
-        var obj = this[0];
-        if (!obj) {
-          return null;
-        }
-
-        var Node = qx.dom.Node;
-        if (Node.isWindow(obj) || Node.isDocument(obj)) {
-          return qx.bom.Viewport.getScrollLeft();
-        }
-
-        return obj.scrollLeft;
-      },
-
-
-      /**
-       * Returns the left scroll position of the first element in the collection.
-       *
-       * @return {Integer} Current top scroll position
-       */
-      getScrollTop : function()
-      {
-        var obj = this[0];
-        if (!obj) {
-          return null;
-        }
-
-        var Node = qx.dom.Node;
-        if (Node.isWindow(obj) || Node.isDocument(obj)) {
-          return qx.bom.Viewport.getScrollTop();
-        }
-
-        return obj.scrollTop;
-      },
-
-
-
-
-      /*
-      ---------------------------------------------------------------------------
-         CSS: WIDTH AND HEIGHT
-      ---------------------------------------------------------------------------
-      */
-
-      /**
-       * Returns the width of the first element in the collection.
-       *
-       * This is the rendered width of the element which includes borders and
-       * paddings like the <code>offsetWidth</code> property in plain HTML.
-       *
-       * @return {Integer} The width of the first element
-       */
-      getWidth : function()
-      {
-        var obj = this[0];
-        var Node = qx.dom.Node;
-
-        if (obj)
-        {
-          if (Node.isElement(obj)) {
-            return qx.bom.element.Dimension.getWidth(obj);
-          } else if (Node.isDocument(obj)) {
-            return qx.bom.Document.getWidth(Node.getWindow(obj));
-          } else if (Node.isWindow(obj)) {
-            return qx.bom.Viewport.getWidth(obj);
-          }
-        }
-
-        return null;
-      },
-
-
-      /**
-       * Returns the content width of the first element in the collection.
-       *
-       * The content width is basically the maximum
-       * width used or the maximum width which can be used by the content. This
-       * excludes all kind of styles of the element like borders, paddings, margins,
-       * and even scrollbars.
-       *
-       * Please note that with visible scrollbars the content width returned
-       * may be larger than the box width returned via {@link #getWidth}.
-       *
-       * Only works for DOM elements and not for the window object or the document
-       * object!
-       *
-       * @return {Integer} Computed content width
-       */
-      getContentWidth : function()
-      {
-        var obj = this[0];
-        if (qx.dom.Node.isElement(obj)) {
-          return qx.bom.element.Dimension.getContentWidth(obj);
-        }
-
-        return null;
-      },
-
-
-      /**
-       * Returns the height of the first element in the collection.
-       *
-       * This is the rendered height of the element which includes borders and
-       * paddings like the <code>offsetHeight</code> property in plain HTML.
-       *
-       * @return {Integer} The height of the first element
-       */
-      getHeight : function()
-      {
-        var obj = this[0];
-        var Node = qx.dom.Node;
-
-        if (obj)
-        {
-          if (Node.isElement(obj)) {
-            return qx.bom.element.Dimension.getHeight(obj);
-          } else if (Node.isDocument(obj)) {
-            return qx.bom.Document.getHeight(Node.getWindow(obj));
-          } else if (Node.isWindow(obj)) {
-            return qx.bom.Viewport.getHeight(obj);
-          }
-        }
-
-        return null;
-      },
-
-
-      /**
-       * Returns the content height of the first element in the collection.
-       *
-       * The content height is basically the maximum
-       * height used or the maximum height which can be used by the content. This
-       * excludes all kind of styles of the element like borders, paddings, margins,
-       * and even scrollbars.
-       *
-       * Please note that with visible scrollbars the content height returned
-       * may be larger than the box width returned via {@link #getWidth}.
-       *
-       * Only works for DOM elements and not for the window object or the document
-       * object!
-       *
-       * @return {Integer} Computed content height
-       */
-      getContentHeight : function()
-      {
-        var obj = this[0];
-        if (qx.dom.Node.isElement(obj)) {
-          return qx.bom.element.Dimension.getContentHeight(obj);
-        }
-
-        return null;
-      },
-
-
-
-
-
-      /*
-      ---------------------------------------------------------------------------
-         EVENTS
-      ---------------------------------------------------------------------------
-      */
-
-      /**
-       * Add an event listener to the selected elements. The event listener is passed an
-       * instance of {@link Event} containing all relevant information
-       * about the event as parameter.
-       *
-       * @signature function(type, listener, self, capture)
-       * @param type {String} Name of the event e.g. "click", "keydown", ...
-       * @param listener {Function} Event listener function
-       * @param self {Object} Reference to the 'this' variable inside
-       *       the event listener.
-       * @param capture {Boolean} Whether to attach the event to the
-       *       capturing phase of the bubbling phase of the event. The default is
-       *       to attach the event handler to the bubbling phase.
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      addListener : setter(qx.bom.Element, "addListener"),
-
-      /**
-       * Removes an event listener from the selected elements.
-       *
-       * Note: All registered event listeners will automatically be removed from
-       *   the DOM at page unload so it is not necessary to detach events yourself.
-       *
-       * @signature function(type, listener, self, capture)
-       * @param type {String} Name of the event
-       * @param listener {Function} The pointer to the event listener
-       * @param self {Object} Reference to the 'this' variable inside
-       *       the event listener.
-       * @param capture {Boolean} Whether to remove the event listener of
-       *       the bubbling or of the capturing phase.
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      removeListener : setter(qx.bom.Element, "removeListener"),
-
-
+      getStyle : getter(bomStyle, "get"),
 
 
 
@@ -880,7 +529,7 @@
         if (qx.lang.Type.isFunction(selector)) {
           res = qx.type.BaseArray.prototype.filter.call(this, selector, context);
         } else {
-          res = qx.bom.Selector.matches(selector, this);
+          res = bomSelector.matches(selector, this);
         }
 
         return this.__pushStack(res);
@@ -896,7 +545,7 @@
        * @return {Boolean} Whether at least one element matches the given selector
        */
       is : function(selector) {
-        return !!selector && qx.bom.Selector.matches(selector, this).length > 0;
+        return !!selector && bomSelector.matches(selector, this).length > 0;
       },
 
 
@@ -916,12 +565,12 @@
         // Test special case where just one selector is passed in
         if (this.__simple.test(selector))
         {
-          var res = qx.bom.Selector.matches(":not(" + selector + ")", this);
+          var res = bomSelector.matches(":not(" + selector + ")", this);
           return this.__pushStack(res);
         }
 
         // Otherwise do it in a more complicated way
-        var res = qx.bom.Selector.matches(selector, this);
+        var res = bomSelector.matches(selector, this);
         return this.filter(function(value) {
           return res.indexOf(value) === -1;
         });
@@ -947,7 +596,7 @@
        */
       add : function(selector, context)
       {
-        var res = qx.bom.Selector.query(selector, context);
+        var res = bomSelector.query(selector, context);
         var arr = qx.lang.Array.unique(this.concat(res));
 
         return this.__pushStack(arr);
@@ -975,7 +624,7 @@
         }
 
         if (selector) {
-          children = qx.bom.Selector.matches(selector, children);
+          children = bomSelector.matches(selector, children);
         }
 
         return this.__pushStack(children);
@@ -1002,9 +651,6 @@
         // selector match call.
         var arr = new qx.bom.Collection(1);
 
-        // Performance tweak
-        var Selector = qx.bom.Selector;
-
         // Map all children to given selector
         var ret = this.map(function(current)
         {
@@ -1012,7 +658,7 @@
           {
             arr[0] = current;
 
-            if (Selector.matches(selector, arr).length > 0) {
+            if (bomSelector.matches(selector, arr).length > 0) {
               return current;
             }
 
@@ -1053,18 +699,16 @@
        */
       find : function(selector)
       {
-        var Selector = qx.bom.Selector;
-
         // Fast path for single item selector
         if (this.length === 1) {
-          return this.__pushStack(Selector.query(selector, this[0]));
+          return this.__pushStack(bomSelector.query(selector, this[0]));
         }
         else
         {
           // Let the selector do the work and merge all result arrays.
           var ret = [];
           for (var i=0, l=this.length; i<l; i++) {
-            ret.push.apply(ret, Selector.query(selector, this[i]));
+            ret.push.apply(ret, bomSelector.query(selector, this[i]));
           }
 
           return this.__pushStack(qx.lang.Array.unique(ret));
@@ -1088,7 +732,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -1124,7 +768,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -1157,7 +801,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -1213,7 +857,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -1303,12 +947,11 @@
         var element = this[0];
         var doc = element.ownerDocument || element;
 
-        // Create fragment, cleanup HTML and extract scripts
-        var fragment = doc.createDocumentFragment();
-        var scripts = qx.bom.Html.clean(args, doc, fragment);
-        var first = fragment.firstChild;
+        // Cleanup HTML and create a fragment
+        var fragment = qx.bom.Html.clean(args, doc, true);
 
         // Process fragment content
+        var first = fragment.firstChild;
         if (first)
         {
           // Clone every fragment except the last one
@@ -1318,31 +961,6 @@
           }
 
           callback.call(this, this[last], fragment);
-        }
-
-        // Process script elements
-        if (scripts)
-        {
-          var script;
-          var Loader = qx.io.ScriptLoader;
-          var Func = qx.lang.Function;
-
-          for (var i=0, l=scripts.length; i<l; i++)
-          {
-            script = scripts[i];
-
-            // Executing script code or loading source depending on element configuration
-            if (script.src) {
-              Loader.get().load(script.src);
-            } else {
-              Func.globalEval(script.text || script.textContent || script.innerHTML || "");
-            }
-
-            // Removing element from old parent
-            if (script.parentNode) {
-              script.parentNode.removeChild(script);
-            }
-          }
         }
 
         return this;
@@ -1360,7 +978,6 @@
        */
       __manipulateTo : function(args, original)
       {
-        var Selector = qx.bom.Selector;
         var Lang = qx.lang.Array;
 
         // Build a large collection from the individual elements
@@ -1802,8 +1419,6 @@
           return this;
         }
 
-        var Selector = qx.bom.Selector;
-
         // Filter by given selector
         var coll = this;
         if (selector)
@@ -1825,7 +1440,7 @@
           Manager.removeAllListeners(current);
 
           // Remove events from all children (recursive)
-          inner = Selector.query("*", current);
+          inner = bomSelector.query("*", current);
           for (var j=0, jl=inner.length; j<jl; j++) {
             Manager.removeAllListeners(inner[j]);
           }
@@ -1897,7 +1512,10 @@
        */
       clone : function(events)
       {
-        var Element = qx.bom.Element;
+        var Element = qx.Class.getByName("qx.bom.Element");
+        if (!Element) {
+          throw new Error("Missing class: qx.bom.Element!");
+        }
 
         return events ?
           this.map(function(elem) { return Element.clone(elem, true); }) :

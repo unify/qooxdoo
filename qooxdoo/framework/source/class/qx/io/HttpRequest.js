@@ -97,6 +97,8 @@ qx.Class.define("qx.io.HttpRequest",
      * it might useful to bring the caching layer in sync with the request
      * class. For example when clearing the cache in the business object this
      * class also should be informed as no data is anymore available.
+     * 
+     * @param url {String} Any valid URL
      */ 
     clear : function(url) {
       delete this.__modified[url];

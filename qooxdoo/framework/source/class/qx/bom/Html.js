@@ -173,27 +173,16 @@ qx.Class.define("qx.bom.Html",
      *
      * @param objs {Element[]|String[]} Array of DOM elements or HTML strings
      * @param context {Document?document} Context in which the elements should be created
-     * @param fragment {Element?null} Document fragment to appends elements to
-     * @return {Element[]} Array of elements (when a fragment is given it only contains script elements)
+     * @param asFragment {Boolean} Whether a document fragment should be returned
+     * @return {Element[]|Document} Array of elements or a document, depending on third parameter
      */
-    clean: function(objs, context, fragment)
+    clean: function(objs, context, asFragment)
     {
       context = context || document;
 
       // !context.createElement fails in IE with an error but returns typeof 'object'
       if (typeof context.createElement === "undefined") {
         context = context.ownerDocument || context[0] && context[0].ownerDocument || document;
-      }
-
-      // Fast-Path:
-      // If a single string is passed in and it's a single tag
-      // just do a createElement and skip the rest
-      if (!fragment && objs.length === 1 && typeof objs[0] === "string")
-      {
-        var match = /^<(\w+)\s*\/?>$/.exec(objs[0]);
-        if (match) {
-          return [context.createElement(match[1])];
-        }
       }
 
       // Interate through items in incoming array
@@ -220,38 +209,14 @@ qx.Class.define("qx.bom.Html",
       }
 
       // Append to fragment and filter out scripts... or...
-      if (fragment)
+      if (asFragment) 
       {
-        var scripts=[], LArray=qx.lang.Array, elem, temp;
-        for (var i=0; ret[i]; i++)
-        {
-          elem = ret[i];
-
-          if (elem.nodeType == 1 && elem.tagName.toLowerCase() === "script" && (!elem.type || elem.type.toLowerCase() === "text/javascript"))
-          {
-            // Trying to remove the element from DOM
-            if (elem.parentNode) {
-              elem.parentNode.removeChild(ret[i]);
-            }
-
-            // Store in script list
-            scripts.push(elem);
-          }
-          else
-          {
-            if (elem.nodeType === 1)
-            {
-              // Recursively search for scripts and append them to the list of elements to process
-              temp = LArray.fromCollection(elem.getElementsByTagName("script"));
-              ret.splice.apply(ret, [i+1, 0].concat(temp));
-            }
-
-            // Finally append element to fragment
-            fragment.appendChild(elem);
-          }
+        var fragment = document.createDocumentFragment();
+        for (var i=0; ret[i]; i++) {
+          fragment.appendChild(ret[i]);
         }
-
-        return scripts;
+  
+        return fragment;
       }
 
       // Otherwise return the array of all elements
