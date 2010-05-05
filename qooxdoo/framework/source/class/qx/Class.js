@@ -168,8 +168,10 @@ qx.Bootstrap.define("qx.Class",
       }
 
       // Normalize type
+      var implicitType = false;
       if (!config.hasOwnProperty("extend") && !config.type) {
         config.type = "static";
+        implicitType = true;
       }
 
       // Validate incoming data
