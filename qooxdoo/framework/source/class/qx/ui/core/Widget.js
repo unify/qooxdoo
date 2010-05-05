@@ -61,7 +61,7 @@
 qx.Class.define("qx.ui.core.Widget",
 {
   extend : qx.ui.core.LayoutItem,
-  include : [qx.locale.MTranslation],
+  include : [qx.locale.MTranslation, qx.data.MBinding],
 
 
   /*
