@@ -104,6 +104,13 @@
   };
 
 
+	var bomClass = qx.bom.element2.Class;
+	var bomAttribute = qx.bom.element.Attribute;
+	var bomInput = qx.bom.Input;
+	var bomStyle = qx.bom.element2.Style;
+	var bomSelector = qx.bom.Selector;
+
+
   /**
    * Wraps a set of elements and offers a whole set of features to query or modify them.
    *
@@ -203,7 +210,7 @@
        */
       query : function(selector, context)
       {
-        var arr = qx.bom.Selector.query(selector, context);
+        var arr = bomSelector.query(selector, context);
         return qx.lang.Array.cast(arr, qx.bom.Collection);
       },
 
@@ -321,7 +328,7 @@
        * @param value {var} New value of the attribute
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setAttribute : setter(qx.bom.element.Attribute, "set"),
+      setAttribute : setter(bomAttribute, "set"),
 
       /**
        * Reset the given attribute on all selected elements.
@@ -330,7 +337,7 @@
        * @param name {String} Name of the attribute
        * @return {Collection} The collection is returned for chaining proposes
        */
-      resetAttribute : setter(qx.bom.element.Attribute, "reset"),
+      resetAttribute : setter(bomAttribute, "reset"),
 
        /**
         * Figures out the value of the given attribute of
@@ -340,7 +347,7 @@
         * @param name {String} Name of the attribute
         * @return {var} The value of the attribute
         */
-      getAttribute : getter(qx.bom.element.Attribute, "get"),
+      getAttribute : getter(bomAttribute, "get"),
 
 
 
@@ -358,7 +365,7 @@
        * @param name {String} The class name to add
        * @return {Collection} The collection is returned for chaining proposes
        */
-      addClass : setter(qx.bom.element2.Class, "add"),
+      addClass : setter(bomClass, "add"),
 
       /**
        * Gets the classname of the first selected element
@@ -366,7 +373,7 @@
        * @signature function()
        * @return {String} The retrieved classname
        */
-      getClass : getter(qx.bom.element2.Class, "get"),
+      getClass : getter(bomClass, "get"),
 
       /**
        * Whether the first selected element has the given className.
@@ -375,7 +382,7 @@
        * @param name {String} The class name to check for
        * @return {Boolean} true when the element has the given classname
        */
-      hasClass : getter(qx.bom.element2.Class, "has"),
+      hasClass : getter(bomClass, "has"),
 
       /**
        * Removes a className from the given element
@@ -384,7 +391,7 @@
        * @param name {String} The class name to remove
        * @return {Collection} The collection is returned for chaining proposes
        */
-      removeClass : setter(qx.bom.element2.Class, "remove"),
+      removeClass : setter(bomClass, "remove"),
 
       /**
        * Replaces the first given class name with the second one
@@ -394,7 +401,7 @@
        * @param newName {String} The class name to add
        * @return {Collection} The collection is returned for chaining proposes
        */
-      replaceClass : setter(qx.bom.element2.Class, "replace"),
+      replaceClass : setter(bomClass, "replace"),
 
       /**
        * Toggles a className of the selected elements
@@ -403,7 +410,7 @@
        * @param name {String} The class name to toggle
        * @return {Collection} The collection is returned for chaining proposes
        */
-      toggleClass : setter(qx.bom.element2.Class, "toggle"),
+      toggleClass : setter(bomClass, "toggle"),
 
 
 
@@ -431,7 +438,7 @@
        * @param value {String|Number|Array} Value to apply to each element
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setValue : setter(qx.bom.Input, "setValue"),
+      setValue : setter(bomInput, "setValue"),
 
       /**
        * Returns the currently configured value of the first
@@ -446,7 +453,7 @@
        * @signature function()
        * @return {String|Array} The value of the first element.
        */
-       getValue : getter(qx.bom.Input, "getValue"),
+       getValue : getter(bomInput, "getValue"),
 
 
 
@@ -463,31 +470,11 @@
        * on all selected elements.
        *
        * @signature function(name, value)
-       * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
-       * @param value {var} The value for the given style
+		 	 * @param name {String|Map} Style name or Map of styles/values to apply
+		   * @param value {String} Style value
        * @return {Collection} The collection is returned for chaining proposes
        */
-      setStyle : setter(qx.bom.element2.Style, "set"),
-
-      /**
-       * Convenience method to modify a set of styles at once.
-       *
-       * @signature function(styles)
-       * @param styles {Map} a map where the key is the name of the property
-       *    and the value is the value to use.
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      setStyles : setter(qx.bom.element2.Style, "setStyles"),
-
-      /**
-       * Reset the given style property
-       * on all selected elements.
-       *
-       * @signature function(name)
-       * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
-       * @return {Collection} The collection is returned for chaining proposes
-       */
-      resetStyle : setter(qx.bom.element2.Style, "reset"),
+      setStyle : setter(bomStyle, "set"),
 
        /**
         * Figures out the value of the given style property of
@@ -498,7 +485,7 @@
         * @param mode {Number} Choose one of the modes supported by {@link qx.bom.element2.Style#get}
         * @return {var} The value of the style property
         */
-      getStyle : getter(qx.bom.element2.Style, "get"),
+      getStyle : getter(bomStyle, "get"),
 
 
 
@@ -542,7 +529,7 @@
         if (qx.lang.Type.isFunction(selector)) {
           res = qx.type.BaseArray.prototype.filter.call(this, selector, context);
         } else {
-          res = qx.bom.Selector.matches(selector, this);
+          res = bomSelector.matches(selector, this);
         }
 
         return this.__pushStack(res);
@@ -558,7 +545,7 @@
        * @return {Boolean} Whether at least one element matches the given selector
        */
       is : function(selector) {
-        return !!selector && qx.bom.Selector.matches(selector, this).length > 0;
+        return !!selector && bomSelector.matches(selector, this).length > 0;
       },
 
 
@@ -578,12 +565,12 @@
         // Test special case where just one selector is passed in
         if (this.__simple.test(selector))
         {
-          var res = qx.bom.Selector.matches(":not(" + selector + ")", this);
+          var res = bomSelector.matches(":not(" + selector + ")", this);
           return this.__pushStack(res);
         }
 
         // Otherwise do it in a more complicated way
-        var res = qx.bom.Selector.matches(selector, this);
+        var res = bomSelector.matches(selector, this);
         return this.filter(function(value) {
           return res.indexOf(value) === -1;
         });
@@ -609,7 +596,7 @@
        */
       add : function(selector, context)
       {
-        var res = qx.bom.Selector.query(selector, context);
+        var res = bomSelector.query(selector, context);
         var arr = qx.lang.Array.unique(this.concat(res));
 
         return this.__pushStack(arr);
@@ -637,7 +624,7 @@
         }
 
         if (selector) {
-          children = qx.bom.Selector.matches(selector, children);
+          children = bomSelector.matches(selector, children);
         }
 
         return this.__pushStack(children);
@@ -664,9 +651,6 @@
         // selector match call.
         var arr = new qx.bom.Collection(1);
 
-        // Performance tweak
-        var Selector = qx.bom.Selector;
-
         // Map all children to given selector
         var ret = this.map(function(current)
         {
@@ -674,7 +658,7 @@
           {
             arr[0] = current;
 
-            if (Selector.matches(selector, arr).length > 0) {
+            if (bomSelector.matches(selector, arr).length > 0) {
               return current;
             }
 
@@ -715,18 +699,16 @@
        */
       find : function(selector)
       {
-        var Selector = qx.bom.Selector;
-
         // Fast path for single item selector
         if (this.length === 1) {
-          return this.__pushStack(Selector.query(selector, this[0]));
+          return this.__pushStack(bomSelector.query(selector, this[0]));
         }
         else
         {
           // Let the selector do the work and merge all result arrays.
           var ret = [];
           for (var i=0, l=this.length; i<l; i++) {
-            ret.push.apply(ret, Selector.query(selector, this[i]));
+            ret.push.apply(ret, bomSelector.query(selector, this[i]));
           }
 
           return this.__pushStack(qx.lang.Array.unique(ret));
@@ -750,7 +732,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -786,7 +768,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -819,7 +801,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -875,7 +857,7 @@
 
         // Post reduce result by selector
         if (selector) {
-          ret = qx.bom.Selector.matches(selector, ret);
+          ret = bomSelector.matches(selector, ret);
         }
 
         return this.__pushStack(ret);
@@ -996,7 +978,6 @@
        */
       __manipulateTo : function(args, original)
       {
-        var Selector = qx.bom.Selector;
         var Lang = qx.lang.Array;
 
         // Build a large collection from the individual elements
@@ -1438,8 +1419,6 @@
           return this;
         }
 
-        var Selector = qx.bom.Selector;
-
         // Filter by given selector
         var coll = this;
         if (selector)
@@ -1461,7 +1440,7 @@
           Manager.removeAllListeners(current);
 
           // Remove events from all children (recursive)
-          inner = Selector.query("*", current);
+          inner = bomSelector.query("*", current);
           for (var j=0, jl=inner.length; j<jl; j++) {
             Manager.removeAllListeners(inner[j]);
           }
