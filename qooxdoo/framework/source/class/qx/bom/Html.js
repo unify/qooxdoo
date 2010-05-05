@@ -209,15 +209,15 @@ qx.Class.define("qx.bom.Html",
       }
 
       // Append to fragment and filter out scripts... or...
-			if (asFragment) 
-			{
-      	var fragment = document.createDocumentFragment();
-	      for (var i=0; ret[i]; i++) {
-	        fragment.appendChild(ret[i]);
-	      }
-	
-				return fragment;
-			}
+      if (asFragment) 
+      {
+        var fragment = document.createDocumentFragment();
+        for (var i=0; ret[i]; i++) {
+          fragment.appendChild(ret[i]);
+        }
+  
+        return fragment;
+      }
 
       // Otherwise return the array of all elements
       return ret;
