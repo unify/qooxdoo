@@ -157,13 +157,13 @@ qx.Class.define("qx.html.Element",
       // decativate elements, which will be removed
       var activeDomElement = focusHandler.getActive();
       if (activeDomElement && this.__willBecomeInvisible(activeDomElement)) {
-        qx.bom.Element.deactivate(activeDomElement);
+        focusHandler.deactivate(activeDomElement);
       }
 
       // release capture for elements, which will be removed
       var captureDomElement = this.__getCaptureElement();
       if (captureDomElement && this.__willBecomeInvisible(captureDomElement)) {
-        qx.bom.Element.releaseCapture(captureDomElement);
+        qx.event.Registration.getManager(captureDomElement).getDispatcher(qx.event.dispatch.MouseCapture).releaseCapture(captureDomElement);
       }
 
 
@@ -338,7 +338,21 @@ qx.Class.define("qx.html.Element",
         }
         var args = action.args;
         args.unshift(element);
-        qx.bom.Element[action.type].apply(qx.bom.Element, args);
+        
+        if (action.type == "capture" || action.type == "releaseCapture") 
+        {
+          var captureDispatch = qx.event.Registration.getManager(element).getDispatcher(qx.event.dispatch.MouseCapture);
+          if (action.type == "capture") {
+            captureDispatch.activateCapture(element);
+          } else {
+            captureDispatch.releaseCapture(element);
+          }          
+        }
+        else
+        {
+          var focusHandler = qx.event.Registration.getManager(element).getHandler(qx.event.handler.Focus);
+          focusHandler[action.type](element);
+        }
       }
       this._actions = [];
 
