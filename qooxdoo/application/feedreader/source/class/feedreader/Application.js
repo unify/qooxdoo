@@ -260,7 +260,7 @@ qx.Class.define("feedreader.Application",
       // bind the enabled property of the remove feed button
       options = {converter: this._category2enabledConverter};
       this.__treeController.bind(
-        "selection[0].category", this.__toolBarView.getRemoveButton(), "enabled", options
+        "selection[0]", this.__toolBarView.getRemoveButton(), "enabled", options
       );
     },
 
@@ -268,17 +268,16 @@ qx.Class.define("feedreader.Application",
     /**
      * Converts the category to a boolean for the enabled status of the remove
      * button.
+     * @param data {String} The category name.
      */
     _category2enabledConverter : function(data) {
-      if (data == "user") {
-        return true;
-      }
-      return false;
+      return !!data && data.getCategory() == "user";
     },
 
 
     /**
      * Converter function which converts the state of a feed to a icon url.
+     * @param value {String} The loading state of the request.
      */
     _state2iconConverter : function(value) {
       if (value == "new" || value == "loading") {
@@ -296,6 +295,7 @@ qx.Class.define("feedreader.Application",
     /**
      * Converter function which converts the state of a feed to a loading
      * indicator in the list view.
+     * @param data {String} The loading state of the request.
      */
     _state2loadingConverter : function(data) {
       if (data == "new" || data == "loading") {
@@ -307,6 +307,7 @@ qx.Class.define("feedreader.Application",
 
     /**
      * Event handler for a change of the selection of the list.
+     * @param ev {qx.event.type.Data} The change event of the list controller.
      */
     _listControllerChange : function(ev) {
       // get the selected feed
@@ -322,6 +323,7 @@ qx.Class.define("feedreader.Application",
 
     /**
      * Event handler for a change of the selection of the tree.
+     * @param ev {qx.event.type.Data} The change event of the tree controller.
      */
     _treeControllerChange : function(ev) {
       // get the selected feed
