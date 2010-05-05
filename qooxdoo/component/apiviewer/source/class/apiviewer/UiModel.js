@@ -2,6 +2,7 @@ qx.Class.define("apiviewer.UiModel",
 {
   extend : qx.core.Object,
   type : "singleton",
+  include : [qx.data.MBinding],
 
   properties :
   {
