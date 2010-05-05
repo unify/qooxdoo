@@ -26,7 +26,6 @@
 #require(qx.core.Property)
 
 #use(qx.lang.Core)
-#use(qx.lang.Generics)
 
 ************************************************************************ */
 
@@ -173,10 +172,13 @@ qx.Bootstrap.define("qx.Class",
       }
 
       // Validate incoming data
-      if (qx.core.Variant.isSet("qx.debug", "on")) {
+      if (qx.core.Variant.isSet("qx.debug", "on")) 
+			{
         try {
           this.__validateConfig(name, config);
-        } catch(ex) {
+        } 
+				catch(ex) 
+				{
           if (implicitType) {
             ex.message = 'Assumed static class because no "extend" key was found. ' + ex.message;
           }
@@ -276,8 +278,10 @@ qx.Bootstrap.define("qx.Class",
     {
       // first, delete the class from the registry
       delete this.$$registry[name];
+
       // delete the class reference from the namespaces and all empty namespaces
       var ns = name.split(".");
+
       // build up an array containing all namespace objects including window
       var objects = [window];
       for (var i = 0; i < ns.length; i++) {
@@ -925,7 +929,7 @@ qx.Bootstrap.define("qx.Class",
     {
       var clazz;
 
-      if (!extend && qx.core.Variant.isSet("qx.aspects", "off"))
+      if (!extend)
       {
         // Create empty/non-empty class
         clazz = statics || {};
@@ -968,19 +972,7 @@ qx.Bootstrap.define("qx.Class",
             key = a[i];
             var staticValue = statics[key];
 
-            if (qx.core.Variant.isSet("qx.aspects", "on"))
-            {
-
-              if (staticValue instanceof Function) {
-                staticValue = qx.core.Aspect.wrap(name + "." + key, staticValue, "static");
-              }
-
-              clazz[key] = staticValue;
-            }
-            else
-            {
-              clazz[key] = staticValue;
-            }
+            clazz[key] = staticValue;
           }
         }
       }
@@ -1010,10 +1002,6 @@ qx.Bootstrap.define("qx.Class",
         // Store destruct onto class
         if (destruct)
         {
-          if (qx.core.Variant.isSet("qx.aspects", "on")) {
-            destruct = qx.core.Aspect.wrap(name, destruct, "destructor");
-          }
-
           clazz.$$destructor = destruct;
           qx.Bootstrap.setDisplayName(destruct, name, "destruct");
         }
@@ -1272,8 +1260,6 @@ qx.Bootstrap.define("qx.Class",
 
         // Added helper stuff to functions
         // Hint: Could not use typeof function because RegExp objects are functions, too
-        // Protect to apply base property and aspect support on special attributes e.g.
-        // classes which are function like as well.
         if (base !== false && member instanceof Function && member.$$type == null)
         {
           if (wrap == true)
@@ -1289,10 +1275,6 @@ qx.Bootstrap.define("qx.Class",
               member.base = proto[key];
             }
             member.self = clazz;
-          }
-
-          if (qx.core.Variant.isSet("qx.aspects", "on")) {
-            member = qx.core.Aspect.wrap(clazz.classname + "." + key, member, "member");
           }
         }
 
@@ -1643,14 +1625,6 @@ qx.Bootstrap.define("qx.Class",
         return retval;
       };
 
-      if (qx.core.Variant.isSet("qx.aspects", "on"))
-      {
-        var aspectWrapper = qx.core.Aspect.wrap(name, wrapper, "constructor");
-        wrapper.$$original = construct;
-        wrapper.constructor = aspectWrapper;
-        wrapper = aspectWrapper;
-      }
-
       // Store original constructor
       wrapper.$$original = construct;
 
@@ -1659,26 +1633,6 @@ qx.Bootstrap.define("qx.Class",
 
       // Return generated wrapper
       return wrapper;
-    }
-  },
-
-  defer : function()
-  {
-    // Binding of already loaded bootstrap classes
-    if (qx.core.Variant.isSet("qx.aspects", "on"))
-    {
-      for (var classname in qx.Bootstrap.$$registry)
-      {
-        var statics = qx.Bootstrap.$$registry[classname];
-
-        for (var key in statics)
-        {
-          // only functions, no regexps
-          if (statics[key] instanceof Function) {
-            statics[key] = qx.core.Aspect.wrap(classname + "." + key, statics[key], "static");
-          }
-        }
-      }
     }
   }
 });
