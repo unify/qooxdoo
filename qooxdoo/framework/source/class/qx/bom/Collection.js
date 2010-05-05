@@ -991,7 +991,7 @@
             }
           }
 
-          col.push.apply(col, Selector.query(args[i]));
+          col.push.apply(col, bomSelector.query(args[i]));
         }
 
         // Remove duplicates and transform into Collection
