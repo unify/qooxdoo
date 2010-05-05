@@ -30,9 +30,6 @@
  * * Supports different debug levels ("debug", "info", "warn" or "error")
  * * Simple data serialization for incoming messages
  */
-/*
- #require(qx.dev.StackTrace)
- */
 qx.Class.define("qx.log.Logger",
 {
   statics :
@@ -222,9 +219,14 @@ qx.Class.define("qx.log.Logger",
      * @param object {Object} Contextual object (either instance or static class)
      * @return {void}
      */
-    trace : function(object) {
-      qx.log.Logger.__log("info", [object, qx.dev.StackTrace.getStackTrace().join("\n")]);
-    },
+    trace : qx.core.Variant.select("qx.debug",
+		{
+			"on" : function(object) {
+      	qx.log.Logger.__log("info", [object, qx.dev.StackTrace.getStackTrace().join("\n")]);
+    	},
+
+			"off" : function() {}
+		}),
 
 
     /**
@@ -582,7 +584,10 @@ qx.Class.define("qx.log.Logger",
           break;
 
         case "error":
-          trace = qx.dev.StackTrace.getStackTraceFromError(value);
+					if (qx.core.Variant.isSet("qx.debug", "on")) {
+						trace = qx.dev.StackTrace.getStackTraceFromError(value);
+					}
+          
           text = value.toString();
           break;
 
