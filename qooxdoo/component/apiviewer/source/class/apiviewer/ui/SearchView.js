@@ -25,12 +25,12 @@ qx.Class.define("apiviewer.ui.SearchView",
 {
   extend : qx.ui.container.Composite,
 
-
   /*
   *****************************************************************************
      CONSTRUCTOR
   *****************************************************************************
   */
+
 
   construct : function()
   {

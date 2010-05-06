@@ -630,6 +630,13 @@ class QxTest:
     return dummyLogFile
 
 
+  def runTestsWrapped(self, appConf):
+    try:
+      self.runTests(appConf)
+    except Exception, e:
+      self.log("Error running tests for %s: %s" %(appConf["appName"], e.message) )
+
+
   ##
   # Launches the actual tests (Simulations) for defined applications
   #
@@ -818,27 +825,31 @@ class QxTest:
     if 'sendReport' in appConf:
       sendReport = appConf['sendReport']
     
-    if sendReport:
-      if (self.sim):
-        self.log("SIMULATION: Formatting log and sending report.\n")
+    if not sendReport:
+      return
+    
+    ignore = None
+    if "ignoreLogEntries" in browser:
+      ignore = browser["ignoreLogEntries"]
+    else:
+      if "ignoreLogEntries" in appConf:
+        ignore = appConf["ignoreLogEntries"]
+    
+    if (self.sim):
+      self.log("SIMULATION: Formatting log and sending report.\n")
+    else:        
+      if getReportFrom == 'testLog':
+        self.formatLog(logFile, reportFile, ignore)
       else:
-        
-        ignore = None
-        if "ignoreLogEntries" in browser:
-          ignore = browser["ignoreLogEntries"]
-        else:
-          if "ignoreLogEntries" in appConf:
-            ignore = appConf["ignoreLogEntries"]
-        
-        if getReportFrom == 'testLog':
-          self.formatLog(logFile, reportFile, ignore)
-        else:
-          self.formatLog(None, reportFile, ignore)
+        self.formatLog(None, reportFile, ignore)
 
-        self.sendReport(appConf['appName'], reportFile)
+      self.sendReport(appConf['appName'], reportFile)
         
     if "reportServerUrl" in self.testConf:
-      self.reportResults(appConf['appName'], testStartDate, logFile, ignore)
+      if (self.sim):
+        self.log("SIMULATION: Sending results to report server.\n")
+      else:
+        self.reportResults(appConf['appName'], testStartDate, logFile, ignore)
 
 
   ##
