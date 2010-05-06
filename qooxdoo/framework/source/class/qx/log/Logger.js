@@ -220,13 +220,13 @@ qx.Class.define("qx.log.Logger",
      * @return {void}
      */
     trace : qx.core.Variant.select("qx.debug",
-		{
-			"on" : function(object) {
-      	qx.log.Logger.__log("info", [object, qx.dev.StackTrace.getStackTrace().join("\n")]);
-    	},
+    {
+      "on" : function(object) {
+        qx.log.Logger.__log("info", [object, qx.dev.StackTrace.getStackTrace().join("\n")]);
+      },
 
-			"off" : function() {}
-		}),
+      "off" : function() {}
+    }),
 
 
     /**
@@ -584,10 +584,10 @@ qx.Class.define("qx.log.Logger",
           break;
 
         case "error":
-					if (qx.core.Variant.isSet("qx.debug", "on")) {
-						trace = qx.dev.StackTrace.getStackTraceFromError(value);
-					}
-          
+          if (qx.core.Variant.isSet("qx.debug", "on")) {
+            trace = qx.dev.StackTrace.getStackTraceFromError(value);
+          }
+
           text = value.toString();
           break;
 

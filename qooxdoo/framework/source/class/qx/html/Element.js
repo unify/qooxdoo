@@ -338,15 +338,15 @@ qx.Class.define("qx.html.Element",
         }
         var args = action.args;
         args.unshift(element);
-        
-        if (action.type == "capture" || action.type == "releaseCapture") 
+
+        if (action.type == "capture" || action.type == "releaseCapture")
         {
           var captureDispatch = qx.event.Registration.getManager(element).getDispatcher(qx.event.dispatch.MouseCapture);
           if (action.type == "capture") {
             captureDispatch.activateCapture(element);
           } else {
             captureDispatch.releaseCapture(element);
-          }          
+          }
         }
         else
         {

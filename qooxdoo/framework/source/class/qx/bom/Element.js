@@ -35,7 +35,7 @@ qx.Class.define("qx.bom.Element",
       UTILITIES
     ---------------------------------------------------------------------------
     */
-	
+
     /**
      * Creates and returns an DOM helper element.
      *
@@ -68,7 +68,7 @@ qx.Class.define("qx.bom.Element",
 
 
 
-	
+
     /*
     ---------------------------------------------------------------------------
       CREATION

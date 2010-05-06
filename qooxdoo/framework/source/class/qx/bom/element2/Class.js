@@ -14,7 +14,7 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
-     
+
    ======================================================================
 
    This class contains code based on the following work:
@@ -25,7 +25,7 @@
 
      Copyright:
        John Resig
- 
+
      License:
        MIT+GPL: http://jquery.org/license
 
@@ -47,14 +47,14 @@ qx.Class.define("qx.bom.element2.Class",
 
     /** {RegExp} Divider between class names */
     __rspace : /\s+/,
-    
+
     /**
      * Whether the given element has the given cSS class
-     * 
+     *
      * @param elem {Element} DOM element to query
      * @param value {String} Class name to query for
      */
-    has : function(elem, value) 
+    has : function(elem, value)
     {
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
@@ -62,7 +62,7 @@ qx.Class.define("qx.bom.element2.Class",
         qx.core.Assert.assertString(value, "Invalid class name to check for!");
         qx.core.Assert.assertMatch(value, /^[a-zA-Z][a-zA-Z0-9-]+$/, "Supports single value class names only!");
       }
-      
+
       if ((" " + elem.className + " ").replace(this.__rclass, " ").indexOf(" " + value + " ") > -1) {
         return true;
       }
@@ -75,7 +75,7 @@ qx.Class.define("qx.bom.element2.Class",
      * Adds one or multiple classes to the given element
      *
      * @param elem {Element} DOM element to modify
-     * @param classes {String} List of classes to add. One or 
+     * @param classes {String} List of classes to add. One or
      *    multiple classes in a single string.
      * @return {String} The resulting class name which was applied
      */
@@ -87,26 +87,26 @@ qx.Class.define("qx.bom.element2.Class",
         qx.core.Assert.assertString(classes, "Invalid class name to add to element!");
       }
 
-      if (!elem.className) 
+      if (!elem.className)
       {
         elem.className = classes;
-      } 
-      else 
+      }
+      else
       {
         var classNames = classes.split(this.__rspace);
         var className = " " + elem.className + " ";
         var setClass = elem.className;
 
-        for (var i=0, l=classNames.length; i<l; i++) 
+        for (var i=0, l=classNames.length; i<l; i++)
         {
           if (className.indexOf(" " + classNames[i] + " ") < 0) {
             setClass += " " + classNames[i];
           }
         }
-        
+
         elem.className = qx.lang.String.trim(setClass);
       }
-      
+
       return elem.className;
     },
 
@@ -115,7 +115,7 @@ qx.Class.define("qx.bom.element2.Class",
      * Removes one or multiple classes from the given element
      *
      * @param elem {Element} DOM element to modify
-     * @param classes {String[]|varargs} List of classes to remove. One or 
+     * @param classes {String[]|varargs} List of classes to remove. One or
      *    multiple classes in a single string.
      * @return {String} The resulting class name which was applied
      */
@@ -126,27 +126,27 @@ qx.Class.define("qx.bom.element2.Class",
         qx.core.Assert.assertElement(elem, "Invalid element to check for applied CSS class!");
         qx.core.Assert.assertString(classes, "Invalid class name to add to element!");
       }
-            
+
       if (!elem.className) {
         return;
       }
 
-      if (classes) 
+      if (classes)
       {
         var classNames = classes.split(this.__rspace);
         var setClass = (" " + elem.className + " ").replace(this.__rclass, " ");
-        
+
         for (var i=0, l=classNames.length; i<l; i++) {
           setClass = setClass.replace(" " + classNames[i] + " ", " ");
         }
-        
+
         elem.className = qx.lang.String.trim(setClass);
-      } 
+      }
       else
       {
         elem.className = "";
       }
-      
+
       return elem.className;
     }
   }
