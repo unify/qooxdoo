@@ -2797,11 +2797,20 @@ qx.Class.define("qx.ui.core.Widget",
         for (var prop in newStyles)
         {
           var config = qx.Bootstrap.getPropertyDefinition(this.constructor, prop);
+
+          // Expand groups
+          // This is duplicated somehow to the property group implementation, 
+          // but is required to solve priority issues which arise otherwise
           if (config.group)
           {
-            // Expand shorthands
-            if (config.mode == "shorthand") {
-              newStyles[prop] = qx.lang.Array.fromShortHand(newStyles[prop]);
+            if (config.mode == "shorthand") 
+            {
+              var shorthandValue = newStyles[prop];
+              if (shorthandValue instanceof Array) {
+                newStyles[prop] = qx.lang.Array.fromShortHand(newStyles[prop]);  
+              } else {
+                newStyles[prop] = [shorthandValue, shorthandValue, shorthandValue, shorthandValue];
+              }
             }
             
             propertyGroup = config.group;
