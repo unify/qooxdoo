@@ -290,7 +290,7 @@ qx.Bootstrap.define("qx.Bootstrap",
      * @param name {String} class name to resolve
      * @return {Class} the class
      */
-    getByName : function(name, errorMsg) 
+    getByName : function(name, errorMsg)
     {
       var clazz = qx.Bootstrap.$$registry[name];
       if (!clazz && errorMsg) {

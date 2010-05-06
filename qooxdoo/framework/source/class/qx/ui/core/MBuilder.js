@@ -34,8 +34,8 @@ qx.Mixin.define("qx.ui.core.MBuilder",
   {
     /** {Map} Data store for widgets */
     __widgetRegistry : null,
-    
-  
+
+
     /**
      * Converts the given structure into a top-level widget
      * with children.

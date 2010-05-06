@@ -79,7 +79,7 @@ qx.Class.define("qx.log.appender.RingBuffer",
     {
       var maxMessages = this.getMaxMessages();
 
-			var history = this.__history;
+      var history = this.__history;
       if (history.length < maxMessages) {
         history.push(entry);
       }
@@ -113,7 +113,7 @@ qx.Class.define("qx.log.appender.RingBuffer",
      */
     retrieveLogEvents : function(count)
     {
-			var history = this.__history;
+      var history = this.__history;
       if (count > history.length) {
         count = history.length;
       }

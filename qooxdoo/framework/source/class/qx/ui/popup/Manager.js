@@ -197,7 +197,7 @@ qx.Class.define("qx.ui.popup.Manager",
 
     // Hide all popups on window blur
     Registration.removeListener(window, "blur", this.hideAll, this);
-                                         
+
     this._disposeMap("__objects");
   }
 });

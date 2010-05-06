@@ -35,7 +35,7 @@
 
 #### OPTIONALS: Add these classes to enable specific features
 #optional(qx.bom.Element)
- 
+
 #require(qx.type.BaseArray)
 #require(qx.bom.Selector)
 #require(qx.bom.element2.Class)
@@ -104,11 +104,11 @@
   };
 
 
-	var bomClass = qx.bom.element2.Class;
-	var bomAttribute = qx.bom.element.Attribute;
-	var bomInput = qx.bom.Input;
-	var bomStyle = qx.bom.element2.Style;
-	var bomSelector = qx.bom.Selector;
+  var bomClass = qx.bom.element2.Class;
+  var bomAttribute = qx.bom.element.Attribute;
+  var bomInput = qx.bom.Input;
+  var bomStyle = qx.bom.element2.Style;
+  var bomSelector = qx.bom.Selector;
 
 
   /**
@@ -470,8 +470,8 @@
        * on all selected elements.
        *
        * @signature function(name, value)
-		 	 * @param name {String|Map} Style name or Map of styles/values to apply
-		   * @param value {String} Style value
+        * @param name {String|Map} Style name or Map of styles/values to apply
+       * @param value {String} Style value
        * @return {Collection} The collection is returned for chaining proposes
        */
       setStyle : setter(bomStyle, "set"),
