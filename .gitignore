@@ -1,11 +1,9 @@
 cache
-
-qooxdoo/application/*/source/script
-qooxdoo/component/*/source/script
-
-qooxdoo/application/*/build
-qooxdoo/component/*/build
+script
+build
+api
 
 .settings/*
 *.pyc
 .DS_Store
+

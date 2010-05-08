@@ -21,7 +21,7 @@
 
 import os, sys, string, types, re, zlib, time
 import urllib, urlparse, optparse, pprint
-from generator.action.ImageInfo import ImageInfo, ImgInfoFmt
+from generator.resource.ImageInfo import ImageInfo, ImgInfoFmt, CombinedImage
 from generator.config.Lang      import Lang
 from generator.config.Library   import Library
 from generator.code.Part        import Part
@@ -593,14 +593,6 @@ class CodeGenerator(object):
 
 
         ##
-        # checks whether the image is a combined image, by looking for a
-        # .meta file
-        def isCombinedImage(resourcePath):
-            meta_fname = os.path.splitext(resourcePath)[0]+'.meta'
-            return os.path.exists(meta_fname)
-
-
-        ##
         # create the final form of the data to be returned by generateResourceInfoCode
         def serialize(filteredResources, combinedImages, resdata):
             for resId, resval in filteredResources.items():
@@ -734,12 +726,13 @@ class CodeGenerator(object):
                 if assetFilter(resource):  # add those anyway
                     resId, resVal = addResource(resource)
                     filteredResources[resId] = resVal
-                if isCombinedImage(resource):  # register those for later evaluation
-                    combObj         = NameSpace()
-                    combObj.used    = False
+                if self._resourceHandler.isCombinedImage(resource):  # register those for later evaluation
+                    combObj     = CombinedImage(resource)
                     combId, combImgFmt     = addResource(resource)
+                    #combObj         = NameSpace()
+                    #combObj.used    = False
+                    #combObj.embeds         = addCombinedImage(resource, combId, combImgFmt)
                     combObj.info           = combImgFmt
-                    combObj.embeds         = addCombinedImage(resource, combId, combImgFmt)
                     combinedImages[combId] = combObj
 
         # 2nd pass patching simple image infos with combined info
