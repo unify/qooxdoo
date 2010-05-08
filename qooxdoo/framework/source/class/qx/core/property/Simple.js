@@ -33,7 +33,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
     /** {Integer} Number of properties created. For debug proposes. */
     __counter : 0,
     
-    /** {Integer} Maps property names to IDs */
+    /** {Integer} Maps simple property names to global property IDs */
     __propertyNameToId : {},
 
 

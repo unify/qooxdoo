@@ -33,12 +33,54 @@ qx.Bootstrap.define("qx.core.property.Multi",
     __getter : {},
     __refresher : {},
     
-    __refreshList : null,
+    /** {Map} Map of objects to which needs an update for inheritance (parent changed) */
+    __refreshList : null,    
+
+    /** {Integer} Number of properties created. For debug proposes. */
     __counter : 0,
     
-    __fields : [],
+    /** {Integer} Maps multi property names to global property IDs */
+    __propertyNameToId : {},
+    
+    /**
+     * {Map} Configuration for property fields
+     */
+    __fields : 
+    {
+      5 : {
+        name : "override",
+        priority : 5
+      },
+      
+      4: {
+        name : "user",
+        priority : 4
+      },
+      
+      3: {
+        name : "theme",
+        priority : 3,
+        get : "getAppearanceValue"
+      },
+      
+      2 : {
+        name : "inheritance",
+        priority : 2
+      },
+      
+      1: {
+        name : "init",
+        priority : 1
+      }
+    },
     
   
+    /**
+     * Mark the given object as being moved around and requiring
+     * an update to the inheritance.
+     * 
+     * @param obj {Object} Any object supporting inheritance
+     */
     mark : function(obj)
     {
       var db = this.__refreshList;
@@ -63,8 +105,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
     },
     
     
+    /**
+     * Flushes the list of objects which were moved around (different parent) 
+     * since the last call. This should be called by a central position
+     * e.g. before start layouting/painting changes.
+     */
     flush : function()
     {
+      // Used to measure runtime of flush
       var start = new Date;
 
       // Replace public list with new list while keeping current one in memory
@@ -106,7 +154,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
       }
       
-      qx.log.Logger.debug(this, "Flushed " + qx.lang.Object.getKeys(db).length + " objects in: " + (new Date - start) + "ms");
+      // Debug
+      if (qx.core.Variant.isSet("qx.debug", "on")) {
+        qx.log.Logger.debug(this, "Flushed inheritable properties on " + qx.lang.Object.getKeys(db).length + " objects in: " + (new Date - start) + "ms");
+      }
     },
     
     
@@ -146,9 +197,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }         
       }
     },
-    
-    __propertyNameToId : {},    
-    
     
     /**
      * Imports a list of themed styles from the appearance system
@@ -282,7 +330,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             
       // Generate property ID
       // Identically named property might store data on the same field
-      // as in this case this is typicall on different classes.
+      // as in this case this is typically on different classes.
       // We reserve five slots for storing data: init, theme, inheritance, override, user
       // At any moment we add more features, we need to increase the increment as well!
       var db = this.__propertyNameToId;
@@ -313,7 +361,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // Shorthands: Better compression/obfuscation/performance
       var changeHelper = this.__changeHelper;
       var nullable = config.nullable; 
-      
+      var fields = this.__fields;
       
 
               
@@ -344,17 +392,16 @@ qx.Bootstrap.define("qx.core.property.Multi",
           var oldPriority = data[id];
           if (oldPriority != NULL) 
           {
-            if (oldPriority == 3) {
-              var oldValue = this.getAppearanceValue(name);
+            var oldGetter = fields[oldPriority].get;
+            if (oldGetter) {
+              var oldValue = context[oldGetter](name);
             } else {
               var oldValue = data[id+oldPriority];
             }            
           }
           
           // Store new value
-          if (modifyPriority != 3) {
-            data[id+modifyPriority] = newValue;
-          }
+          data[id+modifyPriority] = newValue;
           
           // Ignore lower-priority changes
           if (oldPriority == NULL || oldPriority <= modifyPriority) 
@@ -408,8 +455,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
           if (oldPriority === modifyPriority) 
           {
             // Read old value
-            if (oldPriority == 3) {
-              var oldValue = this.getAppearanceValue(name);
+            var oldGetter = fields[oldPriority].get;
+            if (oldGetter) {
+              var oldValue = context[oldGetter](name);
             } else {
               var oldValue = data[id+oldPriority];
             }
@@ -451,9 +499,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // and only want to do this when needed.
           // Do not use delete operator as this is not good for performance:
           // just modifying the value to undefined is enough.
-          if (modifyPriority != 3) {
-            data[id+modifyPriority] = UNDEFINED;
-          }          
+          data[id+modifyPriority] = UNDEFINED;
 
           // Only need to react when current field is resetted
           if (oldPriority === modifyPriority && oldValue !== newValue) {         
@@ -503,8 +549,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Special get() support for themable properties
-        if (currentPriority == 3) {
-          return context.getAppearanceValue(name);
+        var currentGetter = fields[currentPriority].get;
+        if (currentGetter) {
+          return context[currentGetter](name);
         } else {
           return data[id+currentPriority];
         }
@@ -559,14 +606,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         members["refresh" + up] = setter(2);
       }
 
-      // Prio field is still there, but we update these values via importStyles()
-      /*
-      if (config.themeable)
-      {
-        members["setThemed" + up] = setter(3);
-        members["resetThemed" + up] = resetter(3);
-      }
-      */
+      // Prio for themes is "3" - we update these values via importStyles()
 
       members["set" + up] = setter(4);
       members["reset" + up] = resetter(4);
