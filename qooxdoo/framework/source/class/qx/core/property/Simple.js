@@ -30,23 +30,30 @@ qx.Bootstrap.define("qx.core.property.Simple",
 {
   statics :
   {
-    __changeHelper : function(value, oldValue, config)
-    {
-      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
-
-      // Call apply
-      if (config.apply) {
-        this[config.apply](value, oldValue, config.name);
-      }
-
-      // Fire event
-      if (config.event) {
-        this.fireDataEvent(config.event, value, oldValue);
-      }
-    }, 
+    /** {Integer} Number of properties created. For debug proposes. */
+    __counter : 0,
     
+    /** {Integer} Maps property names to IDs */
     __propertyNameToId : {},
-     
+
+
+    /**
+     * Adds a new property to the given class.
+     * 
+     * Supports the configuration keys:
+     * 
+     * * apply: Method to call after a new value has been stored
+     * * event: Event to fire after a new value has been stored (and apply has been called)
+     * * init: Init value for the property
+     * * nullable: Whether the property is able to store null values
+     * 
+     * Please note that you need to define one of "init" or "nullable". Otherwise you
+     * might get errors during runtime function calls.
+     *  
+     * @param clazz {Class} The class to modify
+     * @param name {String} Name of the property. Camel-case. No special characters.
+     * @param config {Map} Configuration for the property to being created
+     */
     add : function(clazz, name, config)
     {
       /*
@@ -54,6 +61,13 @@ qx.Bootstrap.define("qx.core.property.Simple",
          INTRO
       ---------------------------------------------------------------------------
       */
+      
+      // Improve compressibility
+      var UNDEFINED;
+      var NULL = null;    
+      
+      // Increase counter
+      this.__counter++;
             
       // Generate property ID
       // Identically named property might store data on the same field
@@ -68,7 +82,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       
       // Store init value (shared data between instances)
       var members = clazz.prototype;
-      if (config.init !== undefined) 
+      if (config.init !== UNDEFINED) 
       {
         var initField = "$$init" + id;
         members[initField] = config.init;
@@ -81,11 +95,12 @@ qx.Bootstrap.define("qx.core.property.Simple",
       }
       
       // Precalc
-      var up = config.up = qx.Bootstrap.$$firstUp[name] || qx.Bootstrap.firstUp(name);
+      var up = qx.Bootstrap.$$firstUp[name] || qx.Bootstrap.firstUp(name);
          
       // Shorthands: Better compression/obfuscation/performance
-      var changeHelper = this.__changeHelper;
       var nullable = config.nullable;
+      var eventType = config.event;
+      var applyMethod = config.apply;
 
 
 
@@ -109,7 +124,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
           var value = data[id];
         }
         
-        if (value === undefined) 
+        if (value === UNDEFINED) 
         {
           if (initField) {
             return context[initField];
@@ -122,7 +137,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
             }
           }  
           
-          value = null;          
+          value = NULL;          
         }
         
         return value;          
@@ -144,12 +159,19 @@ qx.Bootstrap.define("qx.core.property.Simple",
           var data = context.$$data;
           
           // Check whether there is already local data (which is higher prio than init data)
-          if (data && data[id] !== undefined) {
+          if (data && data[id] !== UNDEFINED) {
             return;
           }
           
-          // Call change helper with value from shared class data
-          changeHelper.call(context, this[initField], undefined, config);
+          // Call apply
+          if (applyMethod) {
+            context[applyMethod](this[initField], UNDEFINED, name);
+          }
+
+          // Fire event
+          if (eventType) {
+            context.fireDataEvent(eventType, this[initField], UNDEFINED);
+          }          
         };
       }      
       
@@ -178,12 +200,19 @@ qx.Bootstrap.define("qx.core.property.Simple",
 
         if (value !== old) 
         {
-          if (old === undefined && initField) {
+          if (old === UNDEFINED && initField) {
             old = context[initField];
           }
           
           data[id] = value;
-          changeHelper.call(context, value, old, config);
+
+          if (applyMethod) {
+            context[applyMethod](value, old, name);
+          }
+
+          if (eventType) {
+            context.fireDataEvent(eventType, value, old);
+          }
         }        
       };
       
@@ -209,7 +238,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
         }
         
         var old = data[id];
-        var value = undefined;
+        var value = UNDEFINED;
 
         if (old !== value) 
         {
@@ -226,7 +255,13 @@ qx.Bootstrap.define("qx.core.property.Simple",
             }
           }    
           
-          changeHelper.call(context, value, old, config);
+          if (applyMethod) {
+            context[applyMethod](value, old, name);
+          }
+
+          if (eventType) {
+            context.fireDataEvent(eventType, value, old);
+          }
         }             
       };   
       

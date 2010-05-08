@@ -34,7 +34,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
     __refresher : {},
     
     __refreshList : null,
-        
+    __counter : 0,
+    
+    __fields : [],
     
   
     mark : function(obj)
@@ -157,6 +159,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     importThemed : function(obj, newStyles, oldStyles)
     {
+      var UNDEFINED = undefined;
+      
       // TODO: Make this hard-coded thingy configurable... somehow
       var themedPriority = 3;
 
@@ -187,7 +191,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         
         // If nothing is set at the moment and no new value is given
         // then simply ignore the property for the moment
-        if (storedPriority === undefined && newValue === undefined) {
+        if (storedPriority === UNDEFINED && newValue === UNDEFINED) {
           continue;
         }
         
@@ -204,7 +208,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           if (storedPriority != null) {
             oldValue = data[id+storedPriority];
           } else {
-            oldValue = undefined;
+            oldValue = UNDEFINED;
           }
         }
         
@@ -212,20 +216,20 @@ qx.Bootstrap.define("qx.core.property.Multi",
         var config = Bootstrap.getPropertyDefinition(obj.constructor, prop);
         
         // Reset implementation block
-        if (newValue === undefined) 
+        if (newValue === UNDEFINED) 
         {
           for (var newPriority=themedPriority-1; newPriority>0; newPriority--)
           {
             newValue = data[id+newPriority];
-            if (newValue !== undefined) {
+            if (newValue !== UNDEFINED) {
               break;
             }
           }
           
           // No value has been found
-          if (newValue === undefined) 
+          if (newValue === UNDEFINED) 
           {
-            newPriority = undefined;
+            newPriority = UNDEFINED;
             
             // Let's try the class-wide init value
             initField = "$$init" + id; 
@@ -268,6 +272,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
          INTRO: IDENTICAL BETWEEN SIMPLE AND MULTI
       ---------------------------------------------------------------------------
       */
+      
+      // Improve compressibility
+      var UNDEFINED;
+      var NULL = null;
+            
+      // Increase counter
+      this.__counter++;
             
       // Generate property ID
       // Identically named property might store data on the same field
@@ -284,7 +295,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       // Store init value (shared data between instances)
       var members = clazz.prototype;
-      if (config.init !== undefined) 
+      if (config.init !== UNDEFINED) 
       {
         var initField = "$$init" + id;
         members[initField] = config.init;
@@ -331,7 +342,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
           // Read old value
           var oldPriority = data[id];
-          if (oldPriority != null) 
+          if (oldPriority != NULL) 
           {
             if (oldPriority == 3) {
               var oldValue = this.getAppearanceValue(name);
@@ -346,7 +357,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           }
           
           // Ignore lower-priority changes
-          if (oldPriority == null || oldPriority <= modifyPriority) 
+          if (oldPriority == NULL || oldPriority <= modifyPriority) 
           {
             // Whether the storage field was changed
             if (oldPriority !== modifyPriority) {
@@ -357,7 +368,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // This is always the value on the current class, not explicitely the
             // class which creates the property. This is mainly for supporting
             // init value overrides with "refined" properties
-            if (oldValue === undefined && initField) {
+            if (oldValue === UNDEFINED && initField) {
               oldValue = context[initField];
             }
 
@@ -408,15 +419,15 @@ qx.Bootstrap.define("qx.core.property.Multi",
             for (var newPriority=modifyPriority-1; newPriority>=0; newPriority--)
             {
               newValue = data[id+newPriority];
-              if (newValue !== undefined) {
+              if (newValue !== UNDEFINED) {
                 break;
               }             
             }
             
             // No value has been found
-            if (newValue === undefined) 
+            if (newValue === UNDEFINED) 
             {
-              newPriority = undefined;
+              newPriority = UNDEFINED;
               
               // Let's try the class-wide init value
               if (initField) {
@@ -441,7 +452,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // Do not use delete operator as this is not good for performance:
           // just modifying the value to undefined is enough.
           if (modifyPriority != 3) {
-            data[id+modifyPriority] = undefined;
+            data[id+modifyPriority] = UNDEFINED;
           }          
 
           // Only need to react when current field is resetted
@@ -471,7 +482,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         var data = context.$$data;
 
         var currentPriority = data && data[id];
-        if (currentPriority == null) 
+        if (currentPriority == NULL) 
         {
           // Fallback to init value on prototype chain (when supported)
           // This is always the value on the current class, not explicitely the
@@ -488,7 +499,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             }
           }
                     
-          return null;
+          return NULL;
         }
         
         // Special get() support for themable properties
@@ -525,13 +536,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // Check whether there is already another value assigned.
             // In this case the whole function could be left early.
             var oldPriority = data[id];
-            if (oldPriority != null) {
+            if (oldPriority != NULL) {
               return;
             }            
           }
           
           // Call change helper with value from shared class data
-          changeHelper.call(context, this[initField], undefined, config);
+          changeHelper.call(context, this[initField], UNDEFINED, config);
         };
       }
       
