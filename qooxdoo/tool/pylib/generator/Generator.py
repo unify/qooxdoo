@@ -36,13 +36,13 @@ from generator.code.DependencyLoader import DependencyLoader
 from generator.code.PartBuilder      import PartBuilder
 from generator.code.TreeCompiler     import TreeCompiler
 from generator.code.LibraryPath      import LibraryPath
-from generator.code.ResourceHandler  import ResourceHandler
 from generator.code.Script           import Script
 from generator.code.Package          import Package
 from generator.code.Part             import Part
-from generator.action.CodeGenerator  import CodeGenerator
-from generator.action.ImageInfo      import ImgInfoFmt
-from generator.action.ImageClipping  import ImageClipping
+from generator.code.CodeGenerator    import CodeGenerator
+from generator.resource.ResourceHandler  import ResourceHandler
+from generator.resource.ImageClipping    import ImageClipping
+from generator.resource.ImageInfo        import ImgInfoFmt
 from generator.action.ApiLoader      import ApiLoader
 from generator.action.Locale         import Locale
 from generator.action.ActionLib      import ActionLib
@@ -77,6 +77,9 @@ class Generator(object):
 
         console = self._console
         console.resetFilter()   # reset potential filters from a previous job
+        Context.console = context['console']
+        
+        return
 
 
 
@@ -904,6 +907,22 @@ class Generator(object):
             return
 
 
+        def depsToTerms(classDepsIter):
+            
+            depends = {}
+            for (packageId, classId, depId, loadOrRun) in classDepsIter:
+                if classId not in depends:
+                    depends[classId]         = {}
+                    depends[classId]['load'] = []
+                    depends[classId]['run']  = []
+                depends[classId][loadOrRun].append(depId)
+
+            for classId, classDeps in depends.items():
+                self._console.info("depends(%r, %r, %r)" % (classId, classDeps['load'], classDeps['run']))
+
+            return
+
+
         def depsToConsole(classDepsIter):
             oPackageId = oClassId = oLoadOrRun = ''
             self._console.indent()
@@ -1016,6 +1035,8 @@ class Generator(object):
                 depsToJsonFile(lookupUsingDeps(packages), depsLogConf)
             elif mainformat == 'flare':
                 depsToFlareFile(lookupUsingDeps(packages), depsLogConf)
+            elif mainformat == 'term':
+                depsToTerms(lookupUsingDeps(packages))
             else:
                 depsToConsole(lookupUsingDeps(packages))
             
@@ -1082,7 +1103,7 @@ class Generator(object):
             libpath = os.path.normpath(libpath)
 
             # get relevant resources for this lib
-            resList  = self._resourceHandler.findAllResources([lib], resourceFilter)
+            resList  = self._resourceHandler.findAllResources1([lib], resourceFilter)
 
             # for each needed resource
             for res in resList:

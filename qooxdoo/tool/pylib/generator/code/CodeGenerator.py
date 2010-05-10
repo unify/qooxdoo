@@ -21,7 +21,7 @@
 
 import os, sys, string, types, re, zlib, time
 import urllib, urlparse, optparse, pprint
-from generator.action.ImageInfo import ImageInfo, ImgInfoFmt
+from generator.resource.ImageInfo import ImageInfo, ImgInfoFmt, CombinedImage
 from generator.config.Lang      import Lang
 from generator.config.Library   import Library
 from generator.code.Part        import Part
@@ -452,8 +452,6 @@ class CodeGenerator(object):
         mapInfo['__out__'] = { 'sourceUri': out_sourceUri }
         globalCodes["Libinfo"]     = mapInfo
 
-        #import cProfile
-        #cProfile.runctx("mapInfo = self.generateResourceInfoCode(script, settings, libs, format)", globals(), locals(), "/home/thron7/tmp/generateResourceIC.profile")
         mapInfo = self.generateResourceInfoCode(script, settings, libs, format)
         globalCodes["Resources"]    = mapInfo
 
@@ -551,12 +549,35 @@ class CodeGenerator(object):
 
         ##
         # finds the package that needs this resource <assetId> and adds it
+        # (polymorphic in the 4th param, use either simpleResVal *or* combImgObj as kwarg)
         # TODO: this might be very expensive (lots of lookup's)
-        def addResourceToPackage(script, classToResourceMap, assetId, resvalue):
+        def addResourceToPackages(script, classToResourceMap, assetId, simpleResVal=None, combImgObj=None):
+
+            ##
+            # match an asset id or a combined image object
+            def assetRexMatchItem(assetRex, item):
+                if combImgObj:
+                    # combined image = object(used:True/False, embeds: {id:ImgInfoFmt}, info:ImgInfoFmt)
+                    for embId in item.embeds:
+                        if assetRex.match(embId):
+                            return True
+                    return False
+                else:
+                    # assetId
+                    return assetRex.match(item)
+
+            # --------------------------------------------------------
+            if combImgObj:
+                resvalue = combImgObj.info.flatten()
+                checkval = combImgObj
+            else:
+                resvalue = simpleResVal
+                checkval = assetId
+
             classesUsing = set(())
             for clazz, assetSet in classToResourceMap.items():
                 for assetRex in assetSet:
-                    if assetRex.match(assetId):
+                    if assetRexMatchItem(assetRex, checkval):
                         classesUsing.add(clazz)
                         break
             for package in script.packages:
@@ -564,18 +585,16 @@ class CodeGenerator(object):
                     package.data.resources[assetId] = resvalue
             return
 
-
         ##
-        # checks whether the image is a combined image, by looking for a
-        # .meta file
-        def isCombinedImage(resourcePath):
-            meta_fname = os.path.splitext(resourcePath)[0]+'.meta'
-            return os.path.exists(meta_fname)
+        # return the (potentially empty) list of embedded image id's of a
+        # combined image that are in filteredResources
+        def requiredEmbeds(combImg, filteredResourceIds):  # combImg = {info: ImgInfoFmt, embeds: {id:ImgInfoFmt}}
+            return (x for x in combImg.embeds if x in filteredResourceIds)
 
 
         ##
         # create the final form of the data to be returned by generateResourceInfoCode
-        def serialize(filteredResources, resdata):
+        def serialize(filteredResources, combinedImages, resdata):
             for resId, resval in filteredResources.items():
                 # build up resdata
                 if isinstance(resval, ImgInfoFmt):
@@ -583,7 +602,13 @@ class CodeGenerator(object):
                 else:  # handle other resources
                     resvalue = resval
                 resdata[resId] = resvalue
-                addResourceToPackage(script, classToResourceMap, resId, resvalue)  # register the resource with the package needing it
+                # register the resource with the package needing it
+                addResourceToPackages(script, classToResourceMap, resId, simpleResVal=resvalue)
+
+            # for combined images, we have to check their embedded images against the packages
+            for combId, combImg in combinedImages.items():
+                if combImg.used == True:
+                    addResourceToPackages(script, classToResourceMap, combId, combImgObj=combImg)
 
             # handle tree structure of resource info
             if resources_tree:
@@ -693,7 +718,7 @@ class CodeGenerator(object):
         # 1st pass gathering relevant images and other resources from the libraries
         for lib in libs:
             librespath = os.path.normpath(os.path.join(lib['path'], lib['resource']))
-            resourceList = self._resourceHandler.findAllResources([lib], None)
+            resourceList = self._resourceHandler.findAllResources1([lib], None)
             # resourceList = [file1,file2,...]
             for resource in resourceList:
                 if skippatt.search(resource):
@@ -701,25 +726,31 @@ class CodeGenerator(object):
                 if assetFilter(resource):  # add those anyway
                     resId, resVal = addResource(resource)
                     filteredResources[resId] = resVal
-                if isCombinedImage(resource):  # register those for later evaluation
-                    combObj         = NameSpace()
+                if self._resourceHandler.isCombinedImage(resource):  # register those for later evaluation
+                    combObj     = CombinedImage(resource)
                     combId, combImgFmt     = addResource(resource)
+                    #combObj         = NameSpace()
+                    #combObj.used    = False
+                    #combObj.embeds         = addCombinedImage(resource, combId, combImgFmt)
                     combObj.info           = combImgFmt
-                    combObj.embeds         = addCombinedImage(resource, combId, combImgFmt)
                     combinedImages[combId] = combObj
 
         # 2nd pass patching simple image infos with combined info
         for combId, combImg in combinedImages.items():  # combImg.embeds = {resId : ImgFmt}
-            for embId in combImg.embeds:
-                if embId in filteredResources.keys():
-                    lib = filteredResources[embId].lib
-                    filteredResources[embId]      = combImg.embeds[embId] # replace info with combined info
-                    filteredResources[embId].lib  = lib  # restore original lib
-                    if combId not in filteredResources.keys():  # every used combined image has to be added on its own
-                        filteredResources[combId] = combImg.info
+            filteredResourceIds = filteredResources.keys()
+            for embId in requiredEmbeds(combImg, filteredResourceIds):
+                # patch simle image info
+                lib = filteredResources[embId].lib                    # keep lib info
+                filteredResources[embId]      = combImg.embeds[embId] # replace info with combined info
+                filteredResources[embId].lib  = lib                   # restore original lib
+                # add combined image
+                if combId not in filteredResourceIds:
+                    filteredResources[combId] = combImg.info
+                    combImg.used = True
+
 
         # 3rd pass serializing the info from filteredResources
-        resdata = serialize(filteredResources, resdata)
+        resdata = serialize(filteredResources, combinedImages, resdata)
         
         # write img cache file
         cache.write(cacheId, imgLookupTable)

@@ -23,6 +23,7 @@ import re, string, types, sys, os
 
 from generator.code.LibraryPath import LibraryPath
 from misc import Path
+from generator.resource.ImageInfo import CombinedImage
 
 class ResourceHandler(object):
     def __init__(self, generatorobj):
@@ -99,6 +100,102 @@ class ResourceHandler(object):
                 self._genobj._cache.write(cacheId, cacheList, memory=True, writeToFile=False)
 
         return result
+
+                        
+        
+
+    ##
+    # Find relevant resources/assets, implementing shaddowing of resources.
+    # Yields resources [file_path1, ...]
+    # includes necessary combined images, unless useCombImgs=False
+    # filter is a positivie filter (ie. the things you *want*)
+    def findAllResources1(self, libraries, filter=None, useCombImgs=True):
+
+        combinedImages    = set(())
+
+        # go through all libs (weighted) and collect necessary resources
+        for lib in libraries:
+            for resource in self.findLibResources(lib, ):
+                if self.isCombinedImage(resource):
+                    combinedImages.add(resource)
+                if (filter and not filter(resource)):
+                    continue
+                else:
+                    yield resource
+
+        # go through the combined images
+        if filter:
+            for combpath in combinedImages:
+                combimg = CombinedImage(combpath)
+                for embimg in combimg.getEmbeddedImages():
+                    if filter(embimg):
+                        yield combpath
+                        break  # one match is enough
+        else: 
+            # if there is no filter, the comb. images have been added in the 
+            # first loop
+            pass
+
+        return
+
+
+    ##
+    # checks whether the image is a combined image, by looking for a
+    # .meta file
+    def isCombinedImage(self, resourcePath):
+        meta_fname = os.path.splitext(resourcePath)[0]+'.meta'
+        return os.path.exists(meta_fname)
+
+
+    ##
+    # Yield the resources of a single lib
+    def findLibResources(self, lib, filter=None):
+
+        def getCache(lib):
+            cacheId = "resinlib-%s" % lib._path
+            liblist = self._genobj._cache.read(cacheId, dependsOn=None, memory=True)
+            return liblist, cacheId
+
+        def isSkipFile(f):
+            if [x for x in map(lambda x: re.search(x, f), ignoredFiles) if x!=None]:
+                return True
+            else:
+                return False
+
+        # - Main --------------------------------------------------------------
+        cacheList    = []  # to poss. populate cache
+        cacheId      = ""  # will be filled in getCache()
+        ignoredFiles = [r'\.meta$',]  # files not considered as resources
+
+        # create wrapper object
+        libObj = LibraryPath(lib, self._genobj._console)
+        # retrieve list of library resources
+        libList, cacheId = getCache(libObj)
+        if libList:
+            inCache = True
+        else:
+            libList = libObj.scanResourcePath()
+            inCache = False
+
+        # go through list of library resources and add suitable
+        for resource in libList:
+            # scanResourcePath() yields absolute paths to a resource, but
+            # we only want to match against the 'resource' part of it
+            resourcePart = Path.getCommonPrefix(libObj._resourcePath, resource)[2]
+            if not inCache:
+                cacheList.append(resource)
+            if isSkipFile(resource):
+                continue
+            elif (filter and not filter(resourcePart)):
+                continue
+            else:
+                yield resource
+
+        if not inCache:
+            # cache write
+            self._genobj._cache.write(cacheId, cacheList, memory=True, writeToFile=False)
+
+        return
 
                         
         
