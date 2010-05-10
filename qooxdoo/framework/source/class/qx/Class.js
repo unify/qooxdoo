@@ -172,13 +172,13 @@ qx.Bootstrap.define("qx.Class",
       }
 
       // Validate incoming data
-      if (qx.core.Variant.isSet("qx.debug", "on")) 
-			{
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
         try {
           this.__validateConfig(name, config);
-        } 
-				catch(ex) 
-				{
+        }
+        catch(ex)
+        {
           if (implicitType) {
             ex.message = 'Assumed static class because no "extend" key was found. ' + ex.message;
           }

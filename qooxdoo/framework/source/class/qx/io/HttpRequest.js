@@ -25,8 +25,8 @@
  * Converts the whole communication into a qooxdoo style class with
  * real properties. The class also fires events to allow easy access
  * to status changes.
- * 
- * Caution: This class automatically disposes itself after 
+ *
+ * Caution: This class automatically disposes itself after
  * the load/error/abort/timeout events have been fired. Access to request specific
  * properties is only possible during event listeners and not afterwards
  */
@@ -74,32 +74,32 @@ qx.Class.define("qx.io.HttpRequest",
 
     /**
      * Syncs a modification date from e.g. a business object
-     * 
+     *
      * This is especially useful when having implemented some kind of caching
      * using localStorage, sessionStorage etc. in such an layer. In this case
-     * it might useful to bring it in sync with this class to omit 
+     * it might useful to bring it in sync with this class to omit
      * unnecessary data transfers.
-     * 
+     *
      * @param url {String} Any valid URL
-     * @param modification {String} A modification data as send with the 
+     * @param modification {String} A modification data as send with the
      *   "Last-Modified" header by the server.
      */
     sync : function(url, modification) {
       this.__modified[url] = modification;
     },
-    
-    
+
+
     /**
-     * Clears the modification data stored for the given URL. 
-     * 
+     * Clears the modification data stored for the given URL.
+     *
      * This is especially useful when having implemented some kind of caching
      * using localStorage, sessionStorage etc. in e.g. an business object. In this case
      * it might useful to bring the caching layer in sync with the request
      * class. For example when clearing the cache in the business object this
      * class also should be informed as no data is anymore available.
-     * 
+     *
      * @param url {String} Any valid URL
-     */ 
+     */
     clear : function(url) {
       delete this.__modified[url];
     }
@@ -153,7 +153,7 @@ qx.Class.define("qx.io.HttpRequest",
       init : ""
     },
 
-  
+
     /**
      * Determines what type of request to issue (GET or POST).
      */
@@ -172,8 +172,8 @@ qx.Class.define("qx.io.HttpRequest",
       check : "Boolean",
       init : true
     },
-    
-    
+
+
     /**
      * Data which should be send to the server.
      *
@@ -192,7 +192,7 @@ qx.Class.define("qx.io.HttpRequest",
     },
 
 
-    /** 
+    /**
      * Request mime type
      */
     requestType :
@@ -200,7 +200,7 @@ qx.Class.define("qx.io.HttpRequest",
       check : ["application/x-www-form-urlencoded", "application/json", "application/xml", "text/plain", "text/javascript", "text/html" ],
       init : "application/x-www-form-urlencoded"
     },
-        
+
 
     /**
      * Response mime type
@@ -236,7 +236,7 @@ qx.Class.define("qx.io.HttpRequest",
 
     /**
      * Number of milliseconds before the request is being timed out.
-     * 
+     *
      * Defaults to 10 seconds
      */
     timeout :
@@ -296,7 +296,7 @@ qx.Class.define("qx.io.HttpRequest",
 
     /**
      * Assigns a label/value pair to the header to be sent with a request
-     * 
+     *
      * Please do prefer properties over headers if possible. The header labels
      * "Cache-Control", "If-Modified-Since", "Content-Type" and "Accept" are blocked
      * here for example.
@@ -305,7 +305,7 @@ qx.Class.define("qx.io.HttpRequest",
      * @param value {String} Value of the header field
      * @return {void}
      */
-    setRequestHeader : function(label, value) 
+    setRequestHeader : function(label, value)
     {
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
@@ -316,7 +316,7 @@ qx.Class.define("qx.io.HttpRequest",
         if (label == "If-Modified-Since") {
           throw new Error("Configured 'If-Modified-Since' through headers. Please use setRefresh() instead!");
         }
-        
+
         if (label == "Content-Type") {
           throw new Error("Configured 'Content-Type' through headers. Please use setRequestType() instead!");
         }
@@ -325,7 +325,7 @@ qx.Class.define("qx.io.HttpRequest",
           throw new Error("Configured 'Accept' through headers. Please use setResponseType() instead!");
         }
       }
-        
+
       this.__headers[label] = value;
     },
 
@@ -448,10 +448,10 @@ qx.Class.define("qx.io.HttpRequest",
 
     /**
      * Returns the duration the request needed to communicate to the server
-     * 
+     *
      * @return {Integer|null} The duration in milliseconds or <code>null</code> if data is not available (yet)
      */
-    getDuration : function() 
+    getDuration : function()
     {
       var req = this.__req;
       return req ? req.getDuration() : null;
@@ -461,7 +461,7 @@ qx.Class.define("qx.io.HttpRequest",
     /**
      * Whether the currently running or finished request returns modified results.
      *
-     * @return {Boolean|null} Returns <code>true</code> when the request contains modified results. 
+     * @return {Boolean|null} Returns <code>true</code> when the request contains modified results.
      *     Returns <code>null</code>when the request is not yet ready.
      */
     isModified : function()
@@ -577,9 +577,9 @@ qx.Class.define("qx.io.HttpRequest",
       }
 
       // Add modified since hint
-      if (this.getRefresh()) 
+      if (this.getRefresh())
       {
-        var since = qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT";       
+        var since = qx.io.HttpRequest.__modified[url] || "Thu, 01 Jan 1970 00:00:00 GMT";
         req.setRequestHeader("If-Modified-Since", since);
       }
 
@@ -650,20 +650,20 @@ qx.Class.define("qx.io.HttpRequest",
      *
      * @signature function()
      */
-    __onload : function() 
+    __onload : function()
     {
       // Load modification data before user fired event
-      if (this.getRefresh() && this.getReadyState() == 4 && this.isSuccessful()) 
+      if (this.getRefresh() && this.getReadyState() == 4 && this.isSuccessful())
       {
         var modified = this.getResponseHeader("Last-Modified");
         var url = this.getUrl();
       }
-      
+
       this.fireEvent("load");
 
       // Store modification date
       // It is important that this is stored after the user event.
-      // Otherwise the modification field gets written to early and every 
+      // Otherwise the modification field gets written to early and every
       // request is reported as being non-modified in application code.
       if (modified) {
         qx.io.HttpRequest.__modified[url] = modified;
