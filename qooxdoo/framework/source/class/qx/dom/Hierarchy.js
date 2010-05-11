@@ -202,10 +202,6 @@ qx.Class.define("qx.dom.Hierarchy",
      */
     isRendered : function(element)
     {
-      // This module is highly used by new qx.html.Element
-      // Copied over details from qx.dom.Node.getDocument() and
-      // this.contains() for performance reasons.
-
       // Offset parent is a good start to test. It omits document detection
       // and function calls.
       if (!element.offsetParent) {
