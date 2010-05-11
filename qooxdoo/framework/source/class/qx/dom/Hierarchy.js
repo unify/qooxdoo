@@ -213,20 +213,7 @@ qx.Class.define("qx.dom.Hierarchy",
       }
 
       var doc = element.ownerDocument || element.document;
-
-      // This is available after most browser excluding gecko haved copied it from mshtml.
-      // Contains() is only available on real elements in webkit and not on the document.
-      if (doc.body.contains) {
-        return doc.body.contains(element);
-      }
-
-      // Gecko way, DOM3 method
-      if (doc.compareDocumentPosition) {
-        return !!(doc.compareDocumentPosition(element) & 16);
-      }
-
-      // Should not happen :)
-      throw new Error("Missing support for isRendered()!");
+      return this.contains(doc.body, element);
     },
 
 
@@ -253,66 +240,23 @@ qx.Class.define("qx.dom.Hierarchy",
      * @param element2 {Element} Second element
      * @return {Element} the found parent, if none was found <code>null</code>
      */
-    getCommonParent : qx.core.Variant.select("qx.client",
+    getCommonParent : function(element1, element2)
     {
-      "mshtml|opera" : function(element1, element2)
-      {
-        if (element1 === element2) {
-          return element1;
-        }
-
-        while (element1 && qx.dom.Node.isElement(element1))
-        {
-          if (element1.contains(element2)) {
-            return element1;
-          }
-
-          element1 = element1.parentNode;
-        }
-
-        return null;
-      },
-
-      "default" : function(element1, element2)
-      {
-        if (element1 === element2) {
-          return element1;
-        }
-
-        var known = {};
-        var obj = qx.core.ObjectRegistry;
-        var h1, h2;
-
-        while (element1 || element2)
-        {
-          if (element1)
-          {
-            h1 = obj.toHashCode(element1);
-
-            if (known[h1]) {
-              return known[h1];
-            }
-
-            known[h1] = element1;
-            element1 = element1.parentNode;
-          }
-
-          if (element2)
-          {
-            h2 = obj.toHashCode(element2);
-
-            if (known[h2]) {
-              return known[h2];
-            }
-
-            known[h2] = element2;
-            element2 = element2.parentNode;
-          }
-        }
-
-        return null;
+      if (element1 === element2) {
+        return element1;
       }
-    }),
+
+      while (element1 && element1.nodeType == 1)
+      {
+        if (this.contains(element1, element2)) {
+          return element1;
+        }
+
+        element1 = element1.parentNode;
+      }
+
+      return null;
+    },
 
 
     /**
@@ -457,53 +401,6 @@ qx.Class.define("qx.dom.Hierarchy",
      */
     getSiblings : function(element) {
       return this.getPreviousSiblings(element).reverse().concat(this.getNextSiblings(element));
-    },
-
-
-    /**
-     * Whether the given element is empty.
-     * Inspired by Base2 (Dean Edwards)
-     *
-     * @param element {Element} The element to check
-     * @return {Boolean} true when the element is empty
-     */
-    isEmpty : function(element)
-    {
-      element = element.firstChild;
-
-      while (element)
-      {
-        if (element.nodeType === qx.dom.Node.ELEMENT || element.nodeType === qx.dom.Node.TEXT) {
-          return false;
-        }
-
-        element = element.nextSibling;
-      }
-
-      return true;
-    },
-
-
-    /**
-     * Removes all of element's text nodes which contain only whitespace
-     *
-     * @param element {Element} Element to cleanup
-     * @return {void}
-     */
-    cleanWhitespace : function(element)
-    {
-      var node = element.firstChild;
-
-      while (node)
-      {
-        var nextNode = node.nextSibling;
-
-        if (node.nodeType == 3 && !/\S/.test(node.nodeValue)) {
-          element.removeChild(node);
-        }
-
-        node = nextNode;
-      }
     }
   }
 });
