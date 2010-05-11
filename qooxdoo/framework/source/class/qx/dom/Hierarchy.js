@@ -115,7 +115,8 @@ qx.Class.define("qx.dom.Hierarchy",
      */
     getNextElementSibling : function(element)
     {
-      while (element && (element = element.nextSibling) && !qx.dom.Node.isElement(element)) {
+      var type = qx.dom.Node.ELEMENT;
+      while (element && (element = element.nextSibling) && element.nodeType != type) {
         continue;
       }
 
@@ -133,7 +134,8 @@ qx.Class.define("qx.dom.Hierarchy",
      */
     getPreviousElementSibling : function(element)
     {
-      while (element && (element = element.previousSibling) && !qx.dom.Node.isElement(element)) {
+      var type = qx.dom.Node.ELEMENT;
+      while (element && (element = element.previousSibling) && element.nodeType != type) {
         continue;
       }
 
@@ -156,12 +158,13 @@ qx.Class.define("qx.dom.Hierarchy",
     {
       "webkit|mshtml|opera" : function(element, target)
       {
-        if (qx.dom.Node.isDocument(element))
+        var Node = qx.dom.Node;
+        if (Node.isDocument(element))
         {
-          var doc = qx.dom.Node.getDocument(target);
+          var doc = Node.getDocument(target);
           return element && doc == element;
         }
-        else if (qx.dom.Node.isDocument(target))
+        else if (Node.isDocument(target))
         {
           return false;
         }
@@ -193,6 +196,18 @@ qx.Class.define("qx.dom.Hierarchy",
 
 
     /**
+     * Checks if <code>element</code> is a descendant of <code>ancestor</code>.
+     *
+     * @param element {Element} first element
+     * @param ancestor {Element} second element
+     * @return {Boolean} Element is a descendant of ancestor
+     */
+    isDescendantOf : function(element, ancestor) {
+      return this.contains(ancestor, element);
+    },
+
+
+    /**
      * Whether the element is inserted into the document
      * for which it was created.
      *
@@ -214,17 +229,35 @@ qx.Class.define("qx.dom.Hierarchy",
 
 
     /**
-     * Checks if <code>element</code> is a descendant of <code>ancestor</code>.
+     * Get the element containing the closest parent element
+     * that matches the specified selector, the starting element included.
      *
-     * @param element {Element} first element
-     * @param ancestor {Element} second element
-     * @return {Boolean} Element is a descendant of ancestor
-     */
-    isDescendantOf : function(element, ancestor) {
-      return this.contains(ancestor, element);
+     * Closest works by first looking at the current element to see if
+     * it matches the specified expression, if so it just returns the
+     * element itself. If it doesn't match then it will continue to
+     * traverse up the document, parent by parent, until an element
+     * is found that matches the specified expression. If no matching
+     * element is found then <code>null</code> will be returned.
+     *
+     * @param selector {String} Expression to filter the elements with
+     * @return {Element|null} Found parent element which matches the expression
+     */ 
+    closest : function(elem, selector)
+    {
+      var bomSelector = qx.bom.Selector;
+      
+      while (elem && elem.ownerDocument)
+      {
+        if (bomSelector.matches(selector, [elem]).length > 0) {
+          return elem;
+        }
+
+        // Try the next parent
+        elem = elem.parentNode;
+      }     
     },
-
-
+  
+  
     /**
      * Get the common parent element of two given elements. Returns
      * <code>null</code> when no common element has been found.
