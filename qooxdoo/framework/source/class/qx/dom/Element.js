@@ -82,31 +82,58 @@ qx.Class.define("qx.dom.Element",
     },
 
 
+
+
+    /*
+    ---------------------------------------------------------------------------
+      UTILITIES
+    ---------------------------------------------------------------------------
+    */
+
     /**
-     * Checks if the <code>element</code> is in the DOM, but note that
-     * the method is very expensive!
+     * Whether the given element is empty.
+     * Inspired by Base2 (Dean Edwards)
      *
-     * @param element {Element} The DOM element to check.
-     * @param win {Window} The window to check for.
-     * @return {Boolean} <code>true</code> if the <code>element</code> is in
-     *          the DOM, <code>false</code> otherwise.
+     * @param element {Element} The element to check
+     * @return {Boolean} true when the element is empty
      */
-    isInDom :function(element, win)
+    isEmpty : function(element)
     {
-      if (!win) {
-        win = window;
-      }
+      element = element.firstChild;
 
-      var domElements = win.document.getElementsByTagName(element.nodeName);
-
-      for (var i=0, l=domElements.length; i<l; i++)
+      while (element)
       {
-        if (domElements[i] === element) {
-          return true;
+        if (element.nodeType === 1 || element.nodeType === 3) {
+          return false;
         }
+
+        element = element.nextSibling;
       }
 
-      return false;
+      return true;
+    },
+
+
+    /**
+     * Removes all of element's text nodes which contain only whitespace
+     *
+     * @param element {Element} Element to cleanup
+     * @return {void}
+     */
+    cleanWhitespace : function(element)
+    {
+      var node = element.firstChild;
+
+      while (node)
+      {
+        var nextNode = node.nextSibling;
+
+        if (node.nodeType == 3 && !/\S/.test(node.nodeValue)) {
+          element.removeChild(node);
+        }
+
+        node = nextNode;
+      }
     },
 
 
