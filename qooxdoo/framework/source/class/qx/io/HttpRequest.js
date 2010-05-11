@@ -594,7 +594,7 @@ qx.Class.define("qx.io.HttpRequest",
       // Synchronize headers
       var headers = this.__headers;
       for (var label in headers) {
-        req.setRequestHeader(name, headers[label]);
+        req.setRequestHeader(label, headers[label]);
       }
 
       // Finally send request
