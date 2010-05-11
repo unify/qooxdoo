@@ -95,42 +95,23 @@ qx.Class.define("qx.dom.Node",
      *
      * @signature function(node)
      * @param node {Node|Document|Window} node to inspect
-     * @return {Window} the <code>defaultView</code> of the given node
+     * @return {Window|null} the <code>defaultView</code> of the given node
      */
-    getWindow : qx.core.Variant.select("qx.client",
+    getWindow : function(node)
     {
-      "mshtml" : function(node)
-      {
-        // is a window already
-        if (node.nodeType == null) {
-          return node;
-        }
-
-        // jump to document
-        if (node.nodeType !== this.DOCUMENT) {
-          node = node.ownerDocument;
-        }
-
-        // jump to window
-        return node.parentWindow;
-      },
-
-      "default" : function(node)
-      {
-        // is a window already
-        if (node.nodeType == null) {
-          return node;
-        }
-
-        // jump to document
-        if (node.nodeType !== this.DOCUMENT) {
-          node = node.ownerDocument;
-        }
-
-        // jump to window
-        return node.defaultView;
+      // is a window already
+      if (node.nodeType == null) {
+        return node;
       }
-    }),
+
+      // jump to document
+      if (node.nodeType !== this.DOCUMENT) {
+        node = node.ownerDocument;
+      }
+
+      // jump to window
+      return node.defaultView || node.parentWindow || null;
+    },
 
 
     /**
@@ -186,6 +167,7 @@ qx.Class.define("qx.dom.Node",
     /**
      * Whether the given object is a DOM element node
      *
+     * @deprecated Please use inline checks instead
      * @param node {Node} the node which should be tested
      * @return {Boolean} true if the node is a DOM element
      */
@@ -197,6 +179,7 @@ qx.Class.define("qx.dom.Node",
     /**
      * Whether the given object is a DOM document node
      *
+     * @deprecated Please use inline checks instead
      * @param node {Node} the node which should be tested
      * @return {Boolean} true when the node is a DOM document
      */
@@ -208,6 +191,7 @@ qx.Class.define("qx.dom.Node",
     /**
      * Whether the given object is a DOM text node
      *
+     * @deprecated Please use inline checks instead
      * @param node {Node} the node which should be tested
      * @return {Boolean} true if the node is a DOM text node
      */
@@ -219,6 +203,9 @@ qx.Class.define("qx.dom.Node",
     /**
      * Check whether the given object is a browser window object.
      *
+     * TODO: Correct host object test needed here!
+     * 
+     * @deprecated Wrong placement of this method in class hierarchy
      * @param obj {Object} the object which should be tested
      * @return {Boolean} true if the object is a window object
      */
@@ -230,6 +217,7 @@ qx.Class.define("qx.dom.Node",
     /**
      * Whether the node has the given node name
      *
+     * @deprecated Use inline code instead for better performance
      * @param node {Node} the node
      * @param nodeName {String} the node name to check for
      * @return {Boolean} Whether the node has the given node name
@@ -256,15 +244,10 @@ qx.Class.define("qx.dom.Node",
      * Get the node name as lower case string
      *
      * @param node {Node} the node
-     * @return {String} the node name
+     * @return {String|null} the node name
      */
-    getName : function (node)
-    {
-      if(!node || !node.nodeName) {
-        return null;
-      }
-
-      return node.nodeName.toLowerCase();
+    getName : function (node) {
+      return node && node.nodeName && node.nodeName.toLowerCase() || null;
     },
 
 
@@ -284,6 +267,7 @@ qx.Class.define("qx.dom.Node",
 
       switch(node.nodeType)
       {
+        // TODO: Optimize performance using innerText if available
         case 1: // NODE_ELEMENT
           var i, a=[], nodes=node.childNodes, length=nodes.length;
           for (i=0; i<length; i++) {
