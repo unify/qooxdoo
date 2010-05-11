@@ -263,7 +263,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @return {Array} list of all parents
      */
     getAncestors : function(element) {
-      return this._recursivelyCollect(element, "parentNode");
+      return this.__recursivelyCollect(element, "parentNode");
     },
 
 
@@ -348,7 +348,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @return {Array} list of found DOM elements
      */
     getPreviousSiblings : function(element) {
-      return this._recursivelyCollect(element, "previousSibling");
+      return this.__recursivelyCollect(element, "previousSibling");
     },
 
 
@@ -360,7 +360,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @return {Array} list of found DOM elements
      */
     getNextSiblings : function(element) {
-      return this._recursivelyCollect(element, "nextSibling");
+      return this.__recursivelyCollect(element, "nextSibling");
     },
 
 
@@ -374,7 +374,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @param property {String} property to look for
      * @return {Array} result list
      */
-    _recursivelyCollect : function(element, property)
+    __recursivelyCollect : function(element, property)
     {
       var list = [];
 
