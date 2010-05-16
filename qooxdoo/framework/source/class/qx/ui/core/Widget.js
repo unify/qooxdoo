@@ -2829,7 +2829,7 @@ qx.Class.define("qx.ui.core.Widget",
       this.__appearanceSelector = newSelector;
 
       // Apply new data
-      qx.core.property.Multi.importThemed(this, newStyles, oldStyles);
+      qx.core.property.Multi.importData(this, newStyles, oldStyles);
     },
     
     

@@ -47,32 +47,34 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     __fields : 
     {
-      5 : {
-        name : "override",
-        priority : 5
-      },
+      // Override
+      5 : {},
       
-      4: {
-        name : "user",
-        priority : 4
-      },
+      // User
+      4: {},
       
+      // Theme
       3: {
-        name : "theme",
-        priority : 3,
         get : "getAppearanceValue"
       },
       
-      2 : {
-        name : "inheritance",
-        priority : 2
-      },
-      
-      1: {
-        name : "init",
-        priority : 1
-      }
+      // Inheritance
+      2 : {},
+
+      // Init
+      1: {}
     },
+    
+    
+    __fieldToPriority :
+    {
+      init : 1,
+      inheritance : 2,
+      theme : 3,
+      user : 4,
+      override : 5
+    },
+    
     
   
     /**
@@ -161,43 +163,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
     },
     
     
-    __changeHelper : function(value, oldValue, config)
-    {
-      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
-
-      // Call apply
-      if (config.apply) {
-        this[config.apply](value, oldValue, config.name);
-      }
-
-      // Fire event
-      if (config.event) {
-        this.fireDataEvent(config.event, value, oldValue);
-      }
-      
-      // Inheritance support
-      if (config.inheritable)
-      {
-        // TODO: Replace protected method call
-        if (this._getChildren)
-        {
-          // Clone children for increased runtime security
-          var children = this._getChildren().concat();
-          var refreshMethod = "refresh" + config.up;
-          var child;
-          
-          for (var i=0, l=children.length; i<l; i++) 
-          {
-            child = children[i];
-            child[refreshMethod] && child[refreshMethod](value);
-          }           
-        }
-        else if (qx.core.Variant.isSet("qx.debug", "on")) {
-          this.error("Missing _getChildren() implementation to support property inheritance!");
-        }         
-      }
-    },
-    
     /**
      * Imports a list of themed styles from the appearance system
      * 
@@ -205,7 +170,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
      * @param newStyles {Map} Map of properties to apply
      * @param oldStyles {Map} Map of previous property values
      */
-    importThemed : function(obj, newStyles, oldStyles)
+    importData : function(obj, newStyles, oldStyles)
     {
       var UNDEFINED = undefined;
       
@@ -309,9 +274,75 @@ qx.Bootstrap.define("qx.core.property.Multi",
     },
     
     
+    
+    __changeHelper : function(value, oldValue, config)
+    {
+      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
+
+      // Call apply
+      if (config.apply) {
+        this[config.apply](value, oldValue, config.name);
+      }
+
+      // Fire event
+      if (config.event) {
+        this.fireDataEvent(config.event, value, oldValue);
+      }
+      
+      // Inheritance support
+      if (config.inheritable)
+      {
+        // TODO: Replace protected method call
+        if (this._getChildren)
+        {
+          // Clone children for increased runtime security
+          var children = this._getChildren().concat();
+          var refreshMethod = "refresh" + config.up;
+          var child;
+          
+          for (var i=0, l=children.length; i<l; i++) 
+          {
+            child = children[i];
+            child[refreshMethod] && child[refreshMethod](value);
+          }           
+        }
+        else if (qx.core.Variant.isSet("qx.debug", "on")) {
+          this.error("Missing _getChildren() implementation to support property inheritance!");
+        }         
+      }
+    },
+        
+    
     /**
      * Adds a new property to the given class.
      * 
+     * Supports the configuration keys:
+     * 
+     * * apply: Method to call after a new value has been stored
+     * * event: Event to fire after a new value has been stored (and apply has been called)
+     * * init: Init value for the property
+     * * nullable: Whether the property is able to store null values
+     * 
+     * Additional features to simple properties:
+     * 
+     * <ul>
+     * <li><strong>themeable</strong>: Whether a themeable value (which 
+     *   comes from some kind of styling system) should be supported</li>
+     * <li><strong>inheritable</strong>: Whether the property is inheritable 
+     *   which means that it might be copied from the parent of the object 
+     *   (e.g. in widget systems)</li>
+     * <li><strong>deferredInit</strong>: Whether the initialisation of this 
+     *   properties should be possible deferred e.g. in the constructor of the 
+     *   class. Might be useful if the properties' init value is an instance 
+     *   of another class etc.</li>
+     * </ul>
+     * 
+     * Please note that you need to define one of "init" or "nullable". Otherwise you
+     * might get errors during runtime function calls.
+     *  
+     * @param clazz {Class} The class to modify
+     * @param name {String} Name of the property. Camel-case. No special characters.
+     * @param config {Map} Configuration for the property to being created
      */
     add : function(clazz, name, config)
     {
