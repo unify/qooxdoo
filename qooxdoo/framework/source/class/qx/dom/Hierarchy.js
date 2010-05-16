@@ -115,7 +115,8 @@ qx.Class.define("qx.dom.Hierarchy",
      */
     getNextElementSibling : function(element)
     {
-      while (element && (element = element.nextSibling) && !qx.dom.Node.isElement(element)) {
+      var type = qx.dom.Node.ELEMENT;
+      while (element && (element = element.nextSibling) && element.nodeType != type) {
         continue;
       }
 
@@ -133,7 +134,8 @@ qx.Class.define("qx.dom.Hierarchy",
      */
     getPreviousElementSibling : function(element)
     {
-      while (element && (element = element.previousSibling) && !qx.dom.Node.isElement(element)) {
+      var type = qx.dom.Node.ELEMENT;
+      while (element && (element = element.previousSibling) && element.nodeType != type) {
         continue;
       }
 
@@ -156,12 +158,13 @@ qx.Class.define("qx.dom.Hierarchy",
     {
       "webkit|mshtml|opera" : function(element, target)
       {
-        if (qx.dom.Node.isDocument(element))
+        var Node = qx.dom.Node;
+        if (Node.isDocument(element))
         {
-          var doc = qx.dom.Node.getDocument(target);
+          var doc = Node.getDocument(target);
           return element && doc == element;
         }
-        else if (qx.dom.Node.isDocument(target))
+        else if (Node.isDocument(target))
         {
           return false;
         }
@@ -193,44 +196,6 @@ qx.Class.define("qx.dom.Hierarchy",
 
 
     /**
-     * Whether the element is inserted into the document
-     * for which it was created.
-     *
-     * @param element {Element} DOM element to check
-     * @return {Boolean} <code>true</code> when the element is inserted
-     *    into the document.
-     */
-    isRendered : function(element)
-    {
-      // This module is highly used by new qx.html.Element
-      // Copied over details from qx.dom.Node.getDocument() and
-      // this.contains() for performance reasons.
-
-      // Offset parent is a good start to test. It omits document detection
-      // and function calls.
-      if (!element.offsetParent) {
-        return false;
-      }
-
-      var doc = element.ownerDocument || element.document;
-
-      // This is available after most browser excluding gecko haved copied it from mshtml.
-      // Contains() is only available on real elements in webkit and not on the document.
-      if (doc.body.contains) {
-        return doc.body.contains(element);
-      }
-
-      // Gecko way, DOM3 method
-      if (doc.compareDocumentPosition) {
-        return !!(doc.compareDocumentPosition(element) & 16);
-      }
-
-      // Should not happen :)
-      throw new Error("Missing support for isRendered()!");
-    },
-
-
-    /**
      * Checks if <code>element</code> is a descendant of <code>ancestor</code>.
      *
      * @param element {Element} first element
@@ -243,6 +208,57 @@ qx.Class.define("qx.dom.Hierarchy",
 
 
     /**
+     * Whether the element is inserted into the document
+     * for which it was created.
+     *
+     * @param element {Element} DOM element to check
+     * @return {Boolean} <code>true</code> when the element is inserted
+     *    into the document.
+     */
+    isRendered : function(element)
+    {
+      // Offset parent is a good start to test. It omits document detection
+      // and function calls.
+      if (!element.offsetParent) {
+        return false;
+      }
+
+      var doc = element.ownerDocument || element.document;
+      return this.contains(doc.body, element);
+    },
+
+
+    /**
+     * Get the element containing the closest parent element
+     * that matches the specified selector, the starting element included.
+     *
+     * Closest works by first looking at the current element to see if
+     * it matches the specified expression, if so it just returns the
+     * element itself. If it doesn't match then it will continue to
+     * traverse up the document, parent by parent, until an element
+     * is found that matches the specified expression. If no matching
+     * element is found then <code>null</code> will be returned.
+     *
+     * @param selector {String} Expression to filter the elements with
+     * @return {Element|null} Found parent element which matches the expression
+     */ 
+    closest : function(elem, selector)
+    {
+      var bomSelector = qx.bom.Selector;
+      
+      while (elem && elem.ownerDocument)
+      {
+        if (bomSelector.matches(selector, [elem]).length > 0) {
+          return elem;
+        }
+
+        // Try the next parent
+        elem = elem.parentNode;
+      }     
+    },
+  
+  
+    /**
      * Get the common parent element of two given elements. Returns
      * <code>null</code> when no common element has been found.
      *
@@ -253,66 +269,23 @@ qx.Class.define("qx.dom.Hierarchy",
      * @param element2 {Element} Second element
      * @return {Element} the found parent, if none was found <code>null</code>
      */
-    getCommonParent : qx.core.Variant.select("qx.client",
+    getCommonParent : function(element1, element2)
     {
-      "mshtml|opera" : function(element1, element2)
-      {
-        if (element1 === element2) {
-          return element1;
-        }
-
-        while (element1 && qx.dom.Node.isElement(element1))
-        {
-          if (element1.contains(element2)) {
-            return element1;
-          }
-
-          element1 = element1.parentNode;
-        }
-
-        return null;
-      },
-
-      "default" : function(element1, element2)
-      {
-        if (element1 === element2) {
-          return element1;
-        }
-
-        var known = {};
-        var obj = qx.core.ObjectRegistry;
-        var h1, h2;
-
-        while (element1 || element2)
-        {
-          if (element1)
-          {
-            h1 = obj.toHashCode(element1);
-
-            if (known[h1]) {
-              return known[h1];
-            }
-
-            known[h1] = element1;
-            element1 = element1.parentNode;
-          }
-
-          if (element2)
-          {
-            h2 = obj.toHashCode(element2);
-
-            if (known[h2]) {
-              return known[h2];
-            }
-
-            known[h2] = element2;
-            element2 = element2.parentNode;
-          }
-        }
-
-        return null;
+      if (element1 === element2) {
+        return element1;
       }
-    }),
+
+      while (element1 && element1.nodeType == 1)
+      {
+        if (this.contains(element1, element2)) {
+          return element1;
+        }
+
+        element1 = element1.parentNode;
+      }
+
+      return null;
+    },
 
 
     /**
@@ -323,7 +296,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @return {Array} list of all parents
      */
     getAncestors : function(element) {
-      return this._recursivelyCollect(element, "parentNode");
+      return this.__recursivelyCollect(element, "parentNode");
     },
 
 
@@ -408,7 +381,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @return {Array} list of found DOM elements
      */
     getPreviousSiblings : function(element) {
-      return this._recursivelyCollect(element, "previousSibling");
+      return this.__recursivelyCollect(element, "previousSibling");
     },
 
 
@@ -420,7 +393,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @return {Array} list of found DOM elements
      */
     getNextSiblings : function(element) {
-      return this._recursivelyCollect(element, "nextSibling");
+      return this.__recursivelyCollect(element, "nextSibling");
     },
 
 
@@ -434,7 +407,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * @param property {String} property to look for
      * @return {Array} result list
      */
-    _recursivelyCollect : function(element, property)
+    __recursivelyCollect : function(element, property)
     {
       var list = [];
 
@@ -457,53 +430,6 @@ qx.Class.define("qx.dom.Hierarchy",
      */
     getSiblings : function(element) {
       return this.getPreviousSiblings(element).reverse().concat(this.getNextSiblings(element));
-    },
-
-
-    /**
-     * Whether the given element is empty.
-     * Inspired by Base2 (Dean Edwards)
-     *
-     * @param element {Element} The element to check
-     * @return {Boolean} true when the element is empty
-     */
-    isEmpty : function(element)
-    {
-      element = element.firstChild;
-
-      while (element)
-      {
-        if (element.nodeType === qx.dom.Node.ELEMENT || element.nodeType === qx.dom.Node.TEXT) {
-          return false;
-        }
-
-        element = element.nextSibling;
-      }
-
-      return true;
-    },
-
-
-    /**
-     * Removes all of element's text nodes which contain only whitespace
-     *
-     * @param element {Element} Element to cleanup
-     * @return {void}
-     */
-    cleanWhitespace : function(element)
-    {
-      var node = element.firstChild;
-
-      while (node)
-      {
-        var nextNode = node.nextSibling;
-
-        if (node.nodeType == 3 && !/\S/.test(node.nodeValue)) {
-          element.removeChild(node);
-        }
-
-        node = nextNode;
-      }
     }
   }
 });

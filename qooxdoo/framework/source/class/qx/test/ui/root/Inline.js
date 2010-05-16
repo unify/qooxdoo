@@ -44,7 +44,7 @@ qx.Class.define("qx.test.ui.root.Inline",
       inlineRoot.addListener("appear", function(e)
       {
         this.resume(function() {
-          this.assertTrue(qx.dom.Element.isInDom(inlineRoot.getContainerElement().getDomElement()));
+          this.assertTrue(qx.dom.Hierarchy.isRendered(inlineRoot.getContainerElement().getDomElement()));
         }, this);
       }, this);
 

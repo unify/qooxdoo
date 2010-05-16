@@ -85,10 +85,10 @@ qx.Class.define("qx.test.bom.Blocker",
       this.__blocker.unblock();
 
       var blockerElement = this.__blocker.getBlockerElement();
-      this.assertFalse(qx.dom.Element.isInDom(blockerElement, window), "Blocker element not correctly removed");
+      this.assertFalse(qx.dom.Hierarchy.isRendered(blockerElement, window), "Blocker element not correctly removed");
 
       if (qx.core.Variant.isSet("qx.client", "mshtml")) {
-        this.assertFalse(qx.dom.Element.isInDom(blockerIframeElement, window), "Blocker iframe element not correctly removed");
+        this.assertFalse(qx.dom.Hierarchy.isRendered(blockerIframeElement, window), "Blocker iframe element not correctly removed");
       }
     },
 

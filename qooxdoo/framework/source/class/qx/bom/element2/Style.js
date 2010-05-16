@@ -54,7 +54,6 @@ qx.Class.define("qx.bom.element2.Style",
     }),
 
 
-
     /**
      * Returns the current property value on the given element.
      *
