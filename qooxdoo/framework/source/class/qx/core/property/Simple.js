@@ -63,8 +63,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       */
       
       // Improve compressibility
-      var UNDEFINED;
-      var NULL = null;    
+      var Undefined;
       
       // Increase counter
       this.__counter++;
@@ -82,7 +81,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       
       // Store init value (shared data between instances)
       var members = clazz.prototype;
-      if (config.init !== UNDEFINED) 
+      if (config.init !== Undefined) 
       {
         var initField = "$$init" + id;
         members[initField] = config.init;
@@ -124,7 +123,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
           var value = data[id];
         }
         
-        if (value === UNDEFINED) 
+        if (value === Undefined) 
         {
           if (initField) {
             return context[initField];
@@ -137,7 +136,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
             }
           }  
           
-          value = NULL;          
+          value = null;          
         }
         
         return value;          
@@ -159,18 +158,18 @@ qx.Bootstrap.define("qx.core.property.Simple",
           var data = context.$$data;
           
           // Check whether there is already local data (which is higher prio than init data)
-          if (data && data[id] !== UNDEFINED) {
+          if (data && data[id] !== Undefined) {
             return;
           }
           
           // Call apply
           if (applyMethod) {
-            context[applyMethod](this[initField], UNDEFINED, name);
+            context[applyMethod](this[initField], Undefined, name);
           }
 
           // Fire event
           if (eventType) {
-            context.fireDataEvent(eventType, this[initField], UNDEFINED);
+            context.fireDataEvent(eventType, this[initField], Undefined);
           }          
         };
       }      
@@ -200,7 +199,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
 
         if (value !== old) 
         {
-          if (old === UNDEFINED && initField) {
+          if (old === Undefined && initField) {
             old = context[initField];
           }
           
@@ -238,7 +237,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
         }
         
         var old = data[id];
-        var value = UNDEFINED;
+        var value = Undefined;
 
         if (old !== value) 
         {
