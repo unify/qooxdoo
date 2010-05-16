@@ -172,7 +172,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     importData : function(obj, newStyles, oldStyles)
     {
-      var UNDEFINED = undefined;
+      var Undefined;
       
       // TODO: Make this hard-coded thingy configurable... somehow
       var themedPriority = 3;
@@ -204,7 +204,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         
         // If nothing is set at the moment and no new value is given
         // then simply ignore the property for the moment
-        if (storedPriority === UNDEFINED && newValue === UNDEFINED) {
+        if (storedPriority === Undefined && newValue === Undefined) {
           continue;
         }
         
@@ -221,7 +221,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           if (storedPriority != null) {
             oldValue = data[id+storedPriority];
           } else {
-            oldValue = UNDEFINED;
+            oldValue = Undefined;
           }
         }
         
@@ -229,20 +229,20 @@ qx.Bootstrap.define("qx.core.property.Multi",
         var config = Bootstrap.getPropertyDefinition(obj.constructor, prop);
         
         // Reset implementation block
-        if (newValue === UNDEFINED) 
+        if (newValue === Undefined) 
         {
           for (var newPriority=themedPriority-1; newPriority>0; newPriority--)
           {
             newValue = data[id+newPriority];
-            if (newValue !== UNDEFINED) {
+            if (newValue !== Undefined) {
               break;
             }
           }
           
           // No value has been found
-          if (newValue === UNDEFINED) 
+          if (newValue === Undefined) 
           {
-            newPriority = UNDEFINED;
+            newPriority = Undefined;
             
             // Let's try the class-wide init value
             initField = "$$init" + id; 
@@ -353,8 +353,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
       */
       
       // Improve compressibility
-      var UNDEFINED;
-      var NULL = null;
+      var Undefined;
+      var Null = null;
             
       // Increase counter
       this.__counter++;
@@ -374,7 +374,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       // Store init value (shared data between instances)
       var members = clazz.prototype;
-      if (config.init !== UNDEFINED) 
+      if (config.init !== Undefined) 
       {
         var initField = "$$init" + id;
         members[initField] = config.init;
@@ -421,7 +421,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
           // Read old value
           var oldPriority = data[id];
-          if (oldPriority != NULL) 
+          if (oldPriority != Null) 
           {
             var oldGetter = fields[oldPriority].get;
             if (oldGetter) {
@@ -435,7 +435,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           data[id+modifyPriority] = newValue;
           
           // Ignore lower-priority changes
-          if (oldPriority == NULL || oldPriority <= modifyPriority) 
+          if (oldPriority == Null || oldPriority <= modifyPriority) 
           {
             // Whether the storage field was changed
             if (oldPriority !== modifyPriority) {
@@ -446,7 +446,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // This is always the value on the current class, not explicitely the
             // class which creates the property. This is mainly for supporting
             // init value overrides with "refined" properties
-            if (oldValue === UNDEFINED && initField) {
+            if (oldValue === Undefined && initField) {
               oldValue = context[initField];
             }
 
@@ -498,15 +498,15 @@ qx.Bootstrap.define("qx.core.property.Multi",
             for (var newPriority=modifyPriority-1; newPriority>=0; newPriority--)
             {
               newValue = data[id+newPriority];
-              if (newValue !== UNDEFINED) {
+              if (newValue !== Undefined) {
                 break;
               }             
             }
             
             // No value has been found
-            if (newValue === UNDEFINED) 
+            if (newValue === Undefined) 
             {
-              newPriority = UNDEFINED;
+              newPriority = Undefined;
               
               // Let's try the class-wide init value
               if (initField) {
@@ -530,7 +530,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // and only want to do this when needed.
           // Do not use delete operator as this is not good for performance:
           // just modifying the value to undefined is enough.
-          data[id+modifyPriority] = UNDEFINED;
+          data[id+modifyPriority] = Undefined;
 
           // Only need to react when current field is resetted
           if (oldPriority === modifyPriority && oldValue !== newValue) {         
@@ -559,7 +559,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         var data = context.$$data;
 
         var currentPriority = data && data[id];
-        if (currentPriority == NULL) 
+        if (currentPriority == Null) 
         {
           // Fallback to init value on prototype chain (when supported)
           // This is always the value on the current class, not explicitely the
@@ -576,7 +576,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             }
           }
                     
-          return NULL;
+          return Null;
         }
         
         // Special get() support for themable properties
@@ -614,13 +614,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // Check whether there is already another value assigned.
             // In this case the whole function could be left early.
             var oldPriority = data[id];
-            if (oldPriority != NULL) {
+            if (oldPriority != Null) {
               return;
             }            
           }
           
           // Call change helper with value from shared class data
-          changeHelper.call(context, this[initField], UNDEFINED, config);
+          changeHelper.call(context, this[initField], Undefined, config);
         };
       }
       
