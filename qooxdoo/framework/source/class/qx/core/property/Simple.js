@@ -78,19 +78,13 @@ qx.Bootstrap.define("qx.core.property.Simple",
         id = db[name] = qx.core.property.Core.ID;
         qx.core.property.Core.ID++
       }
-      
+            
       // Store init value (shared data between instances)
       var members = clazz.prototype;
       if (config.init !== Undefined) 
       {
-        var initField = "$$init" + id;
+        var initField = "$$init-" + name;
         members[initField] = config.init;
-      }
-      
-      // Refined properties are only allowed to change the class-wide init value
-      // of a previously defined property.
-      if (config.refine) {
-        return;
       }
       
       // Precalc

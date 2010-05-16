@@ -245,7 +245,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             newPriority = Undefined;
             
             // Let's try the class-wide init value
-            initField = "$$init" + id; 
+            initField = "$$init-" + name;
             if (initField) {
               newValue = obj[initField];
             }
@@ -371,21 +371,15 @@ qx.Bootstrap.define("qx.core.property.Multi",
         id = db[name] = qx.core.property.Core.ID;
         qx.core.property.Core.ID+=10;
       }
-      
+    
       // Store init value (shared data between instances)
       var members = clazz.prototype;
       if (config.init !== Undefined) 
       {
-        var initField = "$$init" + id;
+        var initField = "$$init-" + name;
         members[initField] = config.init;
       }
       
-      // Refined properties are only allowed to change the class-wide init value
-      // of a previously defined property.
-      if (config.refine) {
-        return;
-      }
-   
       // Precalc
       var up = config.up = qx.Bootstrap.$$firstUp[name] || qx.Bootstrap.firstUp(name);
          
@@ -614,13 +608,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // Check whether there is already another value assigned.
             // In this case the whole function could be left early.
             var oldPriority = data[id];
-            if (oldPriority != Null) {
+            if (oldPriority !== Undefined) {
               return;
             }            
           }
           
           // Call change helper with value from shared class data
-          changeHelper.call(context, this[initField], Undefined, config);
+          changeHelper.call(context, context[initField], Undefined, config);
         };
       }
       

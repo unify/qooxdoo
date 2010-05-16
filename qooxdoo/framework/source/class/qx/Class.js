@@ -1199,7 +1199,9 @@ qx.Bootstrap.define("qx.Class",
 
          // If instances of this class were already created, we
          // need to attach the new style properties functions, directly.
-         if (config.group) {
+         if (config.refine) {
+           clazz.prototype["$$init-" + name] = config.init;
+         } else if (config.group) {
            PropertyGroup.add(clazz, name, config);
          } else if (config.themeable || config.inheritable || config.deferredInit || qx.core.property.Core.RUNTIME_OVERRIDE) {  
            MultiProperty.add(clazz, name, config);
