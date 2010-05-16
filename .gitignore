@@ -1,6 +1,9 @@
-api
-build
+cache
 script
+build
+api
 test
 *.pyc
-.settings/*
+.settings
+.DS_Store
+
