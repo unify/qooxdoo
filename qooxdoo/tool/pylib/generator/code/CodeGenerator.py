@@ -602,12 +602,19 @@ class CodeGenerator(object):
                 else:  # handle other resources
                     resvalue = resval
                 resdata[resId] = resvalue
+            return resdata
+
+
+        ##
+        # loop through resources, invoking addResourceToPackages
+        def addResourcesToPackages(resdata, combinedImages, classToResourceMap):
+            for resId, resvalue in resdata.items():
                 # register the resource with the package needing it
                 addResourceToPackages(script, classToResourceMap, resId, simpleResVal=resvalue)
 
             # for combined images, we have to check their embedded images against the packages
             for combId, combImg in combinedImages.items():
-                if combImg.used == True:
+                if combId in resdata:
                     addResourceToPackages(script, classToResourceMap, combId, combImgObj=combImg)
 
             # handle tree structure of resource info
@@ -619,7 +626,7 @@ class CodeGenerator(object):
 
         ##
         # get the resource Id and resource value
-        def addResource(resource):
+        def analyseResource(resource, lib):
             ##
             # compute the resource value of an image for the script
             def imgResVal(resource):
@@ -652,13 +659,52 @@ class CodeGenerator(object):
                 return imgfmt
 
             # ----------------------------------------------------------
-            assetId = extractAssetPart(librespath,resource)
+            imgpatt = re.compile(r'\.(png|jpeg|jpg|gif)$', re.I)
+            librespath = os.path.normpath(os.path.join(lib['path'], lib['resource']))
+            assetId = extractAssetPart(librespath, resource)
             assetId = Path.posifyPath(assetId)
             if imgpatt.search(resource): # handle images
                 resvalue = imgResVal(resource)
             else:  # handle other resources
                 resvalue = lib['namespace']
             return assetId, resvalue
+
+
+        ##
+        # collect resources from the libs and put them in suitable data structures
+        def registerResources(libs, filteredResources, combinedImages):
+            skippatt = re.compile(r'\.(meta|py)$', re.I)
+            for lib in libs:
+                resourceList = self._resourceHandler.findAllResources([lib], None)
+                # resourceList = [file1,file2,...]
+                for resource in resourceList:
+                    if skippatt.search(resource):
+                        continue
+                    if assetFilter(resource):  # add those anyway
+                        resId, resVal            = analyseResource(resource, lib)
+                        filteredResources[resId] = resVal
+                    if self._resourceHandler.isCombinedImage(resource):  # register those for later evaluation
+                        combId, combImgFmt     = analyseResource(resource, lib)
+                        combObj                = CombinedImage(resource) # this parses also the .meta file
+                        combObj.info           = combImgFmt
+                        combinedImages[combId] = combObj
+            return filteredResources, combinedImages
+
+        ##
+        # apply combined image info to the simple images, improving and extending
+        # filteredResources
+        def incorporateCombinedImages(filteredResources, combinedImages):
+            for combId, combImg in combinedImages.items():  # combImg.embeds = {resId : ImgFmt}
+                filteredResourceIds = filteredResources.keys()
+                for embId in requiredEmbeds(combImg, filteredResourceIds):
+                    # patch simle image info
+                    lib = filteredResources[embId].lib                    # keep lib info
+                    filteredResources[embId]      = combImg.embeds[embId] # replace info with combined info
+                    filteredResources[embId].lib  = lib                   # restore original lib
+                    # add combined image
+                    if combId not in filteredResourceIds:
+                        filteredResources[combId] = combImg.info
+            return filteredResources
 
 
         # -- main --------------------------------------------------------------
@@ -669,13 +715,9 @@ class CodeGenerator(object):
         compConf       = self._job.get("compile-options")
         compConf       = ExtMap(compConf)
         resources_tree = compConf.get("code/resources-tree", False)
-        
-        resdata = {}
+        resdata        = {}
         if resources_tree:
             resdata = ExtMap()
-        
-        imgpatt  = re.compile(r'\.(png|jpeg|jpg|gif)$', re.I)
-        skippatt = re.compile(r'\.(meta|py)$', re.I)
 
         self._imageInfo                = ImageInfo(self._console, self._cache)
         assetFilter, classToResourceMap= self._resourceHandler.getResourceFilterByAssets(self._classList)
@@ -686,41 +728,19 @@ class CodeGenerator(object):
         if imgLookupTable == None:
             imgLookupTable = {}
 
-        filteredResources = {}          # type {resId : ImgFmt|string}
-        combinedImages    = {}          # type {imgId : obj(info : ImgFmt, embeds : {imgId : ImgFmt})
+        filteredResources = {}          # type {resId : ImgInfoFmt|string}
+        combinedImages    = {}          # type {imgId : CombinedImage}
         # 1st pass gathering relevant images and other resources from the libraries
-        for lib in libs:
-            librespath = os.path.normpath(os.path.join(lib['path'], lib['resource']))
-            resourceList = self._resourceHandler.findAllResources([lib], None)
-            # resourceList = [file1,file2,...]
-            for resource in resourceList:
-                if skippatt.search(resource):
-                    continue
-                if assetFilter(resource):  # add those anyway
-                    resId, resVal            = addResource(resource)
-                    filteredResources[resId] = resVal
-                if self._resourceHandler.isCombinedImage(resource):  # register those for later evaluation
-                    combObj                = CombinedImage(resource) # this parses also the .meta file
-                    combId, combImgFmt     = addResource(resource)
-                    combObj.info           = combImgFmt
-                    combinedImages[combId] = combObj
-
+        filteredResources, combinedImages = registerResources(libs, filteredResources,
+                                                              combinedImages)
         # 2nd pass patching simple image infos with combined info
-        for combId, combImg in combinedImages.items():  # combImg.embeds = {resId : ImgFmt}
-            filteredResourceIds = filteredResources.keys()
-            for embId in requiredEmbeds(combImg, filteredResourceIds):
-                # patch simle image info
-                lib = filteredResources[embId].lib                    # keep lib info
-                filteredResources[embId]      = combImg.embeds[embId] # replace info with combined info
-                filteredResources[embId].lib  = lib                   # restore original lib
-                # add combined image
-                if combId not in filteredResourceIds:
-                    filteredResources[combId] = combImg.info
-                    combImg.used = True
+        filteredResources = incorporateCombinedImages(filteredResources, combinedImages)
 
-
-        # 3rd pass serializing the info from filteredResources
-        resdata = serialize(filteredResources, combinedImages, resdata)
+        # 3rd pass consume the info from filteredResources in various ways
+        resdata     = serialize(filteredResources, combinedImages, resdata)
+        addResourcesToPackages(resdata, combinedImages, classToResourceMap)
+        if resources_tree:
+            resdata = resdata.getData()
         
         # write img cache file
         cache.write(cacheId, imgLookupTable)
@@ -904,6 +924,9 @@ class CodeGenerator(object):
         vals["Build"] = int(time.time()*1000) 
         vals["Type"] = version
         
+        # Enable "?nocache=...." for script loading?
+        vals["NoCacheParam"] = "true" if self._job.get("compile-options/uris/add-nocache-param", True) else "false"
+
         # Locate and load loader basic script
         template = loadTemplate(bootCode)
 
