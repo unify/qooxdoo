@@ -2,7 +2,7 @@ cache
 script
 build
 api
-
-.settings/*
+test
 *.pyc
+.settings
 .DS_Store
