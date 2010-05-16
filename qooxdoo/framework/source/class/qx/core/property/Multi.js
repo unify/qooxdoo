@@ -495,7 +495,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             
             // We lost the current value, now we need to find the next stored value
             var newValue;
-            for (var newPriority=modifyPriority-1; newPriority>=0; newPriority--)
+            for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
             {
               newValue = data[id+newPriority];
               if (newValue !== Undefined) {
