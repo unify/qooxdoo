@@ -31,7 +31,6 @@ qx.$$loader = {
   boot : %{Boot},
   closureParts : %{ClosureParts},
   bootIsInline : %{BootIsInline},
-  addNoCacheParam : %{NoCacheParam},
   
   decodeUris : function(compressedUris)
   {
@@ -46,9 +45,6 @@ qx.$$loader = {
         euri = prefix + "/" + uri[1];
       } else {
         euri = compressedUris[i];
-      }
-      if (qx.$$loader.addNoCacheParam) {
-        euri += "?nocache=" + Math.random();
       }
       %{DecodeUrisPlug}
       uris.push(euri);
