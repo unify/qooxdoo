@@ -2842,7 +2842,6 @@ qx.Class.define("qx.ui.core.Widget",
     getAppearanceValue : function(prop)
     {
       var selector = this.__appearanceSelector;
-      // this.debug("getAppearanceValue(" + prop + ") => " + (selector ? qx.ui.core.Widget.__styleCache[selector][prop] : null));
       return selector ? qx.ui.core.Widget.__styleCache[selector][prop] : undefined;
     },
 
