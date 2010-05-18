@@ -151,7 +151,7 @@ qx.Bootstrap.define("qx.Theme",
         var source = config.extend.aliases;
         for (var key in source)
         {
-          if (!(key in target)) {
+          if (!(key in aliases)) {
             aliases[key] = source[key];
           }
         }        
