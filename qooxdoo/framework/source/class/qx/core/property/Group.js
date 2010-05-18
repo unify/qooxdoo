@@ -49,6 +49,38 @@ qx.Bootstrap.define("qx.core.property.Group",
 {
 	statics:
 	{
+    /**
+     * Expand shorthand definition to a four element list.
+     * This is an utility function for padding/margin and all other shorthand handling.
+     *
+     * @param input {Array|arguments} array or arguments object with one to four elements
+     * @return {Array} an array with four elements
+     */
+    expandShortHand : function(input)
+    {
+      var lArray = qx.lang.Array;
+      var result = input instanceof Array ? lArray.clone(input) : lArray.fromArguments(input);
+
+      // Copy Values (according to the length)
+      switch(result.length)
+      {
+        case 1:
+          result[1] = result[2] = result[3] = result[0];
+          break;
+
+        case 2:
+          result[2] = result[0];
+          // no break here
+
+        case 3:
+          result[3] = result[1];
+      }
+
+      // Return list with 4 items
+      return result;
+    },
+    
+    	  
 	  /**
 	   * Adds a new property group to the given class
 	   * 
@@ -70,14 +102,14 @@ qx.Bootstrap.define("qx.core.property.Group",
 	    var shorthand = config.shorthand;
 	    var group = config.group;
 	    var length = group.length;
-	    var PropertyCore = qx.core.property.Core;
+	    var self = this;
 	    
 	    // Attach setter
 	    members["set" + upname] = function(first)
 	    {
 	      var data = first instanceof Array ? first : arguments;
 	      if (shorthand) {
-	        data = PropertyCore.expandShortHand(data);
+	        data = self.expandShortHand(data);
 	      }
 
 	      var map = {};

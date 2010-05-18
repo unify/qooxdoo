@@ -76,6 +76,48 @@ qx.Bootstrap.define("qx.core.property.Multi",
     },
     
     
+
+    /**
+     * Returns a list of all inheritable properties supported by the given class
+     * 
+     * Contrary to {@link getProperties} this method caches requests for better performance
+     * in the property system.
+     *
+     * @param clazz {Class} Class to query
+     * @return {Map} All inheritable property names and a dictionary for faster lookup
+     */
+    getInheritableProperties : function(clazz)
+    {
+      if (clazz.$$inheritables) {
+        return clazz.$$inheritables;
+      }
+      
+      var result = clazz.$$inheritables = {};
+
+      // Find all local properties which are inheritable
+      var props = clazz.$$properties;
+      if (props) 
+      {
+        for (var name in props) 
+        {
+          if (props[name].inheritable) {
+            result[name] = true;
+          }
+        }
+      }
+        
+      var superClass = clazz.superclass;
+      if (superClass && superClass !== Object)
+      {
+        var remote = superClass.$$inheritables || this.getInheritableProperties(superClass);
+        for (var name in remote) {
+          result[name] = true;
+        }
+      }
+      
+      return result;
+    },    
+    
   
     /**
      * Mark the given object as being moved around and requiring
@@ -95,7 +137,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       }
       
       var clazz = obj.constructor;
-      var inheritables = clazz.$$inheritables || qx.Class.getInheritableProperties(clazz);
+      var inheritables = clazz.$$inheritables || this.getInheritableProperties(clazz);
       
       // Loop is quite a hack to quickly check for length > 0
       for (var prop in inheritables)
@@ -122,7 +164,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
       this.__refreshList = null;
       
       // Some shorthands for optimal performance
-      var qxClass = qx.Class;
       var qxBootstrap = qx.Bootstrap;
       var getterDB = this.__getter;
       var refresherDB = this.__refresher;
@@ -136,7 +177,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         clazz = obj.constructor;
 
         // Shorthand provided by qx.Class to omit function call
-        inheritables = clazz.$$inheritables || qxClass.getInheritableProperties(clazz);
+        inheritables = clazz.$$inheritables || this.getInheritableProperties(clazz);
 
         // Loop through properties
         parent = obj.getLayoutParent();

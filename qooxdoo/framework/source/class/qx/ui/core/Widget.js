@@ -2779,7 +2779,7 @@ qx.Class.define("qx.ui.core.Widget",
       {
         newStyles = styleCache[newSelector] = manager.styleFrom(structureSelector, states, null, this.getAppearance());
         var propertyGroup;
-        var PropertyCore = qx.core.property.Core;
+        var Group = qx.core.property.Group;
         
         for (var prop in newStyles)
         {
@@ -2796,7 +2796,7 @@ qx.Class.define("qx.ui.core.Widget",
               if (shorthandValue instanceof Array) 
               {
                 // Support array expanding e.g. 2 values to 4 values
-                newStyles[prop] = shorthandValue.length == 4 ? shorthandValue : PropertyCore.expandShortHand(shorthandValue);  
+                newStyles[prop] = shorthandValue.length == 4 ? shorthandValue : Group.expandShortHand(shorthandValue);  
               } 
               else
               {
