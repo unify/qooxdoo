@@ -26,6 +26,21 @@
 
 ************************************************************************ */
 
+/**
+ * Multi-level property which support multiple values per properties which
+ * integrated priorization. The following fields are available for properties
+ * depdending on their configuration:
+ * 
+ * # Init
+ * # Inheritance
+ * # Theme
+ * # User
+ * # Override
+ * 
+ * Higher values mean higher priority e.g. user values override themed values.
+ * 
+ * 
+ */
 qx.Bootstrap.define("qx.core.property.Multi",
 {
   statics :
@@ -315,7 +330,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
     },
     
     
-    
+    /**
+     * Helper method to react on property changes
+     * 
+     * @param value {var} New value of property
+     * @param oldValue {var} Old value of property
+     * @param config {Map} Property configuration
+     */
     __changeHelper : function(value, oldValue, config)
     {
       // this.debug("Change " + config.name + ": " + oldValue + " => " + value);

@@ -5,25 +5,23 @@ INTERNALS
 
 * Internally the system now uses crypted storage fields
 * All data is stored on a $$data object on each instance
-* Improved inheritance support with better performance
+* Improved inheritance support with better performance (lazy update)
 * Support for Adobe AIR => No function compilation
-* Improved compressibility => Less compiled code size
-* Property methods are created at declaration. => No more waiting for first instance.
+* Improved compressibility => Dramatically less compiled code size
+* Property methods are created at declaration. => No more waiting for first instance. So it's possible to override property generated methods.
+* Themed values are accessed from the theme system when calling get() methods. This omits double storage of these values on every instance.
 
 FUNCTIONAL CHANGES
 
 * Inheritance is sorted into priority chain: Has higher priority than init value
 * There is no "inherit" special value on "init" value anymore!
-* Transform of value during set() is not supported anymore.
+* Transform of value during set() is not supported anymore. Was not used widely and just confuses users.
 
 TODO 
 
-* Lay out keywords out of functions e.g. undefined
 * Add support for special value "inherit" to user/theme/runtime values
 * Add support for check
 * Add support for verify
-
-* Change: mode=shorthand to shorthand=true in group definition
 
 For a complete documentation of properties take a
 look at http://qooxdoo.org/documentation/developer_manual/properties.

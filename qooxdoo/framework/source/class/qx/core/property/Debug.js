@@ -174,7 +174,9 @@ qx.Bootstrap.define("qx.core.property.Debug",
 
 
     /**
-     *
+     * Validates a property configuration
+     * 
+     * @signature function(clazz, name, config, patch)
      * @param clazz {Class} class to add property to
      * @param name {String} name of the property
      * @param config {Map} configuration map

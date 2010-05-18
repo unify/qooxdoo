@@ -25,7 +25,18 @@
 #use(qx.event.dispatch.Direct)
 
 ************************************************************************ */
- 
+
+/**
+ * Lightweight basic property handling for simple key/value like
+ * properties which might have an optional init value. 
+ * 
+ * Supports the configuration keys:
+ * 
+ * * apply: Method to call after a new value has been stored
+ * * event: Event to fire after a new value has been stored (and apply has been called)
+ * * init: Init value for the property
+ * * nullable: Whether the property is able to store null values
+ */
 qx.Bootstrap.define("qx.core.property.Simple",
 {
   statics :
@@ -39,13 +50,6 @@ qx.Bootstrap.define("qx.core.property.Simple",
 
     /**
      * Adds a new property to the given class.
-     * 
-     * Supports the configuration keys:
-     * 
-     * * apply: Method to call after a new value has been stored
-     * * event: Event to fire after a new value has been stored (and apply has been called)
-     * * init: Init value for the property
-     * * nullable: Whether the property is able to store null values
      * 
      * Please note that you need to define one of "init" or "nullable". Otherwise you
      * might get errors during runtime function calls.

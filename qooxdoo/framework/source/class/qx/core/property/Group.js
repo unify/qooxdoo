@@ -42,8 +42,6 @@
  *     expanding two given values into 4 applied values.
  *   </td></tr>
  * </table>
- * 
- * @internal
  */
 qx.Bootstrap.define("qx.core.property.Group",
 {
