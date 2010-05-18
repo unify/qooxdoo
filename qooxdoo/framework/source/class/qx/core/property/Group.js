@@ -34,11 +34,12 @@
  *   <tr><th>group</th><td>String[]</td><td>
  *     A list of property names which should be set using the propery group.
  *   </td></tr>
- *   <tr><th>mode</th><td>String</td><td>
- *     If mode is set to <code>"shorthand"</code>, the properties can be set using a CSS like shorthand mode.
- *   </td></tr>
  *   <tr><th>themeable</th><td>Boolean</td><td>
  *     Whether this property can be set using themes.
+ *   </td></tr>
+ *   <tr><th>shorthand</th><td>Boolean</td><td>
+ *     If enabled, the properties can be set using a CSS like shorthand mode e.g. 
+ *     expanding two given values into 4 applied values.
  *   </td></tr>
  * </table>
  * 
@@ -66,35 +67,17 @@ qx.Bootstrap.define("qx.core.property.Group",
 	    }
 	    clazz.$$propertyGroups[name] = config;	   
 
-      this.__add(upname, config, members);
-	    if (config.themeable) {
-        this.__add(upname, config, members, "themed");
-	    }
-	  },
-
-
-	  /**
-	   * Helper method to attach group methods to the class
-	   * 
-	   * @param upname {String} Name of property (first character upper-case)
-	   * @param config {Map} Configuration map
-	   * @param members {Map} Member map to add to
-	   * @param type {String} One of "" or "Themed"
-	   */
-	  __add : function(upname, config, members, variant)
-	  {
-	    var shorthand = config.mode == "shorthand";
+	    var shorthand = config.shorthand;
 	    var group = config.group;
 	    var length = group.length;
-	    var LangArray = qx.lang.Array;
-	    var upvariant = variant ? qx.Bootstrap.firstUp(variant) : "";
+	    var PropertyCore = qx.core.property.Core;
 	    
 	    // Attach setter
-	    members["set" + upvariant + upname] = function(first)
+	    members["set" + upname] = function(first)
 	    {
-	      var data = first instanceof Array ? first : LangArray.fromArguments(arguments);
+	      var data = first instanceof Array ? first : arguments;
 	      if (shorthand) {
-	        data = LangArray.fromShortHand(data);
+	        data = PropertyCore.expandShortHand(data);
 	      }
 
 	      var map = {};
@@ -102,16 +85,16 @@ qx.Bootstrap.define("qx.core.property.Group",
 	        map[group[i]] = data[i];
 	      }
 
-	      this.set(map, undefined, variant);
+	      this.set(map);
 	    };
 
 	    // Attach resetter
-	    members["reset" + upvariant + upname] = function()
+	    members["reset" + upname] = function()
 	    {
 	      for (var i=0; i<length; i++) {
-	        this.reset(group[i], variant);
+	        this.reset(group[i]);
 	      }        
-	    };	    
-	  }	  		
+	    };
+	  }
 	}
 });

@@ -105,7 +105,7 @@ qx.Class.define("qx.ui.decoration.Double",
     innerWidth :
     {
       group : [ "innerWidthTop", "innerWidthRight", "innerWidthBottom", "innerWidthLeft" ],
-      mode : "shorthand"
+      shorthand : true
     },
 
 
@@ -151,7 +151,7 @@ qx.Class.define("qx.ui.decoration.Double",
     innerColor :
     {
       group : [ "innerColorTop", "innerColorRight", "innerColorBottom", "innerColorLeft" ],
-      mode : "shorthand"
+      shorthand : true
     }
   },
 

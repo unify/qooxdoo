@@ -87,7 +87,7 @@ qx.Mixin.define("qx.ui.core.MContentPadding",
         "contentPaddingTop", "contentPaddingRight",
         "contentPaddingBottom", "contentPaddingLeft"
       ],
-      mode  : "shorthand",
+      shorthand : true,
       themeable : true
     }
   },

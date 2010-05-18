@@ -20,11 +20,46 @@
 
 ************************************************************************ */
 
+/**
+ * Core features for qooxdoo's property system which generates setter/getter
+ * pairs with a lot of convenient features.
+ */
 qx.Bootstrap.define("qx.core.property.Core",
 {
   statics :
   {
     RUNTIME_OVERRIDE : false,
-    ID : 0
+    ID : 0,
+    
+    /**
+     * Expand shorthand definition to a four element list.
+     * This is an utility function for padding/margin and all other shorthand handling.
+     *
+     * @param input {Array|arguments} array or arguments object with one to four elements
+     * @return {Array} an array with four elements
+     */
+    expandShortHand : function(input)
+    {
+      var lArray = qx.lang.Array;
+      var result = input instanceof Array ? lArray.clone(input) : lArray.fromArguments(input);
+
+      // Copy Values (according to the length)
+      switch(result.length)
+      {
+        case 1:
+          result[1] = result[2] = result[3] = result[0];
+          break;
+
+        case 2:
+          result[2] = result[0];
+          // no break here
+
+        case 3:
+          result[3] = result[1];
+      }
+
+      // Return list with 4 items
+      return result;
+    }    
   }
 });

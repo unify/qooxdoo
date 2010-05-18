@@ -171,7 +171,7 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
     padding :
     {
       group : [ "paddingTop", "paddingRight", "paddingBottom", "paddingLeft" ],
-      mode  : "shorthand",
+      shorthand : true,
       themeable : true
     }
   },

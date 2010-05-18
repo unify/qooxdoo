@@ -142,7 +142,7 @@ qx.Mixin.define("qx.ui.core.MPlacement",
     offset :
     {
       group : [ "offsetTop", "offsetRight", "offsetBottom", "offsetLeft" ],
-      mode  : "shorthand",
+      shorthand : true,
       themeable : true
     }
   },

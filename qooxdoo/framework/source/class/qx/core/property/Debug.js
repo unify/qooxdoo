@@ -20,13 +20,16 @@
 
 ************************************************************************ */
 
+/**
+ * This helper class is only included into debug builds and do the 
+ * generic property checks defined using the property configuration.
+ */
 qx.Bootstrap.define("qx.core.property.Debug",
 {
   statics :
   {
     /**
-     * Built-in checks
-     * The keys could be used in the check of the properties
+     * {Map} Built-in checks. The keys could be used in the check of the properties
      */
     CHECKS :
     {
@@ -63,6 +66,14 @@ qx.Bootstrap.define("qx.core.property.Debug",
       "Font"      : 'value !== null && qx.theme.manager.Font.getInstance().isDynamic(value)'
     },
     
+    
+    /**
+     * Validates the incoming parameters of a setter method
+     * 
+     * @param obj {qx.core.Object} Object which is modified
+     * @param config {Map} Property configuration
+     * @param args {arguments} List of all arguments send to the setter
+     */
     checkSetter : function(obj, config, args)
     {
       if (args.length == 0) {
@@ -73,9 +84,20 @@ qx.Bootstrap.define("qx.core.property.Debug",
       {
         obj.warn("Called set method of property " + config.name + " with too many arguments!");
         obj.trace();
-      }      
+      }
+      
+      // TODO: Type checks
+      //obj.debug("Check: " + config.check); 
     },
     
+
+    /**
+     * Validates the incoming parameters of a resetter method
+     * 
+     * @param obj {qx.core.Object} Object which is modified
+     * @param config {Map} Property configuration
+     * @param args {arguments} List of all arguments send to the setter
+     */
     checkResetter : function(obj, config, args)
     {
       if (args.length != 0) 
@@ -85,6 +107,14 @@ qx.Bootstrap.define("qx.core.property.Debug",
       }      
     },
     
+    
+    /**
+     * Validates the incoming parameters of a getter method
+     * 
+     * @param obj {qx.core.Object} Object which is queried
+     * @param config {Map} Property configuration
+     * @param args {arguments} List of all arguments send to the setter
+     */
     checkGetter : function(obj, config, args)
     {
       if (args.length != 0) 

@@ -148,38 +148,6 @@ qx.Class.define("qx.lang.Array",
 
 
     /**
-     * Expand shorthand definition to a four element list.
-     * This is an utility function for padding/margin and all other shorthand handling.
-     *
-     * @param input {Array} arr with one to four elements
-     * @return {Array} an arr with four elements
-     */
-    fromShortHand : function(input)
-    {
-      var len = input.length;
-      var result = qx.lang.Array.clone(input);
-
-      // Copy Values (according to the length)
-      switch(len)
-      {
-        case 1:
-          result[1] = result[2] = result[3] = result[0];
-          break;
-
-        case 2:
-          result[2] = result[0];
-          // no break here
-
-        case 3:
-          result[3] = result[1];
-      }
-
-      // Return list with 4 items
-      return result;
-    },
-
-
-    /**
      * Return a copy of the given array
      *
      * @param arr {Array} the array to copy

@@ -190,7 +190,7 @@ qx.Class.define("qx.ui.core.LayoutItem",
     allowStretchX :
     {
       group : [ "allowGrowX", "allowShrinkX" ],
-      mode : "shorthand",
+      shorthand : true,
       themeable: true
     },
 
@@ -199,7 +199,7 @@ qx.Class.define("qx.ui.core.LayoutItem",
     allowStretchY :
     {
       group : [ "allowGrowY", "allowShrinkY" ],
-      mode : "shorthand",
+      shorthand : true,
       themeable: true
     },
 
@@ -264,7 +264,7 @@ qx.Class.define("qx.ui.core.LayoutItem",
     margin :
     {
       group : [ "marginTop", "marginRight", "marginBottom", "marginLeft" ],
-      mode  : "shorthand",
+      shorthand : true,
       themeable : true
     },
 

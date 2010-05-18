@@ -385,7 +385,7 @@ qx.Class.define("qx.ui.core.Widget",
     padding :
     {
       group : [ "paddingTop", "paddingRight", "paddingBottom", "paddingLeft" ],
-      mode  : "shorthand",
+      shorthand : true,
       themeable : true
     },
 
@@ -2779,6 +2779,7 @@ qx.Class.define("qx.ui.core.Widget",
       {
         newStyles = styleCache[newSelector] = manager.styleFrom(structureSelector, states, null, this.getAppearance());
         var propertyGroup;
+        var PropertyCore = qx.core.property.Core;
         
         for (var prop in newStyles)
         {
@@ -2789,12 +2790,17 @@ qx.Class.define("qx.ui.core.Widget",
           // but is required to solve priority issues which arise otherwise
           if (config.group)
           {
-            if (config.mode == "shorthand") 
+            if (config.shorthand) 
             {
               var shorthandValue = newStyles[prop];
-              if (shorthandValue instanceof Array) {
-                newStyles[prop] = qx.lang.Array.fromShortHand(newStyles[prop]);  
-              } else {
+              if (shorthandValue instanceof Array) 
+              {
+                // Support array expanding e.g. 2 values to 4 values
+                newStyles[prop] = shorthandValue.length == 4 ? shorthandValue : PropertyCore.expandShortHand(shorthandValue);  
+              } 
+              else
+              {
+                // Single value given without array => expand to 4 values
                 newStyles[prop] = [shorthandValue, shorthandValue, shorthandValue, shorthandValue];
               }
             }

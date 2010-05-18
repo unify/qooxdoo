@@ -95,7 +95,7 @@ qx.Mixin.define("qx.ui.core.MResizable",
     resizable :
     {
       group : [ "resizableTop", "resizableRight", "resizableBottom", "resizableLeft" ],
-      mode  : "shorthand"
+      shorthand : true
     },
 
     /** The tolerance to activate resizing */

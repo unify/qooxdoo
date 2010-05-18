@@ -135,7 +135,7 @@ qx.Class.define("qx.ui.decoration.css3.BorderImage",
     slice :
     {
       group : [ "sliceTop", "sliceRight", "sliceBottom", "sliceLeft" ],
-      mode : "shorthand"
+      shorthand : true
     },
 
 
@@ -188,7 +188,7 @@ qx.Class.define("qx.ui.decoration.css3.BorderImage",
     repeat :
     {
       group : ["repeatX", "repeatY"],
-      mode : "shorthand"
+      shorthand : true
     }
   },
 

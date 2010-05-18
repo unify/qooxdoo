@@ -146,7 +146,7 @@ qx.Class.define("qx.ui.decoration.Grid",
     insets :
     {
       group : [ "insetTop", "insetRight", "insetBottom", "insetLeft" ],
-      mode  : "shorthand"
+      shorthand : true
     }
   },
 

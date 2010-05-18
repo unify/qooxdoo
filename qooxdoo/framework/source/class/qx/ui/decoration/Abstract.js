@@ -69,7 +69,7 @@ qx.Class.define("qx.ui.decoration.Abstract",
     insets :
     {
       group : [ "insetTop", "insetRight", "insetBottom", "insetLeft" ],
-      mode  : "shorthand"
+      shorthand : true
     }
   },
 

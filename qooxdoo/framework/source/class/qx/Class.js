@@ -1251,7 +1251,7 @@ qx.Bootstrap.define("qx.Class",
        "on" : {
          name      : "string",   // String
          group     : "object",   // Array
-         mode      : "string",   // String
+         shorthand : "boolean",  // Boolean
          themeable : "boolean"   // Boolean
        },
 
