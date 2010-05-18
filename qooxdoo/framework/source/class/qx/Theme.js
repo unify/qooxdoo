@@ -146,8 +146,15 @@ qx.Bootstrap.define("qx.Theme",
     __initializeAliases : function(theme, config)
     {
       var aliases = config.aliases || {};
-      if (config.extend && config.extend.aliases) {
-        qx.Bootstrap.objectMergeWith(aliases, config.extend.aliases, false);
+      if (config.extend && config.extend.aliases) 
+      {
+        var source = config.extend.aliases;
+        for (var key in source)
+        {
+          if (!(key in target)) {
+            aliases[key] = source[key];
+          }
+        }        
       }
 
       theme.aliases = aliases;
