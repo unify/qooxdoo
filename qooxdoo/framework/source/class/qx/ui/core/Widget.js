@@ -2567,7 +2567,7 @@ qx.Class.define("qx.ui.core.Widget",
     hasState : function(state)
     {
       var states = this.__states;
-      return states && states[state];
+      return !!states && !!states[state];
     },
 
 
