@@ -347,7 +347,7 @@ qx.Bootstrap.define("qx.Bootstrap",
      */
     objectMergeWith : function(target, source, overwrite)
     {
-      if (overwrite === undefined) {
+      if (overwrite == null) {
         overwrite = true;
       }
 

@@ -426,95 +426,6 @@ qx.Bootstrap.define("qx.Class",
 
 
     /**
-     * Returns a list of all properties supported by the given class
-     *
-     * @param clazz {Class} Class to query
-     * @return {String[]} List of all property names
-     */
-    getProperties : function(clazz)
-    {
-      var list = [];
-
-      while (clazz)
-      {
-        if (clazz.$$properties) {
-          list.push.apply(list, qx.Bootstrap.getKeys(clazz.$$properties));
-        }
-
-        clazz = clazz.superclass;
-      }
-
-      return list;
-    },
-    
-
-    /**
-     * Returns a list of all inheritable properties supported by the given class
-     * 
-     * Contrary to {@link getProperties} this method caches requests for better performance
-     * in the property system.
-     *
-     * @param clazz {Class} Class to query
-     * @return {Map} All inheritable property names and a dictionary for faster lookup
-     */
-    getInheritableProperties : function(clazz)
-    {
-      if (clazz.$$inheritables) {
-        return clazz.$$inheritables;
-      }
-      
-      var result = clazz.$$inheritables = {};
-
-      // Find all local properties which are inheritable
-      var props = clazz.$$properties;
-      if (props) 
-      {
-        for (var name in props) 
-        {
-          if (props[name].inheritable) {
-            result[name] = true;
-          }
-        }
-      }
-        
-      var superClass = clazz.superclass;
-      if (superClass && superClass !== Object)
-      {
-        var remote = superClass.$$inheritables || this.getInheritableProperties(superClass);
-        for (var name in remote) {
-          result[name] = true;
-        }
-      }
-      
-      return result;
-    },
-
-
-    /**
-     * Returns the class or one of its superclasses which contains the
-     * declaration for the given property in its class definition. Returns null
-     * if the property is not specified anywhere.
-     *
-     * @param clazz {Class} class to look for the property
-     * @param name {String} name of the property
-     * @return {Class | null} The class which includes the property
-     */
-    getByProperty : function(clazz, name)
-    {
-      while (clazz)
-      {
-        if (clazz.$$properties && clazz.$$properties[name]) {
-          return clazz;
-        }
-
-        clazz = clazz.superclass;
-      }
-
-      return null;
-    },
-
-
-    /**
      * Whether a class has the given property
      *
      * @signature function(clazz, name)
@@ -1136,7 +1047,6 @@ qx.Bootstrap.define("qx.Class",
        var SimpleProperty = qx.core.property.Simple;
        var MultiProperty = qx.core.property.Multi;
        var PropertyGroup = qx.core.property.Group;
-       var PropertyCore = qx.core.property.Core;
        var eventData;
 
        for (var name in properties)
@@ -1145,7 +1055,7 @@ qx.Bootstrap.define("qx.Class",
 
          // Check incoming configuration
          if (qx.core.Variant.isSet("qx.debug", "on")) {
-           PropertyCore.validateProperty(clazz, name, config, patch);
+           qx.core.property.Debug.validateConfig(clazz, name, config, patch);
          }
 
          // Store name into configuration
@@ -1596,3 +1506,8 @@ qx.Bootstrap.define("qx.Class",
     }
   }
 });
+
+// Hack to force loadtime dependency
+if (qx.core.Variant.isSet("qx.debug", "on")) {
+   qx.core.property.Debug;
+}
