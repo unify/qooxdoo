@@ -447,35 +447,6 @@ qx.Bootstrap.define("qx.Class",
       return list;
     },
     
-    
-    getPropertyGroupWithProperty : function(prop, clazz)
-    {
-      var groups, group, config;
-      
-      while (clazz)
-      {
-        groups = clazz.$$propertyGroups;
-        if (groups) 
-        {
-          for (group in groups)
-          {
-            config = groups[group];
-            if (config.group.indexOf(prop) != -1) {
-              return config;
-            }
-          }
-        }
-
-        clazz = clazz.superclass;
-      }
-
-      return null;
-    },
-    
-    
-    
-
-
 
     /**
      * Returns a list of all inheritable properties supported by the given class
@@ -1165,6 +1136,7 @@ qx.Bootstrap.define("qx.Class",
        var SimpleProperty = qx.core.property.Simple;
        var MultiProperty = qx.core.property.Multi;
        var PropertyGroup = qx.core.property.Group;
+       var PropertyCore = qx.core.property.Core;
        var eventData;
 
        for (var name in properties)
@@ -1173,7 +1145,7 @@ qx.Bootstrap.define("qx.Class",
 
          // Check incoming configuration
          if (qx.core.Variant.isSet("qx.debug", "on")) {
-           this.__validateProperty(clazz, name, config, patch);
+           PropertyCore.validateProperty(clazz, name, config, patch);
          }
 
          // Store name into configuration
@@ -1210,135 +1182,6 @@ qx.Bootstrap.define("qx.Class",
          }
        }
      },
-
-     /**
-      * Supported keys for property defintions
-      *
-      * @internal
-      */
-     __propertyKeys :qx.core.Variant.select("qx.debug",
-     {
-       "on" : 
-       {
-         name         : "string",   // String
-         dispose      : "boolean",  // Boolean
-         dereference  : "boolean",  // Boolean
-         inheritable  : "boolean",  // Boolean
-         nullable     : "boolean",  // Boolean
-         themeable    : "boolean",  // Boolean
-         refine       : "boolean",  // Boolean
-         init         : null,       // var
-         apply        : "string",   // String
-         event        : "string",   // String
-         check        : null,       // Array, String, Function
-         transform    : "string",   // String
-         deferredInit : "boolean",  // Boolean
-         validate     : null,       // String, Function,
-         up           : "string"    // Name (Dynamically created)  
-       },
-
-       "default" : null
-     }),
-
-
-     /**
-      * Supported keys for property group definitions
-      *
-      * @internal
-      */
-     __propertyGroupKeys : qx.core.Variant.select("qx.debug",
-     {
-       "on" : {
-         name      : "string",   // String
-         group     : "object",   // Array
-         shorthand : "boolean",  // Boolean
-         themeable : "boolean"   // Boolean
-       },
-
-       "default" : null
-     }),
-
-     /**
-      *
-      * @param clazz {Class} class to add property to
-      * @param name {String} name of the property
-      * @param config {Map} configuration map
-      * @param patch {Boolean ? false} enable refine/patch?
-      */
-     __validateProperty : qx.core.Variant.select("qx.debug",
-     {
-       "on": function(clazz, name, config, patch)
-       {
-         var has = this.hasProperty(clazz, name);
-
-         if (has)
-         {
-           var existingProperty = this.getPropertyDefinition(clazz, name);
-
-           if (config.refine && existingProperty.init === undefined) {
-             throw new Error("Could not refine a init value if there was previously no init value defined. Property '" + name + "' of class '" + clazz.classname + "'.");
-           }
-         }
-
-         if (!has && config.refine) {
-           throw new Error("Could not refine non-existent property: " + name + "!");
-         }
-
-         if (has && !patch) {
-           throw new Error("Class " + clazz.classname + " already has a property: " + name + "!");
-         }
-
-         if (has && patch)
-         {
-           if (!config.refine) {
-             throw new Error('Could not refine property "' + name + '" without a "refine" flag in the property definition! This class: ' + clazz.classname + ', original class: ' + this.getByProperty(clazz, name).classname + '.');
-           }
-
-           for (var key in config)
-           {
-             if (key !== "init" && key !== "refine") {
-               throw new Error("Class " + clazz.classname + " could not refine property: " + name + "! Key: " + key + " could not be refined!");
-             }
-           }
-         }
-
-         var allowed = config.group ? this.__propertyGroupKeys : this.__propertyKeys;
-         for (var key in config)
-         {
-           if (allowed[key] === undefined) {
-             throw new Error('The configuration key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '" is not allowed!');
-           }
-
-           if (config[key] === undefined) {
-             throw new Error('Invalid key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '"! The value is undefined: ' + config[key]);
-           }
-
-           if (allowed[key] !== null && typeof config[key] !== allowed[key]) {
-             throw new Error('Invalid type of key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '"! The type of the key must be "' + allowed[key] + '"!');
-           }
-         }
-
-         if (config.transform != null)
-         {
-           if (typeof config.transform !== "string") {
-             throw new Error('Invalid transform definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String.');
-           }
-         }
-
-         if (config.check != null)
-         {
-           if (
-             !qx.lang.Type.isString(config.check) &&
-             !qx.lang.Type.isArray(config.check) &&
-             !qx.lang.Type.isFunction(config.check)
-           ) {
-             throw new Error('Invalid check definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String, Array or Function.');
-           }
-         }
-       },
-
-       "default" : null
-     }),
 
 
     /**
