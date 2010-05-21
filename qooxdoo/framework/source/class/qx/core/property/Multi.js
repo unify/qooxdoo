@@ -241,7 +241,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       }
 
       var id, newValue, oldValue, storedPriority, initField;
-      var Bootstrap = qx.Bootstrap;
+      var PropertyUtil = qx.core.property.Util;
       
       for (var prop in values) 
       {
@@ -283,7 +283,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Read property config
-        var config = Bootstrap.getPropertyDefinition(obj.constructor, prop);
+        var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
         
         // Reset implementation block
         if (newValue === Undefined) 
