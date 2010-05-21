@@ -23,7 +23,7 @@
 import re, os, sys, zlib, optparse, types, string, glob
 import functools, codecs, operator
 
-from misc import filetool, textutil, util, Path, PathType
+from misc import filetool, textutil, util, Path, PathType, json
 from misc.PathType import PathType
 from ecmascript import compiler
 from ecmascript.frontend             import treegenerator, tokenizer
@@ -49,7 +49,6 @@ from generator.action.ActionLib      import ActionLib
 from generator.runtime.Cache         import Cache
 from generator.runtime.ShellCmd      import ShellCmd
 from generator                       import Context
-import simplejson
 from robocopy import robocopy
 import graph
 
@@ -134,11 +133,6 @@ class Generator(object):
             },
 
             "compile-dist" :
-            {
-              "type" : "JCompileJob",
-            },
-
-            "dashlet" :
             {
               "type" : "JCompileJob",
             },
@@ -235,7 +229,7 @@ class Generator(object):
             _classesObj = {}
             _docs = {}
             _translations = {}
-            _libs = {}
+            _libs = {}          # {"name.space" : LibraryPath}
             if not isinstance(library, types.ListType):
                 return (_namespaces, _classes, _docs, _translations, _libs)
 
@@ -437,7 +431,7 @@ class Generator(object):
         def printVariantInfo(variantSetNum, variants, variantSets, variantData):
             if len(variantSets) < 2:  # only log when more than 1 set
                 return
-            variantStr = simplejson.dumps(variants,ensure_ascii=False)
+            variantStr = json.dumps(variants,ensure_ascii=False)
             self._console.head("Processing variant set %s/%s" % (variantSetNum+1, len(variantSets)))
 
             # Debug variant combination
@@ -598,34 +592,34 @@ class Generator(object):
             script          = Script()  # a new Script object represents the target code
             script.variants = variants
             # set source/build version
-            if ("compile-source" in jobTriggers or
-                ("compile" in jobTriggers and config.get("compile/type", "") == "source")):
-                script.buildType = "source"
-            elif ("compile-dist" in jobTriggers or
-                ("compile" in jobTriggers and config.get("compile/type", "") == "build")):
-                script.buildType = "build"
+            if "compile" in jobTriggers:
+                if config.get("compile/type", "") == "source":
+                    script.buildType = "source"
+                elif config.get("compile/type", "") == "build":
+                    script.buildType = "build"
 
             # get current class list
             script.classes  = computeClassList(includeWithDeps, excludeWithDeps, 
                                                includeNoDeps, excludeNoDeps, variants, script=script)
+            # prepare 'script' object
+            if set(("compile", "log")).intersection(jobTriggers):
+                partsConfigFromClassList(excludeWithDeps, script)
+
             # Execute real tasks
             if "copy-resources" in jobTriggers:
                 self.runResources(script.classes)
-            if set(("compile", "compile-source", "compile-dist")).intersection(jobTriggers):
+            if "compile" in jobTriggers:
                 # get parts config; sets
                 # script.boot
                 # script.parts['boot']=[0,1,3]
                 # script.packages[0]=['qx.Class','qx.bom.Stylesheet',...]
-                partsConfigFromClassList(excludeWithDeps, script)
-
                 self._codeGenerator.runCompiled(script, self._treeCompiler)
-            if "dashlet" in jobTriggers:
-                self.runDashlet(script)
 
             # debug tasks
             self.runLogDependencies(script)
             self.runPrivateDebug()
             self.runLogUnusedClasses(script)
+            self.runLogResources(script)
             #self.runClassOrderingDebug(partPackages, packageClasses, variants)
 
         self._console.info("Done")
@@ -700,6 +694,8 @@ class Generator(object):
             self._console.outdent()
         self._console.outdent()
 
+        return
+
 
 
     def runClassOrderingDebug(self, parts, packages, variants):
@@ -735,29 +731,17 @@ class Generator(object):
     #
     def runLogDependencies(self, script):
 
-        depsLogConf = self._job.get("log/dependencies", False)
-        if not depsLogConf:
-           return
-
-        packages   = script.packagesSortedSimple()
-        parts      = script.parts
-        variants   = script.variants
-
-        
-        depsLogConf = ExtMap(depsLogConf)
-
         ##
         # A generator to yield all used-by-dependencies of classes in packages
+        # may not report used-by relations of a specific class in sequence
         def lookupUsedByDeps(packages):
             for packageId, package in enumerate(packages):
                 for classId in sorted(package.classes):
-                    for otherClassId in package.classes:
-                        otherClassDeps = self._depLoader.getDeps(otherClassId, variants)
-                        if classId in (x.name for x in otherClassDeps["load"]):
-                            yield (packageId, classId, otherClassId, 'load')
-                        if classId in (x.name for x in otherClassDeps["run"]):
-                            yield (packageId, classId, otherClassId, 'run')
-
+                    classDeps = self._depLoader.getDeps(classId, variants)
+                    for dep in classDeps["load"]:
+                        yield (packageId, dep.name, classId, 'load')  # the packageId is somewhat bogus here
+                    for dep in classDeps["run"]:
+                        yield (packageId, dep.name, classId, 'run')
             return
 
 
@@ -794,9 +778,69 @@ class Generator(object):
             else:
                 indent     = None
                 separators = (',', ':')
-            open(file, 'w').write(simplejson.dumps(data, sort_keys=True, indent=indent, separators=separators))
+            filetool.save(file, json.dumps(data, sort_keys=True, indent=indent, separators=separators))
             
             return
+
+
+        def depsToProviderFormat(classDepsIter, depsLogConf):
+            data = {}
+            # Class deps
+            for (packageId, classId, depId, loadOrRun) in classDepsIter:                             
+                if classId not in data:
+                    data[classId] = {}
+                    data[classId]["load"] = []
+                    data[classId]["run"] = []
+
+                data[classId][loadOrRun].append(depId)
+            # transform dep items
+            for key, val in data.items():
+                newval = []
+                for ldep in val["load"]:
+                    newdep = ldep.replace(".", "/")
+                    newdep += ".js"
+                    newval.append(newdep)
+                val["load"] = newval
+                newval = []
+                for ldep in val["run"]:
+                    newdep = ldep.replace(".", "/")
+                    newdep += ".js"
+                    newval.append(newdep)
+                val["run"] = newval
+
+            # Resource deps
+            assetFilter, classToAssetHints = self._resourceHandler.getResourceFilterByAssets(data.keys())
+            classToResources  = self._resourceHandler.getResourcesByClass(self._job.get("library", []), classToAssetHints)
+            for classId in classToResources:
+                data[classId]["run"].extend(classToResources[classId])
+                
+            # Message key deps
+            for classId in data:
+                classKeys = self._locale.getTranslation(classId, {})
+                transKeys = ["translation#" + x['id'] for x in classKeys]
+                data[classId]["run"].extend(transKeys)
+
+            # transform dep keys ("qx.Class" -> "qx/Class.js")
+            for key, val in data.items():
+                newkey = key.replace(".", "/")
+                newkey += ".js"
+                data[newkey] = data[key]
+                del data[key]
+
+            # write to file
+            file = depsLogConf.get('json/file', "deps.json")
+            self._console.info("Writing dependency data to file: %s" % file)
+            pretty = depsLogConf.get('json/pretty', None)
+            if pretty:
+                indent     = 2
+                separators = (', ', ': ')
+            else:
+                indent     = None
+                separators = (',', ':')
+            filetool.save(file, json.dumps(data, sort_keys=True, indent=indent, separators=separators))
+            
+            return
+
 
         def depsToFlareFile(classDepsIter, depsLogConf):
             data = {}
@@ -823,11 +867,11 @@ class Generator(object):
             else:
                 indent = None
                 separators = (',', ':')
-            open(file, 'w').write(simplejson.dumps(output, sort_keys=True, indent=indent, separators=separators))
+            filetool.save(file, json.dumps(output, sort_keys=True, indent=indent, separators=separators))
             
             return
 
-        def depsToDotFile(depsLogConf, gr):
+        def depsToDotFile(classDepsIter, depsLogConf):
 
             def getNodeAttribs(classId, useCompiledSize=False, optimize=[]):
                 # return color according to size
@@ -837,22 +881,23 @@ class Generator(object):
                     'compiled' : (8000, 2000),
                     'source'   : (20000, 5000)
                 }
-                if useCompiledSize:
-                    fsize = self._treeCompiler.getCompiledSize(classId, variants, optimize, recompile=True)
-                    mode  = 'compiled'
-                else:
-                    fsize = self._classes[classId]['size']
-                    mode  = 'source'
+                if classId in self._classes:
+                    if useCompiledSize:
+                        fsize = self._treeCompiler.getCompiledSize(classId, variants, optimize, recompile=True)
+                        mode  = 'compiled'
+                    else:
+                        fsize = self._classes[classId]['size']
+                        mode  = 'source'
 
-                if fsize > sizes[mode][0]:
-                    color = "red"
-                    fontsize = 15
-                elif fsize > sizes[mode][1]:
-                    color = "green"
-                    fontsize = 13
-                else:
-                    color = "blue"
-                    fontsize = 10
+                    if fsize > sizes[mode][0]:
+                        color = "red"
+                        fontsize = 15
+                    elif fsize > sizes[mode][1]:
+                        color = "green"
+                        fontsize = 13
+                    else:
+                        color = "blue"
+                        fontsize = 10
 
                 if fontsize:
                     attribs.append(("fontsize",fontsize))
@@ -892,7 +937,7 @@ class Generator(object):
                 file = depsLogConf.get('dot/file', "deps.dot")
                 dot = gr1.write(fmt='dotwt')
                 self._console.info("Writing dependency graph to file: %s" % file)
-                open(file, 'w').write(dot)
+                filetool.save(file, dot)
                 return
 
             def getFormatMode(depsLogConf):
@@ -918,7 +963,13 @@ class Generator(object):
                 addEdges(gr, gr1, st, st_nodes, mode)
                 return gr1
 
-            gr1 = createPrinterGraph(gr, depsLogConf)
+            # -- Main (depsToDotFile) ------------------------------------------
+
+            phase = depsLogConf.get('phase', None)
+            gr    = graph.digraph()
+            #graphAddNodes(gr, script.classes)
+            graphAddEdges(classDepsIter, gr, phase)
+            gr1   = createPrinterGraph(gr, depsLogConf)
             writeDotFile(gr1, depsLogConf)
             return
 
@@ -939,45 +990,50 @@ class Generator(object):
             return
 
 
-        def depsToConsole(classDepsIter):
-            oPackageId = oClassId = oLoadOrRun = ''
-            self._console.indent()
-            self._console.indent()
-
+        def collectDispersedDependencies(classDepsIter):
+            depsMap = {}
+            # collect relations of a single class
             for (packageId, classId, depId, loadOrRun) in classDepsIter:
+                if classId not in depsMap:
+                    depsMap[classId] = (packageId, [], [])
+                if loadOrRun == "load":
+                    depsMap[classId][1].append(depId)
+                elif loadOrRun == "run":
+                    depsMap[classId][2].append(depId)
+            return depsMap
+
+
+        def depsToConsole(classDepsIter, type):
+            oPackageId = ''
+            self._console.indent()
+            self._console.indent()
+            relstring = "Uses" if type == "using" else "Used by"
+            depsMap = collectDispersedDependencies(classDepsIter)
+
+            for classId in sorted(depsMap.keys()):
+                classVals = depsMap[classId]
+                packageId = classVals[0]
+                depsLoad  = classVals[1]
+                depsRun   = classVals[2]
+
                 if packageId != oPackageId:
                     oPackageId = packageId
-                    self._console.outdent()
-                    self._console.outdent()
                     self._console.outdent()
                     self._console.info("Package %s" % packageId)
                     self._console.indent()
                     for partId in parts:
                         if packageId in (x.id for x in parts[partId].packages):
                             self._console.info("Part %s" % partId)
-                    self._console.indent()
-                    self._console.indent()
                             
-                if classId != oClassId:
-                    oClassId   = classId
-                    oLoadOrRun = ''         # reset this
-                    self._console.outdent()
-                    self._console.outdent()
-                    self._console.info("Class: %s" % classId)
-                    self._console.indent()
-                    self._console.indent()
+                self._console.info("Class: %s" % classId)
 
-                if loadOrRun != oLoadOrRun:
-                    oLoadOrRun = loadOrRun
-                    self._console.outdent()
-                    if loadOrRun == 'load':
-                        self._console.info("Uses (load):")
-                    elif loadOrRun == 'run':
-                        self._console.info("Uses (run):")
-                    self._console.indent()
-
-                self._console.info("%s" % depId)
-
+                self._console.indent()
+                for depId in depsLoad:
+                    self._console.info("%s: %s (load)" % (relstring, depId))
+                for depId in depsRun:
+                    self._console.info("%s: %s (run)"  % (relstring, depId))
+                self._console.outdent()
+                    
             self._console.outdent()
             self._console.outdent()
             return
@@ -989,8 +1045,10 @@ class Generator(object):
             runAttrs  = []
 
             for (packageId, classId, depId, loadOrRun) in classDepsIter:
-                if not gr.has_node(depId):         # skip dependencies outside includes/excludes
-                    continue
+                if not gr.has_node(classId):
+                    graphAddNode(gr, classId)
+                if not gr.has_node(depId):
+                    graphAddNode(gr, depId)
                 if loadOrRun == 'load' and pLoadOrRun != "runtime":
                     gr.add_edge(classId, depId, attrs = loadAttrs)
                 elif loadOrRun == 'run' and pLoadOrRun != "loadtime":
@@ -1001,6 +1059,11 @@ class Generator(object):
 
         def graphAddNodes(gr, clsList):
             for cid in clsList:
+                graphAddNode(gr, cid)
+
+
+        def graphAddNode(gr, cid):
+            if cid in self._classes:
                 fsize = self._classes[cid]['size']
                 if fsize > 20000:
                     color = "red"
@@ -1008,71 +1071,82 @@ class Generator(object):
                     color = "green"
                 else:
                     color = "blue"
-                gr.add_node(cid, attrs=[("color", color)])
-            return
-
-
-        def usedByDeps(depsLogConf):
-            for packageId, package in enumerate(packages):
-                self._console.info("Package %s" % packageId)
-                self._console.indent()
-
-                for part in parts.values():
-                    if package in part.packages:
-                        self._console.info("Part %s" % part.name)
-
-                for classId in sorted(package.classes):
-                    self._console.info("Class: %s" % classId)
-                    self._console.indent()
-
-                    for otherClassId in package.classes:
-                        otherClassDeps = self._depLoader.getDeps(otherClassId, variants)
-
-                        if classId in (x.name for x in otherClassDeps["load"]):
-                            self._console.info("Used by: %s (load)" % otherClassId)
-
-                        if classId in (x.name for x in otherClassDeps["run"]):
-                            self._console.info("Used by: %s (run)" % otherClassId)
-
-                    self._console.outdent()
-                self._console.outdent()
-
-            return
-
-        def usingDeps(depsLogConf):
-
-            dset       = depsLogConf.get('using/phase', None)
-            mainformat = depsLogConf.get('format', None)
-            if mainformat == 'dot':
-                gr = graph.digraph()
-                graphAddNodes(gr, script.classes)
-                graphAddEdges(lookupUsingDeps(packages), gr, dset)
-                depsToDotFile(depsLogConf, gr)
-            elif mainformat == 'json':
-                depsToJsonFile(lookupUsingDeps(packages), depsLogConf)
-            elif mainformat == 'flare':
-                depsToFlareFile(lookupUsingDeps(packages), depsLogConf)
-            elif mainformat == 'term':
-                depsToTerms(lookupUsingDeps(packages))
             else:
-                depsToConsole(lookupUsingDeps(packages))
+                color = "blue"
+            gr.add_node(cid, attrs=[("color", color)])
+            return
+
+
+        def logDeps(depsLogConf, type):
+
+            mainformat = depsLogConf.get('format', None)
+            if type == "using":
+                classDepsIter = lookupUsingDeps(packages)
+            else:
+                classDepsIter = lookupUsedByDeps(packages)
+
+            if mainformat == 'dot':
+                depsToDotFile(classDepsIter, depsLogConf)
+            elif mainformat == 'json':
+                depsToJsonFile(classDepsIter, depsLogConf)
+            elif mainformat == 'flare':
+                depsToFlareFile(classDepsIter, depsLogConf)
+            elif mainformat == 'term':
+                depsToTerms(classDepsIter)
+            elif mainformat == 'provider':
+                depsToProviderFormat(classDepsIter, depsLogConf)
+            else:
+                depsToConsole(classDepsIter, type)
             
             return
 
-        # -----------------------------------------------
+        # -- Main (runLogDependencies) ------------------
+
+        depsLogConf = self._job.get("log/dependencies", False)
+        if not depsLogConf:
+           return
+
+        packages   = script.packagesSortedSimple()
+        parts      = script.parts
+        variants   = script.variants
+        
+        depsLogConf = ExtMap(depsLogConf)
 
         self._console.info("Dependency logging...")
         self._console.indent()
 
         type = depsLogConf.get('type', None)
-        if type == "used-by":
-            usedByDeps(depsLogConf)
-        elif type == "using":
-            usingDeps(depsLogConf)
+        if type in ("used-by", "using"):
+            logDeps(depsLogConf, type)
         else:
-            self._console.error('Dependency log type "%s" not in ["using", "used-by"]; skipping...' % mode)
+            self._console.error('Dependency log type "%s" not in ["using", "used-by"]; skipping...' % type)
 
         self._console.outdent()
+        return
+
+
+    def runLogResources(self, script):
+        if not self._job.get("log/resources", False):
+            return
+
+        packages   = script.packagesSortedSimple()
+        parts      = script.parts
+        variants   = script.variants
+
+        self._console.info("Dumping resource info...");
+        self._console.indent()
+
+        allresources = {}
+        # get resource info
+        # -- the next call is fake, just to populate package.data.resources!
+        _ = self._codeGenerator.generateResourceInfoCode(script, self._settings, self._job.get("library",[]))
+        for packageId, package in enumerate(packages):
+            allresources.update(package.data.resources)
+        
+        file = self._job.get("log/resources/file", "resources.json")
+        filetool.save(file, json.dumpsCode(allresources))
+        self._console.outdent()
+
         return
 
 
@@ -1390,7 +1464,7 @@ class Generator(object):
             bname += '.meta'
             meta_fname = os.path.join(os.path.dirname(image), bname)
             self._console.debug("writing meta file %s" % meta_fname)
-            filetool.save(meta_fname, simplejson.dumps(config, ensure_ascii=False, sort_keys=True))
+            filetool.save(meta_fname, json.dumps(config, ensure_ascii=False, sort_keys=True))
             self._console.outdent()
             
         self._console.outdent()
@@ -1577,21 +1651,6 @@ class Generator(object):
             self._console.outdent()
 
         return
-
-
-    def runDashlet(self, script):
-
-        # - Main ---------------------------------------------------------------
-
-        if not isinstance(self._job.get("dashlet", False), types.DictType):
-            return
-
-        # create dashlet structure
-        # copy source tree
-        # create compiled classes
-
-        return
-
 
 
     def _splitIncludeExcludeList(self, data):

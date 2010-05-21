@@ -173,7 +173,6 @@ class CodeGenerator(object):
         boot       = script.boot
         variants   = script.variants
 
-        self._classList    = script.classes
         self._treeCompiler = treeCompiler
         self._variants     = variants
 
@@ -551,7 +550,7 @@ class CodeGenerator(object):
         # finds the package that needs this resource <assetId> and adds it
         # (polymorphic in the 4th param, use either simpleResVal *or* combImgObj as kwarg)
         # TODO: this might be very expensive (lots of lookup's)
-        def addResourceToPackages(script, classToResourceMap, assetId, simpleResVal=None, combImgObj=None):
+        def addResourceToPackages(script, classToAssetHints, assetId, simpleResVal=None, combImgObj=None):
 
             ##
             # match an asset id or a combined image object
@@ -575,7 +574,7 @@ class CodeGenerator(object):
                 checkval = assetId
 
             classesUsing = set(())
-            for clazz, assetSet in classToResourceMap.items():
+            for clazz, assetSet in classToAssetHints.items():
                 for assetRex in assetSet:
                     if assetRexMatchItem(assetRex, checkval):
                         classesUsing.add(clazz)
@@ -607,15 +606,15 @@ class CodeGenerator(object):
 
         ##
         # loop through resources, invoking addResourceToPackages
-        def addResourcesToPackages(resdata, combinedImages, classToResourceMap):
+        def addResourcesToPackages(resdata, combinedImages, classToAssetHints):
             for resId, resvalue in resdata.items():
                 # register the resource with the package needing it
-                addResourceToPackages(script, classToResourceMap, resId, simpleResVal=resvalue)
+                addResourceToPackages(script, classToAssetHints, resId, simpleResVal=resvalue)
 
             # for combined images, we have to check their embedded images against the packages
             for combId, combImg in combinedImages.items():
                 if combId in resdata:
-                    addResourceToPackages(script, classToResourceMap, combId, combImgObj=combImg)
+                    addResourceToPackages(script, classToAssetHints, combId, combImgObj=combImg)
 
             # handle tree structure of resource info
             if resources_tree:
@@ -720,7 +719,7 @@ class CodeGenerator(object):
             resdata = ExtMap()
 
         self._imageInfo                = ImageInfo(self._console, self._cache)
-        assetFilter, classToResourceMap= self._resourceHandler.getResourceFilterByAssets(self._classList)
+        assetFilter, classToAssetHints = self._resourceHandler.getResourceFilterByAssets(script.classes)
 
         # read img cache file
         cacheId = "imginfo-%s" % self._config._fname
@@ -738,7 +737,7 @@ class CodeGenerator(object):
 
         # 3rd pass consume the info from filteredResources in various ways
         resdata     = serialize(filteredResources, combinedImages, resdata)
-        addResourcesToPackages(resdata, combinedImages, classToResourceMap)
+        addResourcesToPackages(resdata, combinedImages, classToAssetHints)
         if resources_tree:
             resdata = resdata.getData()
         

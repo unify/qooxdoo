@@ -24,8 +24,7 @@
 #require(qx.Interface)
 #require(qx.Mixin)
 #require(qx.core.Property)
-
-#use(qx.lang.Core)
+#require(qx.lang.Core)
 
 ************************************************************************ */
 
