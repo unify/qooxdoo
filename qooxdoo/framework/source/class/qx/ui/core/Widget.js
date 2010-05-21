@@ -2835,7 +2835,8 @@ qx.Class.define("qx.ui.core.Widget",
       this.__appearanceSelector = newSelector;
 
       // Apply new data
-      qx.core.property.Multi.importData(this, newStyles, oldStyles);
+      // Priority 3 is used for themed values
+      qx.core.property.Multi.importData(this, newStyles, oldStyles, 3);
     },
     
     

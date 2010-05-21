@@ -223,16 +223,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
      * Imports a list of themed styles from the appearance system
      * 
      * @param obj {qx.ui.core.Widget} Any widget
-     * @param newStyles {Map} Map of properties to apply
-     * @param oldStyles {Map} Map of previous property values
+     * @param values {Map} Map of properties to apply
+     * @param oldValues {Map} Map of previous property values
+     * @param modifyPriority {Integer} Priority (read: field) to apply data to
      */
-    importData : function(obj, newStyles, oldStyles)
+    importData : function(obj, values, oldValues, modifyPriority)
     {
       var Undefined;
       
-      // TODO: Make this hard-coded thingy configurable... somehow
-      var themedPriority = 3;
-
       // Translate name to pre-cached ID
       var nameToId = this.__propertyNameToId;
       
@@ -245,18 +243,18 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var id, newValue, oldValue, storedPriority, initField;
       var Bootstrap = qx.Bootstrap;
       
-      for (var prop in newStyles) 
+      for (var prop in values) 
       {
         id = nameToId[prop];
         
         storedPriority = data[id];
         
         // Ignore if there is a higher priorized value
-        if (storedPriority > themedPriority) {
+        if (storedPriority > modifyPriority) {
           continue;
         }
         
-        newValue = newStyles[prop];
+        newValue = values[prop];
         
         // If nothing is set at the moment and no new value is given
         // then simply ignore the property for the moment
@@ -265,9 +263,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Whether we are overwriting an old value (the typical case on state changes)
-        if (storedPriority == themedPriority) 
+        if (storedPriority == modifyPriority) 
         {
-          oldValue = oldStyles[prop];
+          oldValue = oldValues[prop];
           if (newValue === oldValue) {
             continue;
           }
@@ -287,7 +285,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // Reset implementation block
         if (newValue === Undefined) 
         {
-          for (var newPriority=themedPriority-1; newPriority>0; newPriority--)
+          for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
           {
             newValue = data[id+newPriority];
             if (newValue !== Undefined) {
@@ -319,9 +317,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Set implementation block
-        else if (storedPriority != themedPriority)
+        else if (storedPriority != modifyPriority)
         {
-          data[id] = themedPriority;
+          data[id] = modifyPriority;
         } 
 
         // Call change helper
