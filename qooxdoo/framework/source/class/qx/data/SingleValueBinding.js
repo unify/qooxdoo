@@ -962,7 +962,7 @@ qx.Class.define("qx.data.SingleValueBinding",
           return value;
         }
 
-        var propertieDefinition = qx.Class.getPropertyDefinition(
+        var propertieDefinition = qx.core.property.Util.getPropertyDefinition(
           target.constructor, lastProperty
         );
         var check = propertieDefinition == null ? "" : propertieDefinition.check;
@@ -984,7 +984,7 @@ qx.Class.define("qx.data.SingleValueBinding",
      */
     __getEventForProperty : function(sourceObject, sourceProperty) {
       // get the event name
-      var propertieDefinition =  qx.Class.getPropertyDefinition(
+      var propertieDefinition =  qx.core.property.Util.getPropertyDefinition(
         sourceObject.constructor, sourceProperty
       );
 

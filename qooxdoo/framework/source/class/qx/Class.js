@@ -412,31 +412,6 @@ qx.Bootstrap.define("qx.Class",
 
 
     /**
-     * Returns the definition of the given property. Returns null
-     * if the property does not exist.
-     *
-     * TODO: Correctly support refined properties?
-     *
-     * @signature function(clazz, name)
-     * @param clazz {Class} class to check
-     * @param name {String} name of the event to check for
-     * @return {Map|null} whether the object support the given event.
-     */
-    getPropertyDefinition : qx.Bootstrap.getPropertyDefinition,
-
-
-    /**
-     * Whether a class has the given property
-     *
-     * @signature function(clazz, name)
-     * @param clazz {Class} class to check
-     * @param name {String} name of the property to check for
-     * @return {Boolean} whether the class includes the given property.
-     */
-    hasProperty : qx.Bootstrap.hasProperty,
-
-
-    /**
      * Returns the event type of the given event. Returns null if
      * the event does not exist.
      *

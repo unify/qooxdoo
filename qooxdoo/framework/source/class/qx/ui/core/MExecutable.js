@@ -156,7 +156,7 @@ qx.Mixin.define("qx.ui.core.MExecutable",
         }
 
         // add the new binding
-        if (value != null && qx.Class.hasProperty(this.constructor, property)) {
+        if (value != null && qx.core.property.Util.hasProperty(this.constructor, property)) {
           // handle the init value (dont sync the initial null)
           var cmdPropertyValue = value.get(property);
           if (cmdPropertyValue == null) {

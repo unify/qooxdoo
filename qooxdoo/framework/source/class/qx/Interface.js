@@ -289,14 +289,14 @@ qx.Bootstrap.define("qx.Interface",
       }
 
       var propertyName = qx.Bootstrap.firstLow(match[2]);
-      var isPropertyMethod = qx.Bootstrap.getPropertyDefinition(clazz, propertyName);
+      var isPropertyMethod = qx.core.property.Util.getPropertyDefinition(clazz, propertyName);
       if (!isPropertyMethod) {
         return false;
       }
 
       var isBoolean = match[0] == "is" || match[0] == "toggle";
       if (isBoolean) {
-        return qx.Bootstrap.getPropertyDefinition(clazz, propertyName).check == "Boolean";
+        return qx.core.property.Util.getPropertyDefinition(clazz, propertyName).check == "Boolean";
       }
 
       return true;
@@ -315,7 +315,7 @@ qx.Bootstrap.define("qx.Interface",
       {
         for (var key in iface.$$properties)
         {
-          if (!qx.Bootstrap.getPropertyDefinition(clazz, key)) {
+          if (!qx.core.property.Util.getPropertyDefinition(clazz, key)) {
             throw new Error(
               'The property "' + key + '" is not supported by Class "' +
               clazz.classname + '"!'

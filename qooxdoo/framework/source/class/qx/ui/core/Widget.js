@@ -2783,7 +2783,7 @@ qx.Class.define("qx.ui.core.Widget",
         
         for (var prop in newStyles)
         {
-          var config = qx.Bootstrap.getPropertyDefinition(this.constructor, prop);
+          var config = qx.core.property.Util.getPropertyDefinition(this.constructor, prop);
 
           // Expand groups
           // This is duplicated somehow to the property group implementation, 

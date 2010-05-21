@@ -265,9 +265,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // Whether we are overwriting an old value (the typical case on state changes)
         if (storedPriority == modifyPriority) 
         {
-          oldValue = oldValues[prop];
-          if (newValue === oldValue) {
-            continue;
+          if (oldValues)
+          {
+            oldValue = oldValues[prop];
+            if (newValue === oldValue) {
+              continue;
+            }
           }
         }
         else

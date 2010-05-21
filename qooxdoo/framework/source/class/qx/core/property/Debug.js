@@ -186,12 +186,12 @@ qx.Bootstrap.define("qx.core.property.Debug",
     {
       "on": function(clazz, name, config, patch)
       {
-        var Class = qx.Class;
-        var has = Class.hasProperty(clazz, name);
+        var Util = qx.core.property.Util;
+        var has = Util.hasProperty(clazz, name);
 
         if (has)
         {
-          var existingProperty = Class.getPropertyDefinition(clazz, name);
+          var existingProperty = Util.getPropertyDefinition(clazz, name);
 
           if (config.refine && existingProperty.init === undefined) {
             throw new Error("Could not refine a init value if there was previously no init value defined. Property '" + name + "' of class '" + clazz.classname + "'.");

@@ -628,44 +628,6 @@ qx.Bootstrap.define("qx.Bootstrap",
       return qx.Bootstrap.getByName(name) !== undefined;
     },
 
-    /**
-     * Returns the definition of the given property. Returns null
-     * if the property does not exist.
-     *
-     * TODO: Correctly support refined properties?
-     *
-     * @param clazz {Class} class to check
-     * @param name {String} name of the event to check for
-     * @return {Map|null} whether the object support the given event.
-     */
-    getPropertyDefinition : function(clazz, name)
-    {
-      var props;
-      while (clazz)
-      {
-        props = clazz.$$properties;
-        if (props && props[name]) {
-          return props[name];
-        }
-
-        clazz = clazz.superclass;
-      }
-
-      return null;
-    },
-
-
-    /**
-     * Whether a class has the given property
-     *
-     * @param clazz {Class} class to check
-     * @param name {String} name of the property to check for
-     * @return {Boolean} whether the class includes the given property.
-     */
-    hasProperty : function(clazz, name) {
-      return !!qx.Bootstrap.getPropertyDefinition(clazz, name);
-    },
-
 
     /**
      * Returns the event type of the given event. Returns null if

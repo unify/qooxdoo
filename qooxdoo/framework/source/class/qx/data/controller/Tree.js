@@ -366,7 +366,7 @@ qx.Class.define("qx.data.controller.Tree",
 
       // add a new change listener
       var modelNode = oldRef.modelNode;
-      var property = qx.Class.getPropertyDefinition(
+      var property = qx.core.property.Util.getPropertyDefinition(
         oldRef.modelNode.constructor, this.getChildPath()
       );
       var eventName = property.event;
@@ -487,7 +487,7 @@ qx.Class.define("qx.data.controller.Tree",
           "change", this.__changeModelChildren, this
         );
         // add a listener for the change of the children array itself
-        var property = qx.Class.getPropertyDefinition(
+        var property = qx.core.property.Util.getPropertyDefinition(
           modelNode.constructor, this.getChildPath()
         );
         var eventName = property.event;
