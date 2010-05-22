@@ -361,9 +361,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
           continue;
         }
         
-        // Read property config
-        var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
-        
         // Reset implementation block
         if (newValue === Undefined) 
         {
@@ -397,6 +394,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             else if (qx.core.Variant.isSet("qx.debug", "on"))
             {
               // Still no value. We warn about that the property is not nullable.
+              var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
               if (!config.nullable) {
                 obj.error("Missing value for: " + prop + " (during reset() - from theme system)");
               }
@@ -416,7 +414,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // Call change helper
         // Third earlist "return" option, ok, not really a return option, but
         // we at least omit useless change calls when values are identical
-        if (newValue !== oldValue) {
+        if (newValue !== oldValue) 
+        {
+          var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
           this.__changeHelper.call(obj, newValue, oldValue, config);
         }        
       }
