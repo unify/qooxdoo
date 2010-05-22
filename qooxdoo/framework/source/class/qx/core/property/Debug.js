@@ -88,6 +88,8 @@ qx.Bootstrap.define("qx.core.property.Debug",
       
       // TODO: Type checks
       //obj.debug("Check: " + config.check); 
+      
+      // Check auf hasOwnProperty vor instanceof Operator wegen memory leak im IE
     },
     
 
