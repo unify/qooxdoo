@@ -310,7 +310,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         data = obj.$$data = {};
       }
 
-      var id, newValue, oldValue, storedPriority, initField;
+      var id, newValue, oldValue, oldPriority, initField;
       var PropertyUtil = qx.core.property.Util;
       var fields = this.__fields;
       
@@ -318,10 +318,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
       {
         id = nameToId[prop];
         
-        storedPriority = data[id];
+        oldPriority = data[id];
         
         // Ignore if there is a higher priorized value
-        if (storedPriority > modifyPriority) {
+        // Earliest return option: Higher priorized value set
+        if (oldPriority > modifyPriority) {
           continue;
         }
         
@@ -329,23 +330,23 @@ qx.Bootstrap.define("qx.core.property.Multi",
         
         // If nothing is set at the moment and no new value is given
         // then simply ignore the property for the moment
-        if (storedPriority === Undefined && newValue === Undefined) {
+        if (oldPriority === Undefined && newValue === Undefined) {
           continue;
         }
         
         // Read out old value
-        if (storedPriority != null) 
+        if (oldPriority != null) 
         {
-          if (oldValues && storedPriority == modifyPriority) {
+          if (oldValues && oldPriority == modifyPriority) {
             oldValue = oldValues[prop];
           } 
           else 
           {
-            var oldGetter = fields[storedPriority].get;
+            var oldGetter = fields[oldPriority].get;
             if (oldGetter) {
               oldValue = obj[oldGetter](prop);
             } else {
-              oldValue = data[id+storedPriority];
+              oldValue = data[id+oldPriority];
             }           
           }          
         }
@@ -355,6 +356,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Compare old and new value
+        // Second earliest return option: New value given and identical to old
         if (oldValue === newValue) {
           continue;
         }
@@ -406,12 +408,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Set implementation block
-        else if (storedPriority != modifyPriority)
+        else if (oldPriority != modifyPriority)
         {
           data[id] = modifyPriority;
         } 
 
         // Call change helper
+        // Third earlist "return" option, ok, not really a return option, but
+        // we at least omit useless change calls when values are identical
         if (newValue !== oldValue) {
           this.__changeHelper.call(obj, newValue, oldValue, config);
         }        
@@ -596,7 +600,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
               if (newGetter) {
                 newValue = context[newGetter](name);
               } else {
-                newValue = data[id+oldPriority];
+                newValue = data[id+newPriority];
               }              
 
               if (newValue !== Undefined) {
