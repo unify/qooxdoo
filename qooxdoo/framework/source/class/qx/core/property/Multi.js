@@ -250,13 +250,15 @@ qx.Bootstrap.define("qx.core.property.Multi",
           origin = this;
         }
 
-        this.debug("Inheritable Property Changed: " + config.name + "=" + value + " by " + origin);
+        var name = config.name;
+        this.debug("Inheritable Property Changed: " + name + "=" + value + " by " + origin);
 
         var children = this._getChildren();
         var length = children.length;
         var child, data, field;
+        var PropertyUtil = qx.core.property.Util;
         var MultiProperty = qx.core.property.Multi;
-        var id = MultiProperty.__propertyNameToId[config.name];
+        var id = MultiProperty.__propertyNameToId[name];
         var inheritedField = MultiProperty.__fieldToPriority.inherited;
 
         for (var i=0; i<length; i++)
@@ -275,6 +277,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             data[id] = inheritedField;
             data[id+inheritedField] = origin;
             
+            config = PropertyUtil.getPropertyDefinition(child.constructor, name);            
             MultiProperty.__changeHelper.call(child, value, oldValue, config, origin);
           }
         }
@@ -294,7 +297,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     importData : function(obj, values, oldValues, modifyPriority)
     {
-      console.info("IMPORT DATA FOR: " + obj)
+      obj.info("Import data...");
       
       var Undefined;
       
@@ -410,7 +413,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
         // Call change helper
         if (newValue !== oldValue) {
-          obj.debug("Changed property: " + config.name + "=" + newValue);
           this.__changeHelper.call(obj, newValue, oldValue, config);
         }        
       }
