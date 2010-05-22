@@ -70,11 +70,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       // Theme
       3: {
-        get : "getAppearanceValue"
+        get : "getThemedValue"
       },
       
       // Inheritance
-      2 : {},
+      2 : {
+        get : "getInheritedValue"
+      },
 
       // Init
       1: {}
@@ -84,12 +86,35 @@ qx.Bootstrap.define("qx.core.property.Multi",
     __fieldToPriority :
     {
       init : 1,
-      inheritance : 2,
+      inherited : 2,
       theme : 3,
       user : 4,
       override : 5
     },
     
+    
+    /**
+     * Returns a value from a specific field for the given property - ignoring the priorities.
+     * 
+     * @param obj {qx.core.Object} Any object with the given property
+     * @param prop {String} Name of the property to query
+     * @param field {String} One of "init", "inheritance", "theme", "user" or "override"
+     */
+    getSingleValue : function(obj, prop, field) 
+    {
+      var key = this.__propertyNameToId[prop] + this.__fieldToPriority[field];
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (typeof key != "number") {
+          throw new Error("Invalid property or field: " + prop + ", " + field);
+        }
+      }
+      
+      return obj.$$data[key];
+    },
+    
+    
+
     
 
     /**
@@ -178,39 +203,16 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var db = this.__refreshList;
       this.__refreshList = null;
       
+      
+      qx.log.Logger.info("Start flushing...");
+    
+      
       // Some shorthands for optimal performance
       var qxBootstrap = qx.Bootstrap;
       var getterDB = this.__getter;
       var refresherDB = this.__refresher;
       
-      // Real work
-      var obj, clazz, inheritables, parent, getter, prop, upname;
-      for (var key in db) 
-      {
-        obj = db[key];
-        
-        clazz = obj.constructor;
 
-        // Shorthand provided by qx.Class to omit function call
-        inheritables = clazz.$$inheritables || this.getInheritableProperties(clazz);
-
-        // Loop through properties
-        parent = obj.getLayoutParent();
-        for (prop in inheritables)
-        {
-          getter = getterDB[prop] 
-          if (!getter) 
-          {
-            upname = qxBootstrap.firstUp(prop);
-            getterDB[prop] = getter = "get" + upname;
-            refresherDB[prop] = "refresh" + upname;
-          }
-
-          if (parent[getter]) {
-            obj[refresherDB[prop]](parent[getter]());
-          }
-        }
-      }
       
       // Debug
       if (qx.core.Variant.isSet("qx.debug", "on")) {
@@ -218,17 +220,82 @@ qx.Bootstrap.define("qx.core.property.Multi",
       }
     },
     
+
     
     /**
-     * Imports a list of themed styles from the appearance system
+     * Helper method to react on property changes
+     * 
+     * @param value {var} New value of property
+     * @param oldValue {var} Old value of property
+     * @param config {Map} Property configuration
+     */
+    __changeHelper : function(value, oldValue, config, origin)
+    {
+      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
+
+      // Call apply
+      if (config.apply) {
+        this[config.apply](value, oldValue, config.name);
+      }
+
+      // Fire event
+      if (config.event) {
+        this.fireDataEvent(config.event, value, oldValue);
+      }
+      
+      // Inheritance support
+      if (config.inheritable)
+      {
+        if (!origin) {
+          origin = this;
+        }
+
+        this.debug("Inheritable Property Changed: " + config.name + "=" + value + " by " + origin);
+
+        var children = this._getChildren();
+        var length = children.length;
+        var child, data, field;
+        var MultiProperty = qx.core.property.Multi;
+        var id = MultiProperty.__propertyNameToId[config.name];
+        var inheritedField = MultiProperty.__fieldToPriority.inherited;
+
+        for (var i=0; i<length; i++)
+        {
+          child = children[i];
+          data = child.$$data;
+          
+          if (!data) {
+            data = child.$$data = {};
+          }
+          
+          field = data[id];
+          
+          if (field == null || field <= inheritedField)
+          {
+            data[id] = inheritedField;
+            data[id+inheritedField] = origin;
+            
+            MultiProperty.__changeHelper.call(child, value, oldValue, config, origin);
+          }
+        }
+      }
+    }, 
+    
+    
+    /**
+     * Imports a list of values. Useful for batch-applying a whole set of properties. Supports
+     * <code>undefined</code> values to reset properties.
      * 
      * @param obj {qx.ui.core.Widget} Any widget
      * @param values {Map} Map of properties to apply
-     * @param oldValues {Map} Map of previous property values
+     * @param oldValues {Map} Map of old property values. Just used for comparision. 
+     *    Required for theme changes. In case of a state change the old value is not available otherwise.
      * @param modifyPriority {Integer} Priority (read: field) to apply data to
      */
     importData : function(obj, values, oldValues, modifyPriority)
     {
+      console.debug("IMPORT DATA FOR: " + obj)
+      
       var Undefined;
       
       // Translate name to pre-cached ID
@@ -262,24 +329,23 @@ qx.Bootstrap.define("qx.core.property.Multi",
           continue;
         }
         
-        // Whether we are overwriting an old value (the typical case on state changes)
-        if (storedPriority == modifyPriority) 
+        // Read out old value
+        if (storedPriority != null) 
         {
-          if (oldValues)
-          {
+          if (oldValues && storedPriority == modifyPriority) {
             oldValue = oldValues[prop];
-            if (newValue === oldValue) {
-              continue;
-            }
-          }
+          } else {
+            oldValue = data[id+storedPriority];
+          }          
         }
         else
         {
-          if (storedPriority != null) {
-            oldValue = data[id+storedPriority];
-          } else {
-            oldValue = Undefined;
-          }
+          oldValue = Undefined;
+        }
+        
+        // Compare old and new value
+        if (oldValue === newValue) {
+          continue;
         }
         
         // Read property config
@@ -288,12 +354,21 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // Reset implementation block
         if (newValue === Undefined) 
         {
+          // We lost the current value, now we need to find the next stored value
+          var newValue, newGetter;
+          var fields = this.__fields;
           for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
           {
-            newValue = data[id+newPriority];
+            newGetter = fields[newPriority].get;
+            if (newGetter) {
+              newValue = obj[newGetter](prop);
+            } else {
+              newValue = data[id+newPriority];
+            }              
+
             if (newValue !== Undefined) {
               break;
-            }
+            }             
           }
           
           // No value has been found
@@ -302,7 +377,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             newPriority = Undefined;
             
             // Let's try the class-wide init value
-            initField = "$$init-" + name;
+            initField = "$$init-" + prop;
             if (initField) {
               newValue = obj[initField];
             }
@@ -310,7 +385,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             {
               // Still no value. We warn about that the property is not nullable.
               if (!config.nullable) {
-                obj.error("Missing value for: " + name + " (during reset() - from theme system)");
+                obj.error("Missing value for: " + prop + " (during reset() - from theme system)");
               }
             }
           }          
@@ -326,56 +401,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
         } 
 
         // Call change helper
-        this.__changeHelper.call(obj, newValue, oldValue, config);
+        if (newValue !== oldValue) {
+          this.__changeHelper.call(obj, newValue, oldValue, config);
+        }        
       }
     },
     
-    
-    /**
-     * Helper method to react on property changes
-     * 
-     * @param value {var} New value of property
-     * @param oldValue {var} Old value of property
-     * @param config {Map} Property configuration
-     */
-    __changeHelper : function(value, oldValue, config)
-    {
-      // this.debug("Change " + config.name + ": " + oldValue + " => " + value);
 
-      // Call apply
-      if (config.apply) {
-        this[config.apply](value, oldValue, config.name);
-      }
-
-      // Fire event
-      if (config.event) {
-        this.fireDataEvent(config.event, value, oldValue);
-      }
-      
-      // Inheritance support
-      if (config.inheritable)
-      {
-        // TODO: Replace protected method call
-        if (this._getChildren)
-        {
-          // Clone children for increased runtime security
-          var children = this._getChildren().concat();
-          var refreshMethod = "refresh" + config.up;
-          var child;
-          
-          for (var i=0, l=children.length; i<l; i++) 
-          {
-            child = children[i];
-            child[refreshMethod] && child[refreshMethod](value);
-          }           
-        }
-        else if (qx.core.Variant.isSet("qx.debug", "on")) {
-          this.error("Missing _getChildren() implementation to support property inheritance!");
-        }         
-      }
-    },
-        
-    
     /**
      * Adds a new property to the given class.
      * 
@@ -543,18 +575,19 @@ qx.Bootstrap.define("qx.core.property.Multi",
           if (oldPriority === modifyPriority) 
           {
             // Read old value
-            var oldGetter = fields[oldPriority].get;
-            if (oldGetter) {
-              var oldValue = context[oldGetter](name);
-            } else {
-              var oldValue = data[id+oldPriority];
-            }
+            var oldValue = data[id+oldPriority];
             
             // We lost the current value, now we need to find the next stored value
-            var newValue;
+            var newValue, newGetter;
             for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
             {
-              newValue = data[id+newPriority];
+              newGetter = fields[newPriority].get;
+              if (newGetter) {
+                newValue = context[newGetter](name);
+              } else {
+                newValue = data[id+oldPriority];
+              }              
+
               if (newValue !== Undefined) {
                 break;
               }             
@@ -636,7 +669,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           return Null;
         }
         
-        // Special get() support for themable properties
+        // Special get() support for themable/inheritable properties
         var currentGetter = fields[currentPriority].get;
         if (currentGetter) {
           return context[currentGetter](name);
@@ -688,11 +721,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
       {
         members["init" + up] = setter(1);
       }
-            
+      
+      /*      
       if (config.inheritable) 
       {
         members["refresh" + up] = setter(2);
       }
+      */
 
       // Prio for themes is "3" - we update these values via importStyles()
 

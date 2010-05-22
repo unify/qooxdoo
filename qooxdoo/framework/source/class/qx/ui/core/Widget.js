@@ -2825,11 +2825,11 @@ qx.Class.define("qx.ui.core.Widget",
         }
       }
       
-      // Read out old data
-      // Hint: We can access the cache here without checking, because we
-      // had already accessed this in an earlier run (it's old data)
+      // Read old styles
       var oldSelector = this.__appearanceSelector;
-      var oldStyles = styleCache[oldSelector];
+      if (oldSelector) {
+        var oldStyles = styleCache[oldSelector];
+      }      
       
       // Store new selector
       this.__appearanceSelector = newSelector;
@@ -2846,11 +2846,27 @@ qx.Class.define("qx.ui.core.Widget",
      * @param prop {String} Name of any supported themable property
      * @return {var} Currently stored value. Typically a string or number.
      */
-    getAppearanceValue : function(prop)
+    getThemedValue : function(prop)
     {
       var selector = this.__appearanceSelector;
       return selector ? qx.ui.core.Widget.__styleCache[selector][prop] : undefined;
     },
+    
+
+
+    getInheritedValue : function(prop)
+    {
+      // Inherited values point to the object which contains the value
+      var value = qx.core.property.Multi.getSingleValue(this, prop, "inherited");
+      if (value) {
+        return value.get(prop);
+      }      
+    },
+    
+    
+
+    
+
 
 
     // property apply
