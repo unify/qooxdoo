@@ -294,7 +294,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     importData : function(obj, values, oldValues, modifyPriority)
     {
-      console.debug("IMPORT DATA FOR: " + obj)
+      console.info("IMPORT DATA FOR: " + obj)
       
       var Undefined;
       
@@ -309,6 +309,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
       var id, newValue, oldValue, storedPriority, initField;
       var PropertyUtil = qx.core.property.Util;
+      var fields = this.__fields;
       
       for (var prop in values) 
       {
@@ -334,8 +335,15 @@ qx.Bootstrap.define("qx.core.property.Multi",
         {
           if (oldValues && storedPriority == modifyPriority) {
             oldValue = oldValues[prop];
-          } else {
-            oldValue = data[id+storedPriority];
+          } 
+          else 
+          {
+            var oldGetter = fields[storedPriority].get;
+            if (oldGetter) {
+              oldValue = obj[oldGetter](prop);
+            } else {
+              oldValue = data[id+storedPriority];
+            }           
           }          
         }
         else
@@ -356,7 +364,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         {
           // We lost the current value, now we need to find the next stored value
           var newValue, newGetter;
-          var fields = this.__fields;
+          
           for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
           {
             newGetter = fields[newPriority].get;
@@ -402,6 +410,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
         // Call change helper
         if (newValue !== oldValue) {
+          obj.debug("Changed property: " + config.name + "=" + newValue);
           this.__changeHelper.call(obj, newValue, oldValue, config);
         }        
       }
