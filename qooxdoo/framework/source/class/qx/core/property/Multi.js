@@ -270,39 +270,42 @@ qx.Bootstrap.define("qx.core.property.Multi",
       ---------------------------------------------------------------------------
       */
 
-      for (var hash in db)
+      for (hash in db)
       {
         obj = db[hash];
-        obj.debug("Flush...");
+        obj.info("Flush...");
         
         clazz = obj.constructor;
         properties = clazz.$$inheritables;
         
         // Process all inherited properties
-        for (var prop in properties)
+        for (prop in properties)
         {
           id = propertyNameToId[prop];
+          obj.debug("- Property: " + prop);
           
-          // Already processed by other item from queue
+          // Check whether property was already processed or
+          // was maybe never invalid because of a higher prio value
           if (!invalid[hash+"-"+id]) 
           {
-            // obj.debug("Already done: " + prop);
+            obj.debug("  - Nothing to do for: " + obj + " :: " + prop);
             continue;
           }
           
-          // Start with direct parent
+          // Start with direct parent for value lookup
           target = obj.$$parent;
+          targetHash = target.$$hash;
           value = Undefined;
           while (target)
           {
-            // Read existing data
-            if (!invalid[target.$$hash+"-"+id])
+            storeField = target.$$data[id];
+            if (storeField !== Undefined)
             {
-              // obj.debug("Lookup value in non-invalidated: " + target);
-              
-              storeField = target.$$data[id];
-              if (storeField !== Undefined)
+              // Ignore value when it comes from inherited field and is still invalid
+              if (!(storeField == inheritedField && invalid[targetHash+"-"+id]))
               {
+                // Depdending on field configuration make use of either a getter 
+                // method or read data from object
                 storeGetter = fields[storeField].get;
                 if (storeGetter) {
                   value = target[storeGetter](prop);
@@ -310,26 +313,40 @@ qx.Bootstrap.define("qx.core.property.Multi",
                   value = target.$$data[id+storeField];
                 }
 
+                obj.debug("  - Found value: " + value + " in " + target);
                 break;
               }
             }
             
             // Next parent
+            obj.debug("  - No value in: " + target);
             target = target.$$parent;
           }
           
-          // Do the chain again, but storing the new value in current object and all intermediate parents
-          //obj.debug("Property " + prop + " resolved via " + target + " with value: " + value);
+          // The idea is to update every parent which had no useful data
+          // with the same data as the request child
+          
+          // "origin" is the object which has lead to a value we can work with
           origin = target;
+          
+          // "target" is the current processed parent
+          // in this case we start with the "obj" itself as this is the first
+          // which should be updated
           target = obj;
+          
+          obj.debug("    - Update all between: " + obj + " and " + origin);
+
           while (target && target != origin)
           {
+            obj.debug("      - Update: " + target);
+            
             targetHash = target.$$hash;
             targetData = target.$$data;
             storeField = targetData[id];
             
             // Mark as valid
             invalid[targetHash+"-"+id] = false;
+            obj.debug("        - Clear invalid flag");
 
             // Read old value
             var oldValue = oldValues[targetHash+"-"+id];
@@ -337,39 +354,41 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // Store value in each target
             if (value !== Undefined)
             {
-              // obj.debug("Store into: " + target + " :: " + prop + "|" + id + "=" + inheritedField);
-              
+              obj.debug("        - Store origin")
               targetData[id] = inheritedField;
               targetData[id+inheritedField] = origin;
             }
-            
-            // or reset it, depending on the value
-            else if (targetData[id])
+            else
             {
-              // obj.debug("Reset value: " + target + " :: " + prop);
+              if (targetData[id] == inheritedField) {
+                obj.debug("        - Clear field");
+                targetData[id] = Undefined;
+              }
               
-              targetData[id] = Undefined;
-              targetData[id+inheritedField] = Undefined;
+              if (targetData[id+inheritedField] !== Undefined) 
+              {
+                obj.debug("        - Clear origin");
+                targetData[id+inheritedField] = Undefined;
+              }              
             }
 
-            
-            // Call apply
+            // Call apply / fire event
             if (value !== oldValue)
             {
               config = properties[prop];
               
-              target.debug("Change: " + prop + " = " + oldValue + " => " + value);
+              obj.debug("        - Publish change: " + value);
               
               if (config.apply) {
                 target[config.apply](value, oldValue, config.name);
               }
 
-              // Fire event
               if (config.event) {
                 target.fireDataEvent(config.event, value, oldValue);
               }
             }
 
+            // Next parent
             target = target.$$parent;
           }
         }
