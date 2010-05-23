@@ -135,7 +135,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         for (var name in props) 
         {
           if (props[name].inheritable) {
-            result[name] = true;
+            result[name] = props[name];
           }
         }
       }
@@ -145,7 +145,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       {
         var remote = superClass.$$inheritables || this.getInheritableProperties(superClass);
         for (var name in remote) {
-          result[name] = true;
+          result[name] = remote[name];
         }
       }
       
@@ -230,7 +230,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }       
       }
       
-      var obj, clazz, properties, target, targetData, origin;
+      var obj, clazz, properties, target, targetData, origin, config;
       var storeField, storeGetter, value;
       var PropertyUtil = qx.core.property.Util;
 
@@ -268,7 +268,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             storeField = target.$$data[id];
             if (storeField !== Undefined)
             {
-              var storeGetter = fields[storeField].get;
+              storeGetter = fields[storeField].get;
               if (storeGetter) {
                 value = target[storeGetter](prop);
               } else {
@@ -301,8 +301,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             targetData[id+inheritedField] = origin;
             
             // TODO: How to find a valid old value?
-            var config = PropertyUtil.getPropertyDefinition(target.constructor, prop);
-            this.__changeHelper.call(target, value, undefined, config);
+            this.__changeHelper.call(target, value, undefined, properties[prop]);
 
             target = target.$$parent;
           }
