@@ -210,6 +210,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var Undefined;
       
       // Cleaning phase (clean all properties origin flag)
+      
+      // TODO: Statt des clears hier ein separates invalidation flag? Vorteile:
+      // - bessere Erreichbarkeit des alten Wertes
+      // - 
+      
       var data, id;
       for (var hash in db)
       {
@@ -231,7 +236,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       var obj, clazz, properties, target, targetData, origin, config;
       var storeField, storeGetter, value;
-      var PropertyUtil = qx.core.property.Util;
 
       for (var hash in db)
       {
@@ -249,12 +253,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // Higher priorized field stored => nothing to inherit
           if (obj.$$data[id] > inheritedField) 
           {
-            this.debug("Has higher prio field: " + prop);
+            obj.debug("Has higher prio field: " + prop);
             continue;
           }
 
           // Data already cached by previous item in queue
-          if (obj.$$data[id+inheritedField] !== Undefined) {
+          if (obj.$$data[id+inheritedField] !== Undefined) 
+          {
+            obj.debug("Hit cache: " + prop);
             continue;
           }
           
@@ -299,8 +305,20 @@ qx.Bootstrap.define("qx.core.property.Multi",
             targetData[id] = inheritedField;
             targetData[id+inheritedField] = origin;
             
-            // TODO: How to find a valid old value?
-            this.__changeHelper.call(target, value, undefined, properties[prop]);
+            config = properties[prop];
+            
+            // TODO: Find useful old value
+            var oldValue = Undefined;
+
+            // Call apply
+            if (config.apply) {
+              target[config.apply](value, oldValue, config.name);
+            }
+
+            // Fire event
+            if (config.event) {
+              target.fireDataEvent(config.event, value, oldValue);
+            }
 
             target = target.$$parent;
           }
@@ -340,8 +358,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
       if (config.inheritable)
       {
         var MultiProperty = qx.core.property.Multi;
-        //MultiProperty.mark(this);
-        return;
         
         if (!origin) {
           origin = this;
@@ -349,6 +365,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
         var name = config.name;
         this.debug("Inheritable Property Changed: " + name + "=" + value + " by " + origin);
+        return;
 
         var children = this._getChildren();
         var length = children.length;
