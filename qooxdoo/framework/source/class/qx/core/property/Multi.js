@@ -202,41 +202,73 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var db = this.__refreshList;
       this.__refreshList = null;      
       
-      qx.log.Logger.info(this, "Start flushing " + qx.lang.Object.getKeys(db).length + " objects");
+      qx.log.Logger.info(this, "Flushing " + qx.lang.Object.getKeys(db).length + " objects");
     
       var propertyNameToId = this.__propertyNameToId
       var inheritedField = this.__fieldToPriority.inherited;
       var fields = this.__fields;
       var Undefined;
       
-      // Cleaning phase (clean all properties origin flag)
-      
-      // TODO: Statt des clears hier ein separates invalidation flag? Vorteile:
-      // - bessere Erreichbarkeit des alten Wertes
-      // - 
-      
-      
+
+      // Shared variables
+      var hash, obj, clazz, properties, data, prop, id, unique, oldField, oldGetter, oldValue;
+      var target, targetData, targetHash, origin, value, config, storeField, storeGetter;
+
+
+
+      /*
+      ---------------------------------------------------------------------------
+         INVALIDATION & CACHING OF OLD VALUES
+      ---------------------------------------------------------------------------
+      */
+            
+      var oldValues = {};
       var invalid = {};
       
-      var data, id;
-      for (var hash in db)
+      for (hash in db)
       {
         obj = db[hash];
         clazz = obj.constructor;
         properties = clazz.$$inheritables || this.getInheritableProperties(clazz);
         data = obj.$$data;
 
-        for (var prop in properties)
+        for (prop in properties)
         {
           id = propertyNameToId[prop];
-          if (data[id] === Undefined || data[id] <= inheritedField) {
+          oldField = data[id];
+          
+          // No value stored, old value is undefined
+          if (oldField === Undefined)
+          {
             invalid[hash+"-"+id] = true;
           }
-        }
-      }
+          
+          // Value stored which is inherited or of lower priority
+          else if (oldField <= inheritedField)
+          {
+            unique = hash+"-"+id;
+            invalid[unique] = true;
 
-      var obj, clazz, properties, target, targetData, origin, config;
-      var storeField, storeGetter, value;
+            // Read out old value
+            oldGetter = fields[oldField].get;
+            if (oldGetter) {
+              oldValue = obj[oldGetter](prop);
+            } else {
+              oldValue = data[id+oldField];
+            }
+            
+            oldValues[unique] = oldValue;
+          }
+        }
+      }      
+      
+      
+      
+      /*
+      ---------------------------------------------------------------------------
+         PROCESSING OF INVALID ENTRIES
+      ---------------------------------------------------------------------------
+      */
 
       for (var hash in db)
       {
@@ -264,44 +296,48 @@ qx.Bootstrap.define("qx.core.property.Multi",
           while (target)
           {
             // Read existing data
-            storeField = target.$$data[id];
-            if (storeField !== Undefined)
+            if (!invalid[target.$$hash+"-"+id])
             {
-              storeGetter = fields[storeField].get;
-              if (storeGetter) {
-                value = target[storeGetter](prop);
-              } else {
-                value = target.$$data[id+storeField];
-              }
+              // obj.debug("Lookup value in non-invalidated: " + target);
               
-              origin = target;
-              break;
-            }        
+              storeField = target.$$data[id];
+              if (storeField !== Undefined)
+              {
+                storeGetter = fields[storeField].get;
+                if (storeGetter) {
+                  value = target[storeGetter](prop);
+                } else {
+                  value = target.$$data[id+storeField];
+                }
+
+                break;
+              }
+            }
             
             // Next parent
             target = target.$$parent;
           }
           
-          // No value, continue with next property
-          //if (value === Undefined) {
-          //  continue;
-          //}
-          
           // Do the chain again, but storing the new value in current object and all intermediate parents
+          //obj.debug("Property " + prop + " resolved via " + target + " with value: " + value);
           origin = target;
           target = obj;
           while (target && target != origin)
           {
+            targetHash = target.$$hash;
             targetData = target.$$data;
             storeField = targetData[id];
             
             // Mark as valid
-            invalid[target.$$hash+"-"+id] = false;
+            invalid[targetHash+"-"+id] = false;
+
+            // Read old value
+            var oldValue = oldValues[targetHash+"-"+id];
             
             // Store value in each target
             if (value !== Undefined)
             {
-              obj.debug("Store into: " + target + " :: " + prop + "|" + id + "=" + inheritedField);
+              // obj.debug("Store into: " + target + " :: " + prop + "|" + id + "=" + inheritedField);
               
               targetData[id] = inheritedField;
               targetData[id+inheritedField] = origin;
@@ -310,20 +346,19 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // or reset it, depending on the value
             else if (targetData[id])
             {
-              obj.debug("Reset value: " + target + " :: " + prop);
+              // obj.debug("Reset value: " + target + " :: " + prop);
               
               targetData[id] = Undefined;
               targetData[id+inheritedField] = Undefined;
             }
 
             
-            // TODO: Find working old value
-            var oldValue = Undefined;
-
             // Call apply
             if (value !== oldValue)
             {
               config = properties[prop];
+              
+              target.debug("Change: " + prop + " = " + oldValue + " => " + value);
               
               if (config.apply) {
                 target[config.apply](value, oldValue, config.name);
@@ -339,6 +374,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
           }
         }
       }
+      
+      
+      
+      /*
+      ---------------------------------------------------------------------------
+         DONE
+      ---------------------------------------------------------------------------
+      */      
 
       // Debug
       if (qx.core.Variant.isSet("qx.debug", "on")) {
@@ -426,8 +469,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     importData : function(obj, values, oldValues, modifyPriority)
     {
-      obj.info("Import data...");
-      
       var Undefined;
       
       // Translate name to pre-cached ID
