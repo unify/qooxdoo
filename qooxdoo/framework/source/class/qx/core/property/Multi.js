@@ -122,7 +122,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     getInheritableProperties : function(clazz)
     {
-      if (clazz.$$inheritables) {
+      if (clazz.$$inheritables) 
+      {
+        if (qx.core.Variant.isSet("qx.debug", "on")) {
+          qx.log.Logger.debug(this, "You may choose to access inheritable properties via: obj.$$inheritables || qx.core.property.Multi.getInheritableProperties(obj) for better performance.");
+        }
+        
         return clazz.$$inheritables;
       }
       
@@ -180,12 +185,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
         qx.ui.core.queue.Manager.scheduleFlush("inheritance");
         break;
       }
-    },
-    
-    
-    change : function(obj, prop)
-    {
-      
     },
     
     
