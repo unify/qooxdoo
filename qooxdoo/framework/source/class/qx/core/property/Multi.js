@@ -45,9 +45,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
 {
   statics :
   {
-    __getter : {},
-    __refresher : {},
-    
     /** {Map} Map of objects to which needs an update for inheritance (parent changed) */
     __refreshList : null,    
 
@@ -112,9 +109,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       return obj.$$data[key];
     },
-    
-    
-
     
 
     /**
@@ -189,6 +183,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
     },
     
     
+    change : function(obj, prop)
+    {
+      
+    },
+    
+    
     /**
      * Flushes the list of objects which were moved around (different parent) 
      * since the last call. This should be called by a central position
@@ -201,22 +201,117 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
       // Replace public list with new list while keeping current one in memory
       var db = this.__refreshList;
-      this.__refreshList = null;
+      this.__refreshList = null;      
       
-      
-      qx.log.Logger.info("Start flushing...");
+      qx.log.Logger.info(this, "Start flushing " + qx.lang.Object.getKeys(db).length + " objects");
     
+      var propertyNameToId = this.__propertyNameToId
+      var inheritedField = this.__fieldToPriority.inherited;
+      var fields = this.__fields;
+      var Undefined;
       
-      // Some shorthands for optimal performance
-      var qxBootstrap = qx.Bootstrap;
-      var getterDB = this.__getter;
-      var refresherDB = this.__refresher;
-      
+      // Cleaning phase (clean all properties origin flag)
+      var data, id;
+      for (var hash in db)
+      {
+        obj = db[hash];
+        clazz = obj.constructor;
+        properties = clazz.$$inheritables || this.getInheritableProperties(clazz);
+        data = obj.$$data;
 
+        for (var prop in properties)
+        {
+          id = propertyNameToId[prop];
+          if (data[id] === inheritedField)
+          {
+            obj.debug("Clear old value: " + prop);
+            data[id+inheritedField] = Undefined;
+          }
+        }       
+      }
       
+      var obj, clazz, properties, target, targetData, origin;
+      var storeField, storeGetter, value;
+      var PropertyUtil = qx.core.property.Util;
+
+      for (var hash in db)
+      {
+        obj = db[hash];
+        obj.debug("Flush...");
+        
+        clazz = obj.constructor;
+        properties = clazz.$$inheritables;
+        
+        // Process all inherited properties
+        for (var prop in properties)
+        {
+          id = propertyNameToId[prop];
+          
+          // Higher priorized field stored => nothing to inherit
+          if (obj.$$data[id] > inheritedField) 
+          {
+            this.debug("Has higher prio field: " + prop);
+            continue;
+          }
+
+          // Data already cached by previous item in queue
+          if (obj.$$data[id+inheritedField] !== Undefined) {
+            continue;
+          }
+          
+          // Start with direct parent
+          target = obj.$$parent;
+          value = Undefined;
+          while (target)
+          {
+            // Read existing data
+            storeField = target.$$data[id];
+            if (storeField !== Undefined)
+            {
+              var storeGetter = fields[storeField].get;
+              if (storeGetter) {
+                value = target[storeGetter](prop);
+              } else {
+                value = target.$$data[id+storeField];
+              }
+              
+              origin = target;
+              break;
+            }        
+            
+            // Next parent
+            target = target.$$parent;
+          }
+          
+          // No value, continue with next property
+          if (value === Undefined) {
+            continue;
+          }
+          
+          // Do the chain again, but storing the new value in current object and all intermediate parents
+          origin = target;
+          target = obj;
+          while (target && target != origin)
+          {
+            targetData = target.$$data;
+            storeField = targetData[id];
+            obj.debug("Store into: " + target + " :: " + prop + "|" + id + "=" + inheritedField);
+            
+            targetData[id] = inheritedField;
+            targetData[id+inheritedField] = origin;
+            
+            // TODO: How to find a valid old value?
+            var config = PropertyUtil.getPropertyDefinition(target.constructor, prop);
+            this.__changeHelper.call(target, value, undefined, config);
+
+            target = target.$$parent;
+          }
+        }
+      }
+
       // Debug
       if (qx.core.Variant.isSet("qx.debug", "on")) {
-        qx.log.Logger.debug(this, "Flushed inheritable properties on " + qx.lang.Object.getKeys(db).length + " objects in: " + (new Date - start) + "ms");
+        qx.log.Logger.debug(this, "Flushed inheritable properties in: " + (new Date - start) + "ms");
       }
     },
     
@@ -246,6 +341,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // Inheritance support
       if (config.inheritable)
       {
+        var MultiProperty = qx.core.property.Multi;
+        //MultiProperty.mark(this);
+        return;
+        
         if (!origin) {
           origin = this;
         }

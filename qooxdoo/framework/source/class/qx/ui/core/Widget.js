@@ -2858,10 +2858,17 @@ qx.Class.define("qx.ui.core.Widget",
     {
       // Inherited values point to the object which contains the value
       var value = qx.core.property.Multi.getSingleValue(this, prop, "inherited");
+      if (value == this) {
+        this.debug("Possible recursion detected. Self reference!");
+        return;
+      }
+      
       if (value) {
         return value.get(prop);
       }      
     },
+    
+    
     
     
 
