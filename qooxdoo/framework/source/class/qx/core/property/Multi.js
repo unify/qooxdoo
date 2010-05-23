@@ -215,6 +215,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // - bessere Erreichbarkeit des alten Wertes
       // - 
       
+      
+      var invalid = {};
+      
       var data, id;
       for (var hash in db)
       {
@@ -226,14 +229,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
         for (var prop in properties)
         {
           id = propertyNameToId[prop];
-          if (data[id] === inheritedField)
-          {
-            obj.debug("Clear old value: " + prop);
-            data[id+inheritedField] = Undefined;
+          if (data[id] === Undefined || data[id] <= inheritedField) {
+            invalid[hash+"-"+id] = true;
           }
-        }       
+        }
       }
-      
+
       var obj, clazz, properties, target, targetData, origin, config;
       var storeField, storeGetter, value;
 
@@ -250,17 +251,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
         {
           id = propertyNameToId[prop];
           
-          // Higher priorized field stored => nothing to inherit
-          if (obj.$$data[id] > inheritedField) 
+          // Already processed by other item from queue
+          if (!invalid[hash+"-"+id]) 
           {
-            obj.debug("Has higher prio field: " + prop);
-            continue;
-          }
-
-          // Data already cached by previous item in queue
-          if (obj.$$data[id+inheritedField] !== Undefined) 
-          {
-            obj.debug("Hit cache: " + prop);
+            // obj.debug("Already done: " + prop);
             continue;
           }
           
@@ -289,9 +283,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
           }
           
           // No value, continue with next property
-          if (value === Undefined) {
-            continue;
-          }
+          //if (value === Undefined) {
+          //  continue;
+          //}
           
           // Do the chain again, but storing the new value in current object and all intermediate parents
           origin = target;
@@ -300,24 +294,45 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             targetData = target.$$data;
             storeField = targetData[id];
-            obj.debug("Store into: " + target + " :: " + prop + "|" + id + "=" + inheritedField);
             
-            targetData[id] = inheritedField;
-            targetData[id+inheritedField] = origin;
+            // Mark as valid
+            invalid[target.$$hash+"-"+id] = false;
             
-            config = properties[prop];
+            // Store value in each target
+            if (value !== Undefined)
+            {
+              obj.debug("Store into: " + target + " :: " + prop + "|" + id + "=" + inheritedField);
+              
+              targetData[id] = inheritedField;
+              targetData[id+inheritedField] = origin;
+            }
             
-            // TODO: Find useful old value
+            // or reset it, depending on the value
+            else if (targetData[id])
+            {
+              obj.debug("Reset value: " + target + " :: " + prop);
+              
+              targetData[id] = Undefined;
+              targetData[id+inheritedField] = Undefined;
+            }
+
+            
+            // TODO: Find working old value
             var oldValue = Undefined;
 
             // Call apply
-            if (config.apply) {
-              target[config.apply](value, oldValue, config.name);
-            }
+            if (value !== oldValue)
+            {
+              config = properties[prop];
+              
+              if (config.apply) {
+                target[config.apply](value, oldValue, config.name);
+              }
 
-            // Fire event
-            if (config.event) {
-              target.fireDataEvent(config.event, value, oldValue);
+              // Fire event
+              if (config.event) {
+                target.fireDataEvent(config.event, value, oldValue);
+              }
             }
 
             target = target.$$parent;
