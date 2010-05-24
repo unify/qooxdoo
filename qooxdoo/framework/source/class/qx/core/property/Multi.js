@@ -57,7 +57,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
     /**
      * {Map} Configuration for property fields
      */
-    __fields : 
+    __priorityToFieldConfig : 
     {
       // Override
       5 : {},
@@ -208,11 +208,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     __flushPrepare : function(movedObjects, oldValues, filter)
     {
-      var objectHash, obj, data, clazz, properties, prop, propertyId, oldField, initKey, oldValue, oldGetter;
+      var Undefined, objectHash, obj, data, clazz, properties, propertyName, propertyId, storedPriority, initKey, oldValue, oldGetter;
+
+      // Link private data into local variables
       var propertyNameToId = this.__propertyNameToId;
       var inheritedPriority = this.__fieldToPriority.inherited;
-      var fields = this.__fields;
-      var Undefined;
+      var priorityToFieldConfig = this.__priorityToFieldConfig;
       
       // Process all moved objects
       for (objectHash in movedObjects)
@@ -223,33 +224,33 @@ qx.Bootstrap.define("qx.core.property.Multi",
         properties = clazz.$$inheritables || this.getInheritableProperties(clazz);
 
         // Process all inheritable properties
-        for (prop in properties)
+        for (propertyName in properties)
         {
-          propertyId = propertyNameToId[prop];
-          oldField = data[propertyId];
+          propertyId = propertyNameToId[propertyName];
+          storedPriority = data[propertyId];
           
           // Has no value at the moment.
           // We try the init value here, but keep in undefined if even this is not available.
-          if (oldField === Undefined)
+          if (storedPriority === Undefined)
           {
-            initKey = "$$init-" + prop;
-            if (initKey in clazz) {
-              oldValues[objectHash+"-"+propertyId] = clazz[initKey];
+            initKey = "$$init-" + propertyName;
+            if (initKey in obj) {
+              oldValues[objectHash+"-"+propertyId] = obj[initKey];
             }
           }          
           
           // Value stored which is inherited or of lower priority e.g. init field (deferred init)
-          else if (oldField <= inheritedPriority)
+          else if (storedPriority <= inheritedPriority)
           {
             // Delete old data
             data[propertyId] = Undefined;
                         
             // Read out old value
-            oldGetter = fields[oldField].get;
+            oldGetter = priorityToFieldConfig[storedPriority].get;
             if (oldGetter) {
-              oldValue = obj[oldGetter](prop);
+              oldValue = obj[oldGetter](propertyName);
             } else {
-              oldValue = data[propertyId+oldField];
+              oldValue = data[propertyId+storedPriority];
             }
             
             // Remeber old value for comparison
@@ -306,12 +307,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
       ---------------------------------------------------------------------------
       */
       
-      var objectHash, obj, clazz, properties, prop, propertyId, oldValue;
-      var target, targetData, targetHash, origin, value, config, storeField, storeGetter;
+      var objectHash, obj, clazz, properties, propertyName, propertyId, oldValue;
+      var current, currentData, currentHash, origin, value, config, storedPriority, priorityGetter, initKey;
       var propertyNameToId = this.__propertyNameToId
       var inheritedPriority = this.__fieldToPriority.inherited;
-      var fields = this.__fields;
+      var priorityToFieldConfig = this.__priorityToFieldConfig;
       var Undefined;
+      var PropertyUtil = qx.core.property.Util;
 
       // Used to remember all object/property combinations which are processed
       // during this function call. Mainly to omit double processing items.
@@ -328,9 +330,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
         properties = clazz.$$inheritables;
         
         // Process all inherited properties
-        for (prop in properties)
+        for (propertyName in properties)
         {
-          propertyId = propertyNameToId[prop];
+          propertyId = propertyNameToId[propertyName];
           
           // Filter object/property combis with higher priority values
           if (filter[objectHash+"-"+propertyId]) {
@@ -338,128 +340,145 @@ qx.Bootstrap.define("qx.core.property.Multi",
           }
           
           // Filter processed object/property combis
-          if (processed[objectHash+"-"+propertyId]) 
-          {
-            obj.debug("  - Already done: " + prop);
+          if (processed[objectHash+"-"+propertyId]) {
             continue;
           }
 
-
+          // Debug
+          obj.debug("- Property: " + propertyName);
           
-          obj.debug("- Property: " + prop);
+          // Mark as processed (before actually being, but that's OK)
           processed[objectHash+"-"+propertyId] = true;
           
-          // Start with direct parent for value lookup
-          target = obj.$$parent;
-          targetHash = target.$$hash;
+          
+          
+          /*
+          ---------------------------------------------------------------------------
+             PROCESS PARENTS TO FIND A VALUE FOR THE PROPERTY
+          ---------------------------------------------------------------------------
+          */        
+          
           value = Undefined;
-          config = properties[prop];
-          while (target)
+          initKey = "$$init-" + propertyName;
+          
+          // Start with direct parent for value lookup
+          current = obj.$$parent;
+          while (current)
           {
-            storeField = target.$$data[propertyId];
-            if (storeField !== Undefined)
+            currentHash = current.$$hash;
+            storedPriority = current.$$data[propertyId];
+            if (storedPriority !== Undefined)
             {
               // Depdending on field configuration make use of either a getter 
               // method or read data from object
-              storeGetter = fields[storeField].get;
-              if (storeGetter) {
-                value = target[storeGetter](prop);
+              priorityGetter = priorityToFieldConfig[storedPriority].get;
+              if (priorityGetter) {
+                value = current[priorityGetter](propertyName);
               } else {
-                value = target.$$data[propertyId+storeField];
+                value = current.$$data[propertyId+storedPriority];
               }
               
-              obj.debug("  - Found local value: " + value + " in " + target);
+              obj.debug("  - Found value: " + value + " in " + current);
               break;
             }
-            else if (config.init !== Undefined)
+            else 
             {
-              value = target["$$init-" + prop];
-              if (value !== Undefined) 
+              value = current[initKey];
+              if (value !== Undefined)
               {
-                obj.debug("  - Found init value: " + value + " in " + target);
+                obj.debug("  - Found init value: " + value + " in " + current);
                 break;
               }
             }
 
             // Debug
-            obj.debug("  - No value in: " + target);
+            obj.debug("  - No value in: " + current);
             
             // This entry was already processed previously and also lead to no value
             // We can break here for better performance
-            if(processed[targetHash+"-"+propertyId]) {
-              obj.debug("  - Already processed target => break here");
+            if(processed[currentHash+"-"+propertyId]) 
+            {
+              obj.debug("  - Already processed combination => break here");
               break;
             }
             
             // Next parent
-            target = target.$$parent;
+            current = current.$$parent;
           }
+          
+          
+          
+          /*
+          ---------------------------------------------------------------------------
+             UPDATE OBJECT AND ALL UN-SYNCED PARENTS
+          ---------------------------------------------------------------------------
+          */          
           
           // The idea is to update every parent which had no useful data
           // with the same data as the request child
           
           // "origin" is the object which has lead to a value we can work with
-          origin = target;
+          origin = current;
           
-          // "target" is the current processed parent
+          // "current" is the current processed parent
           // in this case we start with the "obj" itself as this is the first
           // which should be updated
-          target = obj;
+          current = obj;
           
           obj.debug("    - Update all between: " + obj + " and " + (origin||"ROOT"));
 
-          while (target && target != origin)
+          while (current && current != origin)
           {
-            obj.debug("      - Update: " + target);
+            obj.debug("      - Update: " + current);
             
-            targetHash = target.$$hash;
-            targetData = target.$$data;
-            storeField = targetData[propertyId];
+            currentHash = current.$$hash;
+            currentData = current.$$data;
+            storedPriority = currentData[propertyId];
             
-            processed[targetHash+"-"+propertyId] = true;
+            processed[currentHash+"-"+propertyId] = true;
             
             // Read old value
-            var oldValue = oldValues[targetHash+"-"+propertyId];
+            var oldValue = oldValues[currentHash+"-"+propertyId];
             
-            // Store value in each target
+            // Store value in each object
             if (value !== Undefined)
             {
               obj.debug("        - Store origin")
-              targetData[propertyId] = inheritedPriority;
-              targetData[propertyId+inheritedPriority] = origin;
+              currentData[propertyId] = inheritedPriority;
+              currentData[propertyId+inheritedPriority] = origin;
             }
             else
             {
-              if (targetData[propertyId] == inheritedPriority) {
+              if (currentData[propertyId] == inheritedPriority) {
                 obj.debug("        - Clear field");
-                targetData[propertyId] = Undefined;
+                currentData[propertyId] = Undefined;
               }
               
-              if (targetData[propertyId+inheritedPriority] !== Undefined) 
+              if (currentData[propertyId+inheritedPriority] !== Undefined) 
               {
                 obj.debug("        - Clear origin");
-                targetData[propertyId+inheritedPriority] = Undefined;
+                currentData[propertyId+inheritedPriority] = Undefined;
               }              
             }
 
             // Call apply / fire event
             if (value !== oldValue)
             {
-              config = properties[prop];
+              config = properties[propertyName];
               
               obj.debug("        - Publish change: " + value);
               
               if (config.apply) {
-                target[config.apply](value, oldValue, config.name);
+                current[config.apply](value, oldValue, config.name);
               }
 
               if (config.event) {
-                target.fireDataEvent(config.event, value, oldValue);
+                current.fireDataEvent(config.event, value, oldValue);
               }
             }
 
             // Next parent
-            target = target.$$parent;
+            current = current.$$parent;
           }
         }
       }
@@ -571,7 +590,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
       var propertyId, newValue, oldValue, oldPriority, initField;
       var PropertyUtil = qx.core.property.Util;
-      var fields = this.__fields;
+      var priorityToFieldConfig = this.__priorityToFieldConfig;
       
       for (var prop in values) 
       {
@@ -601,7 +620,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           } 
           else 
           {
-            var oldGetter = fields[oldPriority].get;
+            var oldGetter = priorityToFieldConfig[oldPriority].get;
             if (oldGetter) {
               oldValue = obj[oldGetter](prop);
             } else {
@@ -628,7 +647,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           
           for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
           {
-            newGetter = fields[newPriority].get;
+            newGetter = priorityToFieldConfig[newPriority].get;
             if (newGetter) {
               newValue = obj[newGetter](prop);
             } else {
@@ -755,7 +774,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // Shorthands: Better compression/obfuscation/performance
       var changeHelper = this.__changeHelper;
       var nullable = config.nullable; 
-      var fields = this.__fields;
+      var priorityToFieldConfig = this.__priorityToFieldConfig;
       
 
               
@@ -786,7 +805,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           var oldPriority = data[propertyId];
           if (oldPriority != Null) 
           {
-            var oldGetter = fields[oldPriority].get;
+            var oldGetter = priorityToFieldConfig[oldPriority].get;
             if (oldGetter) {
               var oldValue = context[oldGetter](name);
             } else {
@@ -855,7 +874,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             var newValue, newGetter;
             for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
             {
-              newGetter = fields[newPriority].get;
+              newGetter = priorityToFieldConfig[newPriority].get;
               if (newGetter) {
                 newValue = context[newGetter](name);
               } else {
@@ -952,7 +971,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         // Special get() support for themable/inheritable properties
-        var currentGetter = fields[currentPriority].get;
+        var currentGetter = priorityToFieldConfig[currentPriority].get;
         if (currentGetter) {
           return context[currentGetter](name);
         } else {
