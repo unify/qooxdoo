@@ -156,19 +156,18 @@ qx.Bootstrap.define("qx.core.property.Simple",
           var data = context.$$data;
           
           // Check whether there is already local data (which is higher prio than init data)
-          if (data && data[id] !== Undefined) {
-            return;
-          }
-          
-          // Call apply
-          if (applyMethod) {
-            context[applyMethod](this[initField], Undefined, name);
-          }
+          if (!data || data[id] === Undefined) 
+          {
+            // Call apply
+            if (applyMethod) {
+              context[applyMethod](this[initField], Undefined, name);
+            }
 
-          // Fire event
-          if (eventType) {
-            context.fireDataEvent(eventType, this[initField], Undefined);
-          }          
+            // Fire event
+            if (eventType) {
+              context.fireDataEvent(eventType, this[initField], Undefined);
+            }          
+          }
         };
       }      
       

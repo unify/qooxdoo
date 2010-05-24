@@ -633,7 +633,7 @@ qx.Class.define("qx.ui.core.Widget",
       inheritable : true,
       apply : "_applyEnabled",
       event : "changeEnabled",
-      fallback : true
+      init : true
     },
 
 
@@ -951,7 +951,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       // Update inheritable properties
-      qx.core.property.Multi.mark(this);
+      qx.core.property.Multi.markAsMoved(this);
 
       // Update visibility cache
       qx.ui.core.queue.Visibility.add(this);

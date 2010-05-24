@@ -151,7 +151,6 @@ qx.Bootstrap.define("qx.core.property.Debug",
         apply        : "string",   // String
         event        : "string",   // String
         check        : null,       // Array, String, Function
-        fallback     : null,       // var 
         deferredInit : "boolean",  // Boolean
         validate     : null        // String, Function
       },

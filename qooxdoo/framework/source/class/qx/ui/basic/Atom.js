@@ -153,7 +153,7 @@ qx.Class.define("qx.ui.basic.Atom",
      */
     show :
     {
-      fallback : "both",
+      init : "both",
       check : [ "both", "label", "icon" ],
       themeable : true,
       inheritable : true,
