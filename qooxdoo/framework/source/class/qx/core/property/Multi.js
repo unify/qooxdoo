@@ -180,8 +180,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
       if (!moved) {
         moved = this.__movedObjects = {};
       }
-      var hash = obj.$$hash;      
-      if (moved[hash]) {
+      var objectHash = obj.$$hash;      
+      if (moved[objectHash]) {
         return;
       }
       
@@ -191,7 +191,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // Loop is quite a hack to quickly check for length > 0
       for (var prop in inheritables)
       {
-        moved[hash] = obj;
+        moved[objectHash] = obj;
         qx.ui.core.queue.Manager.scheduleFlush("inheritance");
         break;
       }
@@ -208,16 +208,16 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     __flushPrepare : function(movedObjects, oldValues, filter)
     {
-      var hash, obj, data, clazz, properties, prop, propertyId, oldField, initKey, oldValue, oldGetter;
+      var objectHash, obj, data, clazz, properties, prop, propertyId, oldField, initKey, oldValue, oldGetter;
       var propertyNameToId = this.__propertyNameToId;
       var inheritedPriority = this.__fieldToPriority.inherited;
       var fields = this.__fields;
       var Undefined;
       
       // Process all moved objects
-      for (hash in movedObjects)
+      for (objectHash in movedObjects)
       {
-        obj = movedObjects[hash];
+        obj = movedObjects[objectHash];
         data = obj.$$data;
         clazz = obj.constructor;
         properties = clazz.$$inheritables || this.getInheritableProperties(clazz);
@@ -234,7 +234,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             initKey = "$$init-" + prop;
             if (initKey in clazz) {
-              oldValues[hash+"-"+propertyId] = clazz[initKey];
+              oldValues[objectHash+"-"+propertyId] = clazz[initKey];
             }
           }          
           
@@ -253,13 +253,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
             }
             
             // Remeber old value for comparison
-            oldValues[hash+"-"+propertyId] = oldValue;
+            oldValues[objectHash+"-"+propertyId] = oldValue;
           }
           
           // Has higher priority value, don't affected by inheritance
           else
           {
-            filter[hash+"-"+propertyId] = true;
+            filter[objectHash+"-"+propertyId] = true;
           }
         }
       }      
@@ -306,7 +306,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       ---------------------------------------------------------------------------
       */
       
-      var hash, obj, clazz, properties, prop, propertyId, oldValue;
+      var objectHash, obj, clazz, properties, prop, propertyId, oldValue;
       var target, targetData, targetHash, origin, value, config, storeField, storeGetter;
       var propertyNameToId = this.__propertyNameToId
       var inheritedPriority = this.__fieldToPriority.inherited;
@@ -318,9 +318,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var processed = {};
 
       // Process all objects which have been moved
-      for (hash in movedObjects)
+      for (objectHash in movedObjects)
       {
-        obj = movedObjects[hash];
+        obj = movedObjects[objectHash];
         Logger.debug(this, "Flush " + obj);
         
         // Read inheritable properties (they are already cached, by __flushPrepare)
@@ -333,12 +333,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
           propertyId = propertyNameToId[prop];
           
           // Filter object/property combis with higher priority values
-          if (filter[hash+"-"+propertyId]) {
+          if (filter[objectHash+"-"+propertyId]) {
             continue;
           }
           
           // Filter processed object/property combis
-          if (processed[hash+"-"+propertyId]) 
+          if (processed[objectHash+"-"+propertyId]) 
           {
             obj.debug("  - Already done: " + prop);
             continue;
@@ -347,7 +347,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
           
           obj.debug("- Property: " + prop);
-          processed[hash+"-"+propertyId] = true;
+          processed[objectHash+"-"+propertyId] = true;
           
           // Start with direct parent for value lookup
           target = obj.$$parent;
