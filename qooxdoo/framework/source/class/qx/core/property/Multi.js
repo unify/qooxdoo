@@ -70,20 +70,22 @@ qx.Bootstrap.define("qx.core.property.Multi",
         get : "getThemedValue"
       },
       
-      // Inheritance
-      2 : {
-        get : "getInheritedValue"
-      },
-
       // Init
-      1: {}
+      2: {
+        field : "$$init-"
+      },
+      
+      // Inheritance
+      1 : {
+        get : "getInheritedValue"
+      }
     },
     
     
     __fieldToPriority :
     {
-      init : 1,
-      inherited : 2,
+      inherited : 1,
+      init : 2,
       theme : 3,
       user : 4,
       override : 5
@@ -211,9 +213,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
 
       // Shared variables
-      var hash, obj, clazz, properties, data, prop, id, unique, oldField, oldGetter, oldValue;
+      var hash, obj, clazz, properties, data, prop, id, oldField, oldGetter, oldValue;
       var target, targetData, targetHash, origin, value, config, storeField, storeGetter;
-
 
 
       /*
@@ -223,7 +224,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       */
             
       var oldValues = {};
-      var invalid = {};
+      var filter = {};
       
       for (hash in db)
       {
@@ -237,18 +238,19 @@ qx.Bootstrap.define("qx.core.property.Multi",
           id = propertyNameToId[prop];
           oldField = data[id];
           
-          // No value stored, old value is undefined
+          // Has no value at the moment
+          // Accessing an unknown key in oldValues automatically results into "undefined" which is correct then
           if (oldField === Undefined)
           {
-            invalid[hash+"-"+id] = true;
-          }
+            // pass
+          }          
           
           // Value stored which is inherited or of lower priority
           else if (oldField <= inheritedField)
           {
-            unique = hash+"-"+id;
-            invalid[unique] = true;
-
+            // Delete old data
+            data[id] = Undefined;
+                        
             // Read out old value
             oldGetter = fields[oldField].get;
             if (oldGetter) {
@@ -257,10 +259,21 @@ qx.Bootstrap.define("qx.core.property.Multi",
               oldValue = data[id+oldField];
             }
             
-            oldValues[unique] = oldValue;
+            // Remeber old value for comparison
+            oldValues[hash+"-"+id] = oldValue;
+          }
+          
+          // Has higher priority value, don't affected by inheritance
+          else
+          {
+            filter[hash+"-"+id] = true;
           }
         }
-      }      
+      }
+      
+      console.debug("OLD: " + JSON.stringify(oldValues));
+      console.debug("FILTER: " + JSON.stringify(filter));
+      
       
       
       
@@ -270,10 +283,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
       ---------------------------------------------------------------------------
       */
 
+      var processed = {};
+
       for (hash in db)
       {
         obj = db[hash];
-        obj.info("Flush...");
+        qx.log.Logger.debug(this, "Flush " + obj);
         
         clazz = obj.constructor;
         properties = clazz.$$inheritables;
@@ -282,44 +297,67 @@ qx.Bootstrap.define("qx.core.property.Multi",
         for (prop in properties)
         {
           id = propertyNameToId[prop];
-          obj.debug("- Property: " + prop);
           
-          // Check whether property was already processed or
-          // was maybe never invalid because of a higher prio value
-          if (!invalid[hash+"-"+id]) 
-          {
-            obj.debug("  - Nothing to do for: " + obj + " :: " + prop);
+          // Filter object/property combis with higher priority values
+          if (filter[hash+"-"+id]) {
             continue;
           }
+          
+          // Filter processed object/property combis
+          if (processed[hash+"-"+id]) 
+          {
+            obj.debug("  - Already done: " + prop);
+            continue;
+          }
+
+
+          
+          obj.debug("- Property: " + prop);
+          processed[hash+"-"+id] = true;
           
           // Start with direct parent for value lookup
           target = obj.$$parent;
           targetHash = target.$$hash;
           value = Undefined;
+          config = properties[prop];
           while (target)
           {
             storeField = target.$$data[id];
             if (storeField !== Undefined)
             {
-              // Ignore value when it comes from inherited field and is still invalid
-              if (!(storeField == inheritedField && invalid[targetHash+"-"+id]))
+              // Depdending on field configuration make use of either a getter 
+              // method or read data from object
+              storeGetter = fields[storeField].get;
+              if (storeGetter) {
+                value = target[storeGetter](prop);
+              } else {
+                value = target.$$data[id+storeField];
+              }
+              
+              obj.debug("  - Found local value: " + value + " in " + target);
+              break;
+            }
+            else if (config.init !== Undefined)
+            {
+              value = target["$$init-" + prop];
+              if (value !== Undefined) 
               {
-                // Depdending on field configuration make use of either a getter 
-                // method or read data from object
-                storeGetter = fields[storeField].get;
-                if (storeGetter) {
-                  value = target[storeGetter](prop);
-                } else {
-                  value = target.$$data[id+storeField];
-                }
-
-                obj.debug("  - Found value: " + value + " in " + target);
+                obj.debug("  - Found init value: " + value + " in " + target);
                 break;
               }
             }
+
+            // Debug
+            obj.debug("  - No value in: " + target);
+            
+            // This entry was already processed previously and also lead to no value
+            // We can break here for better performance
+            if(processed[targetHash+"-"+id]) {
+              obj.debug("  - Already processed target => break here");
+              break;
+            }
             
             // Next parent
-            obj.debug("  - No value in: " + target);
             target = target.$$parent;
           }
           
@@ -334,7 +372,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // which should be updated
           target = obj;
           
-          obj.debug("    - Update all between: " + obj + " and " + origin);
+          obj.debug("    - Update all between: " + obj + " and " + (origin||"ROOT"));
 
           while (target && target != origin)
           {
@@ -344,10 +382,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
             targetData = target.$$data;
             storeField = targetData[id];
             
-            // Mark as valid
-            invalid[targetHash+"-"+id] = false;
-            obj.debug("        - Clear invalid flag");
-
+            processed[targetHash+"-"+id] = true;
+            
             // Read old value
             var oldValue = oldValues[targetHash+"-"+id];
             
@@ -680,7 +716,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       }
       
       // Precalc
-      var up = config.up = qx.Bootstrap.$$firstUp[name] || qx.Bootstrap.firstUp(name);
+      var up = qx.Bootstrap.$$firstUp[name] || qx.Bootstrap.firstUp(name);
          
       // Shorthands: Better compression/obfuscation/performance
       var changeHelper = this.__changeHelper;
@@ -863,11 +899,19 @@ qx.Bootstrap.define("qx.core.property.Multi",
             return context[initField];
           }
           
-          if (qx.core.Variant.isSet("qx.debug", "on"))
-          {
-            if (!nullable) {
-              context.error("Missing value for: " + name + " (during get())");
-            }
+          // Alternatively chose null, if possible
+          if (nullable) {
+            return Null;
+          }
+          
+          // Otherwise try a fallback value
+          // Useful for properties which are explicitely not nullable or are inherited
+          if ("fallback" in config) {
+            return config.fallback;
+          }
+          
+          if (qx.core.Variant.isSet("qx.debug", "on")) {
+            context.error("Missing value for: " + name + " (during get()). Either define an init value, make the property nullable or define a fallback value.");
           }
                     
           return Null;

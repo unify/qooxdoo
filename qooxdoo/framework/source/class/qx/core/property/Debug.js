@@ -137,8 +137,12 @@ qx.Bootstrap.define("qx.core.property.Debug",
       "on" : 
       {
         name         : "string",   // String
-        dispose      : "boolean",  // Boolean
-        dereference  : "boolean",  // Boolean
+
+        // Legacy:
+        //dispose      : "boolean",  // Boolean
+        //dereference  : "boolean",  // Boolean
+        //transform    : "string",   // String
+        
         inheritable  : "boolean",  // Boolean
         nullable     : "boolean",  // Boolean
         themeable    : "boolean",  // Boolean
@@ -147,10 +151,9 @@ qx.Bootstrap.define("qx.core.property.Debug",
         apply        : "string",   // String
         event        : "string",   // String
         check        : null,       // Array, String, Function
-        transform    : "string",   // String
+        fallback     : null,       // var 
         deferredInit : "boolean",  // Boolean
-        validate     : null,       // String, Function,
-        up           : "string"    // Name (Dynamically created)  
+        validate     : null        // String, Function
       },
 
       "default" : null

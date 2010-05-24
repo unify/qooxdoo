@@ -488,8 +488,7 @@ qx.Class.define("qx.ui.core.Widget",
       check : "Font",
       event : "changeFont",
       themeable : true,
-      inheritable : true,
-      dereference : true
+      inheritable : true
     },
 
 
@@ -539,8 +538,7 @@ qx.Class.define("qx.ui.core.Widget",
       apply : "_applyCursor",
       themeable : true,
       inheritable : true,
-      nullable : true,
-      init : null
+      nullable : true
     },
 
 
@@ -631,11 +629,11 @@ qx.Class.define("qx.ui.core.Widget",
      */
     enabled :
     {
-      init : true,
       check : "Boolean",
       inheritable : true,
       apply : "_applyEnabled",
-      event : "changeEnabled"
+      event : "changeEnabled",
+      fallback : true
     },
 
 

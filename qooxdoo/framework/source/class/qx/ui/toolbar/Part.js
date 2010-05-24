@@ -72,7 +72,7 @@ qx.Class.define("qx.ui.toolbar.Part",
     /** Whether icons, labels, both or none should be shown. */
     show :
     {
-      init : "both",
+      fallback : "both",
       check : [ "both", "label", "icon" ],
       inheritable : true,
       event : "changeShow"

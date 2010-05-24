@@ -52,6 +52,7 @@ qx.Class.define("qx.ui.root.Abstract",
     qx.ui.core.queue.Visibility.add(this);
 
     this.initNativeHelp();
+    this.setEnabled(true);
   },
 
 
@@ -73,11 +74,13 @@ qx.Class.define("qx.ui.root.Abstract",
     },
 
     // overridden
+    /*
     enabled :
     {
       refine : true,
       init : true
     },
+    */
 
     // overridden
     focusable :
@@ -235,6 +238,7 @@ qx.Class.define("qx.ui.root.Abstract",
     {
       "mshtml" : function(value, old)
       {
+        // TODO: this leaks memory on dispose and needs to be cleared!
         if (old === false) {
           qx.bom.Event.removeNativeListener(document, "help", qx.lang.Function.returnFalse);
         }
