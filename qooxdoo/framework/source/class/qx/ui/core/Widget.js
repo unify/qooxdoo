@@ -951,7 +951,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       // Update inheritable properties
-      qx.core.property.Multi.markAsMoved(this);
+      qx.core.property.Multi.refreshInheritableProperties(this);
 
       // Update visibility cache
       qx.ui.core.queue.Visibility.add(this);
@@ -2849,21 +2849,12 @@ qx.Class.define("qx.ui.core.Widget",
       var selector = this.__appearanceSelector;
       return selector ? qx.ui.core.Widget.__styleCache[selector][prop] : undefined;
     },
-    
 
 
-    getInheritedValue : function(prop)
+    getInheritedValue : function(prop) 
     {
-      // Inherited values point to the object which contains the value
-      var value = qx.core.property.Multi.getSingleValue(this, prop, "inherited");
-      if (value == this) {
-        this.debug("Possible recursion detected. Self reference!");
-        return;
-      }
-      
-      if (value) {
-        return value.get(prop);
-      }      
+      var parent = this.$$parent;
+      return parent && this.$$parent.get(prop);
     },
     
     
