@@ -308,12 +308,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
       */
       
       var objectHash, obj, clazz, properties, propertyName, propertyId, oldValue;
-      var current, currentData, currentHash, origin, value, config, storedPriority, priorityGetter, initKey;
+      var current, currentData, currentHash, origin, value, config, storedPriority, getterForStoredPriority, initKey;
       var propertyNameToId = this.__propertyNameToId
       var inheritedPriority = this.__fieldToPriority.inherited;
       var priorityToFieldConfig = this.__priorityToFieldConfig;
       var Undefined;
-      var PropertyUtil = qx.core.property.Util;
 
       // Used to remember all object/property combinations which are processed
       // during this function call. Mainly to omit double processing items.
@@ -371,34 +370,26 @@ qx.Bootstrap.define("qx.core.property.Multi",
             {
               // Depdending on field configuration make use of either a getter 
               // method or read data from object
-              priorityGetter = priorityToFieldConfig[storedPriority].get;
-              if (priorityGetter) {
-                value = current[priorityGetter](propertyName);
+              getterForStoredPriority = priorityToFieldConfig[storedPriority].get;
+              if (getterForStoredPriority) {
+                value = current[getterForStoredPriority](propertyName);
               } else {
                 value = current.$$data[propertyId+storedPriority];
               }
               
-              obj.debug("  - Found value: " + value + " in " + current);
               break;
             }
             else 
             {
               value = current[initKey];
-              if (value !== Undefined)
-              {
-                obj.debug("  - Found init value: " + value + " in " + current);
+              if (value !== Undefined) {
                 break;
               }
             }
 
-            // Debug
-            obj.debug("  - No value in: " + current);
-            
             // This entry was already processed previously and also lead to no value
             // We can break here for better performance
-            if(processed[currentHash+"-"+propertyId]) 
-            {
-              obj.debug("  - Already processed combination => break here");
+            if (processed[currentHash+"-"+propertyId]) {
               break;
             }
             
@@ -425,11 +416,16 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // which should be updated
           current = obj;
           
-          obj.debug("    - Update all between: " + obj + " and " + (origin||"ROOT"));
-
+          if (value !== Undefined) {
+            obj.debug("  - Found value: " + value);
+          } else {
+            obj.debug("  - Found no value!");
+          }
+          
+          
           while (current && current != origin)
           {
-            obj.debug("      - Update: " + current);
+            obj.debug("    - Update: " + current);
             
             currentHash = current.$$hash;
             currentData = current.$$data;
@@ -957,17 +953,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
             return Null;
           }
           
-          // Otherwise try a fallback value
-          // Useful for properties which are explicitely not nullable or are inherited
-          if ("fallback" in config) {
-            return config.fallback;
-          }
-          
           if (qx.core.Variant.isSet("qx.debug", "on")) {
             context.error("Missing value for: " + name + " (during get()). Either define an init value, make the property nullable or define a fallback value.");
           }
-                    
-          return Null;
+          
+          return;
         }
         
         // Special get() support for themable/inheritable properties
