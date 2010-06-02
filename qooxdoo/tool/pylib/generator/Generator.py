@@ -23,7 +23,7 @@
 import re, os, sys, zlib, optparse, types, string, glob
 import functools, codecs, operator
 
-from misc import filetool, textutil, util, Path, PathType, json
+from misc import filetool, textutil, util, Path, PathType, json, copytool
 from misc.PathType import PathType
 from ecmascript import compiler
 from ecmascript.frontend             import treegenerator, tokenizer
@@ -49,9 +49,7 @@ from generator.action.ActionLib      import ActionLib
 from generator.runtime.Cache         import Cache
 from generator.runtime.ShellCmd      import ShellCmd
 from generator                       import Context
-from robocopy import robocopy
 import graph
-
 
 class Generator(object):
 
@@ -1329,6 +1327,14 @@ class Generator(object):
             return
 
         shellcmd = self._job.get("shell/command", "")
+        if isinstance(shellcmd, list):
+            for cmd in shellcmd:
+                self.runShellCommand(cmd)
+        else:
+            self.runShellCommand(shellcmd)
+
+
+    def runShellCommand(self, shellcmd):    
         rc = 0
         self._shellCmd       = ShellCmd()
 
@@ -1702,16 +1708,14 @@ class Generator(object):
 
     skip_list = [x.strip("^\\$") for x in filetool.VERSIONCONTROL_DIR_PATTS]
 
-    # wpbasti: Does robocopy really help us here? Is it modified largely. Does this only mean modifications
-    # for qooxdoo or code improvements as well? Do we need to give them back to the community of robocopy?
+
     def _copyResources(self, srcPath, targPath):
         # targPath *has* to be directory  -- there is now way of telling a
         # non-existing target file from a non-existing target directory :-)
         generator = self
         #generator._console.debug("_copyResource: %s => %s" % (srcPath, targPath))
-        copier = robocopy.PyRobocopier(generator._console)
-        #copier.parse_args(['-f', '-c', '-s', '-x', '.svn', srcPath, targPath])
-        args      = ['-c', '-s', '-x'] + [",".join(self.skip_list)] + [srcPath, targPath]
+        copier = copytool.CopyTool(generator._console)
+        args      = ['-s', '-u', '-x'] + [",".join(self.skip_list)] + [srcPath, targPath]
         copier.parse_args(args)
         copier.do_work()
 

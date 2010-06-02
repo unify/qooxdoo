@@ -235,7 +235,7 @@ qx.Class.define("qx.ui.treevirtual.SimpleTreeDataModel",
         this.__editableColArr[col] = editable;
       }
 
-      this.fireEvent(qx.ui.table.ITableModel.EVENT_TYPE_META_DATA_CHANGED);
+      this.fireEvent("metaDataChanged");
     },
 
 
@@ -261,13 +261,19 @@ qx.Class.define("qx.ui.treevirtual.SimpleTreeDataModel",
 
         this.__editableColArr[columnIndex] = editable;
 
-        this.fireEvent(qx.ui.table.ITableModel.EVENT_TYPE_META_DATA_CHANGED);
+        this.fireEvent("metaDataChanged");
       }
     },
 
     // overridden
     isColumnEditable : function(columnIndex)
     {
+      // The tree column is not editable
+      if (columnIndex == this._treeColumn)
+      {
+        return false;
+      }
+
       return(this.__editableColArr
              ? this.__editableColArr[columnIndex] == true
              : false);

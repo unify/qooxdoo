@@ -74,7 +74,7 @@ class Repository:
       try:
         manifest = getDataFromJsonFile(manifestPath)
       except Exception, e:
-        console.error(e.message)
+        console.error(str(e))
       
       if not "info" in manifest:
         console.warn("Manifest file %s has no 'info' section, skipping the library." %manifestPath)
@@ -145,8 +145,9 @@ class Repository:
               sourceDir = os.path.join(version.path, "demo", variant, demoVersion)
               targetDir = os.path.join(demoBrowser, demoVersion, "demo", libraryName, versionName, variant)
               #self.copyDemo(sourceDir, targetDir)
-              copier = CopyTool(sourceDir, targetDir, update=True)
-              copier.copy()
+              copier = CopyTool()
+              copier.parse_args(["-u", sourceDir, targetDir])
+              copier.do_work()
               self.copyHtmlFile(libraryName, versionName, variant, demoVersion, demoBrowser, local=True)
             else:
               self.copyHtmlFile(libraryName, versionName, variant, demoVersion, demoBrowser)
@@ -385,9 +386,11 @@ class LibraryVersion:
   
   
   def buildDemo(self, demoVariant = "default", demoVersion = "build"):
-    demoBuildStatus = {
-      "svnRevision" : self.getSvnRevision()
-    }
+    demoBuildStatus = {}
+    try:
+      demoBuildStatus["svnRevision"] = self.getSvnRevision()
+    except:
+      pass
     
     if not self.hasDemoDir:
       msg = "Library %s version %s has no demo folder!" %(self.library.dir, self.dir)
@@ -400,7 +403,7 @@ class LibraryVersion:
     try:
       rcode, output, errout = self.runGenerator(demoVersion, subPath)
     except Exception, e:
-      msg = "Error running generator: " + e.message
+      msg = "Error running generator: " + str(e)
       console.error(e)
       demoBuildStatus["buildError"] = msg 
       return demoBuildStatus

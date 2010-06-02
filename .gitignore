@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 cache
 script
 build
@@ -7,3 +8,18 @@ test
 .settings
 .DS_Store
 
+=======
+qooxdoo/framework/cache
+qooxdoo/application/playground/test
+qooxdoo/application/feedreader/api
+qooxdoo/application/performance/test
+qooxdoo/application/performance/build
+qooxdoo/application/portal/build
+qooxdoo/application/performance/source/script
+qooxdoo/component/inspector/source/script
+qooxdoo/component/inspector/build
+qooxdoo/component/inspector/test
+qooxdoo/component/inspector/api
+qooxdoo/documentation/manual/build
+.settings/*
+>>>>>>> 0fedff4a85bd6da47c16547703714e07f5108996
