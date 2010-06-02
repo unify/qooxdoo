@@ -258,10 +258,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         
+        obj.debug("  - Detected values: " + oldValue + " => " + newValue);
+        
         // Compare values
         if (newValue !== oldValue)
         {
-          obj.debug("Changed: " + oldValue + " => " + newValue + " ::: TODO");
+          obj.debug("  - Changed: " + oldValue + " => " + newValue + " ::: TODO");
           
           
           
@@ -280,9 +282,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
         return;
       }
       
-      var name = config.name;
-      obj.debug("Inheritable Property Changed: " + name + "=" + value);
-      
       var Undefined;
 
       var propertyNameToId = this.__propertyNameToId;
@@ -291,6 +290,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
       var propertyName = config.name;
       var propertyId = propertyNameToId[propertyName];
+
+      obj.debug("Inheritable Property Changed: " + propertyName + "=" + value);
       
       var child;
       var childData;
@@ -298,6 +299,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var childNewPriority, childNewValue, childNewGetter;
 
       var PropertyUtil = qx.core.property.Util;
+      var initKey = "$$init-" + propertyName;
 
       for (var i=0, l=children.length; i<l; i++)
       {
@@ -329,7 +331,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         else
         {
-          childOldValue = child["$$init-" + propertyName];
+          childOldValue = child[initKey];
         }
         
         // Compute new value
@@ -345,7 +347,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           }
           
           if (childNewValue === Undefined) {
-            childNewValue = child["$$init-" + propertyName];
+            childNewValue = child[initKey];
           }         
         }
         else
@@ -353,8 +355,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           childData[propertyId] = inheritedPriority;
         }
         
-        //obj.debug("- Updating " + child + ": " + childOldValue + " => " + childNewValue);
-
+        // Publish change
         if (childNewValue !== childOldValue)
         {
           var config = PropertyUtil.getPropertyDefinition(child.constructor, propertyName);
