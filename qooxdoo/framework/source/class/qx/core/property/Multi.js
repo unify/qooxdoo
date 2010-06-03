@@ -893,11 +893,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
      * Updates children of a object where the given property has been modified.
      * 
      * @param obj {qx.core.Object} 
-     * 
-     * 
+     * @param newValue {var} Current newValue
+     * @param oldValue {var} Old value
+     * @param config {Map} Property configuration
      */
-    __changeInheritedHelper : function(obj, value, oldValue, config)
+    __changeInheritedHelper : function(obj, newValue, oldValue, config)
     {
+      // TODO: Improved this lookup via $$children
       var children = obj._getChildren();
       var length = children.length;
       if (!length) {
@@ -909,18 +911,18 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var propertyNameToId = this.__propertyNameToId;
       var priorityToFieldConfig = this.__priorityToFieldConfig;
       var inheritedPriority = this.__fieldToPriority.inherited;
-
+      var initPriority = this.__fieldToPriority.inherited;
+      
       var propertyName = config.name;
       var propertyId = propertyNameToId[propertyName];
 
-      obj.debug("Inheritable Property Changed: " + propertyName + "=" + value);
+      obj.debug("Inheritable Property Changed: " + propertyName + "=" + newValue);
       
       var child;
       var childData;
       var childOldPriority, childOldValue, childOldGetter;        
-      var childNewPriority, childNewValue, childNewGetter;
+      var childNewValue;
 
-      var PropertyUtil = qx.core.property.Util;
       var initKey = "$$init-" + propertyName;
 
       for (var i=0, l=children.length; i<l; i++)
@@ -936,6 +938,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         if (childOldPriority !== Undefined && childOldPriority > inheritedPriority) {
           continue;
         }
+        
         
         // Compute old value
         if (childOldPriority === inheritedPriority)
@@ -956,32 +959,37 @@ qx.Bootstrap.define("qx.core.property.Multi",
           childOldValue = child[initKey];
         }
         
+        
         // Compute new value
-        childNewValue = value;
+        childNewValue = newValue;
         if (childNewValue === Undefined)
         {
-          childNewPriority = this.__computePriority(child, propertyId);
-          childNewGetter = priorityToFieldConfig[childNewPriority].get;
-          if (childNewGetter) {
-            childNewValue = child[childNewGetter](propertyName);
-          } else {
-            childNewValue = child[propertyId+childOldPriority];
+          // Simplified here a bit, as only the init value has a lower priority than the inheritance.
+          // Read from instance-specific init value first
+          childNewValue = childData[propertyId+initPriority];          
+          if (childNewValue !== Undefined) 
+          {
+            childData[propertyId] = initPriority;
           }
-          
-          if (childNewValue === Undefined) {
+
+          // Fallback to class-wide init value
+          else
+          {
             childNewValue = child[initKey];
-          }         
+            childData[propertyId] = Undefined;
+          }
         }
         else
         {
           childData[propertyId] = inheritedPriority;
         }
         
+        
         // Publish change
         if (childNewValue !== childOldValue)
         {
-          var config = PropertyUtil.getPropertyDefinition(child.constructor, propertyName);
-
+          obj.debug("- Child: " + child + ": " + childOldValue + " => " + childNewValue);
+          
           // Call apply
           if (config.apply) {
             child[config.apply](childNewValue, childOldValue, config.name);
@@ -998,33 +1006,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
           }            
         }
       }      
-    },
-    
-    
-    /**
-     * Computes the current priority of the given object/property
-     * combination. Especially useful to find a value as soon as
-     * the current value was deleted.
-     * 
-     * @param obj {qx.core.Object} Any object
-     * @param propertyId {Number} ID of the property
-     * @return {Integer|undefined} The fallback priority or <code>undefined</code> if
-     *   not other value is available.
-     */
-    __computePriority : function(obj, propertyId)
-    {      
-      var data = obj.$$data;
-      if (data)
-      {
-        var Undefined, value;
-        for (var i=5; i>0; i--)
-        {
-          value = data[propertyId+i];
-          if (value !== Undefined) {
-            return i;
-          }
-        }          
-      }
-    }         
+    }    
   }
 });
