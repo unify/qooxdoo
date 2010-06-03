@@ -907,7 +907,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
     /**
      * Updates children of a object where the given property has been modified.
      * 
-     * @param obj {qx.core.Object} 
+     * @param obj {qx.core.Object} Object which was modified
      * @param newValue {var} Current newValue
      * @param oldValue {var} Old value
      * @param config {Map} Property configuration
@@ -926,20 +926,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var propertyNameToId = this.__propertyNameToId;
       var priorityToFieldConfig = this.__priorityToFieldConfig;
       var inheritedPriority = this.__fieldToPriority.inherited;
-      var initPriority = this.__fieldToPriority.inherited;
+      var initPriority = this.__fieldToPriority.init;
       
       var propertyName = config.name;
       var propertyId = propertyNameToId[propertyName];
-
-      // obj.debug("Inheritable Property Changed: " + propertyName + "=" + newValue);
-      
-      var child;
-      var childData;
-      var childOldPriority, childOldValue, childOldGetter;        
-      var childNewValue;
-      var Util = qx.core.property.Util;
-
       var initKey = "$$init-" + propertyName;
+
+      var child, childData, childOldPriority, childOldValue, childOldGetter, childNewValue;
+      var Util = qx.core.property.Util;
 
       for (var i=0, l=children.length; i<l; i++)
       {
@@ -960,9 +954,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
         if (childOldPriority !== Undefined && childOldPriority > inheritedPriority) {
           continue;
         }
+
         
+        //
+        // Compute child's old value
+        //
         
-        // Compute old value
         if (childOldPriority === inheritedPriority)
         {
           childOldValue = oldValue;
@@ -982,7 +979,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         
         
-        // Compute new value
+        //
+        // Compute child's new value
+        //
+        
         childNewValue = newValue;
         if (childNewValue === Undefined)
         {
@@ -1003,15 +1003,17 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         else
         {
+          // Remember that we use the inherited value here
           childData[propertyId] = inheritedPriority;
         }
         
         
+        //
         // Publish change
+        //
+        
         if (childNewValue !== childOldValue)
         {
-          // obj.debug("- Child: " + child + ": " + childOldValue + " => " + childNewValue);
-          
           // Call apply
           if (config.apply) {
             child[config.apply](childNewValue, childOldValue, config.name);
@@ -1022,10 +1024,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
             child.fireDataEvent(config.event, childNewValue, childOldValue);
           }
 
-          // Inheritance support
-          if (config.inheritable) {
-            this.__changeInheritedHelper(child, childNewValue, childOldValue, config);
-          }            
+          // Go into recursion
+          this.__changeInheritedHelper(child, childNewValue, childOldValue, config);
         }
       }      
     }    
