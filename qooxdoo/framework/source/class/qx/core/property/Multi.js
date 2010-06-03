@@ -34,12 +34,10 @@
  * # Init
  * # Inheritable
  * # Theme
- * # Instance
+ * # User
  * # Override
  * 
  * Higher values mean higher priority e.g. user values override themed values.
- * 
- * 
  */
 qx.Bootstrap.define("qx.core.property.Multi",
 {
@@ -51,9 +49,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
     ---------------------------------------------------------------------------
     */    
     
-    /** {Map} Map of objects to which needs an update for inheritance (parent changed) */
-    __movedObjects : null,    
-
     /** {Integer} Number of properties created. For debug proposes. */
     __counter : 0,
     
