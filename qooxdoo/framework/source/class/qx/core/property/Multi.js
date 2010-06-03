@@ -828,9 +828,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             newParentGetter = priorityToFieldConfig[newParentPriority].get;
             if (newParentGetter) {
-              newValue = obj[newParentGetter](propertyName);
+              newValue = newParent[newParentGetter](propertyName);
             } else {
-              newValue = data[propertyId+newParentPriority];
+              newValue = newParentData[propertyId+newParentPriority];
             }
             
             if (newValue === Undefined) {
@@ -850,6 +850,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             newValue = obj[propertyInitKey];
           }
         }
+        
         
         
         //
