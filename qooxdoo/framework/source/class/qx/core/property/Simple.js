@@ -92,12 +92,13 @@ qx.Bootstrap.define("qx.core.property.Simple",
       }
       
       // Precalc
-      var up = qx.Bootstrap.$$firstUp[name] || qx.Bootstrap.firstUp(name);
+      var Bootstrap = qx.Bootstrap;
+      var up = Bootstrap.$$firstUp[name] || Bootstrap.firstUp(name);
          
       // Shorthands: Better compression/obfuscation/performance
-      var nullable = config.nullable;
-      var eventType = config.event;
-      var applyMethod = config.apply;
+      var propertyNullable = config.nullable;
+      var propertyEvent = config.event;
+      var propertyApply = config.apply;
 
 
 
@@ -129,7 +130,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
           
           if (qx.core.Variant.isSet("qx.debug", "on"))
           {
-            if (!nullable) {
+            if (!propertyNullable) {
               context.error("Missing value for: " + name + " (during get())");
             }
           }  
@@ -159,13 +160,13 @@ qx.Bootstrap.define("qx.core.property.Simple",
           if (!data || data[id] === Undefined) 
           {
             // Call apply
-            if (applyMethod) {
-              context[applyMethod](this[initField], Undefined, name);
+            if (propertyApply) {
+              context[propertyApply](this[initField], Undefined, name);
             }
 
             // Fire event
-            if (eventType) {
-              context.fireDataEvent(eventType, this[initField], Undefined);
+            if (propertyEvent) {
+              context.fireDataEvent(propertyEvent, this[initField], Undefined);
             }          
           }
         };
@@ -202,12 +203,12 @@ qx.Bootstrap.define("qx.core.property.Simple",
           
           data[id] = value;
 
-          if (applyMethod) {
-            context[applyMethod](value, old, name);
+          if (propertyApply) {
+            context[propertyApply](value, old, name);
           }
 
-          if (eventType) {
-            context.fireDataEvent(eventType, value, old);
+          if (propertyEvent) {
+            context.fireDataEvent(propertyEvent, value, old);
           }
         }        
       };
@@ -246,17 +247,17 @@ qx.Bootstrap.define("qx.core.property.Simple",
           else if (qx.core.Variant.isSet("qx.debug", "on"))
           {
             // Still no value. We warn about that the property is not nullable.
-            if (!nullable) {
+            if (!propertyNullable) {
               context.error("Missing value for: " + name + " (during reset())");
             }
           }    
           
-          if (applyMethod) {
-            context[applyMethod](value, old, name);
+          if (propertyApply) {
+            context[propertyApply](value, old, name);
           }
 
-          if (eventType) {
-            context.fireDataEvent(eventType, value, old);
+          if (propertyEvent) {
+            context.fireDataEvent(propertyEvent, value, old);
           }
         }             
       };   
