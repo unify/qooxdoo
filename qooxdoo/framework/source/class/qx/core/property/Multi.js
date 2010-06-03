@@ -148,7 +148,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       // Improve compressibility
       var Undefined;
-      var Null = null;
             
       // Increase counter
       this.__counter++;
@@ -208,7 +207,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
           // Read old value
           var oldPriority = data[propertyId];
-          if (oldPriority != Null) 
+          if (oldPriority !== Undefined) 
           {
             var oldGetter = priorityToFieldConfig[oldPriority].get;
             if (oldGetter) {
@@ -222,7 +221,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           data[propertyId+modifyPriority] = newValue;
           
           // Ignore lower-priority changes
-          if (oldPriority == Null || oldPriority <= modifyPriority) 
+          if (oldPriority !== Undefined || oldPriority <= modifyPriority) 
           {
             // Whether the storage field was changed
             if (oldPriority !== modifyPriority) {
@@ -375,7 +374,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         var data = context.$$data;
 
         var currentPriority = data && data[propertyId];
-        if (currentPriority == Null) 
+        if (currentPriority === Undefined) 
         {
           // Fallback to init value on prototype chain (when supported)
           // This is always the value on the current class, not explicitely the
@@ -387,7 +386,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           
           // Alternatively chose null, if possible
           if (nullable) {
-            return Null;
+            return null;
           }
           
           if (qx.core.Variant.isSet("qx.debug", "on")) {
