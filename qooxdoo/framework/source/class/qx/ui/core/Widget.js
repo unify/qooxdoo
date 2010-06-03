@@ -2834,8 +2834,7 @@ qx.Class.define("qx.ui.core.Widget",
       this.__appearanceSelector = newSelector;
 
       // Apply new data
-      // Priority 3 is used for themed values
-      qx.core.property.Multi.importData(this, newStyles, oldStyles, 3);
+      qx.core.property.Multi.importData(this, newStyles, oldStyles, "theme");
     },
     
     
@@ -2843,7 +2842,7 @@ qx.Class.define("qx.ui.core.Widget",
      * Returns the appearance value for the given property.
      * 
      * @param prop {String} Name of any supported themable property
-     * @return {var} Currently stored value. Typically a string or number.
+     * @return {var} Currently stored value.
      */
     getThemedValue : function(prop)
     {
@@ -2852,22 +2851,23 @@ qx.Class.define("qx.ui.core.Widget",
     },
 
 
+    /**
+     * Returns the inherited value for the given property.
+     * 
+     * @param prop {String} Name of any supported themable property
+     * @return {var} Currently stored value.
+     */
     getInheritedValue : function(prop) 
     {
       var parent = this.$$parent;
       return parent && this.$$parent.get(prop);
     },
-    
-    
-    
-    
-
-    
-
 
 
     // property apply
-    _applyAppearance : function(value, old) {
+    _applyAppearance : function(value, old) 
+    {
+      this.warn("Appearance changed dynamically.");
       this.updateAppearance();
     },
 
