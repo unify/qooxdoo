@@ -12,68 +12,68 @@ We recently added more and more classes to the namespace and we figured out, tha
 .. _pages/ui_form_handling2/namespace#proposal_current:
 
 Proposal (current)
-=================
+==================
 
 ::
 
-    - qx
-     - ui
+  - qx
+   - ui
 
-       - button
-         # Button
-         # MenuButton
-         # SplitButton
-         # RepeatButton
-         # ToggleButton
+     - button
+       # Button
+       # MenuButton
+       # SplitButton
+       # RepeatButton
+       # ToggleButton
 
-       - input
+     - input
 
-          - text
-            # AbstractField
-            # Area
-            # Field
-            # Password
+        - text
+          # AbstractField
+          # Area
+          # Field
+          # Password
 
-          - select
-            # IRadioItem
-            # AbstracSelectBox
-            # SelectBox
-            # RadioGroup
-            # RadioButton
+        - select
+          # IRadioItem
+          # AbstracSelectBox
+          # SelectBox
+          # RadioGroup
+          # RadioButton
 
-         # Spinner
-         # DateField
-         # CheckBox
-         # Slider
-         # ComboBox
+       # Spinner
+       # DateField
+       # CheckBox
+       # Slider
+       # ComboBox
 
-       - list
-         # ListItem
-         # List
+     - list
+       # ListItem
+       # List
 
-       - form
+     - form
 
-         - validation
-           # AsyncValidator
-           # Manager
+       - validation
+         # AsyncValidator
+         # Manager
 
-         - renderer
-            # IFormRenderer
-            # Single
-            # SinglePlaceholder
-            # Double
+       - renderer
+          # IFormRenderer
+          # Single
+          # SinglePlaceholder
+          # Double
 
-         # Resetter 
-         # IFormExecutable
-         # IColorForm
-         # IBooleanForm
-         # INumberForm
-         # IForm
-         # IStringForm
-         # IDateForm
-         # IRange
-         # MForm
-         # Form
-         # MFormElement (deprecated)
-         # IFormElement (deprecated)
+       # Resetter 
+       # IFormExecutable
+       # IColorForm
+       # IBooleanForm
+       # INumberForm
+       # IForm
+       # IStringForm
+       # IDateForm
+       # IRange
+       # MForm
+       # Form
+       # MFormElement (deprecated)
+       # IFormElement (deprecated)
 
