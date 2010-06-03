@@ -69,6 +69,10 @@ qx.Bootstrap.define("qx.core.property.Simple",
       // Improve compressibility
       var Undefined;
       var SimpleProperty = this;
+      var fireDataEvent = "fireDataEvent";
+      var dataStore = "$$data";
+
+      // Often used variables
       var db, id, members, initKey;
       
       // Increase counter
@@ -117,7 +121,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
           qx.core.property.Debug.checkGetter(context, config, arguments);
         }
          
-        data = context.$$data;
+        data = context[dataStore];
         if (data) {
           value = data[id];
         }
@@ -153,7 +157,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       {
         members["init" + up] = function()
         {
-          var context=this, data=context.$$data;
+          var context=this, data=context[dataStore];
           
           // Check whether there is already local data (which is higher prio than init data)
           if (!data || data[id] === Undefined) 
@@ -165,7 +169,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
 
             // Fire event
             if (propertyEvent) {
-              context.fireDataEvent(propertyEvent, context[initKey], Undefined);
+              context[fireDataEvent](propertyEvent, context[initKey], Undefined);
             }          
           }
         };
@@ -188,9 +192,9 @@ qx.Bootstrap.define("qx.core.property.Simple",
           qx.core.property.Debug.checkSetter(context, config, arguments);
         }
         
-        data = context.$$data;
+        data = context[dataStore];
         if (!data) {
-          data = context.$$data = {};
+          data = context[dataStore] = {};
         } else {
           old = data[id];
         }
@@ -208,7 +212,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
           }
 
           if (propertyEvent) {
-            context.fireDataEvent(propertyEvent, value, old);
+            context[fireDataEvent](propertyEvent, value, old);
           }
         }        
       };
@@ -230,7 +234,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
           qx.core.property.Debug.checkResetter(context, config, arguments);
         }
 
-        data = context.$$data;
+        data = context[dataStore];
         if (!data) {
           return;
         }
@@ -258,7 +262,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
           }
 
           if (propertyEvent) {
-            context.fireDataEvent(propertyEvent, value, old);
+            context[fireDataEvent](propertyEvent, value, old);
           }
         }             
       };   
