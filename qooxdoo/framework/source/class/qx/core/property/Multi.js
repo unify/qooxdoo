@@ -47,7 +47,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
   {
     /*
     ---------------------------------------------------------------------------
-      DATA
+      INTERNAL DATA
     ---------------------------------------------------------------------------
     */    
     
@@ -85,6 +85,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       1: {}
     },
     
+    
     /**
      * Maps the name of a field to its priority
      * 
@@ -106,518 +107,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
     ---------------------------------------------------------------------------
     */    
     
-    /**
-     * Returns a value from a specific field for the given property - ignoring the priorities.
-     * 
-     * @param obj {qx.core.Object} Any object with the given property
-     * @param prop {String} Name of the property to query
-     * @param field {String} One of "init", "inheritance", "theme", "user" or "override"
-     */
-    getSingleValue : function(obj, prop, field) 
-    {
-      var key = this.__propertyNameToId[prop] + this.__fieldToPriority[field];
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        if (typeof key != "number" || isNaN(key)) {
-          throw new Error("Invalid property or field: " + prop + ", " + field);
-        }
-      }
-      
-      return obj.$$data[key];
-    },
-    
-
-    /**
-     * Returns a list of all inheritable properties supported by the given class
-     * 
-     * Contrary to {@link getProperties} this method caches requests for better performance
-     * in the property system.
-     *
-     * @param clazz {Class} Class to query
-     * @return {Map} All inheritable property names and a dictionary for faster lookup
-     */
-    getInheritableProperties : function(clazz)
-    {
-      var result = clazz.$$inheritables;
-      if (result) 
-      {
-        if (qx.core.Variant.isSet("qx.debug", "on")) {
-          qx.log.Logger.debug(this, "You may choose to access inheritable properties via: obj.$$inheritables || qx.core.property.Multi.getInheritableProperties(obj) for better performance.");
-        }
-        
-        return result;
-      }
-      
-      result = clazz.$$inheritables = {};
-
-      // Find all local properties which are inheritable
-      var props = clazz.$$properties;
-      if (props) 
-      {
-        for (var name in props) 
-        {
-          if (props[name].inheritable) {
-            result[name] = props[name];
-          }
-        }
-      }
-        
-      var superClass = clazz.superclass;
-      if (superClass && superClass !== Object)
-      {
-        var remote = superClass.$$inheritables || this.getInheritableProperties(superClass);
-        for (var name in remote) {
-          result[name] = remote[name];
-        }
-      }
-      
-      /*
-      if (qx.core.Variant.isSet("qx.debug", "on")) {
-        qx.log.Logger.debug(this, "Cached " + qx.Bootstrap.objectGetLength(result) + " inheritable properties for " + clazz.classname);
-      } 
-      */     
-      
-      return result;
-    },    
-    
-  
-    /**
-     * Process an object whenever the parent has changed. 
-     * 
-     * Should be called by the object itself which was modified. Required are both
-     * parents, the old and the new one to make this work correctly. All given 
-     * objects need to support the "$$parent" and "$$data" object fields
-     * to make this work correctly.
-     * 
-     * This function is quite optimized for reduced additional function calls. The
-     * only expensive scenarios are when a property is currently inherited or
-     * the new parent offers a value which needs to aquired using a get() 
-     * call (e.g. themed or itself inherited). This means it is basically cheap
-     * for initial application creation, but is more expensive as soon as the application
-     * is running and objects are moved around dynamically.
-     * 
-     * @param obj {qx.core.Object} The modified object
-     * @param newParent {qx.core.Object} The current parent
-     * @param oldParent {qx.core.Object} The new parent
-     */
-    moveObject : function(obj, newParent, oldParent)
-    {
-      // Fast compare (e.g. both null - should not happen, but still)
-      if (newParent == oldParent) {
-        return;
-      }
-      
-      // Runtime variables
-      var Undefined,
-        priorityToFieldConfig, propertyNameToId, inheritedPriority, initPriority,
-        clazz, properties, propertyName, propertyId, propertyConfig, propertyInitKey,
-        data, oldPriority, oldValue, newValue,
-        newParentData, newParentPriority, newParentGetter;
-      
-      // Fill with shared values through processing of all properties
-      priorityToFieldConfig = this.__priorityToFieldConfig;
-      propertyNameToId = this.__propertyNameToId;
-      inheritedPriority = this.__fieldToPriority.inherited;
-      initPriority = this.__fieldToPriority.init;
-      
-      // Cache data field from object and new parent
-      data = obj.$$data;
-      newParentData = newParent ? newParent.$$data : Undefined;
-
-      // Iterate through all inheritable properties
-      clazz = obj.constructor;
-      properties = clazz.$$inheritables || this.getInheritableProperties(clazz);
-      for (propertyName in properties)
-      {
-        propertyId = propertyNameToId[propertyName];
-        propertyInitKey = "$$init-" + propertyName;
-        
-        
-        // 
-        // READ OLD VALUE
-        //
-        
-        oldPriority = data ? data[propertyId] : Undefined;
-        if (oldPriority === Undefined)
-        {
-          // Fallback to class-wide init value
-          oldValue = obj[propertyInitKey];
-        }
-        else if (oldPriority < inheritedPriority)
-        {
-          // Simplified here a bit, as only the init value has a lower priority than the inheritance.
-          // Read from instance-specific init value
-          oldValue = data[propertyId+oldPriority];
-        }
-        else if (oldPriority == inheritedPriority)
-        {
-          // If we have used an inherited value, just ask the old parent for its value
-          oldValue = oldParent.get(propertyName);
-        }
-        else 
-        {
-          // Higher priority field exists
-          continue;
-        }
-        
-        
-        //
-        // READ NEW VALUE
-        // 
-        
-        // Read new parent's value
-        newValue = Undefined;
-        if (newParent)
-        {
-          newParentPriority = newParentData ? newParentData[propertyId] : Undefined;
-          if (newParentPriority === Undefined)
-          {
-            // try to read old value from init value
-            newValue = newParent[propertyInitKey];
-          }
-          else
-          {
-            newParentGetter = priorityToFieldConfig[newParentPriority].get;
-            if (newParentGetter) {
-              newValue = obj[newParentGetter](propertyName);
-            } else {
-              newValue = data[propertyId+newParentPriority];
-            }
-            
-            if (newValue === Undefined) {
-              newValue = newParent[propertyInitKey];
-            }
-          }
-        }
-        
-        // In cases where we have no new parent or the new parent don't has a value
-        // itself as well, then we try to use our init value as the new value
-        if (newValue === Undefined) 
-        {
-          // Respect init value from deferredInit configs
-          if (oldPriority == initPriority) {
-            newValue = data[propertyId+initPriority];
-          } else {
-            newValue = obj[propertyInitKey];
-          }
-        }
-        
-        
-        //
-        // PERFORM CHANGES
-        //        
-        
-        // Compare values
-        if (newValue !== oldValue)
-        {
-          obj.debug("Refresh (MOVE): " + propertyName + ": " + oldValue + " => " + newValue);
-          
-          propertyConfig = properties[propertyName];
-
-          // Call apply
-          if (propertyConfig.apply) {
-            obj[propertyConfig.apply](newValue, oldValue, propertyName);
-          }
-
-          // Fire event
-          if (propertyConfig.event) {
-            obj.fireDataEvent(propertyConfig.event, newValue, oldValue);
-          }
-
-          // Update children
-          this.__changeInheritedHelper(obj, newValue, oldValue, propertyConfig);
-        }
-      }
-    },
-
-    
-    
-    /*
-    ---------------------------------------------------------------------------
-      INTERNALS
-    ---------------------------------------------------------------------------
-    */    
-    
-    /**
-     * Updates children of a object where the given property has been modified.
-     * 
-     * @param obj {qx.core.Object} 
-     * 
-     * 
-     */
-    __changeInheritedHelper : function(obj, value, oldValue, config)
-    {
-      var children = obj._getChildren();
-      var length = children.length;
-      if (!length) {
-        return;
-      }
-      
-      var Undefined;
-
-      var propertyNameToId = this.__propertyNameToId;
-      var priorityToFieldConfig = this.__priorityToFieldConfig;
-      var inheritedPriority = this.__fieldToPriority.inherited;
-
-      var propertyName = config.name;
-      var propertyId = propertyNameToId[propertyName];
-
-      obj.debug("Inheritable Property Changed: " + propertyName + "=" + value);
-      
-      var child;
-      var childData;
-      var childOldPriority, childOldValue, childOldGetter;        
-      var childNewPriority, childNewValue, childNewGetter;
-
-      var PropertyUtil = qx.core.property.Util;
-      var initKey = "$$init-" + propertyName;
-
-      for (var i=0, l=children.length; i<l; i++)
-      {
-        child = children[i];
-        childData = child.$$data;
-        if (!childData) {
-          childData = child.$$data = {};
-        }
-        
-        // Quick lookup (higher priority value exist)
-        childOldPriority = childData[propertyId];
-        if (childOldPriority !== Undefined && childOldPriority > inheritedPriority) {
-          continue;
-        }
-        
-        // Compute old value
-        if (childOldPriority === inheritedPriority)
-        {
-          childOldValue = oldValue;
-        }
-        else if (childOldPriority !== Undefined)
-        {
-          childOldGetter = priorityToFieldConfig[childOldPriority].get;
-          if (childOldGetter) {
-            childOldValue = child[childOldGetter](propertyName);
-          } else {
-            childOldValue = child[propertyId+childOldPriority];
-          }
-        }
-        else
-        {
-          childOldValue = child[initKey];
-        }
-        
-        // Compute new value
-        childNewValue = value;
-        if (childNewValue === Undefined)
-        {
-          childNewPriority = this.computePriority(child, propertyName);
-          childNewGetter = priorityToFieldConfig[childNewPriority].get;
-          if (childNewGetter) {
-            childNewValue = child[childNewGetter](propertyName);
-          } else {
-            childNewValue = child[propertyId+childOldPriority];
-          }
-          
-          if (childNewValue === Undefined) {
-            childNewValue = child[initKey];
-          }         
-        }
-        else
-        {
-          childData[propertyId] = inheritedPriority;
-        }
-        
-        // Publish change
-        if (childNewValue !== childOldValue)
-        {
-          var config = PropertyUtil.getPropertyDefinition(child.constructor, propertyName);
-
-          // Call apply
-          if (config.apply) {
-            child[config.apply](childNewValue, childOldValue, config.name);
-          }
-
-          // Fire event
-          if (config.event) {
-            child.fireDataEvent(config.event, childNewValue, childOldValue);
-          }
-
-          // Inheritance support
-          if (config.inheritable) {
-            this.__changeInheritedHelper(child, childNewValue, childOldValue, config);
-          }            
-        }
-      }      
-    },  
-    
-    
-    computePriority : function(obj, propertyName)
-    {      
-      var data = obj.$$data;
-      if (data)
-      {
-        var propertyId = this.__propertyNameToId[propertyName];
-        var Undefined, value;
-        for (var i=5; i>0; i--)
-        {
-          value = data[propertyId+i];
-          if (value !== Undefined) {
-            return i;
-          }
-        }          
-      }
-    },
-  
-    
-    /**
-     * Imports a list of values. Useful for batch-applying a whole set of properties. Supports
-     * <code>undefined</code> values to reset properties.
-     * 
-     * @param obj {qx.ui.core.Widget} Any widget
-     * @param values {Map} Map of properties to apply
-     * @param oldValues {Map} Map of old property values. Just used for comparision. 
-     *    Required for theme changes. In case of a state change the old value is not available otherwise.
-     * @param modifyPriority {Integer} Priority (read: field) to apply data to
-     */
-    importData : function(obj, values, oldValues, modifyPriority)
-    {
-      var Undefined;
-      
-      // Translate name to pre-cached ID
-      var propertyNameToId = this.__propertyNameToId;
-      
-      // Check existence of data structure
-      var data = obj.$$data;
-      if (!data) {
-        data = obj.$$data = {};
-      }
-
-      var propertyId, newValue, oldValue, oldPriority, initField;
-      var PropertyUtil = qx.core.property.Util;
-      var priorityToFieldConfig = this.__priorityToFieldConfig;
-      
-      for (var prop in values) 
-      {
-        propertyId = propertyNameToId[prop];
-        
-        oldPriority = data[propertyId];
-        
-        // Ignore if there is a higher priorized value
-        // Earliest return option: Higher priorized value set
-        if (oldPriority > modifyPriority) {
-          continue;
-        }
-        
-        newValue = values[prop];
-        
-        // If nothing is set at the moment and no new value is given
-        // then simply ignore the property for the moment
-        if (oldPriority === Undefined && newValue === Undefined) {
-          continue;
-        }
-        
-        // Read out old value
-        if (oldPriority != null) 
-        {
-          if (oldValues && oldPriority == modifyPriority) {
-            oldValue = oldValues[prop];
-          } 
-          else 
-          {
-            var oldGetter = priorityToFieldConfig[oldPriority].get;
-            if (oldGetter) {
-              oldValue = obj[oldGetter](prop);
-            } else {
-              oldValue = data[propertyId+oldPriority];
-            }           
-          }          
-        }
-        else
-        {
-          oldValue = Undefined;
-        }
-        
-        // Compare old and new value
-        // Second earliest return option: New value given and identical to old
-        if (oldValue === newValue) {
-          continue;
-        }
-        
-        // Reset implementation block
-        if (newValue === Undefined) 
-        {
-          // We lost the current value, now we need to find the next stored value
-          var newValue, newGetter;
-          
-          for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
-          {
-            newGetter = priorityToFieldConfig[newPriority].get;
-            if (newGetter) {
-              newValue = obj[newGetter](prop);
-            } else {
-              newValue = data[propertyId+newPriority];
-            }              
-
-            if (newValue !== Undefined) {
-              break;
-            }             
-          }
-          
-          // No value has been found
-          if (newValue === Undefined) 
-          {
-            newPriority = Undefined;
-            
-            // Let's try the class-wide init value
-            initField = "$$init-" + prop;
-            if (initField) {
-              newValue = obj[initField];
-            }
-            else if (qx.core.Variant.isSet("qx.debug", "on"))
-            {
-              // Still no value. We warn about that the property is not nullable.
-              var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
-              if (!config.nullable) {
-                obj.error("Missing value for: " + prop + " (during reset() - from theme system)");
-              }
-            }
-          }          
-
-          // Be sure that priority is right
-          data[propertyId] = newPriority;
-        }
-        
-        // Set implementation block
-        else if (oldPriority != modifyPriority)
-        {
-          data[propertyId] = modifyPriority;
-        } 
-
-        // Call change helper
-        // Third earlist "return" option, ok, not really a return option, but
-        // we at least omit useless change calls when values are identical
-        if (newValue !== oldValue) 
-        {
-          var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
-          
-          // Call apply
-          if (config.apply) {
-            obj[config.apply](newValue, oldValue, config.name);
-          }
-
-          // Fire event
-          if (config.event) {
-            obj.fireDataEvent(config.event, newValue, oldValue);
-          }
-
-          // Inheritance support
-          if (config.inheritable) {
-            this.__changeInheritedHelper(obj, newValue, oldValue, config);
-          }          
-        }        
-      }
-    },
-    
-
     /**
      * Adds a new property to the given class.
      * 
@@ -1007,6 +496,535 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
         members["is" + up] = getter;
       }
-    }    
+    },    
+    
+    
+    /**
+     * Returns a value from a specific field for the given property - ignoring the priorities.
+     * 
+     * @param obj {qx.core.Object} Any object with the given property
+     * @param prop {String} Name of the property to query
+     * @param field {String} One of "init", "inheritance", "theme", "user" or "override"
+     */
+    getSingleValue : function(obj, prop, field) 
+    {
+      var key = this.__propertyNameToId[prop] + this.__fieldToPriority[field];
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (typeof key != "number" || isNaN(key)) {
+          throw new Error("Invalid property or field: " + prop + ", " + field);
+        }
+      }
+      
+      return obj.$$data[key];
+    },
+    
+    
+    /**
+     * Imports a list of values. Useful for batch-applying a whole set of properties. Supports
+     * <code>undefined</code> values to reset properties.
+     * 
+     * @param obj {qx.ui.core.Widget} Any widget
+     * @param values {Map} Map of properties to apply
+     * @param oldValues {Map} Map of old property values. Just used for comparision. 
+     *    Required for theme changes. In case of a state change the old value is not available otherwise.
+     * @param modifyPriority {Integer} Priority (read: field) to apply data to
+     */
+    importData : function(obj, values, oldValues, modifyPriority)
+    {
+      var Undefined;
+      
+      // Translate name to pre-cached ID
+      var propertyNameToId = this.__propertyNameToId;
+      
+      // Check existence of data structure
+      var data = obj.$$data;
+      if (!data) {
+        data = obj.$$data = {};
+      }
+
+      var propertyId, newValue, oldValue, oldPriority, initField;
+      var PropertyUtil = qx.core.property.Util;
+      var priorityToFieldConfig = this.__priorityToFieldConfig;
+      
+      for (var prop in values) 
+      {
+        propertyId = propertyNameToId[prop];
+        
+        oldPriority = data[propertyId];
+        
+        // Ignore if there is a higher priorized value
+        // Earliest return option: Higher priorized value set
+        if (oldPriority > modifyPriority) {
+          continue;
+        }
+        
+        newValue = values[prop];
+        
+        // If nothing is set at the moment and no new value is given
+        // then simply ignore the property for the moment
+        if (oldPriority === Undefined && newValue === Undefined) {
+          continue;
+        }
+        
+        // Read out old value
+        if (oldPriority != null) 
+        {
+          if (oldValues && oldPriority == modifyPriority) {
+            oldValue = oldValues[prop];
+          } 
+          else 
+          {
+            var oldGetter = priorityToFieldConfig[oldPriority].get;
+            if (oldGetter) {
+              oldValue = obj[oldGetter](prop);
+            } else {
+              oldValue = data[propertyId+oldPriority];
+            }           
+          }          
+        }
+        else
+        {
+          oldValue = Undefined;
+        }
+        
+        // Compare old and new value
+        // Second earliest return option: New value given and identical to old
+        if (oldValue === newValue) {
+          continue;
+        }
+        
+        // Reset implementation block
+        if (newValue === Undefined) 
+        {
+          // We lost the current value, now we need to find the next stored value
+          var newValue, newGetter;
+          
+          for (var newPriority=modifyPriority-1; newPriority>0; newPriority--)
+          {
+            newGetter = priorityToFieldConfig[newPriority].get;
+            if (newGetter) {
+              newValue = obj[newGetter](prop);
+            } else {
+              newValue = data[propertyId+newPriority];
+            }              
+
+            if (newValue !== Undefined) {
+              break;
+            }             
+          }
+          
+          // No value has been found
+          if (newValue === Undefined) 
+          {
+            newPriority = Undefined;
+            
+            // Let's try the class-wide init value
+            initField = "$$init-" + prop;
+            if (initField) {
+              newValue = obj[initField];
+            }
+            else if (qx.core.Variant.isSet("qx.debug", "on"))
+            {
+              // Still no value. We warn about that the property is not nullable.
+              var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
+              if (!config.nullable) {
+                obj.error("Missing value for: " + prop + " (during reset() - from theme system)");
+              }
+            }
+          }          
+
+          // Be sure that priority is right
+          data[propertyId] = newPriority;
+        }
+        
+        // Set implementation block
+        else if (oldPriority != modifyPriority)
+        {
+          data[propertyId] = modifyPriority;
+        } 
+
+        // Call change helper
+        // Third earlist "return" option, ok, not really a return option, but
+        // we at least omit useless change calls when values are identical
+        if (newValue !== oldValue) 
+        {
+          var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
+          
+          // Call apply
+          if (config.apply) {
+            obj[config.apply](newValue, oldValue, config.name);
+          }
+
+          // Fire event
+          if (config.event) {
+            obj.fireDataEvent(config.event, newValue, oldValue);
+          }
+
+          // Inheritance support
+          if (config.inheritable) {
+            this.__changeInheritedHelper(obj, newValue, oldValue, config);
+          }          
+        }        
+      }
+    },    
+    
+    
+    
+    /*
+    ---------------------------------------------------------------------------
+      PUBLIC INHERITANCE API
+    ---------------------------------------------------------------------------
+    */    
+
+    /**
+     * Returns a list of all inheritable properties supported by the given class
+     * 
+     * Contrary to {@link getProperties} this method caches requests for better performance
+     * in the property system.
+     *
+     * @param clazz {Class} Class to query
+     * @return {Map} All inheritable property names and a dictionary for faster lookup
+     */
+    getInheritableProperties : function(clazz)
+    {
+      var result = clazz.$$inheritables;
+      if (result) 
+      {
+        if (qx.core.Variant.isSet("qx.debug", "on")) {
+          qx.log.Logger.debug(this, "You may choose to access inheritable properties via: obj.$$inheritables || qx.core.property.Multi.getInheritableProperties(obj) for better performance.");
+        }
+        
+        return result;
+      }
+      
+      result = clazz.$$inheritables = {};
+
+      // Find all local properties which are inheritable
+      var props = clazz.$$properties;
+      if (props) 
+      {
+        for (var name in props) 
+        {
+          if (props[name].inheritable) {
+            result[name] = props[name];
+          }
+        }
+      }
+        
+      var superClass = clazz.superclass;
+      if (superClass && superClass !== Object)
+      {
+        var remote = superClass.$$inheritables || this.getInheritableProperties(superClass);
+        for (var name in remote) {
+          result[name] = remote[name];
+        }
+      }
+      
+      /*
+      if (qx.core.Variant.isSet("qx.debug", "on")) {
+        qx.log.Logger.debug(this, "Cached " + qx.Bootstrap.objectGetLength(result) + " inheritable properties for " + clazz.classname);
+      } 
+      */     
+      
+      return result;
+    },    
+    
+  
+    /**
+     * Process an object whenever the parent has changed. 
+     * 
+     * Should be called by the object itself which was modified. Required are both
+     * parents, the old and the new one to make this work correctly. All given 
+     * objects need to support the "$$parent" and "$$data" object fields
+     * to make this work correctly.
+     * 
+     * This function is quite optimized for reduced additional function calls. The
+     * only expensive scenarios are when a property is currently inherited or
+     * the new parent offers a value which needs to aquired using a get() 
+     * call (e.g. themed or itself inherited). This means it is basically cheap
+     * for initial application creation, but is more expensive as soon as the application
+     * is running and objects are moved around dynamically.
+     * 
+     * @param obj {qx.core.Object} The modified object
+     * @param newParent {qx.core.Object} The current parent
+     * @param oldParent {qx.core.Object} The new parent
+     */
+    moveObject : function(obj, newParent, oldParent)
+    {
+      // Fast compare (e.g. both null - should not happen, but still)
+      if (newParent == oldParent) {
+        return;
+      }
+      
+      // Runtime variables
+      var Undefined,
+        priorityToFieldConfig, propertyNameToId, inheritedPriority, initPriority,
+        clazz, properties, propertyName, propertyId, propertyConfig, propertyInitKey,
+        data, oldPriority, oldValue, newValue,
+        newParentData, newParentPriority, newParentGetter;
+      
+      // Fill with shared values through processing of all properties
+      priorityToFieldConfig = this.__priorityToFieldConfig;
+      propertyNameToId = this.__propertyNameToId;
+      inheritedPriority = this.__fieldToPriority.inherited;
+      initPriority = this.__fieldToPriority.init;
+      
+      // Cache data field from object and new parent
+      data = obj.$$data;
+      newParentData = newParent ? newParent.$$data : Undefined;
+
+      // Iterate through all inheritable properties
+      clazz = obj.constructor;
+      properties = clazz.$$inheritables || this.getInheritableProperties(clazz);
+      for (propertyName in properties)
+      {
+        propertyId = propertyNameToId[propertyName];
+        propertyInitKey = "$$init-" + propertyName;
+        
+        
+        // 
+        // READ OLD VALUE
+        //
+        
+        oldPriority = data ? data[propertyId] : Undefined;
+        if (oldPriority === Undefined)
+        {
+          // Fallback to class-wide init value
+          oldValue = obj[propertyInitKey];
+        }
+        else if (oldPriority < inheritedPriority)
+        {
+          // Simplified here a bit, as only the init value has a lower priority than the inheritance.
+          // Read from instance-specific init value
+          oldValue = data[propertyId+oldPriority];
+        }
+        else if (oldPriority == inheritedPriority)
+        {
+          // If we have used an inherited value, just ask the old parent for its value
+          oldValue = oldParent.get(propertyName);
+        }
+        else 
+        {
+          // Higher priority field exists
+          continue;
+        }
+        
+        
+        //
+        // READ NEW VALUE
+        // 
+        
+        // Read new parent's value
+        newValue = Undefined;
+        if (newParent)
+        {
+          newParentPriority = newParentData ? newParentData[propertyId] : Undefined;
+          if (newParentPriority === Undefined)
+          {
+            // try to read old value from init value
+            newValue = newParent[propertyInitKey];
+          }
+          else
+          {
+            newParentGetter = priorityToFieldConfig[newParentPriority].get;
+            if (newParentGetter) {
+              newValue = obj[newParentGetter](propertyName);
+            } else {
+              newValue = data[propertyId+newParentPriority];
+            }
+            
+            if (newValue === Undefined) {
+              newValue = newParent[propertyInitKey];
+            }
+          }
+        }
+        
+        // In cases where we have no new parent or the new parent don't has a value
+        // itself as well, then we try to use our init value as the new value
+        if (newValue === Undefined) 
+        {
+          // Respect init value from deferredInit configs
+          if (oldPriority == initPriority) {
+            newValue = data[propertyId+initPriority];
+          } else {
+            newValue = obj[propertyInitKey];
+          }
+        }
+        
+        
+        //
+        // PERFORM CHANGES
+        //        
+        
+        // Compare values
+        if (newValue !== oldValue)
+        {
+          obj.debug("Refresh (MOVE): " + propertyName + ": " + oldValue + " => " + newValue);
+          
+          propertyConfig = properties[propertyName];
+
+          // Call apply
+          if (propertyConfig.apply) {
+            obj[propertyConfig.apply](newValue, oldValue, propertyName);
+          }
+
+          // Fire event
+          if (propertyConfig.event) {
+            obj.fireDataEvent(propertyConfig.event, newValue, oldValue);
+          }
+
+          // Update children
+          this.__changeInheritedHelper(obj, newValue, oldValue, propertyConfig);
+        }
+      }
+    },
+
+
+    
+    
+    /*
+    ---------------------------------------------------------------------------
+      INTERNALS INHERITANCE
+    ---------------------------------------------------------------------------
+    */    
+    
+    /**
+     * Updates children of a object where the given property has been modified.
+     * 
+     * @param obj {qx.core.Object} 
+     * 
+     * 
+     */
+    __changeInheritedHelper : function(obj, value, oldValue, config)
+    {
+      var children = obj._getChildren();
+      var length = children.length;
+      if (!length) {
+        return;
+      }
+      
+      var Undefined;
+
+      var propertyNameToId = this.__propertyNameToId;
+      var priorityToFieldConfig = this.__priorityToFieldConfig;
+      var inheritedPriority = this.__fieldToPriority.inherited;
+
+      var propertyName = config.name;
+      var propertyId = propertyNameToId[propertyName];
+
+      obj.debug("Inheritable Property Changed: " + propertyName + "=" + value);
+      
+      var child;
+      var childData;
+      var childOldPriority, childOldValue, childOldGetter;        
+      var childNewPriority, childNewValue, childNewGetter;
+
+      var PropertyUtil = qx.core.property.Util;
+      var initKey = "$$init-" + propertyName;
+
+      for (var i=0, l=children.length; i<l; i++)
+      {
+        child = children[i];
+        childData = child.$$data;
+        if (!childData) {
+          childData = child.$$data = {};
+        }
+        
+        // Quick lookup (higher priority value exist)
+        childOldPriority = childData[propertyId];
+        if (childOldPriority !== Undefined && childOldPriority > inheritedPriority) {
+          continue;
+        }
+        
+        // Compute old value
+        if (childOldPriority === inheritedPriority)
+        {
+          childOldValue = oldValue;
+        }
+        else if (childOldPriority !== Undefined)
+        {
+          childOldGetter = priorityToFieldConfig[childOldPriority].get;
+          if (childOldGetter) {
+            childOldValue = child[childOldGetter](propertyName);
+          } else {
+            childOldValue = child[propertyId+childOldPriority];
+          }
+        }
+        else
+        {
+          childOldValue = child[initKey];
+        }
+        
+        // Compute new value
+        childNewValue = value;
+        if (childNewValue === Undefined)
+        {
+          childNewPriority = this.__computePriority(child, propertyId);
+          childNewGetter = priorityToFieldConfig[childNewPriority].get;
+          if (childNewGetter) {
+            childNewValue = child[childNewGetter](propertyName);
+          } else {
+            childNewValue = child[propertyId+childOldPriority];
+          }
+          
+          if (childNewValue === Undefined) {
+            childNewValue = child[initKey];
+          }         
+        }
+        else
+        {
+          childData[propertyId] = inheritedPriority;
+        }
+        
+        // Publish change
+        if (childNewValue !== childOldValue)
+        {
+          var config = PropertyUtil.getPropertyDefinition(child.constructor, propertyName);
+
+          // Call apply
+          if (config.apply) {
+            child[config.apply](childNewValue, childOldValue, config.name);
+          }
+
+          // Fire event
+          if (config.event) {
+            child.fireDataEvent(config.event, childNewValue, childOldValue);
+          }
+
+          // Inheritance support
+          if (config.inheritable) {
+            this.__changeInheritedHelper(child, childNewValue, childOldValue, config);
+          }            
+        }
+      }      
+    },
+    
+    
+    /**
+     * Computes the current priority of the given object/property
+     * combination. Especially useful to find a value as soon as
+     * the current value was deleted.
+     * 
+     * @param obj {qx.core.Object} Any object
+     * @param propertyId {Number} ID of the property
+     * @return {Integer|undefined} The fallback priority or <code>undefined</code> if
+     *   not other value is available.
+     */
+    __computePriority : function(obj, propertyId)
+    {      
+      var data = obj.$$data;
+      if (data)
+      {
+        var Undefined, value;
+        for (var i=5; i>0; i--)
+        {
+          value = data[propertyId+i];
+          if (value !== Undefined) {
+            return i;
+          }
+        }          
+      }
+    }         
   }
 });
