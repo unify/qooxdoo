@@ -937,12 +937,19 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var childData;
       var childOldPriority, childOldValue, childOldGetter;        
       var childNewValue;
+      var Util = qx.core.property.Util;
 
       var initKey = "$$init-" + propertyName;
 
       for (var i=0, l=children.length; i<l; i++)
       {
         child = children[i];
+
+        // Block child if it does not support the changed property
+        if (!Util.getPropertyDefinition(child.constructor, propertyName)) {
+          continue;
+        }
+        
         childData = child.$$data;
         if (!childData) {
           childData = child.$$data = {};
