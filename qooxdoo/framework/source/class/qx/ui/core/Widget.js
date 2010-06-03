@@ -941,6 +941,9 @@ qx.Class.define("qx.ui.core.Widget",
       var container = this.getContainerElement();
       var old = this.$$parent;
 
+      // Update inheritable properties
+      qx.core.property.Multi.moveObject(this, parent, old);
+
       if (this.$$parent && !this.$$parent.$$disposed) {
         this.$$parent.getContentElement().remove(container);
       }
@@ -950,9 +953,6 @@ qx.Class.define("qx.ui.core.Widget",
       if (parent && !parent.$$disposed) {
         this.$$parent.getContentElement().add(container);
       }
-
-      // Update inheritable properties
-      qx.core.property.Multi.moveObject(this, parent, old);
 
       // Update visibility cache
       qx.ui.core.queue.Visibility.add(this);
