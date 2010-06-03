@@ -68,15 +68,17 @@ qx.Bootstrap.define("qx.core.property.Simple",
       
       // Improve compressibility
       var Undefined;
+      var SimpleProperty = this;
+      var db, id, members, initKey;
       
       // Increase counter
-      this.__counter++;
+      SimpleProperty.__counter++;
             
       // Generate property ID
       // Identically named property might store data on the same field
       // as in this case this is typicall on different classes.
-      var db = this.__propertyNameToId;
-      var id = db[name];
+      db = SimpleProperty.__propertyNameToId;
+      id = db[name];
       if (!id) 
       {
         id = db[name] = qx.core.property.Core.ID;
@@ -84,21 +86,18 @@ qx.Bootstrap.define("qx.core.property.Simple",
       }
             
       // Store init value (shared data between instances)
-      var members = clazz.prototype;
+      members = clazz.prototype;
       if (config.init !== Undefined) 
       {
-        var initField = "$$init-" + name;
-        members[initField] = config.init;
+        initKey = "$$init-" + name;
+        members[initKey] = config.init;
       }
       
       // Precalc
-      var Bootstrap = qx.Bootstrap;
-      var up = Bootstrap.$$firstUp[name] || Bootstrap.firstUp(name);
+      var Bootstrap=qx.Bootstrap, up=(Bootstrap.$$firstUp[name] || Bootstrap.firstUp(name));
          
       // Shorthands: Better compression/obfuscation/performance
-      var propertyNullable = config.nullable;
-      var propertyEvent = config.event;
-      var propertyApply = config.apply;
+      var propertyNullable=config.nullable, propertyEvent=config.event, propertyApply=config.apply;
 
 
 
@@ -111,21 +110,22 @@ qx.Bootstrap.define("qx.core.property.Simple",
       
       members["get" + up] = function() 
       {
-        var context = this;    
+        var context, data, value;
+        context = this;    
         
         if (qx.core.Variant.isSet("qx.debug", "on")) {
           qx.core.property.Debug.checkGetter(context, config, arguments);
         }
          
-        var data = context.$$data;
+        data = context.$$data;
         if (data) {
-          var value = data[id];
+          value = data[id];
         }
         
         if (value === Undefined) 
         {
-          if (initField) {
-            return context[initField];
+          if (initKey) {
+            return context[initKey];
           }            
           
           if (qx.core.Variant.isSet("qx.debug", "on"))
@@ -149,24 +149,23 @@ qx.Bootstrap.define("qx.core.property.Simple",
       ---------------------------------------------------------------------------
       */
             
-      if (initField)
+      if (initKey)
       {
         members["init" + up] = function()
         {
-          var context = this;
-          var data = context.$$data;
+          var context=this, data=context.$$data;
           
           // Check whether there is already local data (which is higher prio than init data)
           if (!data || data[id] === Undefined) 
           {
             // Call apply
             if (propertyApply) {
-              context[propertyApply](this[initField], Undefined, name);
+              context[propertyApply](context[initKey], Undefined, name);
             }
 
             // Fire event
             if (propertyEvent) {
-              context.fireDataEvent(propertyEvent, this[initField], Undefined);
+              context.fireDataEvent(propertyEvent, context[initKey], Undefined);
             }          
           }
         };
@@ -182,23 +181,24 @@ qx.Bootstrap.define("qx.core.property.Simple",
       
       members["set" + up] = function(value)
       {
-        var context = this;
+        var context, data, old;
+        context = this;
 
         if (qx.core.Variant.isSet("qx.debug", "on")) {
           qx.core.property.Debug.checkSetter(context, config, arguments);
         }
         
-        var data = context.$$data;
+        data = context.$$data;
         if (!data) {
           data = context.$$data = {};
         } else {
-          var old = data[id];
+          old = data[id];
         }
 
         if (value !== old) 
         {
-          if (old === Undefined && initField) {
-            old = context[initField];
+          if (old === Undefined && initKey) {
+            old = context[initKey];
           }
           
           data[id] = value;
@@ -223,26 +223,27 @@ qx.Bootstrap.define("qx.core.property.Simple",
       
       members["reset" + up] = function()
       {
-        var context = this;
+        var context, data, old, value;
+        context = this;
 
         if (qx.core.Variant.isSet("qx.debug", "on")) {
           qx.core.property.Debug.checkResetter(context, config, arguments);
         }
 
-        var data = context.$$data;
+        data = context.$$data;
         if (!data) {
           return;
         }
         
-        var old = data[id];
-        var value = Undefined;
+        old = data[id];
+        value = Undefined;
 
         if (old !== value) 
         {
           data[id] = value;
           
-          if (initField) {
-            value = context[initField];
+          if (initKey) {
+            value = context[initKey];
           }
           else if (qx.core.Variant.isSet("qx.debug", "on"))
           {
