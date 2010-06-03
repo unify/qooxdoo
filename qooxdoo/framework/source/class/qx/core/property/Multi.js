@@ -768,9 +768,14 @@ qx.Bootstrap.define("qx.core.property.Multi",
       propertyNameToId = this.__propertyNameToId;
       inheritedPriority = this.__fieldToPriority.inherited;
       initPriority = this.__fieldToPriority.init;
-      
-      // Cache data field from object and new parent
+
+      // Cache data field from object
       data = obj.$$data;
+      if (!data) {
+        data = obj.$$data = {};
+      }
+
+      // Cache data field from new parent
       newParentData = newParent ? newParent.$$data : Undefined;
 
       // Iterate through all inheritable properties
@@ -846,9 +851,19 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // Respect init value from deferredInit configs
           if (oldPriority == initPriority) {
             newValue = data[propertyId+initPriority];
-          } else {
+          } 
+          else 
+          {
             newValue = obj[propertyInitKey];
+            
+            if (data[propertyId] !== Undefined) {
+              data[propertyId] = Undefined;
+            }            
           }
+        }
+        else
+        {
+          data[propertyId] = inheritedPriority;
         }
         
         
@@ -860,7 +875,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // Compare values
         if (newValue !== oldValue)
         {
-          obj.debug("Refresh (MOVE): " + propertyName + ": " + oldValue + " => " + newValue);
+          // obj.debug("Refresh: " + propertyName + ": " + oldValue + " => " + newValue);
           
           propertyConfig = properties[propertyName];
 
@@ -916,7 +931,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var propertyName = config.name;
       var propertyId = propertyNameToId[propertyName];
 
-      obj.debug("Inheritable Property Changed: " + propertyName + "=" + newValue);
+      // obj.debug("Inheritable Property Changed: " + propertyName + "=" + newValue);
       
       var child;
       var childData;
@@ -988,7 +1003,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // Publish change
         if (childNewValue !== childOldValue)
         {
-          obj.debug("- Child: " + child + ": " + childOldValue + " => " + childNewValue);
+          // obj.debug("- Child: " + child + ": " + childOldValue + " => " + childNewValue);
           
           // Call apply
           if (config.apply) {
