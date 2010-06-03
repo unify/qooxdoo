@@ -221,7 +221,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           data[propertyId+modifyPriority] = newValue;
           
           // Ignore lower-priority changes
-          if (oldPriority !== Undefined || oldPriority <= modifyPriority) 
+          if (oldPriority === Undefined || oldPriority <= modifyPriority) 
           {
             // Whether the storage field was changed
             if (oldPriority !== modifyPriority) {
