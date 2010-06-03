@@ -939,6 +939,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       var container = this.getContainerElement();
+      var old = this.$$parent;
 
       if (this.$$parent && !this.$$parent.$$disposed) {
         this.$$parent.getContentElement().remove(container);
@@ -951,7 +952,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       // Update inheritable properties
-      qx.core.property.Multi.refreshInheritableProperties(this);
+      qx.core.property.Multi.moveObject(this, parent, old);
 
       // Update visibility cache
       qx.ui.core.queue.Visibility.add(this);
