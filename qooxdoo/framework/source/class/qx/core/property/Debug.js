@@ -20,6 +20,12 @@
 
 ************************************************************************ */
 
+/* ************************************************************************
+
+#require(qx.core.property.Util)
+
+************************************************************************ */
+
 /**
  * This helper class is only included into debug builds and do the 
  * generic property checks defined using the property configuration.
@@ -213,7 +219,7 @@ qx.Bootstrap.define("qx.core.property.Debug",
         if (has && patch)
         {
           if (!config.refine) {
-            throw new Error('Could not refine property "' + name + '" without a "refine" flag in the property definition! This class: ' + clazz.classname + ', original class: ' + qx.core.property.Util.getByProperty(clazz, name).classname + '.');
+            throw new Error('Could not refine property "' + name + '" without a "refine" flag in the property definition! This class: ' + clazz.classname + ', original class: ' + Util.getByProperty(clazz, name).classname + '.');
           }
 
           for (var key in config)
