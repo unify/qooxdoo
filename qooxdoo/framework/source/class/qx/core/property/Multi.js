@@ -502,16 +502,16 @@ qx.Bootstrap.define("qx.core.property.Multi",
      * Returns a value from a specific field for the given property - ignoring the priorities.
      * 
      * @param obj {qx.core.Object} Any object with the given property
-     * @param prop {String} Name of the property to query
+     * @param propertyName {String} Name of the property to query
      * @param field {String} One of "init", "inheritance", "theme", "user" or "override"
      */
-    getSingleValue : function(obj, prop, field) 
+    getSingleValue : function(obj, propertyName, field) 
     {
-      var key = this.__propertyNameToId[prop] + this.__fieldToPriority[field];
+      var key = this.__propertyNameToId[propertyName] + this.__fieldToPriority[field];
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
         if (typeof key != "number" || isNaN(key)) {
-          throw new Error("Invalid property or field: " + prop + ", " + field);
+          throw new Error("Invalid property or field: " + propertyName + ", " + field);
         }
       }
       
@@ -527,38 +527,37 @@ qx.Bootstrap.define("qx.core.property.Multi",
      * @param values {Map} Map of properties to apply
      * @param oldValues {Map} Map of old property values. Just used for comparision. 
      *    Required for theme changes. In case of a state change the old value is not available otherwise.
-     * @param modifyPriority {Integer} Priority (read: field) to apply data to
+     * @param field {String} Storage field to modify
      */
-    importData : function(obj, values, oldValues, modifyPriority)
+    importData : function(obj, values, oldValues, field)
     {
-      var Undefined;
-      
-      // Translate name to pre-cached ID
-      var propertyNameToId = this.__propertyNameToId;
-      
       // Check existence of data structure
       var data = obj.$$data;
       if (!data) {
         data = obj.$$data = {};
       }
 
-      var propertyId, newValue, oldValue, oldPriority, initField;
-      var PropertyUtil = qx.core.property.Util;
+      // Commonly used variables
+      var Undefined;
+      var propertyNameToId = this.__propertyNameToId;
       var priorityToFieldConfig = this.__priorityToFieldConfig;
+      var modifyPriority = this.__fieldToPriority[field];
+      var PropertyUtil = qx.core.property.Util;
+      var propertyName, propertyId, newValue, oldValue, oldPriority, initField;
       
-      for (var prop in values) 
+      // Import every given property
+      for (propertyName in values) 
       {
-        propertyId = propertyNameToId[prop];
-        
-        oldPriority = data[propertyId];
+        propertyId = propertyNameToId[propertyName];
         
         // Ignore if there is a higher priorized value
         // Earliest return option: Higher priorized value set
+        oldPriority = data[propertyId];
         if (oldPriority > modifyPriority) {
           continue;
         }
         
-        newValue = values[prop];
+        newValue = values[propertyName];
         
         // If nothing is set at the moment and no new value is given
         // then simply ignore the property for the moment
@@ -570,13 +569,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
         if (oldPriority != null) 
         {
           if (oldValues && oldPriority == modifyPriority) {
-            oldValue = oldValues[prop];
+            oldValue = oldValues[propertyName];
           } 
           else 
           {
             var oldGetter = priorityToFieldConfig[oldPriority].get;
             if (oldGetter) {
-              oldValue = obj[oldGetter](prop);
+              oldValue = obj[oldGetter](propertyName);
             } else {
               oldValue = data[propertyId+oldPriority];
             }           
@@ -603,7 +602,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             newGetter = priorityToFieldConfig[newPriority].get;
             if (newGetter) {
-              newValue = obj[newGetter](prop);
+              newValue = obj[newGetter](propertyName);
             } else {
               newValue = data[propertyId+newPriority];
             }              
@@ -619,16 +618,16 @@ qx.Bootstrap.define("qx.core.property.Multi",
             newPriority = Undefined;
             
             // Let's try the class-wide init value
-            initField = "$$init-" + prop;
+            initField = "$$init-" + propertyName;
             if (initField) {
               newValue = obj[initField];
             }
             else if (qx.core.Variant.isSet("qx.debug", "on"))
             {
               // Still no value. We warn about that the property is not nullable.
-              var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
+              var config = PropertyUtil.getPropertyDefinition(obj.constructor, propertyName);
               if (!config.nullable) {
-                obj.error("Missing value for: " + prop + " (during reset() - from theme system)");
+                obj.error("Missing value for: " + propertyName + " (during reset() - from theme system)");
               }
             }
           }          
@@ -648,7 +647,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // we at least omit useless change calls when values are identical
         if (newValue !== oldValue) 
         {
-          var config = PropertyUtil.getPropertyDefinition(obj.constructor, prop);
+          var config = PropertyUtil.getPropertyDefinition(obj.constructor, propertyName);
           
           // Call apply
           if (config.apply) {
@@ -925,10 +924,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
 
       var propertyNameToId = this.__propertyNameToId;
       var priorityToFieldConfig = this.__priorityToFieldConfig;
-      var inheritedPriority = this.__fieldToPriority.inherited;
-      var initPriority = this.__fieldToPriority.init;
+      var fieldToPriority = this.__fieldToPriority;
+      var inheritedPriority = fieldToPriority.inherited;
+      var initPriority = fieldToPriority.init;
       
-      var propertyName = config.name;
+      var propertyName=config.name, propertyApply=config.apply, propertyEvent=config.event;
       var propertyId = propertyNameToId[propertyName];
       var initKey = "$$init-" + propertyName;
 
@@ -1015,13 +1015,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
         if (childNewValue !== childOldValue)
         {
           // Call apply
-          if (config.apply) {
-            child[config.apply](childNewValue, childOldValue, config.name);
+          if (propertyApply) {
+            child[propertyApply](childNewValue, childOldValue, propertyName);
           }
 
           // Fire event
-          if (config.event) {
-            child.fireDataEvent(config.event, childNewValue, childOldValue);
+          if (propertyEvent) {
+            child.fireDataEvent(propertyEvent, childNewValue, childOldValue);
           }
 
           // Go into recursion
