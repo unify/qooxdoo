@@ -413,7 +413,7 @@ qx.Class.define("qx.ui.table.Table",
      */
     metaColumnCounts :
     {
-      check : "Object",
+      check : "Array",
       apply : "_applyMetaColumnCounts"
     },
 
