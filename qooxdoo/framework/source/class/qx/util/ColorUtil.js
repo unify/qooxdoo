@@ -625,9 +625,14 @@ qx.Class.define("qx.util.ColorUtil",
   },
   
   
-  defer : function(statics)
-  {
+
+  /*
+  *****************************************************************************
+     DEFER
+  *****************************************************************************
+  */
+  
+  defer : function(statics) {
     qx.core.Type.add("Color", statics.isValidPropertyValue, statics);
-    
   }
 });

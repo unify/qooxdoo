@@ -28,6 +28,19 @@ qx.Class.define("qx.theme.manager.Decoration",
   extend : qx.core.Object,
 
 
+  /*
+  *****************************************************************************
+     CONSTRUCTOR
+  *****************************************************************************
+  */
+
+  construct : function()
+  {
+    this.base(arguments);
+    
+    qx.core.Type.add("Decorator", this.isValidPropertyValue, this);    
+  },
+  
 
 
   /*
