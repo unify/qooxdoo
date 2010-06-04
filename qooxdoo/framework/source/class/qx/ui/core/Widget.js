@@ -2867,7 +2867,7 @@ qx.Class.define("qx.ui.core.Widget",
     // property apply
     _applyAppearance : function(value, old) 
     {
-      this.warn("Appearance changed dynamically.");
+      this.debug("Appearance changed: " + old + " => " + value);
       this.updateAppearance();
     },
 
