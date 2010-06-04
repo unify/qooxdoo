@@ -1,24 +1,38 @@
+/* ************************************************************************
+
+   qooxdoo - the new era of web development
+
+   http://qooxdoo.org
+
+   Copyright:
+     2010 Sebastian Werner, http://sebastian-werner.net
+
+   License:
+     LGPL: http://www.gnu.org/licenses/lgpl.html
+     EPL: http://www.eclipse.org/org/documents/epl-v10.php
+     See the LICENSE file in the project's top-level directory for details.
+
+   Authors:
+     * Sebastian Werner (wpbasti)
+
+************************************************************************ */
+
+/**
+ * Convenient type check API with focus on small base set features, mainly as
+ * used by the property system, and an additional possibility to register
+ * new types dynamically.
+ */
 qx.Class.define("qx.core.Type",
 {
   statics :
   {
-    /**
-     * {Map} Built-in checks. The keys could be used in the check of the properties
-     */
-    CHECKS :
-    {
-      // TODO
-      "Window"    : 'value !== null && value.document',
-      "Event"     : 'value !== null && value.type !== undefined',
+    // TODO
+    // "Window"    : 'value !== null && value.document',
+    // "Event"     : 'value !== null && value.type !== undefined',
+    // "Decorator" : 'value !== null && qx.theme.manager.Decoration.getInstance().isValidPropertyValue(value)',
+    // "Font"      : 'value !== null && qx.theme.manager.Font.getInstance().isDynamic(value)'
 
-      "Color"     : 'qx.lang.Type.isString(value) && qx.util.ColorUtil.isValidPropertyValue(value)',
-      "Decorator" : 'value !== null && qx.theme.manager.Decoration.getInstance().isValidPropertyValue(value)',
-      "Font"      : 'value !== null && qx.theme.manager.Font.getInstance().isDynamic(value)'
-    },
-    
-    
-
-    __supportedHacks :
+    __hacks :
     {
       "String" : "$$isString"
     },
@@ -40,11 +54,7 @@ qx.Class.define("qx.core.Type",
     {
       "Integer" : "Number",
       "PositiveNumber" : "Number",
-      "PositiveInteger" : "Number",
-      
-      "JSON" : "String",
-      
-      "Map" : "Object"
+      "PositiveInteger" : "Number"
     },
     
     __primitive :
@@ -85,6 +95,15 @@ qx.Class.define("qx.core.Type",
     __addons : {},
         
     
+    /**
+     * Registers new types to the class.
+     * 
+     * The function should return <code>false</code> whenever the value is invalid.
+     * 
+     * @param type {String} Identifier of the type. Should be camel-case (with first character being uppercase)
+     * @param method {Function} Pointer to function to call
+     * @param context {Object} Context to call the function in
+     */
     add : function(type, method, context)
     {
       var db = this.__addons;
@@ -92,7 +111,7 @@ qx.Class.define("qx.core.Type",
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
         if (db[type]) {
-          throw new Error("Type if already blocked by another class: " + type);
+          throw new Error("Type if already registered by another class: " + type);
         }
       }
       
@@ -145,7 +164,7 @@ qx.Class.define("qx.core.Type",
             result = this.__stringToClass[Object.prototype.toString.call(value)] == check;
           }
 
-          var hack = this.__supportedHacks[check];
+          var hack = this.__hacks[check];
           if (!result && hack) {
             result = hack in value; 
           }
@@ -166,14 +185,6 @@ qx.Class.define("qx.core.Type",
                 result = value % 1 == 0 && value >= 0;
               } else if (check == "PositiveNumber") {
                 result = value >= 0;
-              } 
-              else if (check == "JSON") 
-              {
-                // Logic borrowed from http://json.org/json2.js
-                result = /^[\],:{}\s]*$/.test(value.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, "@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").replace(/(?:^|:|,)(?:\s*\[)+/g, ""));              
-              }
-              else if (check == "Map") {
-                result = value.__proto__ == null || value.__proto == Object;
               }
             }
           }
