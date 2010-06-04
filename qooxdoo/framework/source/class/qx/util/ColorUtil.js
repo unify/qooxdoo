@@ -622,5 +622,12 @@ qx.Class.define("qx.util.ColorUtil",
 
       return this.rgbToRgbString([r, g, b]);
     }
+  },
+  
+  
+  defer : function(statics)
+  {
+    qx.core.Type.add("Color", statics.isValidPropertyValue, statics);
+    
   }
 });
