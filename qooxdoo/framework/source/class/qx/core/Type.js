@@ -18,19 +18,35 @@
 ************************************************************************ */
 
 /**
- * Convenient type check API with focus on small base set features, mainly as
+ * Convenient type check API with focus on a small base set features, mainly as
  * used by the property system, and an additional possibility to register
  * new types dynamically.
+ * 
+ * Built-in support:
+ * 
+ * * All native types e.g. String, Number, Boolean, Function, ...
+ * * Node types. Currently: Node, Element and Document
+ * * Special numeric values: Integer, PositiveNumber and PositiveInteger
+ * * qooxdoo-specific types Class, Interface, Mixin and Theme
+ * * Instanceof checks based on class name
+ * * Implementation checks based on interface
+ * * Whether a mixin is included into the value
+ * 
+ * Plus:
+ * 
+ * * Lists of possible values e.g. ["top","bottom"]
+ * * Custom check functions e.g. function(value) { return xxx } (should return boolean)
+ * 
+ * Major used dynamic additions are e.g.:
+ * 
+ * * Font: Whether it's a valid font defition for qooxdoo's theming system
+ * * Decoration: Whether it's a valid decorator object/name for qooxdoo's theming system
+ * * Color: Whether it's a valid color for qooxdoo's theming system
  */
 qx.Class.define("qx.core.Type",
 {
   statics :
   {
-    // TODO
-    // "Event"     : 'value !== null && value.type !== undefined',
-    // "Decorator" : 'value !== null && qx.theme.manager.Decoration.getInstance().isValidPropertyValue(value)',
-    // "Font"      : 'value !== null && qx.theme.manager.Font.getInstance().isDynamic(value)'
-
     __hacks :
     {
       "String" : "$$isString"
@@ -274,9 +290,7 @@ qx.Class.define("qx.core.Type",
       if (result == null) {
         throw new Error("Unsupported check: " + check);
       } else if (result == false) {
-        qx.log.Logger.debug(this, "TYPEOF: " + (typeof value) + " :: " + Object.prototype.toString.call(value))
         throw new Error("Value: '" + value + "' does not validates as: " + check);
-        
       }
     }    
   }
