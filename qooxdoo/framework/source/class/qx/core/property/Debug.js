@@ -68,7 +68,7 @@ qx.Bootstrap.define("qx.core.property.Debug",
         if (check)
         {
           try {
-            qx.core.Type.check(value, check);
+            qx.core.Type.check(value, check, obj);
           } catch(ex) {
             throw new Error("Could not set() property " + name + ": " + ex);
           }

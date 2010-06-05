@@ -132,8 +132,10 @@ qx.Class.define("qx.core.Type",
      * 
      * @param value {var} Any value
      * @param check {String} Any supported check e.g. native type, class name, ...
+     * @param context {Object?window} Only useful when function-checks are used. Defines the context
+     *    in this the function is being called.
      */
-    check : function(value, check)
+    check : function(value, check, context)
     {
       var result;
       
@@ -259,7 +261,13 @@ qx.Class.define("qx.core.Type",
       // Custom functions
       else if (check instanceof Function) 
       {
-        result = check(value);
+        result = check.call(context||window, value);
+        if (qx.core.Variant.isSet("qx.debug", "on")) 
+        {
+          if (result == null) {
+            throw new Error("Invalid check method with no return value!");
+          }          
+        }
       }      
       
       // Done

@@ -16,11 +16,11 @@ FUNCTIONAL CHANGES
 * Inheritance is sorted into priority chain: Has higher priority than init value
 * There is no "inherit" special value on "init" value anymore!
 * Transform of value during set() is not supported anymore. Was not used widely and just confuses users.
+* String-based checks are not supported anymore. Just use functions everywhere.
 
 TODO 
 
 * Add support for special value "inherit" to user/theme/runtime values
-* Add support for check
 * Add support for verify
 
 For a complete documentation of properties take a
