@@ -30,7 +30,10 @@ qx.Class.define("qx.test.core.InheritanceDummy",
 
   properties :
   {
-    enabled : { inheritable : true },
+    enabled : { 
+      nullable : true,
+      inheritable : true 
+    },
 
     width_ :
     {
