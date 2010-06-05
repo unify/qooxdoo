@@ -24,9 +24,8 @@
 ******************************************************************************************************************** */
 
 /**
- * Multi-level property which support multiple values per property with
- * integrated priorization. The following fields are available for properties
- * depdending on their configuration:
+ * Multi-level property which support multiple values per property with integrated priorization. The following fields
+ * are available for properties depending on their configuration:
  * 
  * # Init
  * # Inheritable
@@ -39,17 +38,13 @@
  * Additional configuration flags (compared to simple properties):
  * 
  * <ul>
- * <li><strong>inheritable</strong>: Whether the property value should be 
- *   inheritable. If the property does not have a user defined or an
- *   init value, the property will try to get the value from the parent 
- *   of the current object.</li>
- * <li><strong>themeable</strong>: Whether the property allows a themable
- *   value read dynamically from a theming system. The object containing this
- *   property needs to implement a method <code>getThemedValue</code>.</li>
- * <li><strong>deferredInit</strong>: Whether the property should have an 
- *   instance specific init value which is defined using the initPropertyName
- *   method during the constructor run of the affected class. Might be useful
- *   for reference objects.</li>
+ * <li><strong>inheritable</strong>: Whether the property value should be inheritable. If the property does not have a
+ *   user defined or an init value, the property will try to get the value from the parent of the current object.</li>
+ * <li><strong>themeable</strong>: Whether the property allows a themable value read dynamically from a theming system.
+ *   The object containing this property needs to implement a method <code>getThemedValue</code>.</li>
+ * <li><strong>deferredInit</strong>: Whether the property should have an instance specific init value which is defined
+ *   using the initPropertyName method during the constructor run of the affected class. Might be useful for reference
+ *   objects.</li>
  * </ul>
  */
 qx.Bootstrap.define("qx.core.property.Multi",
@@ -116,31 +111,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
     */    
     
     /**
-     * Adds a new property to the given class.
+     * Adds a new multi-field property to the given class.
      * 
-     * Supports the configuration keys:
-     * 
-     * * apply: Method to call after a new value has been stored
-     * * event: Event to fire after a new value has been stored (and apply has been called)
-     * * init: Init value for the property
-     * * nullable: Whether the property is able to store null values
-     * 
-     * Additional features to simple properties:
-     * 
-     * <ul>
-     * <li><strong>themeable</strong>: Whether a themeable value (which 
-     *   comes from some kind of styling system) should be supported</li>
-     * <li><strong>inheritable</strong>: Whether the property is inheritable 
-     *   which means that it might be copied from the parent of the object 
-     *   (e.g. in widget systems)</li>
-     * <li><strong>deferredInit</strong>: Whether the initialisation of this 
-     *   properties should be possible deferred e.g. in the constructor of the 
-     *   class. Might be useful if the properties' init value is an instance 
-     *   of another class etc.</li>
-     * </ul>
-     * 
-     * Please note that you need to define one of "init" or "nullable". Otherwise you
-     * might get errors during runtime function calls.
+     * Please note that you need to define one of "init" or "nullable". Otherwise you might get errors during runtime
+     * function calls.
      *  
      * @param clazz {Class} The class to modify
      * @param name {String} Name of the property. Camel-case. No special characters.
@@ -161,16 +135,16 @@ qx.Bootstrap.define("qx.core.property.Multi",
       this.__counter++;
             
       // Generate property ID
-      // Identically named property might store data on the same field
-      // as in this case this is typically on different classes.
-      // We reserve five slots for storing data: init, theme, inheritance, override, user
-      // At any moment we add more features, we need to increase the increment as well!
+      // Identically named property might store data on the same field as in this case this is typically on different
+      // classes. We reserve five slots for storing data: init, inheritance, theme, user and override
       var propertyNameToId = this.__propertyNameToId;
       var propertyId = propertyNameToId[name];
       if (!propertyId) 
       {
         propertyId = propertyNameToId[name] = qx.core.property.Core.ID;
-        qx.core.property.Core.ID+=10;
+        
+        // Number of fields + Meta field to store where we store the data
+        qx.core.property.Core.ID+=6;
       }
     
       // Store init value (shared data between instances)
@@ -237,9 +211,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
             }
 
             // Fallback to init value on prototype chain (when supported)
-            // This is always the value on the current class, not explicitely the
-            // class which creates the property. This is mainly for supporting
-            // init value overrides with "refined" properties
+            // This is always the value on the current class, not explicitely the class which creates the property. 
+            // This is mainly for supporting init value overrides with "refined" properties
             if (oldValue === Undefined && initField) {
               oldValue = context[initField];
             }
@@ -337,10 +310,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
           }
           
           // Remove value from store
-          // This is placed here, because we need to keep the old value first
-          // and only want to do this when needed.
-          // Do not use delete operator as this is not good for performance:
-          // just modifying the value to undefined is enough.
+          // This is placed here, because we need to keep the old value first and only want to do this when needed.
+          // Do not use delete operator for performance reasons: just modifying the value to undefined is enough.
           data[propertyId+modifyPriority] = Undefined;
 
           // Only need to react when current field is resetted
@@ -387,9 +358,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
         if (currentPriority === Undefined) 
         {
           // Fallback to init value on prototype chain (when supported)
-          // This is always the value on the current class, not explicitely the
-          // class which creates the property. This is mainly for supporting
-          // init value overrides with "refined" properties
+          // This is always the value on the current class, not explicitely the class which creates the property. 
+          // This is mainly for supporting init value overrides with "refined" properties
           if (initField) {
             return context[initField];
           }
@@ -399,8 +369,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
             return null;
           }
           
-          if (qx.core.Variant.isSet("qx.debug", "on")) {
-            context.error("Missing value for: " + name + " (during get()). Either define an init value, make the property nullable or define a fallback value.");
+          if (qx.core.Variant.isSet("qx.debug", "on")) 
+          {
+            context.error("Missing value for: " + name + 
+              " (during get()). Either define an init value, make the property nullable or define a fallback value.");
           }
           
           return;
@@ -426,10 +398,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
       members["get" + up] = getter;
 
       // There are exactly two types of init methods:
-      // 1. Initializing the value given in the property configuration
-      //    (calling apply methods, firing events, etc.)
-      // 2. Initializing the value during instance creation 
-      //    (useful for reference values which should not be shared between all instances)
+      // 1. Initializing the value given in the property configuration (calling apply methods, firing events, etc.)
+      // 2. Initializing the value during instance creation (useful for instance-specific non-shared values)
       if (initField)
       {
         members["init" + up] = function()
@@ -471,15 +441,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
         members["init" + up] = setter(1);
       }
       
-      /*      
-      if (config.inheritable) 
-      {
-        members["refresh" + up] = setter(2);
-      }
-      */
-
-      // Prio for themes is "3" - we update these values via importStyles()
-
       members["set" + up] = setter(4);
       members["reset" + up] = resetter(4);
       
@@ -569,8 +530,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         
         newValue = values[propertyName];
         
-        // If nothing is set at the moment and no new value is given
-        // then simply ignore the property for the moment
+        // If nothing is set at the moment and no new value is given then simply ignore the property for the moment
         if (oldPriority === Undefined && newValue === Undefined) {
           continue;
         }
@@ -653,8 +613,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
         } 
 
         // Call change helper
-        // Third earlist "return" option, ok, not really a return option, but
-        // we at least omit useless change calls when values are identical
+        // Third earlist "return" option, ok, not really a return option, but we at least omit useless change calls 
+        // when values are identical
         if (newValue !== oldValue) 
         {
           var config = PropertyUtil.getPropertyDefinition(obj.constructor, propertyName);
@@ -688,9 +648,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
     /**
      * Returns a list of all inheritable properties supported by the given class
      * 
-     * Contrary to {@link getProperties} this method caches requests for better performance
-     * in the property system.
-     *
      * @param clazz {Class} Class to query
      * @return {Map} All inheritable property names and a dictionary for faster lookup
      */
@@ -729,12 +686,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
       }
       
-      /*
-      if (qx.core.Variant.isSet("qx.debug", "on")) {
-        qx.log.Logger.debug(this, "Cached " + qx.Bootstrap.objectGetLength(result) + " inheritable properties for " + clazz.classname);
-      } 
-      */     
-      
       return result;
     },    
     
@@ -742,17 +693,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
     /**
      * Process an object whenever the parent has changed. 
      * 
-     * Should be called by the object itself which was modified. Required are both
-     * parents, the old and the new one to make this work correctly. All given 
-     * objects need to support the "$$parent" and "$$data" object fields
-     * to make this work correctly.
+     * Should be called by the object itself which was modified. Required are both parents, the old and the new one 
+     * to make this work correctly. All given objects need to support the "$$parent" and "$$data" object fields.
      * 
-     * This function is quite optimized for reduced additional function calls. The
-     * only expensive scenarios are when a property is currently inherited or
-     * the new parent offers a value which needs to aquired using a get() 
-     * call (e.g. themed or itself inherited). This means it is basically cheap
-     * for initial application creation, but is more expensive as soon as the application
-     * is running and objects are moved around dynamically.
+     * This function is quite optimized for reduced additional function calls. The only expensive scenarios are when 
+     * a property is currently inherited or the new parent offers a value which needs to aquired using a get() 
+     * call (e.g. themed or itself inherited). This means it is basically cheap for initial application creation, 
+     * but is more expensive as soon as the application is running and objects are moved around dynamically.
      * 
      * @param obj {qx.core.Object} The modified object
      * @param newParent {qx.core.Object} The current parent
