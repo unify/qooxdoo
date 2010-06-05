@@ -1,11 +1,10 @@
-/* ************************************************************************
+/* ********************************************************************************************************************
 
    qooxdoo - the new era of web development
 
    http://qooxdoo.org
 
    Copyright:
-     2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
      2009-2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
@@ -15,19 +14,17 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
-     * Andreas Ecker (ecker)
-     * Martin Wittemann (martinwittemann)
 
-************************************************************************ */
+******************************************************************************************************************** */
 
-/* ************************************************************************
+/* ********************************************************************************************************************
 
 #use(qx.event.dispatch.Direct)
 
-************************************************************************ */
+******************************************************************************************************************** */
 
 /**
- * Multi-level property which support multiple values per properties which
+ * Multi-level property which support multiple values per property with
  * integrated priorization. The following fields are available for properties
  * depdending on their configuration:
  * 
@@ -38,6 +35,22 @@
  * # Override
  * 
  * Higher values mean higher priority e.g. user values override themed values.
+ * 
+ * Additional configuration flags (compared to simple properties):
+ * 
+ * <ul>
+ * <li><strong>inheritable</strong>: Whether the property value should be 
+ *   inheritable. If the property does not have a user defined or an
+ *   init value, the property will try to get the value from the parent 
+ *   of the current object.</li>
+ * <li><strong>themeable</strong>: Whether the property allows a themable
+ *   value read dynamically from a theming system. The object containing this
+ *   property needs to implement a method <code>getThemedValue</code>.</li>
+ * <li><strong>deferredInit</strong>: Whether the property should have an 
+ *   instance specific init value which is defined using the initPropertyName
+ *   method during the constructor run of the affected class. Might be useful
+ *   for reference objects.</li>
+ * </ul>
  */
 qx.Bootstrap.define("qx.core.property.Multi",
 {

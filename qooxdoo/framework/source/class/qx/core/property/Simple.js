@@ -1,11 +1,10 @@
-/* ************************************************************************
+/* ********************************************************************************************************************
 
    qooxdoo - the new era of web development
 
    http://qooxdoo.org
 
    Copyright:
-     2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
      2009-2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
@@ -15,28 +14,34 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
-     * Andreas Ecker (ecker)
-     * Martin Wittemann (martinwittemann)
 
-************************************************************************ */
+******************************************************************************************************************** */
 
-/* ************************************************************************
+/* ********************************************************************************************************************
 
 #use(qx.event.dispatch.Direct)
 
-************************************************************************ */
+******************************************************************************************************************** */
 
 /**
- * Lightweight basic property handling for simple key/value like
- * properties which might have an optional init value. 
+ * Property handling for simple key/value like properties which might have an optional init value. 
  * 
- * Supports the configuration keys:
+ * Supports the following configuration keys:
  * 
- * * apply: Method to call after a new value has been stored. The signature of the method is <code>function(newValue, oldValue, propertyName)</code>.
- * * event: Event to fire after a new value has been stored (and apply has been called). The event type is a {@link qx.event.type.Data} which contains both, the old and new value (using getData/getOldData).
- * * init: Init value for the property. If no value is set or the property gets reset, the getter will return the <code>init</code> value.
- * * nullable: Whether the property is able to store null values. This also allows the system to return <code>null</code> when no other value is available. Otherwise an error is thrown whenever no value is available.
- * * refine: Refinements are used to alter the init value of a property. No other changes are allowed/supported as the generated member methods are shared between classes/objects.
+ * <ul>
+ * <li><strong>check</strong>: Check the incoming value for the given type or function.</li>
+ * <li><strong>apply</strong>: Method to call after a new value has been stored. The signature of the method is 
+ *   <code>function(newValue, oldValue, propertyName)</code>.</li>
+ * <li><strong>event</strong>: Event to fire after a new value has been stored (and apply has been called). The event
+ *   type is a {@link qx.event.type.Data} which contains both, the old and new value (using getData/getOldData).</li>
+ * <li><strong>init</strong>: Init value for the property. If no value is set or the property gets reset, the getter
+ *   will return the <code>init</code> value.</li>
+ * <li><strong>nullable</strong>: Whether the property is able to store null values. This also allows the system to
+ *   return <code>null</code> when no other value is available. Otherwise an error is thrown whenever no value is 
+ *   available.</li>
+ * <li><strong>refine</strong>: Refinements are used to alter the init value of a property. No other changes are
+ *   allowed/supported as the generated member methods are shared between classes/objects.</li>
+ * </ul>
  */
 qx.Bootstrap.define("qx.core.property.Simple",
 {
