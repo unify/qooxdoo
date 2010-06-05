@@ -291,7 +291,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             {
               newGetter = priorityToFieldConfig[newPriority].get;
               if (newGetter) {
-                newValue = context[newGetter](name);
+                newValue = context[newGetter] ? context[newGetter](name) : Undefined;
               } else {
                 newValue = data[propertyId+newPriority];
               }              
@@ -572,7 +572,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             var oldGetter = priorityToFieldConfig[oldPriority].get;
             if (oldGetter) {
-              oldValue = obj[oldGetter](propertyName);
+              oldValue = obj[oldGetter] ? obj[oldGetter](propertyName) : Undefined;
             } else {
               oldValue = data[propertyId+oldPriority];
             }           
@@ -599,7 +599,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             newGetter = priorityToFieldConfig[newPriority].get;
             if (newGetter) {
-              newValue = obj[newGetter](propertyName);
+              newValue = obj[newGetter] ? obj[newGetter](propertyName) : Undefined;
             } else {
               newValue = data[propertyId+newPriority];
             }              
@@ -829,7 +829,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           {
             newParentGetter = priorityToFieldConfig[newParentPriority].get;
             if (newParentGetter) {
-              newValue = newParent[newParentGetter](propertyName);
+              newValue = newParent[newParentGetter] ? newParent[newParentGetter](propertyName) : Undefined;
             } else {
               newValue = newParentData[propertyId+newParentPriority];
             }
