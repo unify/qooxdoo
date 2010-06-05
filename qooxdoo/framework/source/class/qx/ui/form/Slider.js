@@ -149,7 +149,11 @@ qx.Class.define("qx.ui.form.Slider",
      */
     value :
     {
-      check : "typeof value==='number'&&value>=this.getMinimum()&&value<=this.getMaximum()",
+      check : function(value)
+      {
+        qx.core.Type.check(value, "Number");
+        return value >= this.getMinimum() && value <= this.getMaximum();
+      },
       init : 0,
       apply : "_applyValue",
       event : "changeValue",
