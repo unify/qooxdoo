@@ -27,7 +27,6 @@ qx.Class.define("qx.core.Type",
   statics :
   {
     // TODO
-    // "Window"    : 'value !== null && value.document',
     // "Event"     : 'value !== null && value.type !== undefined',
     // "Decorator" : 'value !== null && qx.theme.manager.Decoration.getInstance().isValidPropertyValue(value)',
     // "Font"      : 'value !== null && qx.theme.manager.Font.getInstance().isDynamic(value)'
@@ -115,7 +114,6 @@ qx.Class.define("qx.core.Type",
         }
       }
       
-      qx.log.Logger.info(this, "Add check for type: " + type);
       db[type] = 
       {
         method : method,
@@ -193,15 +191,16 @@ qx.Class.define("qx.core.Type",
         // Check node types
         else if (this.__nodeLike[check])
         {
-          result = value.nodeType != null && (check == "Node" || (check == "Element" && value.nodeType == 1) || (check == "Document" && value.nodeType == 9));
+          var nodeType = value.nodeType;
+          result = nodeType != null && (check == "Node" || (check == "Element" && nodeType == 1) || (check == "Document" && nodeType == 9));
         }
 
         // Check class like types
         else if (this.__classLike[check]) 
         {
           result = value.$$type == check;
-        } 
-
+        }
+        
         else
         {
           // Check classes, interfaces, mixins
@@ -211,15 +210,16 @@ qx.Class.define("qx.core.Type",
           }
           else
           {
+            var construct = value.constructor;
             var iface = qx.Interface.getByName(check);
             if (iface) {
-              result = qx.Bootstrap.hasInterface(value.constructor, iface);
+              result = qx.Bootstrap.hasInterface(construct, iface);
             } 
             else
             {
               var mixin = qx.Mixin.getByName(check);
               if (mixin) {
-                result = qx.Class.hasMixin(value.constructor, mixin);
+                result = qx.Class.hasMixin(construct, mixin);
               }
             }          
           }        
@@ -262,13 +262,13 @@ qx.Class.define("qx.core.Type",
         result = check(value);
       }      
       
-
       // Done
       if (result == null) {
-        qx.log.Logger.warn("Unsupported check: " + check)
+        throw new Error("Unsupported check: " + check);
       } else if (result == false) {
-        qx.log.Logger.error("Value: '" + value + "' does not validates as: " + check);
-        //throw new Error("Value: '" + value + "' does not validates as: " + check);
+        qx.log.Logger.debug(this, "TYPEOF: " + (typeof value) + " :: " + Object.prototype.toString.call(value))
+        throw new Error("Value: '" + value + "' does not validates as: " + check);
+        
       }
     }    
   }
