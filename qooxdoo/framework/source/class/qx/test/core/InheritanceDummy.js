@@ -62,8 +62,9 @@ qx.Class.define("qx.test.core.InheritanceDummy",
     add : function(child)
     {
       this.children.push(child);
-      child.parent = this;
-      child.$$refreshInheritables();
+      var oldParent = child.$$parent;
+      child.$$parent = this;
+      qx.core.property.Multi.moveObject(child, this, oldParent);
     },
 
     _getChildren : function() {
@@ -71,7 +72,7 @@ qx.Class.define("qx.test.core.InheritanceDummy",
     },
 
     getLayoutParent : function() {
-      return this.parent;
+      return this.$$parent;
     }
   }
 });
