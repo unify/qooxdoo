@@ -1,34 +1,41 @@
 Internal class for handling of dynamic properties.
 
-For a complete documentation of properties take a
-look at http://qooxdoo.org/documentation/developer_manual/properties.
-
 <b>What's New</b>
 
-* Splitted property system for simple and multi storage properties. 
-* Simple properties (which are about 66%) should be a lot faster then previously.
-* Multi properties works with a major improved inheritance and theme system.
+<ul>
+<li>Splitted property system for simple and multi storage properties.</li>
+<li>Simple properties (which are about 66%) should be a lot faster then previously.</li>
+<li>Multi properties works with a major improved inheritance and theme system.</li>
+</ul>
 
-Storage changes:
+<b>Storage changes</b>
 
-* All data is stored on a $$data object on each instance
-* The system uses generated storage fields. There is basically no way to get information about the internal storage field from the outside. 
-* This also dramatically reduces memory consumption and improved dispose time by a large extend.
+<ul>
+<li>All data is stored on a $$data object on each instance.</li>
+<li>The system uses generated storage fields. There is basically no way to get information about the internal storage field from the outside. </li>
+<li>This also dramatically reduces memory consumption and improved dispose time by a large extend.</li>
+</ul>
 
-Method creation:
+<b>Method creation</b>
 
-* No function compilation => Full Adobe AIR support, improved compiled size
-* Property methods are created at declaration. => No more waiting for first instance.
+<ul>
+<li>No function compilation => Full Adobe AIR support, improved compiled size.</li>
+<li>Property methods are created at declaration. => No more waiting for first instance.</li>
+</ul>
 
-Memory consumption:
+<b>Memory consumption</b>
 
-* Themed values are accessed from the theme system when calling get() methods. This omits double storage of these values on every instance.
-* Inherited values are accessed from the parent, not copied over to every children.
+<ul>
+<li>Themed values are accessed from the theme system when calling get() methods. This omits double storage of these values on every instance.</li>
+<li>Inherited values are accessed from the parent, not copied over to every children.</li>
+</ul>
 
-Functional changes:
+<b>Functional changes</b>
 
-* Inheritance is sorted into priority chain: Has higher priority than init value.
-* There is no "inherit" special value anymore. Forced inheritance not possible. Is there a need for this?
-* Transform of value during set() is not supported anymore. Was not used widely and just confuses users.
-* String-based checks are not supported anymore. Just use functions everywhere.
-* Validation support is gone. Through the new {@link qx.core.Type} class one may do all things supported there with checks.
+<ul>
+<li>Inheritance is sorted into priority chain: Has higher priority than init value.</li>
+<li>There is no "inherit" special value anymore (was quite an edge-case). Forced inheritance not possible anymore.</li>
+<li>Transform of value during set() is not supported anymore. Was not used widely and just confuses users.</li>
+<li>String-based checks are not supported anymore. Just use functions everywhere.</li>
+<li>Validation support is gone. Through the new {@link qx.core.Type} class one may do all things supported there with checks.</li>
+</ul>
