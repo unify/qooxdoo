@@ -911,6 +911,9 @@ qx.Bootstrap.define("qx.core.property.Multi",
     __changeInheritedHelper : function(obj, newValue, oldValue, config)
     {
       // TODO: Improved this lookup via $$children
+      if (!obj._getChildren) {
+        return;
+      }
       var children = obj._getChildren();
       var length = children.length;
       if (!length) {
