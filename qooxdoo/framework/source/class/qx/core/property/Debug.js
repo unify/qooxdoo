@@ -121,12 +121,6 @@ qx.Bootstrap.define("qx.core.property.Debug",
       "on" : 
       {
         name         : "string",   // String
-
-        // Legacy:
-        //dispose      : "boolean",  // Boolean
-        //dereference  : "boolean",  // Boolean
-        //transform    : "string",   // String
-        
         inheritable  : "boolean",  // Boolean
         nullable     : "boolean",  // Boolean
         themeable    : "boolean",  // Boolean
@@ -150,7 +144,8 @@ qx.Bootstrap.define("qx.core.property.Debug",
      */
     __propertyGroupKeys : qx.core.Variant.select("qx.debug",
     {
-      "on" : {
+      "on" : 
+      {
         name      : "string",   // String
         group     : "object",   // Array
         shorthand : "boolean",  // Boolean
