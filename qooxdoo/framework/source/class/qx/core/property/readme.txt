@@ -4,7 +4,7 @@ Internal class for handling of dynamic properties.
 
 <ul>
 <li>Splitted property system for simple and multi storage properties.</li>
-<li>Simple properties (which are about 66%) should be a lot faster then previously.</li>
+<li>Simple properties (which are about 66% of all properties) should be a lot faster then previously.</li>
 <li>Multi properties works with a major improved inheritance and theme system.</li>
 </ul>
 
@@ -14,6 +14,7 @@ Internal class for handling of dynamic properties.
 <li>All data is stored on a $$data object on each instance.</li>
 <li>The system uses generated storage fields. There is basically no way to get information about the internal storage field from the outside. </li>
 <li>This also dramatically reduces memory consumption and improved dispose time by a large extend.</li>
+<li>Priorization is done using loops instead of multiple hard-coded lookups. This reduces code-size and memory footprint.</li>
 </ul>
 
 <b>Method creation</b>
