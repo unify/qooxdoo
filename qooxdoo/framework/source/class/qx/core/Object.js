@@ -505,10 +505,6 @@ qx.Class.define("qx.core.Object",
     ---------------------------------------------------------------------------
     */
 
-    /** {Class} Pointer to the regular logger class */
-    __Logger : qx.log.Logger,
-
-
     /**
      * Logs a debug message.
      *
@@ -517,7 +513,7 @@ qx.Class.define("qx.core.Object",
      * @return {void}
      */
     debug : function(msg) {
-      this.__Logger.debug(this, msg);
+      qx.log.Logger.debug(this, msg);
     },
 
 
@@ -529,7 +525,7 @@ qx.Class.define("qx.core.Object",
      * @return {void}
      */
     info : function(msg) {
-      this.__Logger.info(this, msg);
+      qx.log.Logger.info(this, msg);
     },
 
 
@@ -541,7 +537,7 @@ qx.Class.define("qx.core.Object",
      * @return {void}
      */
     warn : function(msg) {
-      this.__Logger.warn(this, msg);
+      qx.log.Logger.warn(this, msg);
     },
 
 
@@ -553,7 +549,7 @@ qx.Class.define("qx.core.Object",
      * @return {void}
      */
     error : function(msg) {
-      this.__Logger.error(this, msg);
+      qx.log.Logger.error(this, msg);
     },
 
 
@@ -563,7 +559,7 @@ qx.Class.define("qx.core.Object",
      * @return {void}
      */
     trace : function() {
-      this.__Logger.trace(this);
+      qx.log.Logger.trace(this);
     },
 
 
@@ -637,6 +633,11 @@ qx.Class.define("qx.core.Object",
         // Jump up to next super class
         clazz = clazz.superclass;
       }
+      
+      // Clear property storage
+      if (this.$$data) {
+        this.$$data = null;
+      }
 
       // Additional checks
       if (qx.core.Variant.isSet("qx.debug", "on"))
@@ -646,31 +647,14 @@ qx.Class.define("qx.core.Object",
           var key, value;
           for (key in this)
           {
-            value = this[key];
-
-            // Check for Objects but respect values attached to the prototype itself
-            if (value !== null && typeof value === "object" && !(qx.Bootstrap.isString(value)))
+            if (this.hasOwnProperty(key))
             {
-              // Check prototype value
-              // undefined is the best, but null may be used as a placeholder for
-              // private variables (hint: checks in qx.Class.define). We accept both.
-              if (this.constructor.prototype[key] != null) {
-                continue;
-              }
-
-              var ff2 = navigator.userAgent.indexOf("rv:1.8.1") != -1;
-              var ie6 = navigator.userAgent.indexOf("MSIE 6.0") != -1;
-              // keep the old behavior for IE6 and FF2
-              if (ff2 || ie6) {
-                if (value instanceof qx.core.Object || qx.core.Setting.get("qx.disposerDebugLevel") > 1) {
-                  qx.Bootstrap.warn(this, "Missing destruct definition for '" + key + "' in " + this.classname + "[" + this.toHashCode() + "]: " + value);
-                  delete this[key];
-                }
-              } else {
-                if (qx.core.Setting.get("qx.disposerDebugLevel") > 1) {
-                  qx.Bootstrap.warn(this, "Missing destruct definition for '" + key + "' in " + this.classname + "[" + this.toHashCode() + "]: " + value);
-                  delete this[key];
-                }
+              value = this[key];
+              if (value != null && typeof value == "object")
+              {
+                qx.Bootstrap.warn(this, "Missing destruct definition for '" + key + "' in " + 
+                  this.classname + "[" + this.toHashCode() + "]: " + value);
+                this[key] = null;
               }
             }
           }
@@ -685,20 +669,6 @@ qx.Class.define("qx.core.Object",
       DISPOSER UTILITIES
     ---------------------------------------------------------------------------
     */
-
-    /**
-     * Disconnects given fields from instance.
-     *
-     * @param varargs {arguments} List of fields to dispose
-     * @deprecated Performance: Don't use '_disposeFields' - instead
-     *      assign directly to <code>null</code>
-     */
-    _disposeFields : function(varargs)
-    {
-      qx.Bootstrap.warn("Don't use '_disposeFields' - instead assign directly to 'null'");
-      qx.util.DisposeUtil.disposeFields(this, arguments);
-    },
-
 
     /**
      * Disconnects and disposes given objects from instance.
@@ -798,6 +768,8 @@ qx.Class.define("qx.core.Object",
     qx.core.ObjectRegistry.unregister(this);
 
     // Cleanup user data
-    this.__userData = null;
+    if (this.__userData) {
+      this.__userData = null;
+    }    
   }
 });
