@@ -136,7 +136,11 @@ qx.Class.define("qx.ui.core.scroll.ScrollBar",
      */
     position :
     {
-      check : "qx.lang.Type.isNumber(value)&&value>=0&&value<=this.getMaximum()",
+      check : function(value)
+      {
+        qx.core.Type.check(value, "PositiveInteger");
+        return value <= this.getMaximum();
+      },
       init : 0,
       apply : "_applyPosition",
       event : "scroll"
