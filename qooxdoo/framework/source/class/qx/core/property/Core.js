@@ -5,7 +5,6 @@
    http://qooxdoo.org
 
    Copyright:
-     2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
      2009-2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
@@ -15,8 +14,6 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
-     * Andreas Ecker (ecker)
-     * Martin Wittemann (martinwittemann)
 
 ************************************************************************ */
 

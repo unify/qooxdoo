@@ -32,10 +32,11 @@
  * 
  * Supports the configuration keys:
  * 
- * * apply: Method to call after a new value has been stored
- * * event: Event to fire after a new value has been stored (and apply has been called)
- * * init: Init value for the property
- * * nullable: Whether the property is able to store null values
+ * * apply: Method to call after a new value has been stored. The signature of the method is <code>function(newValue, oldValue, propertyName)</code>.
+ * * event: Event to fire after a new value has been stored (and apply has been called). The event type is a {@link qx.event.type.Data} which contains both, the old and new value (using getData/getOldData).
+ * * init: Init value for the property. If no value is set or the property gets reset, the getter will return the <code>init</code> value.
+ * * nullable: Whether the property is able to store null values. This also allows the system to return <code>null</code> when no other value is available. Otherwise an error is thrown whenever no value is available.
+ * * refine: Refinements are used to alter the init value of a property. No other changes are allowed/supported as the generated member methods are shared between classes/objects.
  */
 qx.Bootstrap.define("qx.core.property.Simple",
 {
