@@ -37,7 +37,7 @@
  * * Lists of possible values e.g. ["top","bottom"]
  * * Custom check functions e.g. function(value) { return xxx } (should return boolean)
  * 
- * Major used dynamic additions are e.g.:
+ * Often used dynamic additions are e.g.:
  * 
  * * Font: Whether it's a valid font defition for qooxdoo's theming system
  * * Decoration: Whether it's a valid decorator object/name for qooxdoo's theming system
@@ -153,7 +153,7 @@ qx.Class.define("qx.core.Type",
      */
     check : function(value, check, context)
     {
-      var result;
+      var result, nativeCheck, variant, type, hack, nodeType, clazz, construct, iface, mixin, addon, i, l;
       
       if (value == null) {
         result = check == "Object" || check == "Null";
@@ -164,14 +164,14 @@ qx.Class.define("qx.core.Type",
         // Check basic native types
         if (this.__native[check] || this.__nativeVariations[check]) 
         {
-          var nativeCheck = this.__nativeVariations[check];
+          nativeCheck = this.__nativeVariations[check];
           if (nativeCheck)
           {
-            var variant = check;
+            variant = check;
             check = nativeCheck;
           }
 
-          var type = this.__primitive[check];
+          type = this.__primitive[check];
           if (type) {
             result = typeof value == type;
           } 
@@ -180,7 +180,7 @@ qx.Class.define("qx.core.Type",
             result = this.__stringToClass[Object.prototype.toString.call(value)] == check;
           }
 
-          var hack = this.__hacks[check];
+          hack = this.__hacks[check];
           if (!result && hack) {
             result = hack in value; 
           }
@@ -209,8 +209,8 @@ qx.Class.define("qx.core.Type",
         // Check node types
         else if (this.__nodeLike[check])
         {
-          var nodeType = value.nodeType;
-          result = nodeType != null && (check == "Node" || (check == "Element" && nodeType == 1) || (check == "Document" && nodeType == 9));
+          nodeType = value.nodeType;
+          result = nodeType != null && (check == "Node" || (nodeType == 1 && check == "Element") || (nodeType == 9 && check == "Document"));
         }
 
         // Check class like types
@@ -222,20 +222,20 @@ qx.Class.define("qx.core.Type",
         else
         {
           // Check classes, interfaces, mixins
-          var clazz = qx.Class.getByName(check);
+          clazz = qx.Class.getByName(check);
           if (clazz) {
             result = value.hasOwnProperty && value instanceof clazz;
           }
           else
           {
-            var construct = value.constructor;
-            var iface = qx.Interface.getByName(check);
+            construct = value.constructor;
+            iface = qx.Interface.getByName(check);
             if (iface) {
               result = qx.Bootstrap.hasInterface(construct, iface);
             } 
             else
             {
-              var mixin = qx.Mixin.getByName(check);
+              mixin = qx.Mixin.getByName(check);
               if (mixin) {
                 result = qx.Class.hasMixin(construct, mixin);
               }
@@ -246,7 +246,7 @@ qx.Class.define("qx.core.Type",
         // Support dynamically added checks as well
         if (result == null)
         {
-          var addon = this.__addons[check];
+          addon = this.__addons[check];
           if (addon) {
             result = addon.method.call(addon.context||window, value);
           }
@@ -263,7 +263,7 @@ qx.Class.define("qx.core.Type",
         else
         {
           result = false;
-          for (var i=0, l=check.length; i<l; i++) 
+          for (i=0, l=check.length; i<l; i++) 
           {
             if (value === check[i]) 
             {
@@ -277,7 +277,12 @@ qx.Class.define("qx.core.Type",
       // Custom functions
       else if (check instanceof Function) 
       {
-        result = check.call(context||window, value);
+        try {
+          result = check.call(context||window, value);
+        } catch(ex) {
+          result = false;
+        }
+        
         if (qx.core.Variant.isSet("qx.debug", "on")) 
         {
           if (result == null) {
