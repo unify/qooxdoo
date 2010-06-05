@@ -214,7 +214,9 @@ qx.Bootstrap.define("qx.core.property.Simple",
           if (propertyEvent) {
             context[fireDataEvent](propertyEvent, value, old);
           }
-        }        
+        }
+        
+        return value;        
       };
       
       

@@ -251,6 +251,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
               }              
             }     
           }
+          
+          return newValue;
         };      
       };
 

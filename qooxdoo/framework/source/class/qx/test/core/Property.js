@@ -29,7 +29,6 @@ qx.Class.define("qx.test.core.Property",
 
       // Check instance
       var inst = new qx.test.core.PropertyHelper;
-      this.assertNotUndefined(inst, "instance");
 
       // Public setter/getter etc.
       this.assertFunction(inst.setPublicProp, "public setter");
@@ -51,7 +50,6 @@ qx.Class.define("qx.test.core.Property",
 
       // Check instance
       var inst = new qx.test.core.PropertyHelper;
-      this.assertNotUndefined(inst, "instance");
 
       // Type checks: String
       this.assertIdentical("Hello", inst.setStringProp("Hello"), "string property, set");
@@ -182,7 +180,6 @@ qx.Class.define("qx.test.core.Property",
 
       // Check instance
       var inst = new qx.test.core.PropertyHelper;
-      this.assertNotUndefined(inst, "instance");
 
       // Check init value
       this.assertIdentical(inst.getInitProp(), "foo", "a1");
@@ -218,7 +215,6 @@ qx.Class.define("qx.test.core.Property",
     testInitApply : function()
     {
       var inst = new qx.test.core.PropertyHelper;
-      this.assertNotUndefined(inst, "instance");
 
       this.assertUndefined(inst.lastApply);
       inst.setInitApplyProp1("juhu"); //set to init value
@@ -244,7 +240,7 @@ qx.Class.define("qx.test.core.Property",
     {
       // now test the init functions
       var self = this;
-      var inst = new qx.test.core.PropertyHelper(function(inst) {
+      new qx.test.core.PropertyHelper(function(inst) {
 
         inst.initInitApplyProp1();
         self.assertJsonEquals(["juhu", null], inst.lastApply);
@@ -254,7 +250,6 @@ qx.Class.define("qx.test.core.Property",
         self.assertJsonEquals([null, null], inst.lastApply);
         inst.lastApply = undefined;
       });
-      this.assertNotUndefined(inst, "instance");
     },
 
     testDefinesThanSubClassWithInterface : function()
