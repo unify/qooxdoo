@@ -39,6 +39,25 @@ qx.Class.define("qx.test.core.Property",
 
       // Boolean property
       this.assertFunction(inst.toggleBooleanProp, "boolean toggler");
+      
+      // Check init value
+      this.assertIdentical(inst.getInitProp(), "foo", "a1");
+      this.assertIdentical(inst.setInitProp("hello"), "hello", "a2");
+      this.assertIdentical(inst.getInitProp(), "hello", "a3");
+      this.assertIdentical(inst.resetInitProp(), undefined, "a4");
+      this.assertIdentical(inst.getInitProp(), "foo", "a5");
+
+      // Check null value
+      this.assertIdentical(inst.getNullProp(), "bar", "b1");
+      this.assertIdentical(inst.setNullProp("hello"), "hello", "b2");
+      this.assertIdentical(inst.getNullProp(), "hello", "b3");
+      this.assertIdentical(inst.setNullProp(null), null, "b4");
+      this.assertIdentical(inst.getNullProp(), null, "b5");
+      this.assertIdentical(inst.resetNullProp(), undefined, "b6");
+      this.assertIdentical(inst.getNullProp(), "bar", "b7");
+
+      // No prop
+      this.assertIdentical(inst.getNoProp(), null, "c1");
 
       this.debug("Done: testBasic");
     },
@@ -171,44 +190,6 @@ qx.Class.define("qx.test.core.Property",
       this.assertTrue(ch1.getEnabled(), "c2");
       this.assertTrue(ch2.getEnabled(), "c3");
       this.assertFalse(ch3.getEnabled(), "c4");
-    },
-
-
-    testMultiValues : function()
-    {
-      this.debug("Exec: testMultiValues");
-
-      // Check instance
-      var inst = new qx.test.core.PropertyHelper;
-
-      // Check init value
-      this.assertIdentical(inst.getInitProp(), "foo", "a1");
-      this.assertIdentical(inst.setInitProp("hello"), "hello", "a2");
-      this.assertIdentical(inst.getInitProp(), "hello", "a3");
-      this.assertIdentical(inst.resetInitProp(), undefined, "a4");
-      this.assertIdentical(inst.getInitProp(), "foo", "a5");
-
-      // Check null value
-      this.assertIdentical(inst.getNullProp(), "bar", "b1");
-      this.assertIdentical(inst.setNullProp("hello"), "hello", "b2");
-      this.assertIdentical(inst.getNullProp(), "hello", "b3");
-      this.assertIdentical(inst.setNullProp(null), null, "b4");
-      this.assertIdentical(inst.getNullProp(), null, "b5");
-      this.assertIdentical(inst.resetNullProp(), undefined, "b6");
-      this.assertIdentical(inst.getNullProp(), "bar", "b7");
-
-      // Check appearance value
-      this.assertIdentical(inst.setThemedAppearanceProp("black"), "black", "c1");
-      this.assertIdentical(inst.getAppearanceProp(), "black", "c2");
-      this.assertIdentical(inst.setAppearanceProp("white"), "white", "c3");
-      this.assertIdentical(inst.getAppearanceProp(), "white", "c4");
-      this.assertIdentical(inst.resetAppearanceProp(), undefined, "c5");
-      this.assertIdentical(inst.getAppearanceProp(), "black", "c6");
-
-      // No prop
-      this.assertIdentical(inst.getNoProp(), null, "c1");
-
-      this.debug("Done: testMultiValues");
     },
 
 
