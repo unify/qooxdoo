@@ -24,7 +24,7 @@ qx.Class.define("qx.test.core.InheritanceDummy",
   construct : function()
   {
     this.base(arguments);
-    this.children = [];
+    this.$$children = [];
   },
 
 
@@ -34,26 +34,22 @@ qx.Class.define("qx.test.core.InheritanceDummy",
 
     width_ :
     {
-      inheritable : true,
-      themeable   : true
+      inheritable : true
     },
 
     height_ :
     {
-      inheritable : true,
-      themeable   : true
+      inheritable : true
     },
 
     left_ :
     {
-      inheritable : true,
-      themeable   : true
+      inheritable : true
     },
 
     top_ :
     {
-      inheritable : true,
-      themeable   : true
+      inheritable : true
     }
   },
 
@@ -61,18 +57,20 @@ qx.Class.define("qx.test.core.InheritanceDummy",
   {
     add : function(child)
     {
-      this.children.push(child);
+      this.$$children.push(child);
       var oldParent = child.$$parent;
       child.$$parent = this;
       qx.core.property.Multi.moveObject(child, this, oldParent);
     },
+    
+    getInheritedValue : function(prop) 
+    {
+      var parent = this.$$parent;
+      return parent && this.$$parent.get(prop);
+    },    
 
     _getChildren : function() {
-      return this.children;
-    },
-
-    getLayoutParent : function() {
-      return this.$$parent;
+      return this.$$children;
     }
   }
 });
