@@ -36,7 +36,8 @@ Internal class for handling of dynamic properties.
 <ul>
 <li>Inheritance is sorted into priority chain: Has higher priority than init value.</li>
 <li>There is no "inherit" special value anymore (was quite an edge-case). Forced inheritance not possible anymore.</li>
-<li>Transform of value during set() is not supported anymore. Was not used widely and just confuses users.</li>
-<li>String-based checks are not supported anymore. Just use functions everywhere.</li>
-<li>Validation support is gone. Through the new {@link qx.core.Type} class one may do all things supported there with checks.</li>
+<li>Transform of value during set() is not supported anymore. Was not used widely and changing the stored value during set() is questionable.</li>
+<li>String-based checks are not supported anymore. Just use function pointers everywhere.</li>
+<li>Validation does not support function names from the member section anymore. This is basically because of members
+might be overwritten and this way the validation might be modified/hacked in sub-classes which is undesirable.</li>
 </ul>

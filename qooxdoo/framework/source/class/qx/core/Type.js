@@ -150,8 +150,9 @@ qx.Class.define("qx.core.Type",
      * @param check {String} Any supported check e.g. native type, class name, ...
      * @param context {Object?window} Only useful when function-checks are used. Defines the context
      *    in this the function is being called.
+     * @param errorClass {Error?Error} The error class
      */
-    check : function(value, check, context)
+    check : function(value, check, context, errorClass)
     {
       var result, nativeCheck, variant, type, hack, nodeType, clazz, construct, iface, mixin, addon, i, l;
       
@@ -274,28 +275,43 @@ qx.Class.define("qx.core.Type",
         }
       }
       
+      // Custom regexps
+      else if (check instanceof RegExp)
+      {
+        qx.core.Type.check(value, "String");
+        result = check.match(value);
+      }
+      
       // Custom functions
       else if (check instanceof Function) 
       {
-        try {
-          result = check.call(context||window, value);
-        } catch(ex) {
-          result = false;
-        }
-        
-        if (qx.core.Variant.isSet("qx.debug", "on")) 
+        try 
         {
+          result = check.call(context||window, value);
+          
+          // If function has no return value, but did not throw an exception
+          // than we think it's OK.
           if (result == null) {
-            throw new Error("Invalid check method with no return value!");
-          }          
+            result = true;
+          }
+        } 
+        catch(ex) {
+          result = false;
         }
       }      
       
       // Done
-      if (result == null) {
-        throw new Error("Unsupported check: " + check);
-      } else if (result == false) {
-        throw new Error("Value: '" + value + "' does not validates as: " + check);
+      if (result == null || result == false)
+      {
+        if (!errorClass) {
+          errorClass = Error;
+        }
+        
+        if (result == null) {
+          throw new errorClass("Unsupported check: " + check);
+        } else {
+          throw new errorClass("Value: '" + value + "' does not validates as: " + check);
+        }
       }
     }    
   }

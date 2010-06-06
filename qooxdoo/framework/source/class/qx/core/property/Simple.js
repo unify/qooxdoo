@@ -107,7 +107,8 @@ qx.Bootstrap.define("qx.core.property.Simple",
       var Bootstrap=qx.Bootstrap, up=(Bootstrap.$$firstUp[name] || Bootstrap.firstUp(name));
          
       // Shorthands: Better compression/obfuscation/performance
-      var propertyNullable=config.nullable, propertyEvent=config.event, propertyApply=config.apply;
+      var propertyNullable=config.nullable, propertyEvent=config.event, 
+        propertyApply=config.apply, propertyValidate=config.validate;
 
 
 
@@ -196,6 +197,10 @@ qx.Bootstrap.define("qx.core.property.Simple",
 
         if (qx.core.Variant.isSet("qx.debug", "on")) {
           qx.core.property.Debug.checkSetter(context, config, arguments);
+        }
+        
+        if (propertyValidate) {
+          qx.core.Type.check(value, propertyValidate, context, qx.core.ValidationError);
         }
         
         data = context[dataStore];

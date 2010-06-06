@@ -162,6 +162,12 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var nullable = config.nullable; 
       var priorityToFieldConfig = this.__priorityToFieldConfig;
       
+      
+      
+      // Shorthands: Better compression/obfuscation/performance
+      var propertyNullable=config.nullable, propertyEvent=config.event, 
+        propertyApply=config.apply, propertyValidate=config.validate;
+      
 
               
       /*
@@ -180,24 +186,30 @@ qx.Bootstrap.define("qx.core.property.Multi",
             qx.core.property.Debug.checkSetter(context, config, arguments);
           }
           
+          if (propertyValidate) {
+            qx.core.Type.check(newValue, propertyValidate, context, qx.core.ValidationError);
+          }          
+          
           var data = context.$$data;
           if (!data) {
             data = context.$$data = {};
           }
+          else
+          {
+            // Read old value
+            var oldPriority = data[propertyId];
+            if (oldPriority !== Undefined) 
+            {
+              var oldGetter = priorityToFieldConfig[oldPriority].get;
+              if (oldGetter) {
+                var oldValue = context[oldGetter](name);
+              } else {
+                var oldValue = data[propertyId+oldPriority];
+              }            
+            }
+          }
           
           // context.debug("Save " + name + "[" + modifyPriority + "]=" + newValue);
-
-          // Read old value
-          var oldPriority = data[propertyId];
-          if (oldPriority !== Undefined) 
-          {
-            var oldGetter = priorityToFieldConfig[oldPriority].get;
-            if (oldGetter) {
-              var oldValue = context[oldGetter](name);
-            } else {
-              var oldValue = data[propertyId+oldPriority];
-            }            
-          }
           
           // Store new value
           data[propertyId+modifyPriority] = newValue;
