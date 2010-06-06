@@ -96,9 +96,19 @@ qx.Class.define("apiviewer.Controller",
         }
 
         var content = evt.getContent();
+        if (!content) {
+          throw new Error("Empty content loaded: " + url);
+        }
 
         var start = new Date();
-        var treeData = eval("(" + content + ")");
+        try
+        {
+          var treeData = qx.lang.Json.parse(content);
+        } catch(ex) {
+          this.error("Could not parse: " + url);
+          this.error("Exception: " + ex);
+          return;
+        }
         var end = new Date();
 
         if (qx.core.Variant.isSet("qx.debug", "on")) {
