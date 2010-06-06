@@ -151,8 +151,16 @@ qx.Class.define("qx.core.Type",
     {
       var result, nativeCheck, variant, type, hack, nodeType, clazz, construct, iface, mixin, addon, i, l;
       
-      if (value == null) {
-        result = check == "Object" || check == "Null";
+      if (value == null) 
+      {
+        result = check == "Null";
+        
+        if (qx.core.Variant.isSet("qx.debug", "on"))
+        {
+          if (result == false) {
+            throw new errorClass("Value: '" + value + "' is null but needs to be: " + check + "!");
+          }
+        }        
       }
       
       else if (typeof check == "string")
@@ -200,40 +208,86 @@ qx.Class.define("qx.core.Type",
               }
             }
           }
+          
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (result == false) {
+              throw new errorClass("Value: '" + value + "' is not type of: " + check + "!");
+            }
+          }          
         }   
 
         // Check node types
         else if (this.__nodeLike[check])
         {
           nodeType = value.nodeType;
-          result = nodeType != null && (check == "Node" || (nodeType == 1 && check == "Element") || (nodeType == 9 && check == "Document"));
+          result = nodeType != null && 
+            (check == "Node" || (nodeType == 1 && check == "Element") || (nodeType == 9 && check == "Document"));
+          
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (result == false) {
+              throw new errorClass("Value: '" + value + "' is not type of " + check + "!");
+            }
+          }            
         }
 
         // Check class like types
         else if (this.__classLike[check]) 
         {
           result = value.$$type == check;
+          
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (result == false) {
+              throw new errorClass("Value: '" + value + "' is not type of " + check + "!");
+            }
+          }            
         }
         
         else
         {
           // Check classes, interfaces, mixins
           clazz = qx.Class.getByName(check);
-          if (clazz) {
+          if (clazz) 
+          {
             result = value.hasOwnProperty && value instanceof clazz;
+            
+            if (qx.core.Variant.isSet("qx.debug", "on"))
+            {
+              if (result == false) {
+                throw new errorClass("Value: '" + value + "' is not an instance of " + check + "!");
+              }
+            }            
           }
           else
           {
             construct = value.constructor;
             iface = qx.Interface.getByName(check);
-            if (iface) {
+            if (iface) 
+            {
               result = qx.Bootstrap.hasInterface(construct, iface);
+              
+              if (qx.core.Variant.isSet("qx.debug", "on"))
+              {
+                if (result == false) {
+                  throw new errorClass("Value: '" + value + "' do not implement interface: " + check + "!");
+                }
+              }              
             } 
             else
             {
               mixin = qx.Mixin.getByName(check);
-              if (mixin) {
+              if (mixin) 
+              {
                 result = qx.Class.hasMixin(construct, mixin);
+                
+                if (qx.core.Variant.isSet("qx.debug", "on"))
+                {
+                  if (result == false) {
+                    throw new errorClass("Value: '" + value + "' does not include mixin: " + check + "!");
+                  }
+                }                
               }
             }          
           }        
@@ -268,6 +322,13 @@ qx.Class.define("qx.core.Type",
             }
           }
         }
+        
+        if (qx.core.Variant.isSet("qx.debug", "on"))
+        {
+          if (result == false) {
+            throw new errorClass("Value: '" + value + "' is not listed in possible values: " + check);
+          }
+        }        
       }
       
       // Custom regexps
@@ -275,6 +336,13 @@ qx.Class.define("qx.core.Type",
       {
         qx.core.Type.check(value, "String");
         result = check.match(value);
+        
+        if (qx.core.Variant.isSet("qx.debug", "on"))
+        {
+          if (result == false) {
+            throw new errorClass("Value: '" + value + "' does not match regular expression: " + check);
+          }
+        }        
       }
       
       // Custom functions
@@ -290,8 +358,20 @@ qx.Class.define("qx.core.Type",
             result = true;
           }
         } 
-        catch(ex) {
-          result = false;
+        catch(ex) 
+        {
+          if (qx.core.Variant.isSet("qx.debug", "on")) {
+            throw new errorClass("Value: '" + value + "' is not accepted by check routine: " + ex);
+          } else {
+            result = false;
+          }
+        }
+        
+        if (qx.core.Variant.isSet("qx.debug", "on"))
+        {
+          if (result == false) {
+            throw new errorClass("Value: '" + value + "' is not accepted by check routine.");
+          }
         }
       }      
       
