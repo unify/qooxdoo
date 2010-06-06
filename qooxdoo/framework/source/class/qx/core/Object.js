@@ -251,8 +251,6 @@ qx.Class.define("qx.core.Object",
       
       return this[method]();      
     },
-    
-
 
 
 
@@ -601,8 +599,8 @@ qx.Class.define("qx.core.Object",
       // Debug output
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
-        if (qx.core.Setting.get("qx.disposerDebugLevel") > 2) {
-          qx.Bootstrap.debug(this, "Disposing " + this.classname + "[" + this.toHashCode() + "]");
+        if (qx.core.Setting.get("qx.disposerDebugging")) {
+          qx.Bootstrap.debug(this, "Disposing " + this);
         }
       }
 
@@ -642,7 +640,7 @@ qx.Class.define("qx.core.Object",
       // Additional checks
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
-        if (qx.core.Setting.get("qx.disposerDebugLevel") > 0)
+        if (qx.core.Setting.get("qx.disposerDebugging"))
         {
           var key, value;
           for (key in this)
@@ -724,7 +722,7 @@ qx.Class.define("qx.core.Object",
   */
 
   settings : {
-    "qx.disposerDebugLevel" : 0
+    "qx.disposerDebugging" : false
   },
 
 
