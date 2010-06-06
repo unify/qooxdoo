@@ -27,6 +27,7 @@
  * * All native types e.g. String, Number, Boolean, Function, ...
  * * Node types. Currently: Node, Element and Document
  * * Special numeric values: Integer, PositiveNumber and PositiveInteger
+ * * Check whether the value matches the given regular expression
  * * qooxdoo-specific types Class, Interface, Mixin and Theme
  * * Instanceof checks based on class name
  * * Implementation checks based on interface
@@ -36,12 +37,6 @@
  * 
  * * Lists of possible values e.g. ["top","bottom"]
  * * Custom check functions e.g. function(value) { return xxx } (should return boolean)
- * 
- * Often used dynamic additions are e.g.:
- * 
- * * Font: Whether it's a valid font defition for qooxdoo's theming system
- * * Decoration: Whether it's a valid decorator object/name for qooxdoo's theming system
- * * Color: Whether it's a valid color for qooxdoo's theming system
  */
 qx.Class.define("qx.core.Type",
 {
