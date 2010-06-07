@@ -90,10 +90,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     __fieldToPriority :
     {
-      inherited : 2,
-      theme : 3,
-      user : 4,
-      override : 5
+      inherited : 1,
+      theme : 2,
+      user : 3,
+      override : 4
     },
     
     
@@ -439,13 +439,13 @@ qx.Bootstrap.define("qx.core.property.Multi",
         };
       }
       
-      members["set" + up] = setter(4);
-      members["reset" + up] = resetter(4);
+      members["set" + up] = setter(3);
+      members["reset" + up] = resetter(3);
       
       if (this.RUNTIME_OVERRIDE)
       {
-        members["setRuntime" + up] = setter(5);
-        members["resetRuntime" + up] = resetter(5);
+        members["setRuntime" + up] = setter(4);
+        members["resetRuntime" + up] = resetter(4);
       }
       
       
