@@ -20,6 +20,7 @@
 
 /* ************************************************************************
 
+#require(qx.core.property.Group)
 #require(qx.core.property.Multi)
 #use(qx.ui.core.EventHandler)
 #use(qx.event.handler.DragDrop)
