@@ -23,10 +23,10 @@
 #require(qx.core.Setting)
 #require(qx.Interface)
 #require(qx.Mixin)
-#require(qx.core.property.Core)
-#require(qx.core.property.Simple)
-#require(qx.core.property.Multi)
-#require(qx.core.property.Group)
+
+#optional(qx.core.property.Simple)
+#optional(qx.core.property.Multi)
+#optional(qx.core.property.Group)
 
 #use(qx.lang.Core)
 
