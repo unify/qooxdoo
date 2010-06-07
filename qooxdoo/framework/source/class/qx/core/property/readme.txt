@@ -34,6 +34,7 @@ Internal class for handling of dynamic properties.
 <b>Functional changes</b>
 
 <ul>
+<li>No support for deferredInit anymore. This was a pretty complicated feature as it "moved" the init value from being property-specific to being instance-specific. This resulted into a lot of code and edge case handling.</li>
 <li>Inheritance is sorted into priority chain: Has higher priority than init value.</li>
 <li>There is no "inherit" special value anymore (was quite an edge-case). Forced inheritance not possible anymore.</li>
 <li>Transform of value during set() is not supported anymore. Was not used widely and changing the stored value during set() is questionable.</li>

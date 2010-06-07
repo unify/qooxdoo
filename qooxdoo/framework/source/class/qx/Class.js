@@ -1060,7 +1060,7 @@ qx.Bootstrap.define("qx.Class",
            clazz.prototype["$$init-" + name] = config.init;
          } else if (config.group) {
            PropertyGroup.add(clazz, name, config);
-         } else if (config.themeable || config.inheritable || config.deferredInit || qx.core.property.Core.RUNTIME_OVERRIDE) {  
+         } else if (config.themeable || config.inheritable || qx.core.property.Core.RUNTIME_OVERRIDE) {  
            MultiProperty.add(clazz, name, config);
          } else {
            SimpleProperty.add(clazz, name, config);

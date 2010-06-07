@@ -27,13 +27,13 @@
  * Multi-level property which support multiple values per property with integrated priorization. The following fields
  * are available for properties depending on their configuration:
  * 
- * # Init
  * # Inheritable
  * # Theme
  * # User
  * # Override
  * 
- * Higher values mean higher priority e.g. user values override themed values.
+ * Higher values mean higher priority e.g. user values override themed values. There is an additional value
+ * which is the init value and is stored property-wide (read: class specific - not instance specific).
  * 
  * Additional configuration flags (compared to simple properties):
  * 
@@ -42,9 +42,6 @@
  *   user defined or an init value, the property will try to get the value from the parent of the current object.</li>
  * <li><strong>themeable</strong>: Whether the property allows a themable value read dynamically from a theming system.
  *   The object containing this property needs to implement a method <code>getThemedValue</code>.</li>
- * <li><strong>deferredInit</strong>: Whether the property should have an instance specific init value which is defined
- *   using the initPropertyName method during the constructor run of the affected class. Might be useful for reference
- *   objects.</li>
  * </ul>
  */
 qx.Bootstrap.define("qx.core.property.Multi",
@@ -69,23 +66,20 @@ qx.Bootstrap.define("qx.core.property.Multi",
     __priorityToFieldConfig : 
     {
       // Override
-      5 : {},
+      4 : {},
       
       // User (aka Instance-specific value)
-      4: {},
+      3: {},
       
       // Theme
-      3: {
+      2: {
         get : "getThemedValue"
       },
       
       // Inheritance
-      2 : {
+      1 : {
         get : "getInheritedValue"
-      },
-
-      // Init (aka Class-specific default)
-      1: {}
+      }
     },
     
     
@@ -95,7 +89,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
      */
     __fieldToPriority :
     {
-      init : 1,
       inherited : 2,
       theme : 3,
       user : 4,
@@ -136,7 +129,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
             
       // Generate property ID
       // Identically named property might store data on the same field as in this case this is typically on different
-      // classes. We reserve five slots for storing data: init, inheritance, theme, user and override
+      // classes. We reserve four slots for storing data: inheritance, theme, user and override
       var propertyNameToId = this.__propertyNameToId;
       var propertyId = propertyNameToId[name];
       if (!propertyId) 
@@ -144,15 +137,15 @@ qx.Bootstrap.define("qx.core.property.Multi",
         propertyId = propertyNameToId[name] = qx.core.property.Core.ID;
         
         // Number of fields + Meta field to store where we store the data
-        qx.core.property.Core.ID+=6;
+        qx.core.property.Core.ID += 5;
       }
     
       // Store init value (shared data between instances)
       var members = clazz.prototype;
       if (config.init !== Undefined) 
       {
-        var initField = "$$init-" + name;
-        members[initField] = config.init;
+        var propertyInitKey = "$$init-" + name;
+        members[propertyInitKey] = config.init;
       }
       
       // Precalc
@@ -225,8 +218,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
             // Fallback to init value on prototype chain (when supported)
             // This is always the value on the current class, not explicitely the class which creates the property. 
             // This is mainly for supporting init value overrides with "refined" properties
-            if (oldValue === Undefined && initField) {
-              oldValue = context[initField];
+            if (oldValue === Undefined && propertyInitKey) {
+              oldValue = context[propertyInitKey];
             }
 
             // this.debug("Value Compare: " + newValue + " !== " + oldValue);
@@ -305,8 +298,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
               newPriority = Undefined;
               
               // Let's try the class-wide init value
-              if (initField) {
-                newValue = context[initField];
+              if (propertyInitKey) {
+                newValue = context[propertyInitKey];
               }
               else if (qx.core.Variant.isSet("qx.debug", "on"))
               {
@@ -372,8 +365,8 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // Fallback to init value on prototype chain (when supported)
           // This is always the value on the current class, not explicitely the class which creates the property. 
           // This is mainly for supporting init value overrides with "refined" properties
-          if (initField) {
-            return context[initField];
+          if (propertyInitKey) {
+            return context[propertyInitKey];
           }
           
           // Alternatively chose null, if possible
@@ -412,7 +405,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       // There are exactly two types of init methods:
       // 1. Initializing the value given in the property configuration (calling apply methods, firing events, etc.)
       // 2. Initializing the value during instance creation (useful for instance-specific non-shared values)
-      if (initField)
+      if (propertyInitKey)
       {
         members["init" + up] = function()
         {
@@ -430,27 +423,19 @@ qx.Bootstrap.define("qx.core.property.Multi",
           
           // Call apply
           if (config.apply) {
-            context[config.apply](context[initField], Undefined, config.name);
+            context[config.apply](context[propertyInitKey], Undefined, config.name);
           }
 
           // Fire event
           if (config.event) {
-            context.fireDataEvent(config.event, context[initField], Undefined);
+            context.fireDataEvent(config.event, context[propertyInitKey], Undefined);
           }
 
           // Inheritance support
           if (config.inheritable) {
-            qx.core.property.Multi.__changeInheritedHelper(context, context[initField], Undefined, config);
+            qx.core.property.Multi.__changeInheritedHelper(context, context[propertyInitKey], Undefined, config);
           }          
         };
-      }
-      
-      // When we do not have a init value at configuration level, we allow 
-      // the user to submit an init value during constructor phase. But as this
-      // is not needed very often there is a special option "deferredInit" to enable it.
-      else if (config.deferredInit === true) 
-      {
-        members["init" + up] = setter(1);
       }
       
       members["set" + up] = setter(4);
@@ -526,7 +511,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       var priorityToFieldConfig = this.__priorityToFieldConfig;
       var modifyPriority = this.__fieldToPriority[field];
       var PropertyUtil = qx.core.property.Util;
-      var propertyName, propertyId, newValue, oldValue, oldPriority, initField;
+      var propertyName, propertyId, newValue, oldValue, oldPriority, propertyInitKey;
       
       // Import every given property
       for (propertyName in values) 
@@ -600,9 +585,10 @@ qx.Bootstrap.define("qx.core.property.Multi",
             newPriority = Undefined;
             
             // Let's try the class-wide init value
-            initField = "$$init-" + propertyName;
-            if (initField) {
-              newValue = obj[initField];
+            propertyInitKey = "$$init-" + propertyName;
+            if (propertyInitKey) 
+						{
+              newValue = obj[propertyInitKey];
             }
             else if (qx.core.Variant.isSet("qx.debug", "on"))
             {
@@ -765,12 +751,6 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // Fallback to class-wide init value
           oldValue = obj[propertyInitKey];
         }
-        else if (oldPriority < inheritedPriority)
-        {
-          // Simplified here a bit, as only the init value has a lower priority than the inheritance.
-          // Read from instance-specific init value
-          oldValue = data[propertyId+oldPriority];
-        }
         else if (oldPriority == inheritedPriority)
         {
           // If we have used an inherited value, just ask the old parent for its value
@@ -816,18 +796,11 @@ qx.Bootstrap.define("qx.core.property.Multi",
         // itself as well, then we try to use our init value as the new value
         if (newValue === Undefined) 
         {
-          // Respect init value from deferredInit configs
-          if (oldPriority == initPriority) {
-            newValue = data[propertyId+initPriority];
-          } 
-          else 
-          {
-            newValue = obj[propertyInitKey];
-            
-            if (data[propertyId] !== Undefined) {
-              data[propertyId] = Undefined;
-            }            
-          }
+          newValue = obj[propertyInitKey];
+          
+          if (data[propertyId] !== Undefined) {
+            data[propertyId] = Undefined;
+          }            
         }
         else
         {
@@ -902,7 +875,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
       
       var propertyName=config.name, propertyApply=config.apply, propertyEvent=config.event;
       var propertyId = propertyNameToId[propertyName];
-      var initKey = "$$init-" + propertyName;
+      var propertyInitKey = "$$init-" + propertyName;
 
       var child, childData, childOldPriority, childOldValue, childOldGetter, childNewValue;
       var Util = qx.core.property.Util;
@@ -947,7 +920,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
         }
         else
         {
-          childOldValue = child[initKey];
+          childOldValue = child[propertyInitKey];
         }
         
         
@@ -969,7 +942,7 @@ qx.Bootstrap.define("qx.core.property.Multi",
           // Fallback to class-wide init value
           else
           {
-            childNewValue = child[initKey];
+            childNewValue = child[propertyInitKey];
             childData[propertyId] = Undefined;
           }
         }
