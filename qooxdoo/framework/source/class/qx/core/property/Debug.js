@@ -120,17 +120,16 @@ qx.Bootstrap.define("qx.core.property.Debug",
     {
       "on" : 
       {
-        name         : "string",   // String
-        inheritable  : "boolean",  // Boolean
-        nullable     : "boolean",  // Boolean
-        themeable    : "boolean",  // Boolean
-        refine       : "boolean",  // Boolean
-        init         : null,       // var
-        apply        : "string",   // String
-        event        : "string",   // String
-        check        : null,       // Array, String, Function
-        deferredInit : "boolean",  // Boolean
-        validate     : null        // String, Function
+        name        : "string",   // String
+        inheritable : "boolean",  // Boolean
+        nullable    : "boolean",  // Boolean
+        themeable   : "boolean",  // Boolean
+        refine      : "boolean",  // Boolean
+        init        : null,       // var
+        apply       : "string",   // String
+        event       : "string",   // String
+        check       : null,       // Array, String, RegExp, Function
+        validate    : null        // Array, String, RegExp, Function
       },
 
       "default" : null
@@ -216,24 +215,6 @@ qx.Bootstrap.define("qx.core.property.Debug",
 
           if (allowed[key] !== null && typeof config[key] !== allowed[key]) {
             throw new Error('Invalid type of key "' + key + '" of property "' + name + '" in class "' + clazz.classname + '"! The type of the key must be "' + allowed[key] + '"!');
-          }
-        }
-
-        if (config.transform != null)
-        {
-          if (typeof config.transform !== "string") {
-            throw new Error('Invalid transform definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String.');
-          }
-        }
-
-        if (config.check != null)
-        {
-          if (
-            !qx.lang.Type.isString(config.check) &&
-            !qx.lang.Type.isArray(config.check) &&
-            !qx.lang.Type.isFunction(config.check)
-          ) {
-            throw new Error('Invalid check definition of property "' + name + '" in class "' + clazz.classname + '"! Needs to be a String, Array or Function.');
           }
         }
       },
