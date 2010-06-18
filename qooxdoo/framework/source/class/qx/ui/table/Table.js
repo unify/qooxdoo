@@ -1565,10 +1565,22 @@ qx.Class.define("qx.ui.table.Table",
      *
      *     table.addListener("mouseout", table.clearFocusedRowHighlight);
      *
+     * @param evt {qx.event.type.Mouse} Incoming mouse event
      * @return {void}
      */
-    clearFocusedRowHighlight : function()
+    clearFocusedRowHighlight : function(evt)
     {
+      if(evt)
+      {
+        var relatedTarget = evt.getRelatedTarget();
+        if (
+          relatedTarget instanceof qx.ui.table.pane.Pane ||
+          relatedTarget instanceof qx.ui.table.pane.FocusIndicator
+         ) {
+           return ;
+         }
+      }
+
       // Remove focus from any cell that has it
       this.resetCellFocus();
 

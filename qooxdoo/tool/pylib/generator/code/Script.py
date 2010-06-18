@@ -30,12 +30,14 @@ class Script(object):
 
     def __init__(self, ):
         self.classes    = []   # classes making up the application / library
+        self.classesObj = []   # temp. alternative list of class objects, [generator.code.Class, ...]
         self.variants   = []
         self.parts      = {}   # parts defined by the configuration (if any); {part.name : part}
         self.packages   = []   # .js files for this application / library;  {package.id : package}
         self.boot       = "boot"
         self.packageIdsSorted = []  # the keys of self.packages sorted in load order
         self.buildType  = ""   # "source"/"build"
+        self.locales    = []   # supported locales, e.g. ["de", "de_DE", "en"]
 
     ##
     # return old-style array of arrays of classIds in self.packageIdsSorted order

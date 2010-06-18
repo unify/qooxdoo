@@ -489,6 +489,7 @@ qx.Class.define("qx.ui.core.Blocker",
 
       if (this.__contentBlockerCount.length < 1) {
         this.__unblockContent();
+        this.__contentBlockerCount = [];
       }
     },
 

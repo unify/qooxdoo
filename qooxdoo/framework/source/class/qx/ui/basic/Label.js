@@ -410,7 +410,12 @@ qx.Class.define("qx.ui.basic.Label",
       if (value != null)
       {
         this.__buddyEnabledBinding = value.bind("enabled", this, "enabled");
-        this.__clickListenerId = this.addListener("click", value.focus, value);
+        this.__clickListenerId = this.addListener("click", function() {
+          // only focus focusable elements [BUG #3555]
+          if (value.isFocusable()) {
+            value.focus.apply(value);
+          }
+        }, this);
       }
     },
 
@@ -437,6 +442,13 @@ qx.Class.define("qx.ui.basic.Label",
         if (qx.core.Variant.isSet("qx.debug", "on")) {
           this.warn("Only rich labels support wrap.");
         }
+      }
+      
+      if (this.isRich()) {
+        // apply the white space style to the label to force it not
+        // to wrap if wrap is set to false [BUG #3732]
+        var whiteSpace = value ? "normal" : "nowrap";
+        this.getContentElement().setStyle("whiteSpace", whiteSpace);
       }
     },
 

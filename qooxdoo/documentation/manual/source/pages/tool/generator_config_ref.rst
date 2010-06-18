@@ -40,7 +40,8 @@ Triggers the generation of a custom Apiviewer application. Takes a map.
 
   "api" :
   {
-    "path" : "<path>"
+    "path" : "<path>",
+    "verify" : [ "links" ]
   }
 
 .. note::
@@ -48,6 +49,8 @@ Triggers the generation of a custom Apiviewer application. Takes a map.
   peer-keys: :ref:`pages/tool/generator_config_ref#cache`, :ref:`pages/tool/generator_config_ref#include`, :ref:`pages/tool/generator_config_ref#library`
 
 * **path** *(required)* : Path where the Apiviewer application is to be stored, relative to the current directory.
+
+  * **links** : Check internal documentation links (@link{...}) for consistency.
 
 .. _pages/tool/generator_config_ref#asset-let:
 
@@ -953,5 +956,5 @@ Possible keys are valid
 
 As soon as you specify more than one element in the list value for a variant, the generator will generate different builds for each element. If the current job has multiple variants defined, some of them with multiple elements in the value, the generator will generate a variant **for each possible combination** of the given values.
 
-:doc:`Special section </pages/variants>`
+:doc:`Special section </pages/development/variants>`
 

@@ -4,9 +4,11 @@ Controller
 ==========
 
 The general idea of controllers is connecting a view component to a set of data stored in a model. The kind of controller you need depends on the view component. Currently there are three types of controller available: 
-  * Object Controller
-  * List Controller
-  * Tree controller
+
+* Object Controller
+* List Controller
+* Tree controller
+
 You may miss the table controller. The currently available table will not be changed and therefore will not implement data binding features. The new virtual table, which is currently under development, will be considered for data binding.
 
 In the following section, the selection will be discussed because it's a common feature of the list and tree controller. The delegation mechanism is another common feature of those two controllers and will also be described. After that, each of the available controllers will be discussed in detail.
@@ -145,7 +147,7 @@ The usage equals to the usage of all other controllers. The main properties of i
     // create the model
     var model = formController.createModel();
 
-If you nee additional information on forms, see :ref:`form handling documentation <pages/ui_form_handling#form_object>`.
+If you nee additional information on forms, see :ref:`form handling documentation <pages/gui_toolkit/ui_form_handling#form_object>`.
 After executing this code, the controller and the model variable do have the model available and therefore, the controller can set up the bindings.
 
 .. _pages/data_binding/controller#combining_controller:

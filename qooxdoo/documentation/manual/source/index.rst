@@ -26,12 +26,16 @@ Manual 1.2
 
   This is preliminary documentation for an unreleased qooxdoo version. You might be interested in consulting the documentation of `released versions <http://qooxdoo.org/documentation>`_.
 
+.. only:: html
+
+   **Download** offline version (`.pdf <qooxdoo.pdf>`__)
+
 .. _index#introduction:
 
 .. Introduction
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/introduction
 
@@ -40,7 +44,7 @@ Manual 1.2
 .. Getting Started
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/getting_started
 
@@ -50,7 +54,7 @@ Manual 1.2
 .. Core Framework
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/core
 
@@ -60,7 +64,7 @@ Manual 1.2
 .. GUI Toolkit
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/gui_toolkit
 
@@ -70,7 +74,7 @@ Manual 1.2
 .. Low Level Framework
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/low_level.rst
 
@@ -80,7 +84,7 @@ Manual 1.2
 .. Communication
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/communication
 
@@ -90,7 +94,7 @@ Manual 1.2
 .. Development
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/development
 
@@ -100,9 +104,19 @@ Manual 1.2
 .. Tooling
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/tool
+
+
+.. _index#applications:
+
+.. Standard Applications
+
+.. toctree::
+   :maxdepth: 2
+
+   pages/application
 
 
 .. _index#migration:
@@ -110,13 +124,13 @@ Manual 1.2
 .. Migration
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/migration
 
 .. References
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    pages/references

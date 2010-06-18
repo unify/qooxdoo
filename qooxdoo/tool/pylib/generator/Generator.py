@@ -46,6 +46,7 @@ from generator.resource.ImageInfo        import ImgInfoFmt
 from generator.action.ApiLoader      import ApiLoader
 from generator.action.Locale         import Locale
 from generator.action.ActionLib      import ActionLib
+from generator.action                import CodeProvider
 from generator.runtime.Cache         import Cache
 from generator.runtime.ShellCmd      import ShellCmd
 from generator                       import Context
@@ -74,6 +75,8 @@ class Generator(object):
 
         console = self._console
         console.resetFilter()   # reset potential filters from a previous job
+        Context.config  = context['config']  #config
+        Context.jobconf = context['jobconf'] #config.getJob(job)
         Context.console = context['console']
         
         return
@@ -158,6 +161,11 @@ class Generator(object):
             "pretty-print" :
             {
               "type" : "JClassDepJob",
+            },
+
+            "provider" :
+            {
+              "type" : "JCompileJob",
             },
 
             "shell" :
@@ -258,7 +266,7 @@ class Generator(object):
                 _classes.update(classes)
 
                 for key,entry in classes.items():
-                    clazz = Class(key, entry["path"], lib, self._context)
+                    clazz = Class(key, entry["path"], lib, self._context, _classesObj)
                     clazz.encoding = entry["encoding"]
                     clazz.size     = entry["size"]     # dependency logging uses this
                     clazz.package  = entry["package"]  # Apiloader uses this
@@ -539,7 +547,7 @@ class Generator(object):
         # get a class list with no variants (all-encompassing)
         #classList = computeClassList(includeWithDeps, excludeWithDeps, includeNoDeps, 
         #                             excludeNoDeps, {}, verifyDeps=True, script=None)
-        classListProducer = functools.partial(
+        classListProducer = functools.partial(  # the args are complete, but invocation shall be later
                                computeClassList, includeWithDeps, excludeWithDeps, includeNoDeps, 
                                      excludeNoDeps, {}, verifyDeps=True, script=None)
         
@@ -599,8 +607,11 @@ class Generator(object):
                     script.buildType = "build"
 
             # get current class list
-            script.classes  = computeClassList(includeWithDeps, excludeWithDeps, 
-                                               includeNoDeps, excludeNoDeps, variants, script=script)
+            script.classes    = computeClassList(includeWithDeps, excludeWithDeps, 
+                                                 includeNoDeps, excludeNoDeps, variants, script=script)
+              # keep the list of class objects in sync
+            script.classesObj = [self._classesObj[id] for id in script.classes]
+
             # prepare 'script' object
             if set(("compile", "log")).intersection(jobTriggers):
                 partsConfigFromClassList(excludeWithDeps, script)
@@ -614,6 +625,10 @@ class Generator(object):
                 # script.parts['boot']=[0,1,3]
                 # script.packages[0]=['qx.Class','qx.bom.Stylesheet',...]
                 self._codeGenerator.runCompiled(script, self._treeCompiler)
+
+            if "provider" in jobTriggers:
+                script.locales = config.get("compile-options/code/locales", [])
+                CodeProvider.runProvider(script, self)
 
             # debug tasks
             self.runLogDependencies(script)
@@ -737,11 +752,15 @@ class Generator(object):
         def lookupUsedByDeps(packages):
             for packageId, package in enumerate(packages):
                 for classId in sorted(package.classes):
-                    classDeps = self._depLoader.getDeps(classId, variants)
+                    classObj = ClassIdToObject[classId]
+                    classDeps = classObj.dependencies(variants)
+                    ignored_names = [x.name for x in classDeps["ignore"]]
                     for dep in classDeps["load"]:
-                        yield (packageId, dep.name, classId, 'load')  # the packageId is somewhat bogus here
+                        if dep.name not in ignored_names:
+                            yield (packageId, classId, dep.name, 'load')  # the packageId is somewhat bogus here
                     for dep in classDeps["run"]:
-                        yield (packageId, dep.name, classId, 'run')
+                        if dep.name not in ignored_names:
+                            yield (packageId, classId, dep.name, 'run')
             return
 
 
@@ -750,12 +769,14 @@ class Generator(object):
         def lookupUsingDeps(packages):
             for packageId, package in enumerate(packages):
                 for classId in sorted(package.classes):
-                    classDeps = self._depLoader.getDeps(classId, variants)
-                    if classDeps["load"]:
-                        for dep in classDeps["load"]:
+                    classObj = ClassIdToObject[classId]
+                    classDeps = classObj.dependencies(variants)
+                    ignored_names = [x.name for x in classDeps["ignore"]]
+                    for dep in classDeps["load"]:
+                        if dep.name not in ignored_names:
                             yield (packageId, classId, dep.name, 'load')
-                    if classDeps["run"]:
-                        for dep in classDeps["run"]:
+                    for dep in classDeps["run"]:
+                        if dep.name not in ignored_names:
                             yield (packageId, classId, dep.name, 'run')
             return
 
@@ -798,13 +819,13 @@ class Generator(object):
                 newval = []
                 for ldep in val["load"]:
                     newdep = ldep.replace(".", "/")
-                    newdep += ".js"
+                    #newdep += ".js"
                     newval.append(newdep)
                 val["load"] = newval
                 newval = []
                 for ldep in val["run"]:
                     newdep = ldep.replace(".", "/")
-                    newdep += ".js"
+                    #newdep += ".js"
                     newval.append(newdep)
                 val["run"] = newval
 
@@ -812,18 +833,19 @@ class Generator(object):
             assetFilter, classToAssetHints = self._resourceHandler.getResourceFilterByAssets(data.keys())
             classToResources  = self._resourceHandler.getResourcesByClass(self._job.get("library", []), classToAssetHints)
             for classId in classToResources:
-                data[classId]["run"].extend(classToResources[classId])
+                data[classId]["run"].extend(["/resource/resources#"+x for x in classToResources[classId]])
                 
             # Message key deps
             for classId in data:
                 classKeys = self._locale.getTranslation(classId, {})
-                transKeys = ["translation#" + x['id'] for x in classKeys]
+                transIds  = set(x['id'] for x in classKeys) # strip duplicates
+                transKeys = ["/translation/i18n-${lang}#" + x for x in transIds]
                 data[classId]["run"].extend(transKeys)
 
             # transform dep keys ("qx.Class" -> "qx/Class.js")
             for key, val in data.items():
                 newkey = key.replace(".", "/")
-                newkey += ".js"
+                #newkey += ".js"
                 data[newkey] = data[key]
                 del data[key]
 
@@ -1109,6 +1131,9 @@ class Generator(object):
         packages   = script.packagesSortedSimple()
         parts      = script.parts
         variants   = script.variants
+
+        # create a temp. lookup map to access Class() objects
+        ClassIdToObject = dict([(classObj.id, classObj) for classObj in script.classesObj])
         
         depsLogConf = ExtMap(depsLogConf)
 
