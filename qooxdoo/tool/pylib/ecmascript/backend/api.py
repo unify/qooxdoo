@@ -27,8 +27,9 @@
 ##
 
 import sys, os, re
-from ecmascript.frontend import tree, treegenerator, tokenizer, comment
+from ecmascript.frontend import tree, comment
 from ecmascript.frontend.treeutil import *
+from generator import Context
 
 
 
@@ -89,7 +90,7 @@ def createPackageDoc(text, packageName, docTree = None):
 
         elif attrib["category"] == "see":
             if not attrib.has_key("name"):
-                printDocError(classNode, "Missing target for see.")
+                printDocError(package, "Missing target for see.")
                 return docTree
 
             seeNode = tree.Node("see").set("name", attrib["name"])
@@ -255,7 +256,12 @@ def handleMixins(item, classNode, docTree, className):
             classNode.addListChild("superMixins", node)
 
     else:
-        mixins = variableOrArrayNodeToArray(item)
+        try:
+            mixins = variableOrArrayNodeToArray(item)
+        except tree.NodeAccessException:
+            Context.console.warn("")
+            Context.console.warn("Illegal include definition in " + classNode.get("fullName"))
+            return
         for mixin in mixins:
             mixinNode = getClassNode(docTree, mixin)
             includer = mixinNode.get("includer", False)
@@ -1349,7 +1355,7 @@ def postWorkItemList(docTree, classNode, listName, overridable):
             if (not docFound):
                 for item in dependendClassIterator(docTree, classNode):
                     if item == classNode:
-                       continue
+                        continue
                     if item.get("type", False) == "interface":
                         interfaceItemNode = item.getListChildByAttribute(listName, "name", name, False)
                         if not interfaceItemNode:

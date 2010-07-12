@@ -276,6 +276,20 @@ qx.Class.define("qx.ui.table.pane.Scroller",
 
 
     /**
+     * Whether to reset the selection when a header cell is clicked. Since
+     * most data models do not have provisions to retain a selection after
+     * sorting, the default is to reset the selection in this case. Some data
+     * models, however, do have the capability to retain the selection, so
+     * when using those, this property should be set to false.
+     */
+    resetSelectionOnHeaderClick :
+    {
+      check : "Boolean",
+      init : true
+    },
+
+
+    /**
      * Interval time (in milliseconds) for the table update timer.
      * Setting this to 0 clears the timer.
      */
@@ -323,6 +337,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     __lastResizeWidth : null,
 
     __lastMouseDownCell : null,
+    __firedClickEvent : false,
     __ignoreClick : null,
     __lastMousePageX : null,
     __lastMousePageY : null,
@@ -861,6 +876,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       this.__lastResizeWidth = newWidth;
     },
 
+
     /**
      * Common column move logic.
      *
@@ -1085,8 +1101,8 @@ qx.Class.define("qx.ui.table.pane.Scroller",
         return;
       }
 
-      if (this.isEditing()) {
-        this.stopEditing();
+      if (table.isEditing()) {
+        table.stopEditing();
       }
 
       var pageX = e.getDocumentLeft();
@@ -1114,6 +1130,12 @@ qx.Class.define("qx.ui.table.pane.Scroller",
           col : col
         };
 
+        // On the other hand, we need to know if we've issued the click event
+        // so we don't issue it twice, both from mouse-up on the focus
+        // indicator, and from the click even on the pane. Both possibilities
+        // are necessary, however, to maintain the qooxdoo order of events.
+        this.__firedClickEvent = false;
+
         var selectBeforeFocus = this.getSelectBeforeFocus();
 
         if (selectBeforeFocus) {
@@ -1140,9 +1162,10 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     _onMouseupFocusIndicator : function(e)
     {
       if (this.__lastMouseDownCell &&
+          !this.__firedClickEvent &&
           !this.isEditing() &&
           this.__focusIndicator.getRow() == this.__lastMouseDownCell.row &&
-          this.__focusIndicator.getColumn() == this.__lastMouseDownCell.col) 
+          this.__focusIndicator.getColumn() == this.__lastMouseDownCell.col)
       {
         this.fireEvent("cellClick",
                        qx.ui.table.pane.CellEvent,
@@ -1153,6 +1176,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
                          this.__lastMouseDownCell.col
                        ],
                        true);
+        this.__firedClickEvent = true;
       }
     },
 
@@ -1196,6 +1220,12 @@ qx.Class.define("qx.ui.table.pane.Scroller",
 
       this.getApplicationRoot().setGlobalCursor(null);
       this.setCursor(null);
+
+      // handle edit cell if available
+      if (this.isEditing()) {
+        var height = this.__cellEditor.getBounds().height;
+        this.__cellEditor.setUserBounds(0, 0, this.__lastResizeWidth, height);
+      }
     },
 
 
@@ -1237,6 +1267,9 @@ qx.Class.define("qx.ui.table.pane.Scroller",
 
           // Move the column
           columnModel.moveColumn(fromOverXPos, toOverXPos);
+
+          // update the focus indicator including the editor
+          this._updateFocusIndicator();
         }
       }
 
@@ -1337,10 +1370,13 @@ qx.Class.define("qx.ui.table.pane.Scroller",
             ascending : ascending
           };
 
-          if (this.fireDataEvent("beforeSort", data))
+          if (this.fireDataEvent("beforeSort", data, null, true))
           {
             tableModel.sortByColumn(col, ascending);
-            table.getSelectionModel().resetSelection();
+            if (this.getResetSelectionOnHeaderClick())
+            {
+              table.getSelectionModel().resetSelection();
+            }
           }
         }
       }
@@ -1374,6 +1410,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
 
         if (this.__focusIndicator.isHidden() ||
             (this.__lastMouseDownCell &&
+             !this.__firedClickEvent &&
              !this.isEditing() &&
              row == this.__lastMouseDownCell.row &&
              col == this.__lastMouseDownCell.col))
@@ -1382,6 +1419,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
                          qx.ui.table.pane.CellEvent,
                          [this, e, row, col],
                          true);
+          this.__firedClickEvent = true;
         }
       }
     },
@@ -1716,9 +1754,6 @@ qx.Class.define("qx.ui.table.pane.Scroller",
         var xPos = this.getTablePaneModel().getX(col);
         var value = tableModel.getValue(col, row);
 
-        // Block headers
-        table.blockHeaderElements();
-
         this.__cellEditorFactory = table.getTableColumnModel().getCellEditorFactory(col);
 
         var cellInfo =
@@ -1854,9 +1889,6 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     {
       if (this.isEditing() && ! this.__cellEditor.pendingDispose)
       {
-        // Unblock headers
-        this.getTable().unblockHeaderElements();
-
         if (this._cellEditorIsModalWindow)
         {
           this.__cellEditor.destroy();

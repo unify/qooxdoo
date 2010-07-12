@@ -408,7 +408,6 @@ qx.Class.define("apiviewer.ui.SearchView",
       var selected = this._tableModel.getData()[sel];
       var controller = qx.core.Init.getApplication().controller;
       var uiModel = apiviewer.UiModel.getInstance();
-      var classViewer = controller._classViewer;
 
       if (selected != undefined)
       {
@@ -435,26 +434,7 @@ qx.Class.define("apiviewer.ui.SearchView",
         }
 
         // Highlight item
-
-        /**
-         * TODOC
-         * @lint ignoreDeprecated(alert)
-         */
-        controller._selectClass(apiviewer.dao.Class.getClassByName(className), function()
-        {
-          if (itemName) {
-            if (!classViewer.showItem(itemName))
-            {
-              controller.error("Unknown item of class '"+ className +"': " + itemName);
-              alert("Unknown item of class '"+ className +"': " + itemName);
-              return;
-            }
-          } else {
-            classViewer.getContainerElement().scrollToY(0);
-          }
-          controller._updateHistory(fullItemName);
-
-        }, controller);
+        controller._updateHistory(fullItemName);
       }
     },
 
@@ -463,7 +443,9 @@ qx.Class.define("apiviewer.ui.SearchView",
      * @param e {qx.event.type.Mouse} Click event
      */
     _onCellClick : function(e) {
-      this._callDetailFrame();
+      if (e.isMiddlePressed()) {
+        this._selectionModel.setSelectionInterval(e.getRow(), e.getRow());
+      }
     },
 
     _resetElements : function()

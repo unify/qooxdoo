@@ -25,7 +25,7 @@ import time, datetime
 from polib import polib
 from ecmascript.frontend import treeutil, tree
 from misc import cldr, util, filetool, util
-from generator.code.LibraryPath import LibraryPath
+from generator.code.Library import Library
 from generator.code import Class
 
 ##
@@ -62,11 +62,24 @@ class Locale(object):
 
 
 
-    def getLocalizationData(self, targetLocales):
+    def getLocalizationData(self, classList, targetLocales, ):
         self._console.debug("Generating localization data...")
-        self._console.indent()
-
         data = {}
+
+        # check need for cldr data in this classlist
+        need_cldr = False
+        for classId in classList:
+            if self._classesObj[classId].getMeta('cldr'):
+                need_cldr = True
+                break
+
+        # early return
+        if not need_cldr:
+            return data
+
+
+        # else collect cldr data
+        self._console.indent()
         root = os.path.join(filetool.root(), os.pardir, "data", "cldr", "main")
 
         newlocales = targetLocales
@@ -95,20 +108,6 @@ class Locale(object):
 
         self._console.outdent()
         return data
-
-
-
-    def getTranslationDataX(self, targetLocales, namespace):
-        self._console.debug("Generating translation data for namespace %s..." % namespace)
-        self._console.indent()
-
-        data = []
-        for entry in targetLocales:
-            self._console.debug("Processing locale: %s" % entry)
-            # TODO
-
-        self._console.outdent()
-        return "".join(data)
 
 
 
@@ -185,7 +184,7 @@ class Locale(object):
                     pof  = self.createPoFile()
                     f.write(str(pof))
                     f.close()
-                    allLocales[locale] = LibraryPath.translationEntry(locale, path, namespace)
+                    allLocales[locale] = Library.translationEntry(locale, path, namespace)
 
         self._console.info("Updating %d translations..." % len(selectedLocales))
         self._console.indent()
@@ -262,7 +261,7 @@ class Locale(object):
         return blocks
 
 
-    def getTranslationData_1(self, classList, variants, targetLocales):
+    def getTranslationData_1(self, classList, variants, targetLocales, addUntranslatedEntries=False):
 
         def extractTranslations(pot,po):
             po.getIdIndex()
@@ -317,8 +316,10 @@ class Locale(object):
                 po = polib.pofile(path)
                 extractTranslations(pot,po)
 
-            translated = pot.translated_entries()
-            result.update(self.entriesToDict(translated))
+            poentries = pot.translated_entries()
+            if addUntranslatedEntries:
+                poentries.extend(pot.untranslated_entries())
+            result.update(self.entriesToDict(poentries))
 
             self._console.debug("Formatting %s entries" % len(result))
             blocks[locale] = result

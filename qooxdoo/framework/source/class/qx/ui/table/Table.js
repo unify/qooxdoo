@@ -199,6 +199,15 @@ qx.Class.define("qx.ui.table.Table",
     }
 
     this.initStatusBarVisible();
+
+    // If the table model has an init() method...
+    tableModel = this.getTableModel();
+    if (tableModel.init && typeof(tableModel.init) == "function")
+    {
+      // ... then call it now to allow the table model to affect table
+      // properties.
+      tableModel.init(this);
+    }
   },
 
 
@@ -369,6 +378,19 @@ qx.Class.define("qx.ui.table.Table",
     },
 
 
+    /**
+     *  Whether the header cells are visible. When setting this to true,
+     *  you'll likely also want to set the {#columnVisibilityButtonVisible}
+     *  property to true as well, to entirely remove the header row.
+     */
+    headerCellsVisible :
+    {
+      check : "Boolean",
+      init : true,
+      apply : "_applyHeaderCellsVisible"
+    },
+
+
     /** The height of the header cells. */
     headerCellHeight :
     {
@@ -469,6 +491,21 @@ qx.Class.define("qx.ui.table.Table",
     {
       check : "Boolean",
       init : false
+    },
+
+
+    /**
+     * Whether to reset the selection when a header cell is clicked. Since
+     * most data models do not have provisions to retain a selection after
+     * sorting, the default is to reset the selection in this case. Some data
+     * models, however, do have the capability to retain the selection, so
+     * when using those, this property should be set to false.
+     */
+    resetSelectionOnHeaderClick :
+    {
+      check : "Boolean",
+      init : true,
+      apply : "_applyResetSelectionOnHeaderClick"
     },
 
 
@@ -708,6 +745,18 @@ qx.Class.define("qx.ui.table.Table",
 
 
     // property modifier
+    _applyHeaderCellsVisible : function(value, old)
+    {
+      var scrollerArr = this._getPaneScrollerArr();
+
+      for (var i=0; i<scrollerArr.length; i++)
+      {
+        scrollerArr[i]._excludeChildControl("header");
+      }
+    },
+
+
+    // property modifier
     _applyHeaderCellHeight : function(value, old)
     {
       var scrollerArr = this._getPaneScrollerArr();
@@ -772,6 +821,15 @@ qx.Class.define("qx.ui.table.Table",
         0, value.getColumnCount()
       );
       this._onTableModelMetaDataChanged();
+
+      // If the table model has an init() method, call it. We don't, however,
+      // call it if this is the initial setting of the table model, as the
+      // scrollers are not yet initialized. In that case, the init method is
+      // called explicitly by the Table constructor.
+      if (old && value.init && typeof(value.init) == "function")
+      {
+        value.init(this);
+      }
     },
 
 
@@ -1028,6 +1086,17 @@ qx.Class.define("qx.ui.table.Table",
 
       for (var i=0; i<scrollerArr.length; i++) {
         scrollerArr[i].onKeepFirstVisibleRowCompleteChanged();
+      }
+    },
+
+
+    // property modifier
+    _applyResetSelectionOnHeaderClick : function(value, old)
+    {
+      var scrollerArr = this._getPaneScrollerArr();
+
+      for (var i=0; i<scrollerArr.length; i++) {
+        scrollerArr[i].setResetSelectionOnHeaderClick(value);
       }
     },
 
@@ -1720,7 +1789,7 @@ qx.Class.define("qx.ui.table.Table",
     updateContent : function() {
       var scrollerArr = this._getPaneScrollerArr();
       for (var i=0; i<scrollerArr.length; i++) {
-        scrollerArr[i].getTablePane().updateContent();
+        scrollerArr[i].getTablePane().updateContent(true);
       }
     },
 

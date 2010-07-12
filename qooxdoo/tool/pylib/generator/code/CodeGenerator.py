@@ -68,45 +68,195 @@ class CodeGenerator(object):
             fileUri = Path.posifyPath(fileUri)
             return fileUri
 
+        ##
+        # returns the Javascript code for the initial ("boot") script as a string,
+        #  using the loader.tmpl template and filling its placeholders
+        def generateBootCode(parts, packages, boot, script, compConf, variants, settings, bootCode, globalCodes, version="source", decodeUrisFile=None, format=False):
+
+            ##
+            # create a map with part names as key and array of package id's and
+            # return as string
+            def partsMap(script):
+                partData = {}
+                packages = script.packagesSortedSimple()
+                #print "packages: %r" % packages
+                for part in script.parts:
+                    partData[part] = script.parts[part].packagesAsIndices(packages)
+                    #print "part '%s': %r" % (part, script.parts[part].packages)
+                partData = json.dumpsCode(partData)
+
+                return partData
+
+            def fillTemplate(vals, template):
+                # Fill the code template with various vals 
+                templ  = MyTemplate(template)
+                result = templ.safe_substitute(vals)
+
+                return result
+
+            def packageUrisToJS(packages, version, namespace=None):
+                # Translate URI data to JavaScript
+                
+                allUris = []
+                for packageId, package in enumerate(packages):
+                    packageUris = []
+                    for fileId in package:
+
+                        if version == "build":
+                            # TODO: gosh, the next is an ugly hack!
+                            #namespace  = self._resourceHandler._genobj._namespaces[0]  # all name spaces point to the same paths in the libinfo struct, so any of them will do
+                            if not namespace:
+                                namespace  = self.getAppName()  # all name spaces point to the same paths in the libinfo struct, so any of them will do
+                            relpath    = OsPath(fileId)
+                        else:
+                            namespace  = self._classes[fileId]["namespace"]
+                            relpath    = OsPath(self._classes[fileId]["relpath"])
+
+                        shortUri = Uri(relpath.toUri())
+                        packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
+                    allUris.append(packageUris)
+
+                return allUris
+
+            def packageUrisToJS1(packages, version, namespace=None):
+                # Translate URI data to JavaScript
+                # using Package objects
+
+                if version == "build" and not namespace:
+                    # TODO: gosh, the next is an ugly hack!  
+                    # all name spaces point to the same paths in the libinfo struct, so any of them will do
+                    #namespace  = self._resourceHandler._genobj._namespaces[0]
+                    namespace  = self.getAppName()
+                
+                allUris = []
+                for packageId, package in enumerate(packages):
+                    packageUris = []
+                    if package.file:
+                        namespace = "__out__"
+                        fileId    = package.file
+                        relpath    = OsPath(fileId)
+                        shortUri   = Uri(relpath.toUri())
+                        packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
+                    else: # "source" :
+                        for clazz in package.classes:
+                            namespace  = self._classes[clazz]["namespace"]
+                            relpath    = OsPath(self._classes[clazz]["relpath"])
+                            shortUri   = Uri(relpath.toUri())
+                            packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
+                    allUris.append(packageUris)
+
+                return allUris
+
+            def loadTemplate(bootCode):
+                # try custom loader templates
+                loaderFile = compConf.get("paths/loader-template", None)
+                if not loaderFile:
+                    # use default templates
+                    if version=="build":
+                        #loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader-build.tmpl.js")
+                        # TODO: test-wise using generic template
+                        loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader.tmpl.js")
+                    else:
+                        #loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader-source.tmpl.js")
+                        loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader.tmpl.js")
+                
+                template = filetool.read(loaderFile)
+
+                return template
+
+            # ---------------------------------------------------------------
+
+            if not parts:
+                return ""
+
+            result           = ""
+            vals             = {}
+            packages         = script.packagesSortedSimple()
+            loader_with_boot = self._job.get("packages/loader-with-boot", True)
+
+            # stringify data in globalCodes
+            for entry in globalCodes:
+                globalCodes[entry] = json.dumpsCode(globalCodes[entry])
+                # undo damage done by simplejson to raw strings with escapes \\ -> \
+                globalCodes[entry] = globalCodes[entry].replace('\\\\\\', '\\').replace(r'\\', '\\')  # " gets tripple escaped, therefore the first .replace()
+
+            vals.update(globalCodes)
+
+            if version=="build":
+                vals["Resources"] = json.dumpsCode({})  # TODO: undo Resources from globalCodes!!!
+            vals["Boot"] = '"%s"' % boot
+            if version == "build":
+                vals["BootPart"] = bootCode
+            else:
+                vals["BootPart"] = ""
+                # fake package data
+                for key, package in enumerate(packages): 
+                    vals["BootPart"] += "qx.$$packageData['%d']={};\n" % key
+
+            # Translate part information to JavaScript
+            vals["Parts"] = partsMap(script)
+
+            # Translate URI data to JavaScript
+            #vals["Uris"] = packageUrisToJS(packages, version)
+            vals["Uris"] = packageUrisToJS1(packages, version)
+            vals["Uris"] = json.dumpsCode(vals["Uris"])
+
+            # Add potential extra scripts
+            vals["UrisBefore"] = []
+            if self._job.get("add-script", False):
+                additional_scripts = self._job.get("add-script",[])
+                for additional_script in additional_scripts:
+                    vals["UrisBefore"].append(additional_script["uri"])
+            vals["UrisBefore"] = json.dumpsCode(vals["UrisBefore"])
+
+            # Whether boot package is inline
+            if version == "source":
+                vals["BootIsInline"] = json.dumpsCode(False)
+            else:
+                vals["BootIsInline"] = json.dumpsCode(loader_with_boot)
+                
+            # Closure package information
+            cParts = {}
+            if version == "build":
+                for part in script.parts:
+                    if not loader_with_boot or part != "boot":
+                        cParts[part] = True
+            vals["ClosureParts"] = json.dumpsCode(cParts)
+
+            # Package Hashes
+            vals["PackageHashes"] = {}
+            for key, package in enumerate(packages):
+                if package.hash:
+                    vals["PackageHashes"][key] = package.hash
+                else:
+                    vals["PackageHashes"][key] = "%d" % key  # fake code package hashes in source ver.
+            vals["PackageHashes"] = json.dumpsCode(vals["PackageHashes"])
+
+            # Script hook for qx.$$loader.decodeUris() function
+            vals["DecodeUrisPlug"] = ""
+            if decodeUrisFile:
+                plugCode = filetool.read(self._config.absPath(decodeUrisFile))  # let it bomb if file can't be read
+                vals["DecodeUrisPlug"] = plugCode.strip()
+            
+            # Enable "?nocache=...." for script loading?
+            vals["NoCacheParam"] = "true" if self._job.get("compile-options/uris/add-nocache-param", True) else "false"
+
+            # Locate and load loader basic script
+            template = loadTemplate(bootCode)
+
+            # Fill template gives result
+            result = fillTemplate(vals, template)
+
+            return result
+
+
+        ##
+        # shallow layer above generateBootCode(), and its only client
         def generateBootScript(globalCodes, script, bootPackage="", compileType="build"):
 
-            def packagesOfFiles(fileUri, packages):
-                # returns list of lists, each containing destination file name of the corresp. part
-                # npackages = [['script/gui-0.js'], ['script/gui-1.js'],...]
-                npackages = []
-                file = os.path.basename(fileUri)
-                if self._job.get("packages/loader-with-boot", True):
-                    totalLen = len(packages)
-                else:
-                    totalLen = len(packages) + 1
-                for packageId, packageFileName in enumerate(self.packagesFileNames(file, totalLen, classPackagesOnly=True)):
-                    npackages.append((packageFileName,))
-                    packages[packageId].file = packageFileName  # TODO: very unnice to fix this here
-                return npackages
-
-            # besser: fixPackagesFiles()
-            def packagesOfFilesX(fileUri, packages):
-                # returns list of lists, each containing destination file name of the corresp. package
-                # npackages = [['script/gui-0.js'], ['script/gui-1.js'],...]
-                file = os.path.basename(fileUri)
-                loader_with_boot = self._job.get("packages/loader-with-boot", True)
-                for packageId, package in enumerate(packages):
-                    if loader_with_boot:
-                        suffix = packageId - 1
-                        if suffix < 0:
-                            suffix = ""
-                    else:
-                        suffix = packageId
-                    packageFileName = self._resolveFileName(file, self._variants, self._settings, suffix)
-                    package.file = packageFileName
-
-                return packages
-
-            # ----------------------------------------------------------------------------
             self._console.info("Generating boot script...")
 
             if not self._job.get("packages/i18n-with-boot", True):
-                globalCodes = self.writeI18NFiles(globalCodes, script)
                 # remove I18N info from globalCodes, so they don't go into the loader
                 globalCodes["Translations"] = {}
                 globalCodes["Locales"]      = {}
@@ -118,11 +268,11 @@ class CodeGenerator(object):
 
             plugCodeFile = compConf.get("code/decode-uris-plug", False)
             if compileType == "build":
-                filepackages = packagesOfFiles(fileUri, packages)
-                bootContent = self.generateBootCode(parts, filepackages, boot, script, compConf, variants, settings, bootPackage, globalCodes, compileType, plugCodeFile, format)
+                filepackages = [(x.file,) for x in packages]
+                bootContent  = generateBootCode(parts, filepackages, boot, script, compConf, variants, settings, bootPackage, globalCodes, compileType, plugCodeFile, format)
             else:
                 filepackages = [x.classes for x in packages]
-                bootContent = self.generateBootCode(parts, filepackages, boot, script, compConf, variants={}, settings={}, bootCode=None, globalCodes=globalCodes, version=compileType, decodeUrisFile=plugCodeFile, format=format)
+                bootContent  = generateBootCode(parts, filepackages, boot, script, compConf, variants={}, settings={}, bootCode=None, globalCodes=globalCodes, version=compileType, decodeUrisFile=plugCodeFile, format=format)
 
 
             return bootContent
@@ -138,8 +288,8 @@ class CodeGenerator(object):
             return data
 
         def compilePackage(packageIndex, package):
-            #self._console.info("Compiling package #%s:" % packageIndex, False)
-            #self._console.indent()
+            self._console.info("Compiling package #%s:" % packageIndex, False)
+            self._console.indent()
 
             # Compile file content
             pkgCode = self._treeCompiler.compileClasses(package.classes, variants, optimize, format)
@@ -156,12 +306,33 @@ class CodeGenerator(object):
             #
             package.hash = hash  # to fill qx.$$loader.packageHashes in generateBootScript()
 
-            #self._console.debug("Done: %s" % self._computeContentSize(compiledContent))
-            #self._console.outdent()
+            self._console.debug("Done: %s" % self._computeContentSize(compiledContent))
+            self._console.outdent()
 
             return compiledContent
 
-        # -- Main --------------------------------------------------------------
+
+        ##
+        # takes an array of (po-data, locale-data) dict pairs
+        # merge all po data and all cldr data in a single dict each
+        def mergeTranslationMaps(transMaps):
+            poData = {}
+            cldrData = {}
+
+            for pac_dat, loc_dat in transMaps:
+                for loc in pac_dat:
+                    if loc not in poData:
+                        poData[loc] = {}
+                    poData[loc].update(pac_dat[loc])
+                for loc in loc_dat:
+                    if loc not in cldrData:
+                        cldrData[loc] = {}
+                    cldrData[loc].update(loc_dat[loc])
+
+            return (poData, cldrData)
+
+
+        # -- Main - runCompiled ------------------------------------------------
 
         # Early return
         compileType = self._job.get("compile/type", "")
@@ -175,6 +346,7 @@ class CodeGenerator(object):
 
         self._treeCompiler = treeCompiler
         self._variants     = variants
+        self._script       = script
 
         self._console.info("Generate %s version..." % compileType)
         self._console.indent()
@@ -219,7 +391,25 @@ class CodeGenerator(object):
             scriptUri   = None
 
         # Get global script data (like qxlibraries, qxresources,...)
-        globalCodes = self.generateGlobalCodes(script, libs, translationMaps, settings, variants, format, resourceUri, scriptUri)
+        globalCodes                = {}
+        globalCodes["Settings"]    = settings
+        globalCodes["Variants"]    = self.generateVariantsCode(variants)
+        globalCodes["Libinfo"]     = self.generateLibInfoCode(libs, format, resourceUri, scriptUri)
+        # add synthetic output lib
+        if scriptUri: out_sourceUri= scriptUri
+        else:
+            out_sourceUri = self._computeResourceUri({'class': ".", 'path': os.path.dirname(script.baseScriptPath)}, OsPath(""), rType="class", appRoot=self.approot)
+            out_sourceUri = os.path.normpath(out_sourceUri.encodedValue())
+        globalCodes["Libinfo"]['__out__'] = { 'sourceUri': out_sourceUri }
+        globalCodes["Resources"]    = self.generateResourceInfoCode(script, settings, libs, format)
+        globalCodes["Translations"],\
+        globalCodes["Locales"]      = mergeTranslationMaps(translationMaps)
+
+        # Potentally create dedicated I18N packages
+        i18n_as_parts = not self._job.get("packages/i18n-with-boot", True)
+        if i18n_as_parts:
+            script = self.generateI18NParts(script, globalCodes)
+            self.writePackages([p for p in script.packages if getattr(p, "__localeflag", False)], script)
 
         if compileType == "build":
 
@@ -243,18 +433,24 @@ class CodeGenerator(object):
             # - Put loader and packages together -------
             loader_with_boot = self._job.get("packages/loader-with-boot", True)
             # handle loader and boot package
+            if not loader_with_boot:
+                loadPackage = Package(0)            # make a dummy Package for the loader
+                packages.insert(0, loadPackage)
+
+            # attach file names (do this before calling generateBootScript)
+            for package, fileName in zip(packages, self.packagesFileNames(script.baseScriptPath, len(packages))):
+                package.file = os.path.basename(fileName)
+                if self._job.get("compile-options/paths/scripts-add-hash", False):
+                    package.file = self._fileNameWithHash(package.file, package.hash)
+
+            # generate and integrate boot code
             if loader_with_boot:
+                # merge loader code with first package
                 bootCode = generateBootScript(globalCodes, script, packages[0].compiled)
                 packages[0].compiled = bootCode
             else:
                 loaderCode = generateBootScript(globalCodes, script)
-                loadPackage = Package(0)            # make a dummy Package for the loader
-                loadPackage.compiled = loaderCode
-                packages.insert(0, loadPackage)
-
-            # attach file names
-            for package, fileName in zip(packages, self.packagesFileNames(script.baseScriptPath, len(packages))):
-                package.file = fileName
+                packages[0].compiled = loaderCode
 
             # write packages
             self.writePackages(packages, script)
@@ -360,6 +556,14 @@ class CodeGenerator(object):
         return fileName
 
 
+    def _fileNameWithHash(self, fname, hash):
+        filebase, fileext = os.path.splitext(fname)
+        filename = filebase
+        filename += "." + hash if hash else ""
+        filename += fileext
+        return filename
+
+
     def _computeContentSize(self, content):
         # Convert to utf-8 first
         content = unicode(content).encode("utf-8")
@@ -408,57 +612,72 @@ class CodeGenerator(object):
         return newname
 
 
-    def generateGlobalCodes(self, script, libs, translationMaps, settings, variants, format=False, resourceUri=None, scriptUri=None):
-        # generate the global codes like qxlibraries, qxresources, ...
-        # and collect them in a common structure
+    ##
+    # collect translation and locale data into dedicated parts and packages,
+    # one for each language code
+    def generateI18NParts(self, script, globalCodes):
 
-        def mergeTranslationMaps(transMaps):
-            # translationMaps is a pair (po-data, cldr-data) per package:
-            # translationMaps = [({'C':{},..},{'C':{},..}), (.,.), ..]
-            # this function merges all [0] elements into a common dict, and
-            # all [1] elements:
-            # return = ({'C':{},..}, {'C':{},..})
-            poData = {}
-            cldrData = {}
+        # for each locale code, collect mappings
+        transKeys  = globalCodes['Translations'].keys()
+        localeKeys = globalCodes['Locales'].keys()
+        newParts   = {}    # language codes to part objects,    {"C": part}
+        newPackages= {}    # language codes to private package objects, {"C": package}
+        for localeCode in set(transKeys + localeKeys):
+            # new: also provide a localeCode "part" with corresponding packages
+            part = Part(localeCode)
+            part.bit_mask = script.getPartBitMask()
+            newParts[localeCode] = part
+            package = Package(part.bit_mask)  # this might be modified later
+            newPackages[localeCode] = package
+            part.packages.append(package)
 
-            for pac_dat, loc_dat in transMaps:
-                for loc in pac_dat:
-                    if loc not in poData:
-                        poData[loc] = {}
-                    poData[loc].update(pac_dat[loc])
-                for loc in loc_dat:
-                    if loc not in cldrData:
-                        cldrData[loc] = {}
-                    cldrData[loc].update(loc_dat[loc])
+            data = {}
+            data[localeCode] = { 'Translations': {}, 'Locales': {} }  # we want to have the locale code in the data
+            if localeCode in transKeys:
+                data[localeCode]['Translations']     = globalCodes['Translations'][localeCode]
+                package.data.translations[localeCode] = globalCodes['Translations'][localeCode]
+            if localeCode in localeKeys:
+                data[localeCode]['Locales']     = globalCodes['Locales'][localeCode]
+                package.data.locales[localeCode] = globalCodes['Locales'][localeCode]
 
-            return (poData, cldrData)
+            # file name and hash code
+            hash, dataS  = package.packageContent()  # TODO: this currently works only for pure data packages
+            dataS        = dataS.replace('\\\\\\', '\\').replace(r'\\', '\\')  # undo damage done by simplejson to raw strings with escapes \\ -> \
+            package.compiled = dataS
+            package.hash     = hash
+            fPath = self._resolveFileName(script.baseScriptPath, script.variants, script.settings, localeCode)
+            package.file = os.path.basename(fPath)
+            if self._job.get("compile-options/paths/scripts-add-hash", False):
+                package.file = self._fileNameWithHash(package.file, package.hash)
+            setattr(package,"__localeflag", True)   # TODO: temp. hack for writeI18NPackages()
 
+        # Finalize the new packages and parts
+        # - add prerequisite languages to parts; e.g. ["C", "en", "en_EN"]
+        for partId, part in newParts.items():
+            if newPackages["C"] not in part.packages:
+                package = newPackages["C"]
+                part.packages.append(package)   # all need "C"
+                package.id |= part.bit_mask     # adapt package's bit string
+            if len(partId) > 2 and partId[2] == "_":  # it's a sub-language -> include main language
+                mainlang = partId[:2]
+                if mainlang not in newPackages:
+                    raise RuntimeError("Locale '%s' specified, but not base locale '%s'" % (partId, mainlang))
+                if newPackages[mainlang] not in part.packages:
+                    part.packages.append(newPackages[mainlang])   # add main language
+                    newPackages[mainlang].id |= part.bit_mask     # adapt package's bit string
 
-        globalCodes  = {}
+        # finally, sort packages
+        for part in newParts.values():
+            part.packagesSorted
 
-        globalCodes["Settings"]    = settings
+        # - add to script object
+        for partId in newParts:
+            if partId in script.parts:
+                raise RuntimeError("Name collison between code part and generated I18N part.")
+            script.parts[partId] = newParts[partId]
+        script.packages.extend(newPackages.values())
 
-        variantInfo = self.generateVariantsCode(variants)
-        globalCodes["Variants"]    = variantInfo
-
-        mapInfo = self.generateLibInfoCode(libs, format, resourceUri, scriptUri)
-        # add synthetic output lib
-        if scriptUri:
-            out_sourceUri = scriptUri
-        else:
-            out_sourceUri = self._computeResourceUri({'class': ".", 'path': os.path.dirname(script.baseScriptPath)}, OsPath(""), rType="class", appRoot=self.approot)
-            out_sourceUri = os.path.normpath(out_sourceUri.encodedValue())
-        mapInfo['__out__'] = { 'sourceUri': out_sourceUri }
-        globalCodes["Libinfo"]     = mapInfo
-
-        mapInfo = self.generateResourceInfoCode(script, settings, libs, format)
-        globalCodes["Resources"]    = mapInfo
-
-        locData = mergeTranslationMaps(translationMaps)
-        globalCodes["Translations"] = locData[0] # 0: .po data
-        globalCodes["Locales"]      = locData[1] # 1: cldr data
-
-        return globalCodes
+        return script
 
 
     def generateVariantsCode(self, variants):
@@ -472,7 +691,7 @@ class CodeGenerator(object):
         return variats
 
 
-    def getTranslationMaps(self, packages, variants, locales):
+    def getTranslationMaps(self, packages, variants, locales, addUntranslatedEntries=False):
         if "C" not in locales:
             locales.append("C")
 
@@ -485,8 +704,8 @@ class CodeGenerator(object):
             self._console.debug("Package: %s" % pos)
             self._console.indent()
 
-            pac_dat = self._locale.getTranslationData_1(package.classes, variants, locales) # .po data
-            loc_dat = self._locale.getLocalizationData(locales)  # cldr data
+            pac_dat = self._locale.getTranslationData_1(package.classes, variants, locales, addUntranslatedEntries) # .po data
+            loc_dat = self._locale.getLocalizationData (package.classes, locales)  # cldr data
             packageTranslations.append((pac_dat,loc_dat))
             if i18n_with_packages:
                 package.data.translations.update(pac_dat)
@@ -706,7 +925,7 @@ class CodeGenerator(object):
             return filteredResources
 
 
-        # -- main --------------------------------------------------------------
+        # -- main - generateResourceInfoCode -----------------------------------
 
         self._console.info("Analyzing assets...")
         self._console.indent()
@@ -746,190 +965,7 @@ class CodeGenerator(object):
         self._console.outdent()
 
         return resdata
-
-
-    ##
-    # returns the Javascript code for the initial ("boot") script as a string 
-
-    def generateBootCode(self, parts, packages, boot, script, compConf, variants, settings, bootCode, globalCodes, version="source", decodeUrisFile=None, format=False):
-
-        ##
-        # create a map with part names as key and array of package id's and
-        # return as string
-        def partsMap(script):
-            partData = {}
-            packages = script.packagesSortedSimple()
-            #print "packages: %r" % packages
-            for part in script.parts:
-                partData[part] = script.parts[part].packagesAsIndices(packages)
-                #print "part '%s': %r" % (part, script.parts[part].packages)
-            partData = json.dumpsCode(partData)
-
-            return partData
-
-        def fillTemplate(vals, template):
-            # Fill the code template with various vals 
-            templ  = MyTemplate(template)
-            result = templ.safe_substitute(vals)
-
-            return result
-
-        def packageUrisToJS(packages, version, namespace=None):
-            # Translate URI data to JavaScript
-            
-            allUris = []
-            for packageId, package in enumerate(packages):
-                packageUris = []
-                for fileId in package:
-
-                    if version == "build":
-                        # TODO: gosh, the next is an ugly hack!
-                        #namespace  = self._resourceHandler._genobj._namespaces[0]  # all name spaces point to the same paths in the libinfo struct, so any of them will do
-                        if not namespace:
-                            namespace  = self.getAppName()  # all name spaces point to the same paths in the libinfo struct, so any of them will do
-                        relpath    = OsPath(fileId)
-                    else:
-                        namespace  = self._classes[fileId]["namespace"]
-                        relpath    = OsPath(self._classes[fileId]["relpath"])
-
-                    shortUri = Uri(relpath.toUri())
-                    packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
-                allUris.append(packageUris)
-
-            return allUris
-
-        def packageUrisToJS1(packages, version, namespace=None):
-            # Translate URI data to JavaScript
-            # using Package objects
-
-            if version == "build" and not namespace:
-                # TODO: gosh, the next is an ugly hack!  
-                # all name spaces point to the same paths in the libinfo struct, so any of them will do
-                #namespace  = self._resourceHandler._genobj._namespaces[0]
-                namespace  = self.getAppName()
-            
-            allUris = []
-            for packageId, package in enumerate(packages):
-                packageUris = []
-                if package.file:
-                    namespace = "__out__"
-                    fileId    = package.file
-                    relpath    = OsPath(fileId)
-                    shortUri   = Uri(relpath.toUri())
-                    packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
-                else: # "source" :
-                    for clazz in package.classes:
-                        namespace  = self._classes[clazz]["namespace"]
-                        relpath    = OsPath(self._classes[clazz]["relpath"])
-                        shortUri   = Uri(relpath.toUri())
-                        packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
-
-
-                allUris.append(packageUris)
-            return allUris
-
-        def loadTemplate(bootCode):
-            # try custom loader templates
-            loaderFile = compConf.get("paths/loader-template", None)
-            if not loaderFile:
-                # use default templates
-                if version=="build":
-                    #loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader-build.tmpl.js")
-                    # TODO: test-wise using generic template
-                    loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader.tmpl.js")
-                else:
-                    #loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader-source.tmpl.js")
-                    loaderFile = os.path.join(filetool.root(), os.pardir, "data", "generator", "loader.tmpl.js")
-            
-            template = filetool.read(loaderFile)
-
-            return template
-
-        # ---------------------------------------------------------------
-
-        if not parts:
-            return ""
-
-        result           = ""
-        vals             = {}
-        packages         = script.packagesSortedSimple()
-        loader_with_boot = self._job.get("packages/loader-with-boot", True)
-
-        # stringify data in globalCodes
-        for entry in globalCodes:
-            globalCodes[entry] = json.dumpsCode(globalCodes[entry])
-            # undo damage done by simplejson to raw strings with escapes \\ -> \
-            globalCodes[entry] = globalCodes[entry].replace('\\\\\\', '\\').replace(r'\\', '\\')  # " gets tripple escaped, therefore the first .replace()
-
-        vals.update(globalCodes)
-
-        if version=="build":
-            vals["Resources"] = json.dumpsCode({})  # TODO: undo Resources from globalCodes!!!
-        vals["Boot"] = '"%s"' % boot
-        if version == "build":
-            vals["BootPart"] = bootCode
-        else:
-            vals["BootPart"] = ""
-            # fake package data
-            for key, package in enumerate(packages): 
-                vals["BootPart"] += "qx.$$packageData['%d']={};\n" % key
-
-        # Translate part information to JavaScript
-        vals["Parts"] = partsMap(script)
-
-        # Translate URI data to JavaScript
-        #vals["Uris"] = packageUrisToJS(packages, version)
-        vals["Uris"] = packageUrisToJS1(packages, version)
-        vals["Uris"] = json.dumpsCode(vals["Uris"])
-
-        # Add potential extra scripts
-        vals["UrisBefore"] = []
-        if self._job.get("add-script", False):
-            additional_scripts = self._job.get("add-script",[])
-            for additional_script in additional_scripts:
-                vals["UrisBefore"].append(additional_script["uri"])
-        vals["UrisBefore"] = json.dumpsCode(vals["UrisBefore"])
-
-        # Whether boot package is inline
-        if version == "source":
-            vals["BootIsInline"] = json.dumpsCode(False)
-        else:
-            vals["BootIsInline"] = json.dumpsCode(loader_with_boot)
-            
-        # Closure package information
-        cParts = {}
-        if version == "build":
-            for part in script.parts:
-                if not loader_with_boot or part != "boot":
-                    cParts[part] = True
-        vals["ClosureParts"] = json.dumpsCode(cParts)
-
-        # Package Hashes
-        vals["PackageHashes"] = {}
-        for key, package in enumerate(packages):
-            if package.hash:
-                vals["PackageHashes"][key] = package.hash
-            else:
-                vals["PackageHashes"][key] = "%d" % key  # fake code package hashes in source ver.
-        vals["PackageHashes"] = json.dumpsCode(vals["PackageHashes"])
-
-        # Script hook for qx.$$loader.decodeUris() function
-        vals["DecodeUrisPlug"] = ""
-        if decodeUrisFile:
-            plugCode = filetool.read(self._config.absPath(decodeUrisFile))  # let it bomb if file can't be read
-            vals["DecodeUrisPlug"] = plugCode.strip()
-        
-        # Add build details
-        vals["Build"] = int(time.time()*1000) 
-        vals["Type"] = version
-        
-        # Locate and load loader basic script
-        template = loadTemplate(bootCode)
-
-        # Fill template gives result
-        result = fillTemplate(vals, template)
-
-        return result
+        # end:generateResourceInfoCode()
 
 
     def packagesFileNames(self, basename, packagesLen, classPackagesOnly=False):
@@ -944,101 +980,22 @@ class CodeGenerator(object):
             yield packageFileName
 
 
-    def writePackages1(self, compiledPackages, script, startId=0):
-        for content, resolvedFilePath in zip(compiledPackages, self.packagesFileNames(script.baseScriptPath, len(compiledPackages))):
-            # Save result file
-            filetool.save(resolvedFilePath, content)
-
-            if script.scriptCompress:
-                filetool.gzip(resolvedFilePath, content)
-
-            self._console.debug("Done: %s" % self._computeContentSize(content))
-            self._console.debug("")
-
-        return
-
-
     def writePackages(self, packages, script):
 
         for package in packages:
-            filePath = package.file
-            content = package.compiled
+            filePath = os.path.join(os.path.dirname(self._script.baseScriptPath), package.file)
+            content  = package.compiled
             self.writePackage(content, filePath, script)
 
         return
 
     
     def writePackage(self, content, filePath, script):
+        console.debug("Writing script file %s" % filePath)
         if script.scriptCompress:
             filetool.gzip(filePath, content)
         else:
             filetool.save(filePath, content)
-
-
-    ##
-    # write 'Translations' and 'Locales' info out in dedicated files, so 
-    # they don't blow up the loader; collect both translations and locales
-    # info into a separate file for each locale code (e.g. 'en');
-    # add URI information for the created files to globalCodes
-    def writeI18NFiles(self, globalCodes, script):
-
-        # for each locale code, collect mappings
-        transKeys  = globalCodes['Translations'].keys()
-        localeKeys = globalCodes['Locales'].keys()
-        newParts   = {}    # language codes to part objects,    {"C": part}
-        newPackages= {}    # language codes to private package objects, {"C": package}
-        for localeCode in set(transKeys + localeKeys):
-            # new: also provide a localeCode "part" with corresponding packages
-            part = Part(localeCode)
-            part.bit_mask = script.getPartBitMask()
-            newParts[localeCode] = part
-            package = Package(part.bit_mask)  # this might be modified later
-            newPackages[localeCode] = package
-            part.packages.append(package)
-
-            data = {}
-            data[localeCode] = { 'Translations': {}, 'Locales': {} }  # we want to have the locale code in the data
-            if localeCode in transKeys:
-                data[localeCode]['Translations']     = globalCodes['Translations'][localeCode]
-                package.data.translations[localeCode] = globalCodes['Translations'][localeCode]
-            if localeCode in localeKeys:
-                data[localeCode]['Locales']     = globalCodes['Locales'][localeCode]
-                package.data.locales[localeCode] = globalCodes['Locales'][localeCode]
-
-            # write to file
-            #dataS = json.dumpsCode(data)
-            hash, dataS = package.packageContent()  # TODO: this currently works only for pure data packages
-            dataS = dataS.replace('\\\\\\', '\\').replace(r'\\', '\\')  # undo damage done by simplejson to raw strings with escapes \\ -> \
-            package.compiled = dataS
-            fPath = self._resolveFileName(script.baseScriptPath, script.variants, script.settings, localeCode)
-            self.writePackage(dataS, fPath, script)
-            package.file = os.path.basename(fPath) # TODO: the use of os.path.basename is a hack
-            package.hash = hash
-
-        # Finalize the new packages and parts
-        # - add prerequisite languages to parts; e.g. ["C", "en", "en_EN"]
-        for partId, part in newParts.items():
-            if newPackages["C"] not in part.packages:
-                package = newPackages["C"]
-                part.packages.append(package)   # all need "C"
-                package.id |= part.bit_mask     # adapt package's bit string
-            if len(partId) > 2 and partId[2] == "_":  # it's a sub-language -> include main language
-                mainlang = partId[:2]
-                if mainlang not in newPackages:
-                    raise RuntimeError("Locale '%s' specified, but not base locale '%s'" % (partId, mainlang))
-                if newPackages[mainlang] not in part.packages:
-                    part.packages.append(newPackages[mainlang])   # add main language
-                    newPackages[mainlang].id |= part.bit_mask     # adapt package's bit string
-
-        # finally, sort packages
-        for part in newParts.values():
-            part.packagesSorted
-
-        # - add to script object
-        script.parts.update([(x.name, x) for x in newParts.values()])  # TODO: update might overwrite exist. entries!
-        script.packages.extend(newPackages.values())
-
-        return globalCodes
 
 
     def getAppName(self, memo={}):

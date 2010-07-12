@@ -26,25 +26,54 @@ from misc import filetool, textutil, util, Path, PathType, json, copytool
 from misc.PathType import PathType
 from generator import Context as context
 
+global inclregexps, exclregexps
 
 def runProvider(script, generator):
+    global inclregexps, exclregexps
+    inclregexps = context.jobconf.get("provider/include", ["*"])
+    exclregexps = context.jobconf.get("provider/exclude", [])
+    inclregexps = map(textutil.toRegExp, inclregexps)
+    exclregexps = map(textutil.toRegExp, exclregexps)
     # copy class files
-    _handleCode(script)
+    _handleCode(script, generator)
     # generate resource info
     _handleResources(script, generator)
-    # generate translation files
+    # generate translation and CLDR files
     _handleI18N(script, generator)
 
     return
 
 
-def _handleCode(script):
+
+##
+# check resId (classId, ...) against include, exclude expressions
+def passesOutputfilter(resId, ):
+    # must match some include expressions
+    if not filter(None, [x.search(resId) for x in inclregexps]):  # [None, None, _sre.match, None, _sre.match, ...]
+        return False
+    # must not match any exclude expressions
+    if filter(None, [x.search(resId) for x in exclregexps]):
+        return False
+    return True
+
+libraries = {}
+
+def _handleCode(script, generator):
+
     approot = context.jobconf.get("provider/app-root", "./provider")
     filetool.directory(approot + "/code")
-    for clazz in script.classes:
-        classId = clazz.replace(".","/") + ".js"
-        filetool.directory(approot+"/code/"+os.path.dirname(classId))
-        shutil.copy("source/class/"+classId, approot+"/code/"+classId)
+
+    for clazz in script.classesObj:
+        # register library (for _handleResources)
+        if clazz.library['namespace'] not in libraries:
+            libraries[clazz.library['namespace']] = clazz.library
+
+        if passesOutputfilter(clazz.id, ):
+            classAId   = clazz.id.replace(".","/") + ".js"
+            sourcepath = os.path.join(clazz.library['path'], clazz.library['class'], classAId) # TODO: this should be a class method
+            targetpath = approot + "/code/" + classAId
+            filetool.directory(os.path.dirname(targetpath))
+            shutil.copy(sourcepath, targetpath)
     return
 
 def _handleResources(script, generator):
@@ -54,14 +83,16 @@ def _handleResources(script, generator):
         #filetool.save(approot+"/data/resource/" + res + ".json", json.dumpsCode(resinfo))
         return resinfo
 
-    def copyResource(res):
-        filetool.directory(approot+"/resource/"+os.path.dirname(res))
-        shutil.copy("source/resource/"+res, approot+"/resource/"+res)
+    def copyResource(res, library):
+        sourcepath = os.path.join(library['path'], library['resource'], res)
+        targetpath = approot + "/resource/" + res
+        filetool.directory(os.path.dirname(targetpath))
+        shutil.copy(sourcepath, targetpath)
         return
 
     # ----------------------------------------------------------------------
     approot = context.jobconf.get("provider/app-root", "./provider")
-    filetool.directory(approot+"/data/resource")
+    filetool.directory(approot+"/data")
     filetool.directory(approot+"/resource")
     
     # quick copy of runLogResources, for fast results
@@ -78,8 +109,18 @@ def _handleResources(script, generator):
     
     resinfos = {}
     for res in allresources:
-        resinfos[res] = createResourceInfo(res, allresources[res])
-        copyResource(res)
+        # fake a classId-like resourceId ("a.b.c"), for filter matching
+        resId = os.path.splitext(res)[0]
+        resId = resId.replace("/", ".")
+        if passesOutputfilter(resId):
+            resinfos[res] = createResourceInfo(res, allresources[res])
+            # extract library name space
+            if isinstance(allresources[res], types.ListType): # it's an image = [14, 14, u'png', u'qx' [, u'qx/decoration/Modern/checkradio-combined.png', 0, 0]]
+                library_ns = allresources[res][3]
+            else: # html page etc. = "qx"
+                library_ns = allresources[res]
+            library    = libraries[library_ns]
+            copyResource(res, library)
 
     filetool.save(approot+"/data/resource/resources.json", json.dumpsCode(resinfos))
 
@@ -88,28 +129,47 @@ def _handleResources(script, generator):
 
 def _handleI18N(script, generator):
     approot = context.jobconf.get("provider/app-root", "./provider")
-    filetool.directory(approot+"/data/translation")
-    translationMaps = generator._codeGenerator.getTranslationMaps(script.packages, script.variants, script.locales)
 
-    data_by_lang = {}
+    # get class projection
+    class_list = []
+    needs_cldr = False
+    for classObj in script.classesObj:
+        if passesOutputfilter(classObj.id):
+            class_list.append(classObj.id)
+            if not needs_cldr and classObj.getMeta('cldr'):
+                needs_cldr = True
 
-    for trans_dat, loc_dat in translationMaps:  # (trans_dat, loc_dat) is per package
-        for lang in trans_dat:  # key = "en", "fr", ...
-            if lang not in data_by_lang:
-                data_by_lang[lang] = {}
-            data_by_lang[lang].update(trans_dat[lang])
-        for lang in loc_dat:  # key = "en", "fr", ...
-            if lang not in data_by_lang:
-                data_by_lang[lang] = {}
-            data_by_lang[lang].update(loc_dat[lang])  # we merge .po and cldr data in one map
+    # get i18n data
+    trans_dat = generator._locale.getTranslationData_1(class_list, script.variants, script.locales, 
+                                                       addUntranslatedEntries=True)
+    loc_dat   = None
+    if needs_cldr:
+        loc_dat   = generator._locale.getLocalizationData(class_list, script.locales)
 
-    for lang in data_by_lang:
+
+    # write translation and cldr files
+    for lang in trans_dat:
         filename = "i18n-" + lang
-        filemap  = {}
-        for key in data_by_lang[lang]:
-            filemap[key] = [ { "target" : "i18n", "data" : { key : data_by_lang[lang][key] }} ]
-        # add: CLDR data!?
 
-        filetool.save(approot+"/data/translation/"+filename+".json", json.dumpsCode(filemap))
+        # translations
+        transmap  = {}
+        translations = trans_dat[lang]
+        for key in translations:
+            if translations[key]:
+                transmap[key] = [ { "target" : "i18n", "data" : { key : translations[key] }} ]
+            else:
+                transmap[key] = [ ]
+        filetool.save(approot+"/data/translation/"+filename+".json", json.dumpsCode(transmap))
+        
+        # cldr
+        localemap = {}
+        if loc_dat:
+            localekeys = loc_dat[lang]
+            for key in localekeys:
+                if localekeys[key]:
+                    localemap[key] = [ { "target" : "i18n", "data" : { key : localekeys[key] }} ]
+                else:
+                    localemap[key] = [ ]
+            filetool.save(approot+"/data/locale/"+filename+".json", json.dumpsCode(localemap))
 
     return

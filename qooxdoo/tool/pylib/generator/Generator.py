@@ -26,16 +26,13 @@ import functools, codecs, operator
 from misc import filetool, textutil, util, Path, PathType, json, copytool
 from misc.PathType import PathType
 from ecmascript import compiler
-from ecmascript.frontend             import treegenerator, tokenizer
-from ecmascript.transform.optimizer  import variableoptimizer
 from ecmascript.transform.optimizer  import privateoptimizer
-#from ecmascript.transform.optimizer import protectedoptimizer
 from misc.ExtMap                     import ExtMap
 from generator.code.Class            import Class
 from generator.code.DependencyLoader import DependencyLoader
 from generator.code.PartBuilder      import PartBuilder
 from generator.code.TreeCompiler     import TreeCompiler
-from generator.code.LibraryPath      import LibraryPath
+from generator.code.Library      import Library
 from generator.code.Script           import Script
 from generator.code.Package          import Package
 from generator.code.Part             import Part
@@ -237,7 +234,8 @@ class Generator(object):
             _classesObj = {}
             _docs = {}
             _translations = {}
-            _libs = {}          # {"name.space" : LibraryPath}
+            _libs = {}          # {"name.space" : <"library" config entry>}
+            _libraries = []     # [generator.code.Library]
             if not isinstance(library, types.ListType):
                 return (_namespaces, _classes, _docs, _translations, _libs)
 
@@ -250,9 +248,9 @@ class Generator(object):
                 path      = self._cache.read(cacheId, checkFile, memory=True)
                 if path:
                     self._console.debug("Use memory cache for %s" % key)
-                    path._console = self._console  # TODO: this is a hack to compensate LibraryPath.__getstate__ when pickeling
+                    path._console = self._console  # TODO: this is a hack to compensate Library.__getstate__ when pickeling
                 else:
-                    path = LibraryPath(lib, self._console)
+                    path = Library(lib, self._console)
                     namespace = getJobsLib(key)['namespace']
                     path._namespace = namespace  # patch namespace
                     path.scan()
@@ -275,12 +273,13 @@ class Generator(object):
                 _docs.update(path.getDocs())
                 _translations[namespace] = path.getTranslations()
                 _libs[namespace] = lib
+                _libraries.append(path)
 
             self._console.outdent()
             self._console.debug("Loaded %s libraries" % len(_namespaces))
             self._console.debug("")
 
-            return (_namespaces, _classes, _classesObj, _docs, _translations, _libs)
+            return (_namespaces, _classes, _classesObj, _docs, _translations, _libs, _libraries)
 
 
 
@@ -528,7 +527,8 @@ class Generator(object):
          self._classesObj,
          self._docs,
          self._translations,
-         self._libs)         = scanLibrary(config.get("library"))
+         self._libs,
+         self._libraries)     = scanLibrary(config.get("library"))
 
         # Python2.6 only:
         #print len(self._classesObj), len(self._classesObj) * sys.getsizeof(Class("a","b",{}))
@@ -538,7 +538,7 @@ class Generator(object):
         #self._treeLoader     = TreeLoader(self._classes, self._cache, self._console)
         self._locale         = Locale(self._context, self._classes, self._classesObj, self._translations, self._cache, self._console, )
         self._depLoader      = DependencyLoader(self._classesObj, self._cache, self._console, require, use, self._context)
-        self._resourceHandler= ResourceHandler(self)
+        self._resourceHandler= ResourceHandler(self, self._libraries)
         self._codeGenerator  = CodeGenerator(self._cache, self._console, self._config, self._job, self._settings, self._locale, self._resourceHandler, self._classes)
 
         # Preprocess include/exclude lists
@@ -597,8 +597,9 @@ class Generator(object):
             # some console output
             printVariantInfo(variantSetNum, variants, variantSets, variantData)
 
-            script          = Script()  # a new Script object represents the target code
-            script.variants = variants
+            script           = Script()  # a new Script object represents the target code
+            script.variants  = variants
+            script.libraries = self._libraries
             # set source/build version
             if "compile" in jobTriggers:
                 if config.get("compile/type", "") == "source":
@@ -747,38 +748,85 @@ class Generator(object):
     def runLogDependencies(self, script):
 
         ##
-        # A generator to yield all used-by-dependencies of classes in packages
-        # may not report used-by relations of a specific class in sequence
-        def lookupUsedByDeps(packages):
+        # A generator to yield all using dependencies of classes in packages;
+        def lookupUsingDeps(packages, ):
+
+            ##
+            # has classId been yielded?
+            def hasVisibleDeps(classId):
+                # judged from the contents of its deps arrays
+                load_names = [x.name for x in classDeps["load"]]
+                run_names  = [x.name for x in classDeps["run"]]
+                return set(load_names).union(run_names).difference(ignored_names)
+
             for packageId, package in enumerate(packages):
                 for classId in sorted(package.classes):
                     classObj = ClassIdToObject[classId]
                     classDeps = classObj.dependencies(variants)
                     ignored_names = [x.name for x in classDeps["ignore"]]
+
                     for dep in classDeps["load"]:
                         if dep.name not in ignored_names:
-                            yield (packageId, classId, dep.name, 'load')  # the packageId is somewhat bogus here
+                            yield (packageId, classId, dep.name, 'load')
+
                     for dep in classDeps["run"]:
                         if dep.name not in ignored_names:
                             yield (packageId, classId, dep.name, 'run')
+
+                    if not hasVisibleDeps(classId):
+                        # yield two empty relations, so that classId is at least visible to consumer
+                        yield (packageId, classId, None, 'load')
+                        yield (packageId, classId, None, 'run')
+
             return
 
 
         ##
-        # A generator to yield all using-dependencies of classes in packages
-        def lookupUsingDeps(packages):
+        # A generator to yield all used-by dependencies of classes in packages;
+        # will report used-by relations of a specific class in sequence
+        def lookupUsedByDeps(packages, ):
+
+            depsMap = {}
+
+            # build up depsMap {"classId" : ("packageId", [<load_deps>,...], [<run_deps>, ...]) }
             for packageId, package in enumerate(packages):
                 for classId in sorted(package.classes):
+                    if classId not in depsMap:
+                        depsMap[classId] = (packageId, [], [])
                     classObj = ClassIdToObject[classId]
                     classDeps = classObj.dependencies(variants)
                     ignored_names = [x.name for x in classDeps["ignore"]]
+
                     for dep in classDeps["load"]:
                         if dep.name not in ignored_names:
-                            yield (packageId, classId, dep.name, 'load')
+                            if dep.name not in depsMap:
+                                depsMap[dep.name] = (packageId, [], [])  # the packageId is bogus here
+                            depsMap[dep.name][1].append(classId)
                     for dep in classDeps["run"]:
                         if dep.name not in ignored_names:
-                            yield (packageId, classId, dep.name, 'run')
+                            if dep.name not in depsMap:
+                                depsMap[dep.name] = (packageId, [], [])
+                            depsMap[dep.name][2].append(classId)
+
+            # yield depsMap
+            for depId, depVal in depsMap.items():
+                packageId   = depVal[0]
+                usedByLoad  = depVal[1]
+                usedByRun   = depVal[2]
+
+                for classId in usedByLoad:
+                    yield (packageId, depId, classId, 'load')
+
+                for classId in usedByRun:
+                    yield (packageId, depId, classId, 'run')
+
+                if not usedByLoad + usedByRun: # this class isn't used at all
+                    # yield two empty relations, so that classId is at least visible to consumer
+                    yield (packageId, depId, None, 'load')
+                    yield (packageId, depId, None, 'run')
+
             return
+
 
         def depsToJsonFile(classDepsIter, depsLogConf):
             data = {}
@@ -805,35 +853,55 @@ class Generator(object):
 
 
         def depsToProviderFormat(classDepsIter, depsLogConf):
+            ##
+            # duplicates CodeProvider.passesOutputFilter
+            def passesOutputFilter(resId):
+                # must match some include expressions
+                if not filter(None, [x.search(resId) for x in inclregexps]):  # [None, None, _sre.match, None, _sre.match, ...]
+                    return False
+                # must not match any exclude expressions
+                if filter(None, [x.search(resId) for x in exclregexps]):
+                    return False
+                return True
+
+            inclregexps = self._job.get("provider/include", ["*"])
+            exclregexps = self._job.get("provider/exclude", [])
+            inclregexps = map(textutil.toRegExp, inclregexps)
+            exclregexps = map(textutil.toRegExp, exclregexps)
+
             data = {}
             # Class deps
             for (packageId, classId, depId, loadOrRun) in classDepsIter:                             
-                if classId not in data:
-                    data[classId] = {}
-                    data[classId]["load"] = []
-                    data[classId]["run"] = []
+                if passesOutputFilter(classId):
+                    if classId not in data:
+                        data[classId] = {}
+                        data[classId]["load"] = []
+                        data[classId]["run"] = []
+                    if depId != None:
+                        data[classId][loadOrRun].append(depId)
 
-                data[classId][loadOrRun].append(depId)
             # transform dep items
             for key, val in data.items():
                 newval = []
                 for ldep in val["load"]:
                     newdep = ldep.replace(".", "/")
-                    #newdep += ".js"
                     newval.append(newdep)
                 val["load"] = newval
                 newval = []
                 for ldep in val["run"]:
                     newdep = ldep.replace(".", "/")
-                    #newdep += ".js"
                     newval.append(newdep)
                 val["run"] = newval
 
             # Resource deps
             assetFilter, classToAssetHints = self._resourceHandler.getResourceFilterByAssets(data.keys())
+            # -- the next line is expensive 
             classToResources  = self._resourceHandler.getResourcesByClass(self._job.get("library", []), classToAssetHints)
+
+
             for classId in classToResources:
-                data[classId]["run"].extend(["/resource/resources#"+x for x in classToResources[classId]])
+                if classId in data:
+                    data[classId]["run"].extend(["/resource/resources#"+x for x in classToResources[classId]])
                 
             # Message key deps
             for classId in data:
@@ -841,6 +909,11 @@ class Generator(object):
                 transIds  = set(x['id'] for x in classKeys) # strip duplicates
                 transKeys = ["/translation/i18n-${lang}#" + x for x in transIds]
                 data[classId]["run"].extend(transKeys)
+
+            # CLDR dependency
+            for classId in data:
+                if self._classesObj[classId].getMeta("cldr"):
+                    data[classId]["run"].append("/locale/i18n-${lang}")
 
             # transform dep keys ("qx.Class" -> "qx/Class.js")
             for key, val in data.items():
@@ -940,6 +1013,8 @@ class Generator(object):
                 if not mode or not mode == "span-tree-only":  # add additional dependencies
                     for v1 in st_nodes:                       # that are not covered by the span tree
                         for v2 in st_nodes:
+                            if None in (v1, v2):
+                                continue
                             if gr.has_edge(v1, v2): 
                                 gr1.add_edge(v1, v2, attrs=gr.get_edge_attributes(v1, v2))
                 return
@@ -1103,9 +1178,9 @@ class Generator(object):
 
             mainformat = depsLogConf.get('format', None)
             if type == "using":
-                classDepsIter = lookupUsingDeps(packages)
+                classDepsIter = lookupUsingDeps(packages,)
             else:
-                classDepsIter = lookupUsedByDeps(packages)
+                classDepsIter = lookupUsedByDeps(packages,)
 
             if mainformat == 'dot':
                 depsToDotFile(classDepsIter, depsLogConf)
@@ -1210,7 +1285,7 @@ class Generator(object):
         self._console.indent()
         # Copy resources
         for lib in libs:
-            #libp = LibraryPath(lib,self._console)
+            #libp = Library(lib,self._console)
             #ns   = libp.getNamespace()
 
             # construct a path to the source root for the resources

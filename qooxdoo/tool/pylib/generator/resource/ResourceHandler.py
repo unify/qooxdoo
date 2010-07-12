@@ -21,14 +21,16 @@
 
 import re, string, types, sys, os, collections
 
-from generator.code.LibraryPath import LibraryPath
+from generator.code.Library import Library
 from misc import Path
 from generator.resource.ImageInfo import CombinedImage
 
 class ResourceHandler(object):
-    def __init__(self, generatorobj):
+
+    def __init__(self, generatorobj, librariesObj):
         self._genobj  = generatorobj
         self._resList = None
+        self._libraries = librariesObj
 
 
     ##
@@ -69,9 +71,17 @@ class ResourceHandler(object):
     ##
     # checks whether the image is a combined image, by looking for a
     # .meta file
-    def isCombinedImage(self, resourcePath):
-        meta_fname = os.path.splitext(resourcePath)[0]+'.meta'
+    def isCombinedImage1(self, resourcePath):
+        #meta_fname = os.path.splitext(resourcePath)[0]+'.meta'
+        i = resourcePath.rfind(".")  # assuming there *is* an extension, like '.png'
+        meta_fname = resourcePath[:i] + '.meta'
         return os.path.exists(meta_fname)
+
+    def isCombinedImage(self, resourcePath):
+        for libObj in self._libraries:
+            if resourcePath in libObj.resources.combImages:
+                return True
+        return False
 
 
     ##
@@ -96,7 +106,7 @@ class ResourceHandler(object):
         ignoredFiles = [r'\.meta$',]  # files not considered as resources
 
         # create wrapper object
-        libObj = LibraryPath(lib, self._genobj._console)
+        libObj = Library(lib, self._genobj._console)
         # retrieve list of library resources
         libList, cacheId = getCache(libObj)
         if libList:
@@ -169,20 +179,17 @@ class ResourceHandler(object):
         return filter
 
 
-    def assetsMatchResource(self, assetSet, resource, resId):
-        isCombined = False
-        if self.isCombinedImage(resource):
-            isCombined = True
-            combimg = CombinedImage(resource)
-            embImgs = combimg.getEmbeddedImages()
+    def assetsMatchResource(self, assetSet, resource, resVal):
+        resId, embImgs = resVal  # embImgs = False | [embId, ...]
 
         for assetRex in assetSet:
-            if isCombined:
+            if embImgs:
                 for embId in embImgs:
                     if assetRex.match(embId):
                         return True
-            else:
-                return assetRex.match(resId)
+            # we deliberately include combined images here, in case someone #assets the combined image directly
+            if assetRex.match(resId):
+                return True
 
         return False
 
@@ -207,15 +214,22 @@ class ResourceHandler(object):
         for lib in libs:
             allResources = [x for x in self.findAllResources([lib])]
             # lookup table for resource id's
-            resIds       = {}
+            resVals       = {}
+            # get resId and pot. embedded Images
             for res in allResources:
-                resIds[res] = self.assetIdFromPath(res, lib)
+                resId = self.assetIdFromPath(res, lib)
+                if self.isCombinedImage(res):
+                    combimg = CombinedImage(res)
+                    embImgs = combimg.getEmbeddedImages()
+                    resVals[res] = (resId, embImgs)
+                else:
+                    resVals[res] = (resId, False)
 
             # try to match classes to resources in this lib
             for classId, assetSet in classToAssetHints.items():
                 for resource in allResources:
-                    resId = resIds[resource]
-                    if self.assetsMatchResource(assetSet, resource, resId):
+                    resVal = resVals[resource]
+                    if self.assetsMatchResource(assetSet, resource, resVal):
                         classToResources[classId].append(resId)
 
         return classToResources

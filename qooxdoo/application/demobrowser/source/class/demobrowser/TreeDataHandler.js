@@ -151,22 +151,40 @@ qx.Class.define("demobrowser.TreeDataHandler",
         return (a.name < b.name) ? -1 : (a.name > b.name) ? 1 : 0;
       }
 
-      struct.tests.sort(mysort);
+      if (struct.tests) {
+        struct.tests.sort(mysort);
 
-      for (var j=0; j<struct.tests.length; j++)
-      {
-        node = new demobrowser.Tree(struct.tests[j].name);
-        node.tags = struct.tests[j].tags;
-        node.type = "test";  // tests are leaf nodes
-        node.desc = struct.tests[j].desc;
-        tree.add(node);
+        for (var j=0; j<struct.tests.length; j++)
+        {
+          node = new demobrowser.Tree(struct.tests[j].name);
+          node.tags = struct.tests[j].tags;
+          node.type = "test";  // tests are leaf nodes
+          node.desc = struct.tests[j].desc;
+          node.manifest = struct.tests[j].manifest;
+          tree.add(node);
+        }
       }
 
       // current children
       if (struct.children && struct.children.length)
       {
         for (var j=0; j<struct.children.length; j++) {
-          tree.add(this.readTree(struct.children[j]));
+          var subTree = this.readTree(struct.children[j]);
+          if (qx.core.Variant.isSet("qx.contrib", "on")) {
+            if (struct.children[j].manifest) {
+              subTree.manifest = struct.children[j].manifest;
+            }
+            if (struct.children[j].tags) {
+              subTree.tags = struct.children[j].tags;
+            }
+          }
+          tree.add(subTree);
+        }
+      }
+
+      if (qx.core.Variant.isSet("qx.contrib", "on")) {
+        if (struct.readme) {
+          tree.readme = struct.readme;
         }
       }
 

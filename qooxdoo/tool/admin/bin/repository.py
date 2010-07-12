@@ -24,6 +24,7 @@ import qxenviron
 from generator.runtime.Log import Log
 from generator.runtime.ShellCmd import ShellCmd
 from misc.copytool import CopyTool
+from misc import filetool
 
 global console
 console = Log(None, "info")
@@ -35,21 +36,52 @@ class Repository:
     self.dir = os.path.abspath(repoDir)
     self.validator = LibraryValidator(config)
     
-    manifests = self.scanRepository()
+    if not self.hasExplicitIncludes():
+      manifests = self.scanRepository()
+    else:
+      try:
+        manifests = self.getExplicitManifests()
+        if len(manifests) == 0:
+          manifests = self.scanRepository()
+        else:
+          console.info("Got an explicit include list, skipping repository scan")
+      except Exception:
+        manifests = self.scanRepository()
+      
     self.libraries = self.getLibraries(manifests)
     
-    
+  def hasExplicitIncludes(self):
+    explicit = False
+    for (key, value) in self.validator.config["libraries"]["include"].iteritems():
+      if key == "*" or not "versions" in value:
+        return False
+      for ver in value["versions"]:
+        if ver == "*":
+            return False
+        else:
+          explicit = True
+    return explicit
+  
+  def getExplicitManifests(self):
+    manifests = []
+    for (key, value) in self.validator.config["libraries"]["include"].iteritems():
+      if not "versions" in value:
+        raise Exception("Insufficient configuration details for getExplicitManifests")
+      for ver in value["versions"]:
+        manifestPath = os.path.join(self.dir, key, ver, "Manifest.json")
+        if not os.path.isfile(manifestPath):
+          raise Exception("getExplicitManifest failed: Manifest not in expected location: %s" %manifestPath)
+        manifests.append(manifestPath)
+    return manifests
+  
   def scanRepository(self):
     console.info("Scanning %s" %self.dir)
     console.indent()
     demoDir = "%sdemo%s" %(os.sep,os.sep)
     manifestPaths = []
     
-    for root, dirs, files in os.walk(self.dir, topdown=True):
+    for root, dirs, files in filetool.walk(self.dir, topdown=True):
       for dir in dirs:
-        if dir == "Bugs":
-          dirs.remove("Bugs")
-          continue
         path = os.path.join(root,dir)
         manifestPath = os.path.join(path, "Manifest.json")
         
@@ -74,7 +106,11 @@ class Repository:
       try:
         manifest = getDataFromJsonFile(manifestPath)
       except Exception, e:
+        console.error("Couldn't read manifest file %s" %manifestPath)
+        console.indent()
         console.error(str(e))
+        console.outdent()
+        continue
       
       if not "info" in manifest:
         console.warn("Manifest file %s has no 'info' section, skipping the library." %manifestPath)
@@ -96,36 +132,87 @@ class Repository:
       if libraryName not in libraries:
         libraries[libraryName] = {}
       
+      console.info("Adding library %s version %s..." %(libraryName,libraryVersion), False)
       if libraryVersion not in libraries[libraryName]:
-        console.info("Adding library %s version %s" %(libraryName,libraryVersion))
         # create LibraryVersion instance
         versionPath = os.path.abspath(os.path.dirname(manifestPath))
         libVer = LibraryVersion(libraryVersion, libraryName, versionPath)
         libVer.manifest = manifest
         libraries[libraryName][libraryVersion] = libVer
+        console.write(" Done.", "info")
       else:
-        console.warn("Found additional manifest for version %s of library %s!" %(libraryVersion,libraryName))
+        console.write("")
+        console.indent()
+        console.error("Found additional manifest for version %s of library %s: %s" %(libraryVersion,libraryName,manifestPath))
+        console.outdent()
     
     console.outdent()
     return libraries
+
+
+  def getReadmeContent(self, path):
+    readmePath = False
+    readmeNames = ["README", "README.TXT", "README.txt", "readme", "readme.txt", "readme.TXT"]
+    for readme in readmeNames:
+      readmeFull = os.path.join(path, readme)
+      if os.path.isfile(readmeFull):
+        readmePath = readmeFull
+    if readmePath:
+      readmeFile = file(readmePath, "r")
+      readme = ""
+      for line in readmeFile.readlines():
+        readme += line.replace("\n", r'\n')
+      return readme
+    else:
+      return False
 
 
   def buildAllDemos(self, demoVersion="build", demoBrowser=None, copyDemos=False):
     if demoBrowser:
       demoBrowser = os.path.abspath(demoBrowser)
     console.info("Generating demos for all known libraries")
-    demoData = []
+    repositoryData = []
     console.indent()
     
     for libraryName in self.libraries:
       library = self.libraries[libraryName]
       libraryData = {
-        "classname": libraryName, 
-        "tests": []
+        "classname": libraryName,
+        "children" : []
       }
+      
       validDemo = False
       for versionName in library:
         version = library[versionName]
+        
+        versionData = {
+          "classname" : versionName,
+          "tags" : [libraryName],
+          "tests" : [],
+          "manifest" : version.getManifest()
+        }
+        
+        qooxdooVersions = version.getManifest()["info"]["qooxdoo-versions"]
+        for ver in qooxdooVersions:
+          versionData["tags"].append("qxVersion_" + ver)
+        
+        # getting the library's top-level readme here since we only have path
+        # information for the library versions
+        if not "readme" in libraryData:
+          libDir = os.path.dirname(version.path) 
+          readme = self.getReadmeContent(libDir)
+          if readme:
+            libraryData["readme"] = readme
+          else:
+            libraryData["readme"] = "No readme file found."
+        
+        # get the version's readme
+        if not "readme" in versionData:
+          readme = self.getReadmeContent(version.path)
+          if readme:
+            versionData["readme"] = readme
+          else:
+            versionData["readme"] = "No readme file found."
         
         if not version.hasDemoDir:
           continue
@@ -139,7 +226,8 @@ class Repository:
           if variant == "source" or variant == "build":
             continue
           status = version.buildDemo(variant, demoVersion)
-          # DEBUG: status = {"buildError" : None}
+          #DEBUG:
+          #status = {"buildError" : None}
           if demoBrowser and not status["buildError"]:
             if copyDemos:
               sourceDir = os.path.join(version.path, "demo", variant, demoVersion)
@@ -152,15 +240,17 @@ class Repository:
             else:
               self.copyHtmlFile(libraryName, versionName, variant, demoVersion, demoBrowser)
             
-            libraryData["tests"].append(self.getDemoData(libraryName, versionName, variant))
+            demoData = self.getDemoData(libraryName, versionName, variant)
+            demoData["manifest"] = version.getDemoManifest(variant)
+            versionData["tests"].append(demoData)
             validDemo = True
       
       if validDemo:
-        demoData.append(libraryData)
+        libraryData["children"].append(versionData)
+        repositoryData.append(libraryData)
 
     if demoBrowser:
-      #jsonData = json.dumps(demoData, sort_keys=True, indent=4)
-      jsonData = demjson.encode(demoData, strict=False, compactly=False)
+      jsonData = demjson.encode(repositoryData, strict=False, compactly=False)
       dbScriptDir = os.path.join(demoBrowser, demoVersion, "script")
       if not os.path.isdir(dbScriptDir):
         os.mkdir(dbScriptDir)
@@ -171,6 +261,14 @@ class Repository:
       rFile.close() 
     
     console.outdent()            
+  
+  
+  def buildAllTestrunners(self, job="test"):
+    console.indent()
+    for libraryName, library in self.libraries.iteritems():
+      for versionName, libraryVersion in library.iteritems():
+        libraryVersion.buildTestrunner(job)
+  
   
   def runGeneratorForAll(self, job, subPath=None, cwd=False):
     console.indent()
@@ -196,20 +294,21 @@ class Repository:
     sourceFilePath = os.path.join(demoBrowser, dbResourcePath, dbNamespace, "demo_template.html")
     sourceFile = codecs.open(sourceFilePath, 'r', 'utf-8')
     
-    targetDir = os.path.join(demoBrowser, demoVersion, "demo", libraryName) 
+    targetDir = os.path.join(demoBrowser, demoVersion, "demo", libraryName, versionName)
     
     if not os.path.isdir(targetDir):
       os.makedirs(targetDir)
-    targetFilePath = os.path.join(targetDir, versionName + "-" + variantName +  ".html")
+    targetFilePath = os.path.join(targetDir, variantName +  ".html")
     console.info("Copying HTML file for demo %s %s %s %s to the demobrowser" %(libraryName,versionName,variantName,demoVersion))
     targetFile = codecs.open(targetFilePath, "w", "utf-8")
     
     demoPath = os.path.join( self.libraries[libraryName][versionName].path, "demo", variantName, demoVersion)
     # the demo's HTML file lives under source|build/demo/libraryName
     if local:
-      demoUrl = "/".join([versionName, variantName, demoVersion])
+      demoUrl = "/".join([variantName, demoVersion])
     else:
-      demoUrl = "../../../" + self.getDemoUrl(demoBrowser, demoPath)
+      demoUrl = "../../../../" + self.getDemoUrl(demoBrowser, demoPath)
+    demoUrl += "/index.html"
     
     for line in sourceFile:
       targetFile.write(line.replace("$LIBRARY", demoUrl))
@@ -250,15 +349,10 @@ class Repository:
   
   def getDemoData(self, library, version, variant):
     demoDict = {
-      "name": version + "-" + variant + ".html",
+      "name": variant + ".html",
       "nr": variant.capitalize(),
-      "tags": [library],
       "title": library + " " + version + " " + variant
     }
-    
-    qooxdooVersions = self.libraries[library][version].getManifest()["info"]["qooxdoo-versions"]
-    for ver in qooxdooVersions:
-      demoDict["tags"].append("qxVersion_" + ver)
 
     return demoDict
 
@@ -267,7 +361,7 @@ def getDataFromJsonFile(path):
   try:
     jsonFile = codecs.open(path, "r", "UTF-8")
   except:
-    raise Exception("File %s not found" %jsonFile)
+    raise Exception("File %s not found" %path)
     
   data = jsonFile.read()
   jsonFile.close()
@@ -275,7 +369,7 @@ def getDataFromJsonFile(path):
   try:
     return demjson.decode(data, allow_comments=True)
   except Exception, e:
-    raise Exception("Couldn't parse JSON from file %s" %jsonFile)    
+    raise Exception("Couldn't parse JSON from file %s" %path)    
 
 
 class LibraryVersion:  
@@ -284,10 +378,9 @@ class LibraryVersion:
     self.libraryName = libraryName
     self.path = path
     
-    self.hasDemoDir = False
+    self.checkStructure()
     self.demoVariants = self.getDemoVariants()
     self.demoBuildStatus = {}
-    self.checkStructure()
     
   
   def checkStructure(self):        
@@ -320,6 +413,39 @@ class LibraryVersion:
   def getDemoManifest(self, demoVariant = "default"):
     manifestPath = os.path.join(self.path, "demo", demoVariant, "Manifest.json")
     return getDataFromJsonFile(manifestPath)
+  
+  
+  def hasUnitTests(self):    
+    try:
+      classPath = self.getManifest()["provides"]["class"]
+      namespace = self.getManifest()["provides"]["namespace"]
+      fullClassPath = os.path.join(self.path, classPath, namespace)
+      testPath = os.path.join(fullClassPath, "test")
+      if os.path.isdir(testPath):
+        testPathContents = os.listdir(testPath)
+        for entry in testPathContents:
+          if entry[-3:] == ".js" and entry != "DemoTest.js":
+            return True
+    except:
+      pass
+    
+    return False
+  
+  
+  def buildTestrunner(self, job="test"):
+    console.info("Building Testrunner for %s %s... " %(self.libraryName, self.versionName))
+    if not (self.hasGenerator and self.hasUnitTests()):
+      console.write("Nothing to do.", "info")
+      return
+    
+    rcode, output, errout = self.runGenerator(job)
+    if rcode > 0:
+      console.write("ERROR: ")
+      console.indent()
+      console.error(errout)
+      console.outdent()
+    else:
+      console.write(" Done.", "info")
   
   
   def getLintResult(self):    
@@ -363,7 +489,7 @@ class LibraryVersion:
     
     demoVariants = []
     demoPath = os.path.join(self.path, "demo")
-    for root, dirs, files in os.walk(demoPath, topdown=True):
+    for root, dirs, files in filetool.walk(demoPath, topdown=True):
       for name in dirs:        
         if root == demoPath and name[0] != ".":
           demoVariants.append(name)
@@ -371,7 +497,7 @@ class LibraryVersion:
     return demoVariants
   
   
-  def runGenerator(self, job, subPath=None, cwd=False):
+  def runGenerator(self, job, subPath=None):
     if not self.hasGenerator:
       raise Exception("%s %s has no generate.py script!" %(self.libraryName, self.versionName))
     path = self.path
@@ -398,12 +524,13 @@ class LibraryVersion:
       demoBuildStatus["buildError"] = msg 
       return demoBuildStatus
     
-    console.info("Generating %s version of demo variant %s for library %s version %s" %(demoVersion,demoVariant, self.libraryName, self.versionName) )
+    console.info("Generating %s version of demo variant %s for library %s version %s..." %(demoVersion,demoVariant, self.libraryName, self.versionName) )
     subPath = os.path.join("demo", demoVariant)
     try:
       rcode, output, errout = self.runGenerator(demoVersion, subPath)
     except Exception, e:
       msg = "Error running generator: " + str(e)
+      console.wite("")
       console.error(e)
       demoBuildStatus["buildError"] = msg 
       return demoBuildStatus
@@ -420,10 +547,11 @@ class LibraryVersion:
         errout = "Unknown error"
       demoBuildStatus["buildError"] = errout
     elif not hasScriptDir:
+      console.write("")
       console.warn("No script directory created!")
       demoBuildStatus["buildError"] = "No script directory created"
     else:
-      console.info("Demo built successfully.")
+      console.write("Done.", "info")
       demoBuildStatus["buildError"] = None
       
     self.demoBuildStatus = demoBuildStatus
@@ -466,53 +594,83 @@ def getComputedConf():
 class LibraryValidator():
   def __init__(self, config={}):
     self.config = self.setDefaults(config)
+    self.includes = self.config["libraries"]["include"]
     
   def setDefaults(self, config):
     if not config:
       config = {}
     
     if not "libraries" in config:
-      config["libraries"] = { 
-        "*" : {} 
+      config["libraries"] = {
+        "include" : {
+          "*" : {}
+        }
       }
-    for libName, lib in config["libraries"].iteritems():
+      
+    if not "include" in config["libraries"]:
+      config["libraries"]["include"] = {
+        "*" : {}
+      }
+    
+    for libName, lib in config["libraries"]["include"].iteritems():
       if not "types" in lib:
         lib["types"] = ["*"]
       if not "versions" in lib:
         lib["versions"] = ["*"]
       if not "qooxdoo-versions" in lib:
         lib["qooxdoo-versions"] = ["*"]
+    
     return config    
   
-  def isValidKey(self, key, map):
-    if "*" in map or key in map:
+  
+  def isValidKey(self, key, inc, exc={}):
+    if ("*" in inc or key in inc) and not ("*" in exc or key in exc):
       return True
     else:
       return False
+    
+
+  def isValidAttribute(self, libName, key, value):
+    if libName in self.includes:
+      includes = self.includes[libName][key]
+    elif "*" in self.includes:
+      includes = self.includes["*"][key]
+    else:
+      return False
+    
+    try:
+      excludes = self.config["libraries"]["exclude"][libName][key]
+    except KeyError:
+      excludes = {}
+    
+    return self.isValidKey(value, includes, excludes)    
+  
   
   def isValidLibrary(self, libName):
-    return self.isValidKey(libName, self.config["libraries"])
+    return self.isValidKey(libName, self.includes)
   
-  def isValidType(self, libName, type):
-    if not libName in self.config["libraries"]:
-      libName = "*"
-    return self.isValidKey(type, self.config["libraries"][libName]["types"])
   
   def isValidVersion(self, libName, version):
-    if not libName in self.config["libraries"]:
-      libName = "*"
-    return self.isValidKey(version, self.config["libraries"][libName]["versions"])
+    return self.isValidAttribute(libName, "versions", version)
+  
+  
+  def isValidType(self, libName, type):
+    return self.isValidAttribute(libName, "types", type)
+  
   
   def isValidQxVersion(self, libName, qxVersions):
-    if not libName in self.config["libraries"]:
-      libName = "*"
     for qxVer in qxVersions:
-      if self.isValidKey(qxVer, self.config["libraries"][libName]["qooxdoo-versions"]):
+      if self.isValidAttribute(libName, "qooxdoo-versions", qxVer):
         return True
     return False
   
+  
   def isValid(self, libName, type, version, qxVersions):
-    return self.isValidLibrary(libName) and self.isValidType(libName, type) and self.isValidVersion(libName, version) and self.isValidQxVersion(libName, qxVersions)
+    isValidLib = self.isValidLibrary(libName)
+    isValidType = self.isValidType(libName, type)
+    isValidVersion = self.isValidVersion(libName, version)
+    isValidQxVersion = self.isValidQxVersion(libName, qxVersions)
+    return isValidLib and isValidType and isValidVersion and isValidQxVersion
 
 
 def main():

@@ -37,6 +37,7 @@
 #asset(qx/icon/Tango/22/apps/utilities-log-viewer.png)
 #asset(qx/icon/Tango/22/apps/internet-web-browser.png)
 #asset(qx/icon/Tango/22/mimetypes/executable.png)
+#asset(qx/icon/Tango/22/actions/help-faq.png)
 
 ************************************************************************ */
 
@@ -151,8 +152,19 @@ qx.Class.define("demobrowser.DemoBrowser",
     leftComposite.add(this.__tree, {flex: 1});
 
     var demoView = this.__makeDemoView();
-    infosplit.add(demoView, 2);
 
+    if (qx.core.Variant.isSet("qx.contrib", "on")) {
+      this.__demoView = demoView;
+      this.__demoStack = new qx.ui.container.Stack();
+      this.__infoView = new demobrowser.Manifest();
+      this.__readmeView = new demobrowser.Readme();
+      this.__demoStack.add(this.__demoView);
+      this.__demoStack.add(this.__infoView);
+      this.__demoStack.add(this.__readmeView);
+      infosplit.add(this.__demoStack, 2);
+    } else {
+      infosplit.add(demoView, 2);
+    }
 
     var htmlView = this.__makeHtmlCodeView();
     var jsView = this.__makeJsCodeView();
@@ -213,7 +225,7 @@ qx.Class.define("demobrowser.DemoBrowser",
       this.__viewPart,
       this.__themePart
     ];
-    
+
     if (qx.core.Variant.isSet("qx.contrib", "off")) {
       this.__menuElements.push(this.__playgroundButton);
     }
@@ -268,6 +280,10 @@ qx.Class.define("demobrowser.DemoBrowser",
     __themeMenu : null,
     __menuBar : null,
     __versionSelect : null,
+    __infoView : null,
+    __readmeView : null,
+    __demoView : null,
+    __demoStack : null,
 
 
     defaultUrl : "demo/welcome.html",
@@ -316,7 +332,7 @@ qx.Class.define("demobrowser.DemoBrowser",
 
     __openWindow : function()
     {
-      var sampUrl = this.__iframe.getWindow().location.href;
+      var sampUrl = this.__iframe.getSource();
       window.open(sampUrl, "_blank");
     },
 
@@ -507,8 +523,6 @@ qx.Class.define("demobrowser.DemoBrowser",
       debugButton.setToolTipText("Debugging options");
       menuPart.add(debugButton);
 
-
-
       // VIEWS
       // -----------------------------------------------------
 
@@ -674,6 +688,25 @@ qx.Class.define("demobrowser.DemoBrowser",
       var treeNode = this.tree.getSelection()[0];
       var modelNode = treeNode.getUserData("modelLink");
       this.tests.selected = this.tests.handler.getFullName(modelNode);
+      if (qx.core.Variant.isSet("qx.contrib", "on")) {
+        if (modelNode) {
+          if (modelNode.manifest) {
+            this.__infoView.setManifestData(modelNode.manifest);
+            this.__demoStack.setSelection([this.__infoView]);
+          }
+          else if (modelNode.readme) {
+            this.__readmeView.setTitle(treeNode.getLabel());
+            this.__readmeView.setReadmeData(modelNode.readme);
+            this.__demoStack.setSelection([this.__readmeView]);
+          }
+          else {
+            this.__demoStack.setSelection([this.__demoView]);
+          }
+        }
+        else {
+          this.__demoStack.setSelection([this.__demoView]);
+        }
+      }
     },
 
 
@@ -690,8 +723,14 @@ qx.Class.define("demobrowser.DemoBrowser",
       var _initialSection = null;
       var _initialNode = null;
 
+      var autorun;
+      if (qx.core.Variant.isSet("qx.contrib", "on")) {
+        autorun = false;
+      }
+      else {
       // check for autorun parameter
-      var autorun = /\?autorun=true/.test(location.href);
+        autorun = /\?autorun=true/.test(location.href);
+      }
 
       // set a section to open initially
       var state = this._history.getState();
@@ -744,6 +783,13 @@ qx.Class.define("demobrowser.DemoBrowser",
             t.setUserData("filled", false);
             t.setUserData("node", currNode);
 
+            if (qx.core.Variant.isSet("qx.contrib", "on")) {
+              if (currNode.tags) {
+                t.setUserData("tags", currNode.tags);
+                that.__getVersionTags(currNode.tags);
+              }
+            }
+
             buildSubTree(t, t.getUserData("node"));
 
             if (currNode.label == _initialSection)
@@ -755,9 +801,8 @@ qx.Class.define("demobrowser.DemoBrowser",
           else
           {
             t = new qx.ui.tree.TreeFile(that.polish(currNode.label));
-            t.setUserData("tags", currNode.tags);
-            if (qx.core.Variant.isSet("qx.contrib", "on")) {
-              that.__getVersionTags(currNode.tags);
+            if (currNode.tags) {
+              t.setUserData("tags", currNode.tags);
             }
             var fullName = currNode.pwd().slice(1).join("/") + "/" + currNode.label;
             _sampleToTreeNodeMap[fullName] = t;
@@ -799,14 +844,19 @@ qx.Class.define("demobrowser.DemoBrowser",
      */
     runSample : function(e)
     {
-      // If the button was clicked, decide what to play based on tree selection
-      if (e && e.getType() === "execute") {
-        if (this.tests.selected === "") {
-          this.setPlayDemos("all");
-        } else if (this.tests.selected.indexOf("html") > 0) {
-          this.setPlayDemos("current");
-        } else {
-          this.setPlayDemos("category");
+      if (qx.core.Variant.isSet("qx.contrib", "on")) {
+        this.__demoStack.setSelection([this.__demoView]);
+      }
+      else {
+        // If the button was clicked, decide what to play based on tree selection
+        if (e && e.getType() === "execute") {
+          if (this.tests.selected === "") {
+            this.setPlayDemos("all");
+          } else if (this.tests.selected.indexOf("html") > 0) {
+            this.setPlayDemos("current");
+          } else {
+            this.setPlayDemos("category");
+          }
         }
       }
 
@@ -815,6 +865,10 @@ qx.Class.define("demobrowser.DemoBrowser",
 
       if (this.tests.selected != "") {
         var file = this.tests.selected.replace(".", "/");
+        // contribDemobrowser has an additional hierarchy level
+        if (qx.core.Variant.isSet("qx.contrib", "on")) {
+          file = file.replace(".", "/");
+        }
         this.setCurrentSample(file);
       } else {
         this.playNext();
@@ -892,17 +946,24 @@ qx.Class.define("demobrowser.DemoBrowser",
     __ehIframeLoaded : function()
     {
       var fwindow = this.__iframe.getWindow();
-
-      var fpath = fwindow.location.pathname + "";
-      var splitIndex = fpath.indexOf("?");
-      if (splitIndex != -1) {
-        fpath = fpath.substring(0, splitIndex + 1);
-      }
-
       var furl = this.__iframe.getSource();
       if (furl != null && furl != this.defaultUrl)
       {
-        var url = fwindow.location.href;
+        var url;
+        try
+        {
+          url = fwindow.location.href;
+        }
+        catch(ex)
+        {
+          url = window.location.href;
+          var splitIndex = url.lastIndexOf("/");
+          if (splitIndex != -1) {
+            url = url.substring(0, splitIndex + 1);
+          }
+          url += furl;
+        }
+
         var posHtml = url.indexOf("/demo/") + 6;
         var posSearch = url.indexOf("?");
         posSearch = posSearch == -1 ? url.length : posSearch;
@@ -945,35 +1006,47 @@ qx.Class.define("demobrowser.DemoBrowser",
     __onLogInterval : function(e)
     {
       var fwindow = this.__iframe.getWindow();
-      if (fwindow && fwindow.qx && fwindow.qx.log && fwindow.qx.log.appender)
+
+      try
       {
-        if (!this.__logDone)
+
+        // Do this in a try-catch block. For instance if a demobrowser runs from
+        // the local file system over the file:// protocol, there might be
+        // security restrictions when trying to access some fwindow properties
+        if (fwindow && fwindow.qx && fwindow.qx.log && fwindow.qx.log.appender)
         {
-          this.__logDone = true;
+          if (!this.__logDone)
+          {
+            this.__logDone = true;
 
-          this.debug("Demo loaded: " + this._currentSample);
+            this.debug("Demo loaded: " + this._currentSample);
 
-          // Register to logger
-          this.logappender.$$id = null;
-          this.logappender.clear();
+            // Register to logger
+            this.logappender.$$id = null;
+            this.logappender.clear();
 
-          try {
-            fwindow.qx.log.Logger.register(this.logappender);
-          } catch (e) {
-            // if the logger is not available, ignore it
-            return;
-          }
+            try {
+              fwindow.qx.log.Logger.register(this.logappender);
+            } catch (e) {
+              // if the logger is not available, ignore it
+              return;
+            }
 
-          // update state on example change
-          this._history.addToHistory(this._currentSample.replace("/", "~"), document.title);
+            // update state on example change
+            this._history.addToHistory(this._currentSample.replace("/", "~"), document.title);
 
-          // load sample source code
-          if (this._currentSampleUrl != this.defaultUrl) {
-            this.__getPageSource(this._currentSampleUrl);
+            // load sample source code
+            if (this._currentSampleUrl != this.defaultUrl) {
+              this.__getPageSource(this._currentSampleUrl);
+            }
           }
         }
+        else
+        {
+          this.__logDone = false;
+        }
       }
-      else
+      catch(ex)
       {
         this.__logDone = false;
       }
@@ -1022,16 +1095,22 @@ qx.Class.define("demobrowser.DemoBrowser",
               selectedVersion = true;
             }
           }
+          if (qx.core.Variant.isSet("qx.contrib", "on")) {
+            count++;
+          }
         }
 
-        if (folder.getChildren().length == 0) {
-          count++;
+        if (qx.core.Variant.isSet("qx.contrib", "off")) {
+          if (folder.getChildren().length == 0) {
+            count++;
+          }
         }
 
         if ( (inTags || (folder.getLabel().search(searchRegExp) != -1) ||
             (parent.getLabel().search(searchRegExp) != -1 ) ) && selectedVersion)
         {
-          if (folder.getChildren().length == 0) {
+          if (qx.core.Variant.isSet("qx.contrib", "on") ||
+              ( qx.core.Variant.isSet("qx.contrib", "off") && folder.getChildren().length == 0 )  ) {
             showing++;
           }
           folder.show();
@@ -1198,13 +1277,27 @@ qx.Class.define("demobrowser.DemoBrowser",
     },
 
 
+    playPrev : qx.core.Variant.select("qx.contrib",
+    {
+      "on" : function(e)
+      {
+        this.__playPrevContrib(e);
+      },
+
+      "off" : function(e)
+      {
+        this.__playPrev(e);
+      }
+    }),
+
+
     /**
      * TODOC
      *
      * @param e {Event} TODOC
      * @return {void}
      */
-    playPrev : function(e)
+    __playPrev : function(e)
     {
       this.setPlayDemos("current");
       var currSamp = this.tree.getSelection()[0];  // widget
@@ -1223,6 +1316,50 @@ qx.Class.define("demobrowser.DemoBrowser",
     },
 
 
+    __playPrevContrib : function(e)
+    {
+      var currSamp = this.tree.getSelection()[0];  // widget
+
+      if (!currSamp) {
+        return;
+      }
+
+      var otherSamp = null;
+      var sample = currSamp;
+      while (sample) {
+        var prev = this.tree.getPreviousNodeOf(sample);
+        if (prev instanceof qx.ui.tree.TreeFile) {
+          otherSamp = prev;
+          break;
+        } else {
+          sample = prev;
+        }
+      }
+
+      if (otherSamp) {
+        this.tree.setSelection([otherSamp]);
+        this.runSample();
+      } else {
+        // Remove stop button, display run button
+        this._stopbutton.setVisibility("excluded");
+        this._runbutton.setVisibility("visible");
+      }
+    },
+
+
+    playNext : qx.core.Variant.select("qx.contrib",
+    {
+      "on" : function(e)
+      {
+        this.__playNextContrib(e);
+      },
+
+      "off" : function(e)
+      {
+        this.__playNext(e);
+      }
+    }),
+
     /**
      * TODOC
      *
@@ -1231,7 +1368,7 @@ qx.Class.define("demobrowser.DemoBrowser",
      *
      * @lint ignoreUndefined(getChildren)
      */
-    playNext : function(e)
+    __playNext : function(e)
     {
       var currSamp = this.tree.getSelection()[0];  // widget
 
@@ -1273,6 +1410,37 @@ qx.Class.define("demobrowser.DemoBrowser",
           this._stopbutton.setVisibility("excluded");
           this._runbutton.setVisibility("visible");
         }
+      }
+    },
+
+
+    __playNextContrib : function(e)
+    {
+      var currSamp = this.tree.getSelection()[0];  // widget
+
+      if (!currSamp) {
+        return;
+      }
+
+      var otherSamp = null;
+      var sample = currSamp;
+      while (sample) {
+        var next = this.tree.getNextNodeOf(sample);
+        if (next instanceof qx.ui.tree.TreeFile) {
+          otherSamp = next;
+          break;
+        } else {
+          sample = next;
+        }
+      }
+
+      if (otherSamp) {
+        this.tree.setSelection([otherSamp]);
+        this.runSample();
+      } else {
+        // Remove stop button, display run button
+        this._stopbutton.setVisibility("excluded");
+        this._runbutton.setVisibility("visible");
       }
     },
 
@@ -1521,6 +1689,11 @@ qx.Class.define("demobrowser.DemoBrowser",
     this._disposeObjects("mainsplit", "tree1", "left", "runbutton", "toolbar",
       "f1", "f2", "_history", "logappender", '_cmdObjectSummary',
       '_cmdRunSample', '_cmdPrevSample', '_cmdNextSample',
-      '_cmdSampleInOwnWindow', '_cmdDisposeSample', '_cmdNamespacePollution');
+      '_cmdSampleInOwnWindow', '_cmdDisposeSample', '_cmdNamespacePollution',
+      "_navPart", "_runbutton", "_stopbutton", "__sobutt", "__themePart",
+      "__viewPart", "viewGroup", "__menuBar", "infosplit", "__versionSelect",
+      "__searchTextField", "__status", "__tree", "__iframe", "__demoView",
+      "__demoStack", "__infoView", "__readmeView", "__menuElements",
+      "__logSync", "__versionTags");
   }
 });

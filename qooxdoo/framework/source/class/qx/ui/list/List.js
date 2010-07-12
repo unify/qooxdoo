@@ -25,15 +25,19 @@
 qx.Class.define("qx.ui.list.List",
 {
   extend : qx.ui.virtual.core.Scroller,
+  include : [qx.ui.list.core.MSelectionHandling],
 
-  construct : function(model)
+  construct : function(model, delegate)
   {
     this.base(arguments, 0, 1, 20, 100);
 
     this._init();
-    this._initBackground();
-    this._initLayer();
-    this._initSelectionManager();
+
+    if (delegate != null) {
+      this._delegate = delegate;
+    } else {
+      this._delegate = new qx.ui.list.core.ModelProvider();
+    }
 
     if(model != null) {
       this.initModel(model);
@@ -41,7 +45,7 @@ qx.Class.define("qx.ui.list.List",
       this.initModel(new qx.data.Array());
     }
     
-    this.initSelection(new qx.data.Array());
+    this.initDisabledItems(new qx.data.Array());
   },
 
   properties :
@@ -54,10 +58,10 @@ qx.Class.define("qx.ui.list.List",
       deferredInit : true
     },
     
-    selection :
+    disabledItems :
     {
       check : "qx.data.Array",
-      apply : "_applySelection",
+      apply : "_applyModel",
       nullable : false,
       deferredInit : true
     },
@@ -74,12 +78,27 @@ qx.Class.define("qx.ui.list.List",
   members :
   {
     _background : null,
-    
-    _cellRenderer : null,
-    
-    _manager : null,
 
-    getDataFromRow : function(row) {
+    _widgetCellProvider : null,
+
+    _layer : null,
+    
+    _delegate : null,
+
+    setLabelPath : function(path)
+    {
+      if (this._delegate.setLabelPath != null) {
+        this._delegate.setLabelPath(path);
+      }
+    },
+    
+    setIconPath : function(path) {
+      if (this._delegate.setIconPath != null) {
+        this._delegate.setIconPath(path);
+      }
+    },
+
+    _getDataFromRow : function(row) {
       var data = this.getModel().getItem(row);
 
       if (data != null) {
@@ -88,11 +107,18 @@ qx.Class.define("qx.ui.list.List",
         return null;
       }
     },
+    
+    _isDisabled : function(item) {
+      return this.getDisabledItems().contains(item);;
+    },
 
     _init : function()
     {
       this.addListener("resize", this._onResize, this);
       this.setScrollbarX("off");
+
+      this._initBackground();
+      this._initLayer();
     },
 
     _initBackground : function()
@@ -103,72 +129,9 @@ qx.Class.define("qx.ui.list.List",
 
     _initLayer : function()
     {
-      var cellRenderer = this._cellRenderer = new qx.ui.virtual.cell.ListItemWidgetCell();
-
-      var self = this;
-      var widgetCellProvider = {
-        getCellWidget : function(row, column)
-        {
-          var data = {};
-          data.label = self.getDataFromRow(row);
-          
-          var widget = cellRenderer.getCellWidget(data);
-          if(self._manager.isItemSelected(row)) {
-            self.__styleSelectabled(widget);
-          }
-
-          return widget;
-        },
-
-        poolCellWidget : function(widget) {
-          cellRenderer.pool(widget);
-        }
-      }
-
-      this._layer = new qx.ui.virtual.layer.WidgetCell(widgetCellProvider)
+      this._widgetCellProvider = new qx.ui.list.core.WidgetCellProvider(this);
+      this._layer = new qx.ui.virtual.layer.WidgetCell(this._widgetCellProvider);
       this.getPane().addLayer(this._layer);
-    },
-
-    _initSelectionManager : function()
-    {
-      var self = this;
-      var selectionDelegate = {
-        isItemSelectable : function(item) {
-          return true;
-        },
-        
-        styleSelectable : function(item, type, wasAdded) {
-          if (type != "selected") {
-            return;
-          }
-          
-          var widget = self._layer.getRenderedCellWidget(item, 0);
-          if(widget == null) {
-            return;
-          }
-          
-          if (wasAdded) {
-            self.__styleSelectabled(widget);
-          } else {
-            self.__styleUnselectabled(widget);
-          }         
-        }
-      }
-        
-      this._manager = new qx.ui.virtual.selection.Row(
-        this.getPane(), selectionDelegate
-      );
-      this._manager.attachMouseEvents(this.getPane());
-      this._manager.attachKeyEvents(this);
-      this._manager.addListener("changeSelection", this._onChangeSelection, this);
-    },
-    
-    __styleSelectabled : function(item) {
-      this._cellRenderer.updateStates(item, {selected: 1});
-    },
-    
-    __styleUnselectabled : function(item) {
-      this._cellRenderer.updateStates(item, {});
     },
 
     _applyModel : function(value, old)
@@ -178,17 +141,8 @@ qx.Class.define("qx.ui.list.List",
       if (old != null) {
         old.removeListener("change", this._onModelChange, this);
       }
-      
-      this.__updateRowCount();
-    },
-    
-    _applySelection : function(value, old)
-    {
-      value.addListener("change", this._onSelectionChange, this);
 
-      if (old != null) {
-        old.removeListener("change", this._onSelectionChange, this);
-      }
+      this.__updateRowCount();
     },
 
     _applyRowHeight : function(value, old) {
@@ -198,72 +152,26 @@ qx.Class.define("qx.ui.list.List",
     _onResize : function(e) {
       this.getPane().getColumnConfig().setItemSize(0, e.getData().width);
     },
-    
+
     _onModelChange : function(e) {
       this.__updateRowCount();
     },
-    
-    _onSelectionChange : function(e)
-    {
-      var selection = this.getSelection();
-      for (var i = 0; i < selection.getLength(); i++)
-      {
-        var item = selection.getItem(i);
-        var index = this.getModel().indexOf(item);
-        this._manager.selectItem(index);
-      }
-      
-      if (!this.__isSelectionLengthEqual()) {
-        this.__updateSelection();
-      }
-      
-      this.getPane().fullUpdate();
-    },
-    
-    _onChangeSelection : function(e) {
-      // TODO
-      /*var selection = this.getSelection();
-      var currentSelection = e.getData();
-      
-      selection.removeAll();
-      for (var i = 0; i < currentSelection.length; i++)
-      {
-        var row = currentSelection[i];
-        selection.push(this.getDataFromRow(row));
-      }*/
-    },
-    
+
     __updateRowCount : function()
     {
       this.getPane().getRowConfig().setItemCount(this.getModel().getLength());
       this.getPane().fullUpdate();
-    },
-    
-    __isSelectionLengthEqual : function() {
-      return this.getSelection().getLength() == this._manager.getSelection().length; 
-    },
-    
-    __updateSelection : function()
-    {
-      var selection = this.getSelection();
-      var nativArray = selection.toArray();
-      var currentSelection = this._manager.getSelection();
-      
-      qx.lang.Array.removeAll(nativArray);
-      qx.lang.Array.insertAt(nativArray, this.getDataFromRow(currentSelection[0]), 0);
-      selection.length = nativArray.length;
     }
   },
 
   destruct : function()
   {
     this._background.dispose();
-    this._cellRenderer.dispose();
+    this._widgetCellProvider.dispose();
     this._layer.dispose();
-    this._manager.dispose();
     this._background = null;
-    this._cellRenderer = null;
+    this._widgetCellProvider = null;
     this._layer = null;
-    this._manager = null;
+    this._delegate = null;
   }
 });

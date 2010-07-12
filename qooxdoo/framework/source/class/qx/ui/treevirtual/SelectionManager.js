@@ -37,12 +37,6 @@ qx.Class.define("qx.ui.treevirtual.SelectionManager",
 
 
 
-  /*
-  *****************************************************************************
-     CONSTRUCTOR
-  *****************************************************************************
-  */
-
   /**
    * @param table {qx.ui.table.Table}
    *    The table whose selections are being managed
@@ -55,13 +49,6 @@ qx.Class.define("qx.ui.treevirtual.SelectionManager",
   },
 
 
-
-
-  /*
-  *****************************************************************************
-     MEMBERS
-  *****************************************************************************
-  */
 
   members :
   {
@@ -130,7 +117,7 @@ qx.Class.define("qx.ui.treevirtual.SelectionManager",
         }
 
         // Get the node to which this event applies
-        var node = dataModel.getValue(treeCol, tree.getFocusedRow());
+        var node = dataModel.getNode(tree.getFocusedRow());
 
         if (!node) {
           return false;
@@ -147,7 +134,7 @@ qx.Class.define("qx.ui.treevirtual.SelectionManager",
           var left = qx.bom.element.Location.getLeft(
             tree.getContentElement().getDomElement());
 
-          for (i=0; i<columnPositions[treeCol].visX; i++) {
+          for (var i=0; i<columnPositions[treeCol].visX; i++) {
             left += tcm.getColumnWidth(columnPositions[i].visX);
           }
 

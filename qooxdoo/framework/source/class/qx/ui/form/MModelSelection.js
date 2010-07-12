@@ -74,7 +74,10 @@ qx.Mixin.define("qx.ui.form.MModelSelection",
         }
       };
 
-      this.setModelSelection(modelSelection);
+      // only change the selection if you are sure that its correct [BUG #3748]
+      if (modelSelection.length === data.length) {
+        this.setModelSelection(modelSelection);
+      }
     },
 
 
@@ -115,6 +118,9 @@ qx.Mixin.define("qx.ui.form.MModelSelection",
      * Returns always an array of the models of the selected items. If no
      * item is selected or no model is given, the array will be empty.
      *
+     * *CAREFUL!* The model selection can only work if every item item in the
+     * selection providing widget has a model property!
+     *
      * @return {qx.data.Array} An array of the models of the selected items.
      */
     getModelSelection : function()
@@ -129,6 +135,9 @@ qx.Mixin.define("qx.ui.form.MModelSelection",
      * selected.
      *
      * *Attention:* This method can have a time complexity of O(n^2)!
+     *
+     * *CAREFUL!* The model selection can only work if every item item in the
+     * selection providing widget has a model property!
      *
      * @param modelSelection {Array} An array of models, which should be
      *   selected.

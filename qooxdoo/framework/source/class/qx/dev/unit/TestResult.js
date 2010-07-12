@@ -132,7 +132,9 @@ qx.Class.define("qx.dev.unit.TestResult",
 
       if (this.__timeout[test.getFullName()])
       {
-        this.__timeout[test.getFullName()].stop();
+        if (!this.__timeout[test.getFullName()] !== "failed") {
+          this.__timeout[test.getFullName()].stop();
+        }
         delete this.__timeout[test.getFullName()];
       }
       else
@@ -178,8 +180,9 @@ qx.Class.define("qx.dev.unit.TestResult",
               );
             }
             var timeoutFunc = (ex.getDeferredFunction() ? ex.getDeferredFunction() : defaultTimeoutFunction);
+            var context = (ex.getContext() ? ex.getContext() : window);
             this.__timeout[test.getFullName()] = qx.event.Timer.once(function() {
-               this.run(test, timeoutFunc);
+               this.run(test, timeoutFunc, context);
             }, that, ex.getDelay());
             this.fireDataEvent("wait", test);
           }

@@ -255,7 +255,8 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
             '<a style="' + style + '" href="' + protocol, '//',
             host,
             pathname, '#', fullItemName,
-            '" onclick="', 'apiviewer.ui.ClassViewer.instance._onSelectItem(\'',
+            '" onclick="return false;"',
+            '" onmouseup="apiviewer.TabViewController.instance.onSelectItem(\'',
             fullItemName, '\'); return false;"', ' title="',
             fullItemName, '">', label, '</a></span>'
           ];

@@ -90,6 +90,9 @@ qx.Class.define("qx.util.TimerManager",
 
   members :
   {
+    /** Whether we're currently listening on the interval timer event */
+    __timerListenerActive : false,
+
     /**
      * Start a new timer
      *
@@ -186,11 +189,13 @@ qx.Class.define("qx.util.TimerManager",
       delete this.self(arguments).__timerData[timerId];
 
       // If there are no more timers pending...
-      if (timerQueue.length == 0)
+      if (timerQueue.length == 0 && this.__timerListenerActive)
       {
         // ... then stop listening for the periodic timer
         qx.event.Idle.getInstance().removeListener("interval",
-                                                   this.__processQueue);
+                                                   this.__processQueue,
+                                                   this);
+        this.__timerListenerActive = false;
       }
     },
 
@@ -235,12 +240,13 @@ qx.Class.define("qx.util.TimerManager",
       }
 
       // If this is the first element on the queue...
-      if (timerQueue.length == 1)
+      if (! this.__timerListenerActive)
       {
         // ... then start listening for the periodic timer.
         qx.event.Idle.getInstance().addListener("interval",
                                                 this.__processQueue,
                                                 this);
+        this.__timerListenerActive = true;
       }
 
     },
@@ -267,7 +273,7 @@ qx.Class.define("qx.util.TimerManager",
              timerData[timerQueue[0]].expireAt <= timeNow)
       {
         // Yup.  Do it.  First, remove element from the queue.
-        var expiredTimerId = (timerQueue.splice(0, 1))[0];
+        var expiredTimerId = timerQueue.shift();
 
         // Call the handler function for this timer
         var expiredTimerData = timerData[expiredTimerId];
@@ -293,11 +299,13 @@ qx.Class.define("qx.util.TimerManager",
       }
 
       // If there are no more timers pending...
-      if (timerQueue.length == 0)
+      if (timerQueue.length == 0 && this.__timerListenerActive)
       {
         // ... then stop listening for the periodic timer
         qx.event.Idle.getInstance().removeListener("interval",
-                                                   this.__processQueue);
+                                                   this.__processQueue,
+                                                   this);
+        this.__timerListenerActive = false;
       }
     }
   }
