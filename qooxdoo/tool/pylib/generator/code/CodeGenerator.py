@@ -241,6 +241,10 @@ class CodeGenerator(object):
             # Enable "?nocache=...." for script loading?
             vals["NoCacheParam"] = "true" if self._job.get("compile-options/uris/add-nocache-param", True) else "false"
 
+            # Add build details
+            vals["Build"] = int(time.time()*1000) 
+            vals["Type"] = version
+            
             # Locate and load loader basic script
             template = loadTemplate(bootCode)
 
