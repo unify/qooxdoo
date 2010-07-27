@@ -33,6 +33,7 @@
  * * Internet Explorer 8.
  * 
  * Inclusive PhoneGap support
+ * Inclusive Adobe AIR support
  *
  * Currently unsupported browsers:
  * * Opera using the <code>postError</code> (disabled due to missing
@@ -56,7 +57,7 @@ qx.Class.define("qx.log.appender.Native",
      */
     process : function(entry)
     {
-			var obj = window.console || window.debug;
+			var obj = window.console || window.debug || (window.air && air.Introspector.Console);
 			if (obj)
 			{
 				var level = entry.level;
