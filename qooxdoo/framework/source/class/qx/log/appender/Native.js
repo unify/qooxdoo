@@ -57,16 +57,18 @@ qx.Class.define("qx.log.appender.Native",
      */
     process : function(entry)
     {
-			var obj = window.console || window.debug || (window.air && air.Introspector.Console);
-			if (obj)
-			{
-				var level = entry.level;
-				if (!(level in obj)) {
-					level = "log";
-				}
-				
-				obj[level](qx.log.appender.Util.toText(entry));
-			}
+      // Prefer PhoneGap interface over Firebug interface (fixes iOS 4.0 logging)
+      // Prefer Firebug over native AIR console if available
+      var obj = window.debug || window.console || (window.air && air.Introspector.Console);
+      if (obj)
+      {
+        var level = entry.level;
+        if (!(level in obj)) {
+          level = "log";
+        }
+        
+        obj[level](qx.log.appender.Util.toText(entry));
+      }
     }
   },
 
