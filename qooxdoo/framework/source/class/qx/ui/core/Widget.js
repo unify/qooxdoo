@@ -2298,7 +2298,7 @@ qx.Class.define("qx.ui.core.Widget",
           }
         }
       }
-
+      
       var pool = qx.ui.core.Widget.__decoratorPool;
       var container = this.getContainerElement();
 
@@ -2856,12 +2856,17 @@ qx.Class.define("qx.ui.core.Widget",
      * Returns the inherited value for the given property.
      * 
      * @param prop {String} Name of any supported themable property
-     * @return {var} Currently stored value.
+     * @return {var|undefined} Currently stored value. May be undefined when property is not inherited.
      */
     getInheritedValue : function(prop) 
     {
-      var parent = this.$$parent;
-      return parent && this.$$parent.get(prop);
+      var clazz = this.constructor;
+      var inheritables = clazz.$$inheritables || qx.core.property.Multi.getInheritableProperties(clazz);
+      if (inheritables[prop])
+      {
+        var parent = this.$$parent;
+        return parent && parent.get(prop);
+      }
     },
 
 
