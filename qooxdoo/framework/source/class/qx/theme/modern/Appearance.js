@@ -1141,9 +1141,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         return {
-          padding : [0, 1, 0, 1],
-          margin : states.focused ? 0 : 1,
-          decorator : states.focused ? "keyboard-focus" : undefined
+          padding : [0, 1, 0, 1]
         };
       }
     },
