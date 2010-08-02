@@ -522,6 +522,11 @@ qx.Class.define("qx.ui.layout.VBox",
         var gaps = util.computeVerticalGaps(children, spacing, true);
       }
 
+      // Verify gaps early
+      if (qx.core.Variant.isSet("qx.debug", "on")) {
+        this.assertInteger(gaps, "Layout utility returned invalid gaps. Used separator: " + separator);
+      }      
+
       // Return hint
       return {
         minHeight : minHeight + gaps,

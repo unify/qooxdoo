@@ -521,6 +521,11 @@ qx.Class.define("qx.ui.layout.HBox",
       } else {
         var gaps = util.computeHorizontalGaps(children, spacing, true);
       }
+      
+      // Verify gaps early
+      if (qx.core.Variant.isSet("qx.debug", "on")) {
+        this.assertInteger(gaps, "Layout utility returned invalid gaps. Used separator: " + separator);
+      }      
 
       // Return hint
       return {

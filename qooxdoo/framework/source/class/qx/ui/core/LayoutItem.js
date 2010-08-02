@@ -400,10 +400,10 @@ qx.Class.define("qx.ui.core.LayoutItem",
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
         var msg = "Something went wrong with the layout of " + this.toString() + "!";
-        this.assertInteger(left, "Wrong 'left' argument. " + msg);
-        this.assertInteger(top, "Wrong 'top' argument. " + msg);
-        this.assertInteger(width, "Wrong 'width' argument. " + msg);
-        this.assertInteger(height, "Wrong 'height' argument. " + msg);
+        this.assertInteger(left, "Wrong 'left' value. " + msg);
+        this.assertInteger(top, "Wrong 'top' value. " + msg);
+        this.assertInteger(width, "Wrong 'width' value. " + msg);
+        this.assertInteger(height, "Wrong 'height' value. " + msg);
 
         // this.assertInRange(width, this.getMinWidth() || -1, this.getMaxWidth() || 32000);
         // this.assertInRange(height, this.getMinHeight() || -1, this.getMaxHeight() || 32000);

@@ -1312,9 +1312,9 @@ qx.Class.define("qx.ui.core.Widget",
 
           if (qx.core.Variant.isSet("qx.debug", "on"))
           {
-            var msg = "The layout of the widget" + this.toString() + " returned an invalid size hint!";
-            this.assertInteger(hint.width, "Wrong 'left' argument. " + msg);
-            this.assertInteger(hint.height, "Wrong 'top' argument. " + msg);
+            var msg = "The layout " + layout.toString() + " of the widget " + this.toString() + " returned an invalid size hint!";
+            this.assertInteger(hint.width, "Wrong 'width' value. " + msg);
+            this.assertInteger(hint.height, "Wrong 'height' value. " + msg);
           }
 
           return hint;

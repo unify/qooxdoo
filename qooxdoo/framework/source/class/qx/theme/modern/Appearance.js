@@ -986,14 +986,18 @@ qx.Theme.define("qx.theme.modern.Appearance",
         {
           return {
             marginTop : 2,
-            marginBottom: 2
+            marginBottom: 2,
+            marginLeft : 0,
+            marginRight : 0
           }
         }
         else
         {
           return {
             marginLeft : 2,
-            marginRight : 2
+            marginRight : 2,
+            marginTop : 0,
+            marginBottom : 0
           }
         }
       }
@@ -1010,14 +1014,18 @@ qx.Theme.define("qx.theme.modern.Appearance",
         {
           return {
             marginTop : 2,
-            marginBottom: 2
+            marginBottom: 2,
+            marginLeft : 0,
+            marginRight : 0
           }
         }
         else
         {
           return {
             marginLeft : 2,
-            marginRight : 2
+            marginRight : 2,
+            marginTop : 0,
+            marginBottom : 0
           }
         }
       }

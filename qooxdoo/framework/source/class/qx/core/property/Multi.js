@@ -515,9 +515,24 @@
         
           // Special get() support for themable/inheritable properties
           var currentGetter = priorityToFieldConfig[currentPriority].get;
-          if (currentGetter) {
-            return context[currentGetter](name);
-          } else {
+          if (currentGetter) 
+          {
+            if (qx.core.Variant.isSet("qx.debug", "on"))
+            {
+              var value = context[currentGetter](name);
+              if (value === Undefined) {
+                throw new Error("Ooops. Invalid value at getter: " + name + " in " + context + " via getter: " + currentGetter);
+              }
+              
+              return value;
+            }
+            else
+            {
+              return context[currentGetter](name);
+            }
+          } 
+          else 
+          {
             return data[propertyId+currentPriority];
           }
         };
