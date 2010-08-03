@@ -57,6 +57,23 @@ qx.Class.define("qx.ui.core.scroll.AbstractScrollArea",
 
 
 
+  /*
+  *****************************************************************************
+     EVENTS
+  *****************************************************************************
+  */
+
+  events :
+  {
+    /** Fires on every horizontal scroll position change */
+    "scrollX" : "qx.event.type.Data",
+
+    /** Fires on every vertical scroll position change */
+    "scrollY" : "qx.event.type.Data"
+  },
+
+
+
 
   /*
   *****************************************************************************
@@ -405,8 +422,11 @@ qx.Class.define("qx.ui.core.scroll.AbstractScrollArea",
      * @param e {qx.event.type.Data} The scroll event object
      * @return {void}
      */
-    _onScrollPaneX : function(e) {
-      this.scrollToX(e.getData());
+    _onScrollPaneX : function(e) 
+    {
+      var data = e.getData();
+      this.scrollToX(data);
+      this.fireDataEvent("scrollX", data);
     },
 
 
@@ -416,8 +436,11 @@ qx.Class.define("qx.ui.core.scroll.AbstractScrollArea",
      * @param e {qx.event.type.Data} The scroll event object
      * @return {void}
      */
-    _onScrollPaneY : function(e) {
-      this.scrollToY(e.getData());
+    _onScrollPaneY : function(e)
+    {
+      var data = e.getData();
+      this.scrollToY(data);
+      this.fireDataEvent("scrollY", data);
     },
 
 
