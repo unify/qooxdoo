@@ -171,6 +171,40 @@ def nodeIterator(node, nodetypes):
                 yield fcn
 
 
+from collections import deque
+
+##
+# Non-recursive vesion of nodeIterator()
+#
+# Uses an agenda-style search, with a deque to sequence node children. Supports
+# bread-first and depth-first searches.
+
+def nodeIteratorNonRec(snode, nodetypes=[], mode='df'):  # df=depth-first, bf=breadth-first
+    agenda      = deque()
+    agenda.append((u'', snode)) # put the first element in
+
+    while True:
+        try:
+            parent_types, node = agenda.popleft()
+        except IndexError:
+            break
+        try:
+            cld = node.children
+        except AttributeError:
+            cld = []
+        cparent_types = "/".join((parent_types, node.type))
+        cld = [(cparent_types, x) for x in cld]
+        if mode == 'bf':
+            agenda.extend(cld)
+        else:
+            agenda.extendleft(cld)
+        if nodetypes:
+            if node.type in nodetypes:
+                yield parent_types, node
+        else:
+            yield parent_types, node
+
+
 
 def getDefinitions(node, definitions=None):
   if definitions == None:

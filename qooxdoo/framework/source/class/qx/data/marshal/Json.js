@@ -28,7 +28,7 @@ qx.Class.define("qx.data.marshal.Json",
 
   /**
    * @param delegate {Object} An object containing one of the methods described
-   *   in {@link qx.data.store.IStoreDelegate}.
+   *   in {@link qx.data.store.IMarshalerDelegate}.
    */
   construct : function(delegate)
   {
@@ -102,12 +102,13 @@ qx.Class.define("qx.data.marshal.Json",
      *   the bubbling of change events or not.
      */
     toClass: function(data, includeBubbleEvents) {
-      // break on all primitive json types
+      // break on all primitive json types and qooxdoo objects
       if (
         qx.lang.Type.isNumber(data)
         || qx.lang.Type.isString(data)
         || qx.lang.Type.isBoolean(data)
         || data == null
+        || data instanceof qx.core.Object
       ) {
         return;
       }
@@ -144,14 +145,24 @@ qx.Class.define("qx.data.marshal.Json",
 
       // create the properties map
       var properties = {};
+      var members = {};
       for (var key in data) {
         // stip the unwanted characters
         key = key.replace(/-/g, "");
         properties[key] = {};
         properties[key].nullable = true;
         properties[key].event = "change" + qx.lang.String.firstUp(key);
+        // bubble events
         if (includeBubbleEvents) {
           properties[key].apply = "_applyEventPropagation";
+        }
+        // validation rules
+        if (this.__delegate && this.__delegate.getValidationRule) {
+          var rule = this.__delegate.getValidationRule(hash, key);
+          if (rule) {
+            properties[key].validate = "_validate" + key;
+            members["_validate" + key] = rule;
+          }
         }
       }
 
@@ -184,7 +195,8 @@ qx.Class.define("qx.data.marshal.Json",
       var newClass = {
         extend : superClass,
         include : mixins,
-        properties : properties
+        properties : properties,
+        members : members
       };
 
       qx.Class.define("qx.data.model." + hash, newClass);
@@ -231,6 +243,7 @@ qx.Class.define("qx.data.marshal.Json",
         || qx.lang.Type.isBoolean(data)
         || qx.lang.Type.isDate(data)
         || data == null
+        || data instanceof qx.core.Object
       ) {
         return data;
 

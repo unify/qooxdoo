@@ -19,6 +19,13 @@
 
 ************************************************************************ */
 
+/**
+ * Primitives for building trees and tree nodes.
+ *
+ * The methods in this mixin are included directly in the SimpleTreeDataModel
+ * but are also useful for other types of trees (not TreeVirtual) that need
+ * similar tree and node creation.
+ */
 qx.Mixin.define("qx.ui.treevirtual.MTreePrimitive",
 {
   statics :
@@ -38,8 +45,11 @@ qx.Mixin.define("qx.ui.treevirtual.MTreePrimitive",
      *       #addLeaf}.  There is no guarantee that the interface to this
      *       method will remain unchanged over time.
      *
-     * @param nodeArr {Array}
-     *   The array to which new nodes are to be added
+     * @param nodeArr {Array|Map}
+     *   The array to which new nodes are to be added. See, however, the
+     *   nodeId parameter. If nodeId values will be provided, then nodeArr can
+     *   be a map. The traditional TreeVirtual does not provide node ids, and
+     *   passes an array for this parameter.
      *
      * @param parentNodeId {Integer}
      *   The node id of the parent of the node being added
@@ -47,7 +57,7 @@ qx.Mixin.define("qx.ui.treevirtual.MTreePrimitive",
      * @param label {String}
      *   The string to display as the label for this node
      *
-     * @param bOpened {Integer}
+     * @param bOpened {Boolean}
      *   <i>true</i> if the tree should be rendered in its opened state;
      *   <i>false</i> otherwise.
      *
@@ -89,6 +99,12 @@ qx.Mixin.define("qx.ui.treevirtual.MTreePrimitive",
      *         when the node is selected, issue
      *         <code>tree.setAlwaysUpdateCells(true);</code>
      *
+     * @param nodeId {Integer?}
+     *   The requested node id for this new node. If not provided, nodeArr
+     *   will be assumed to be an array, not a map, and the next available
+     *   index of the array will be used. If it is provided, then nodeArr may
+     *   be either an array or a map.
+     *
      * @return {Integer} The node id of the newly-added node.
      *
      * @throws {Error} If one tries to add a child to a non-existent parent.
@@ -101,7 +117,8 @@ qx.Mixin.define("qx.ui.treevirtual.MTreePrimitive",
                         bHideOpenCloseButton,
                         type,
                         icon,
-                        iconSelected)
+                        iconSelected,
+                        nodeId)
     {
       var parentNode;
 
@@ -137,7 +154,10 @@ qx.Mixin.define("qx.ui.treevirtual.MTreePrimitive",
       }
 
       // Determine the node id of this new node
-      var nodeId = nodeArr.length;
+      if (nodeId === undefined)
+      {
+        nodeId = nodeArr.length;
+      }
 
       // Set the data for this node.
       var node =
@@ -156,7 +176,7 @@ qx.Mixin.define("qx.ui.treevirtual.MTreePrimitive",
       };
 
       // Add this node to the array
-      nodeArr.push(node);
+      nodeArr[nodeId] = node;
 
       // Add this node to its parent's child array.
       parentNode.children.push(nodeId);

@@ -39,7 +39,7 @@
  *
  * *External Documentation*
  *
- * <a href='http://qooxdoo.org/documentation/1.1/widget/Image' target='_blank'>
+ * <a href='http://manual.qooxdoo.org/1.2/pages/widget/image.html' target='_blank'>
  * Documentation of this widget in the qooxdoo wiki.</a>
  */
 qx.Class.define("qx.ui.basic.Image",
@@ -240,7 +240,7 @@ qx.Class.define("qx.ui.basic.Image",
 
     // property apply
     _applyScale : function(value) {
-       this._styleSource();
+      this._styleSource();
     },
 
 
@@ -354,12 +354,20 @@ qx.Class.define("qx.ui.basic.Image",
 
       this.__checkForContentElementSwitch(source);
 
+      if (qx.core.Variant.isSet("qx.client", "mshtml"))
+      {
+        var repeat = this.getScale() ? "scale" : "no-repeat";
+        this.getContentElement().tagNameHint = qx.bom.element.Decoration.getTagName(repeat, source);
+      }
+
       // Detect if the image registry knows this image
       if (qx.util.ResourceManager.getInstance().has(source)) {
         this.__setManagedImage(this.getContentElement(), source);
       } else if (qx.io.ImageLoader.isLoaded(source)) {
         this.__setUnmanagedImage(this.getContentElement(), source);
-      } else {
+      }
+      else 
+      {
         this.__loadUnmanagedImage(this.getContentElement(), source);
       }
     },

@@ -166,7 +166,9 @@ qx.Class.define("qx.data.controller.Form",
             // check if the target is a selection
             var clazz = items[name].constructor;
             if (qx.Class.hasInterface(clazz, qx.ui.core.ISingleSelection)) {
-              currentData[names[i]] = items[name].getModelSelection();
+              // use the first element of the selection because passed to the
+              // marshaler (and its single selection anyway) [BUG #3541]
+              currentData[names[i]] = items[name].getModelSelection().getItem(0) || null;
             } else {
               currentData[names[i]] = items[name].getValue();
             }
@@ -175,7 +177,7 @@ qx.Class.define("qx.data.controller.Form",
             if (!currentData[names[i]]) {
               currentData[names[i]] = {};
             }
-            currentData = currentData[names[i]]
+            currentData = currentData[names[i]];
           }
         }
       }
@@ -307,5 +309,20 @@ qx.Class.define("qx.data.controller.Form",
       qx.Class.hasInterface(item.constructor, qx.ui.form.IModelSelection);
     }
 
-  }
+  },
+
+
+
+  /*
+   *****************************************************************************
+      DESTRUCTOR
+   *****************************************************************************
+   */
+
+   destruct : function() {
+     // dispose the object controller because the bindings need to be removed
+     if (this.__objectController) {
+       this.__objectController.dispose();
+     }
+   }
 });

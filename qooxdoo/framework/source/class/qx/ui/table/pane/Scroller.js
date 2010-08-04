@@ -450,22 +450,14 @@ qx.Class.define("qx.ui.table.pane.Scroller",
 
 
     // property modifier
-    _applyHorizontalScrollBarVisible : function(value, old)
-    {
+    _applyHorizontalScrollBarVisible : function(value, old) {
       this.__horScrollBar.setVisibility(value ? "visible" : "excluded");
-      if (!value) {
-        this.setScrollY(0, true);
-      }
     },
 
 
     // property modifier
-    _applyVerticalScrollBarVisible : function(value, old)
-    {
+    _applyVerticalScrollBarVisible : function(value, old) {
       this.__verScrollBar.setVisibility(value ? "visible" : "excluded");
-      if (!value) {
-        this.setScrollX(0);
-      }
     },
 
 
@@ -1365,10 +1357,12 @@ qx.Class.define("qx.ui.table.pane.Scroller",
           var sortCol = tableModel.getSortColumnIndex();
           var ascending = (col != sortCol) ? true : !tableModel.isSortAscending();
 
-          var data = {
-            column : col,
-            ascending : ascending
-          };
+          var data =
+            {
+              column     : col,
+              ascending  : ascending,
+              clickEvent : e
+            };
 
           if (this.fireDataEvent("beforeSort", data, null, true))
           {

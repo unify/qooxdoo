@@ -90,9 +90,9 @@ class TreeCompiler(object):
         length = len(classes)
         
         for pos, classId in enumerate(classes):
-            # self._console.progress(pos, length)
+            # self._console.progress(pos+1, length)
             compiled = self.getCompiled(classId, variants, optimize, format)
-            print "    - %s/%s: %s => %s bytes" % (str(pos+1).zfill(3), length, classId, len(compiled))
+            print "    - %s/%s: %s => %s bytes" % (str(pos+1).zfill(3), str(length).zfill(3), classId, len(compiled))
             content += compiled
             
         return content
@@ -154,7 +154,7 @@ class TreeCompiler(object):
 
         # go through classes, start individual compiles, collect results
         for pos, classId in enumerate(classes):
-            self._console.progress(pos, length)
+            self._console.progress(pos+1, length)
             contA[pos] = {}
             contA[pos][INCACHE] = False
             if len(processes) > maxproc:
@@ -212,7 +212,7 @@ class TreeCompiler(object):
         length = len(threads)
 
         for pos, t in enumerate(threads):
-            self._console.progress(pos, length)
+            self._console.progress(pos+1, length)
             t.join()
             
         content = u''

@@ -40,11 +40,16 @@
 qx.Class.define("qx.ui.tree.Tree",
 {
   extend : qx.ui.core.scroll.AbstractScrollArea,
-  implement : [qx.ui.core.IMultiSelection, qx.ui.form.IModelSelection],
+  implement : [
+    qx.ui.core.IMultiSelection,
+    qx.ui.form.IModelSelection,
+    qx.ui.form.IForm
+  ],
   include : [
     qx.ui.core.MMultiSelectionHandling,
     qx.ui.core.MContentPadding,
-    qx.ui.form.MModelSelection
+    qx.ui.form.MModelSelection,
+    qx.ui.form.MForm
   ],
 
 
@@ -365,28 +370,13 @@ qx.Class.define("qx.ui.tree.Tree",
      *
      * @param treeItem {AbstractTreeItem} The tree item to get the following
      * sibling of.
-     * @param invisible {Boolean} DEPRECATED
-     * @param stayInSameNestLevel {Boolean} DEPRECATED
      *
      * @return {AbstractTreeItem?null} The item following the given item. May be
      *     <code>null</code> if the given item is the last in it's nesting
      *     level.
      */
-    getNextSiblingOf : function(treeItem, invisible, stayInSameNestLevel)
+    getNextSiblingOf : function(treeItem)
     {
-      if (typeof(invisible) !== "undefined") {
-        qx.log.Logger.deprecatedMethodWarning(
-          arguments.callee,
-          "The invisible and stayInSameNestLevel parameters are deprecated: Use"
-            + " getNextNodeOf() instead."
-        );
-
-        if (!stayInSameNestLevel) {
-          return this.getNextNodeOf(treeItem, invisible);
-        }
-
-      }
-
       if (treeItem == this.getRoot()) {
         return null;
       }
@@ -408,28 +398,13 @@ qx.Class.define("qx.ui.tree.Tree",
      *
      * @param treeItem {AbstractTreeItem} The tree item to get the previous
      * sibling of.
-     * @param invisible {Boolean} DEPRECATED
-     * @param stayInSameNestLevel {Boolean} DEPRECATED
      *
      * @return {AbstractTreeItem?null} The item preceding the given item. May be
      *     <code>null</code> if the given item is the first in it's nesting
      *     level.
      */
-    getPreviousSiblingOf : function(treeItem, invisible, stayInSameNestLevel)
+    getPreviousSiblingOf : function(treeItem)
     {
-      if (typeof(invisible) !== "undefined") {
-        qx.log.Logger.deprecatedMethodWarning(
-          arguments.callee,
-          "The invisible and stayInSameNestLevel parameters are deprecated: Use"
-            + " getPreviousNodeOf() instead."
-        );
-
-        if (!stayInSameNestLevel) {
-          return this.getPreviousNodeOf(treeItem, invisible);
-        }
-
-      }
-
       if (treeItem == this.getRoot()) {
         return null;
       }

@@ -105,6 +105,18 @@ qx.Class.define("qx.ui.form.Slider",
   },
 
 
+  /*
+  *****************************************************************************
+     EVENTS
+  *****************************************************************************
+  */
+
+  events : {
+    /**
+     * Change event for the value.
+     */
+    changeValue: 'qx.event.type.Data'
+  },
 
 
   /*
@@ -217,34 +229,7 @@ qx.Class.define("qx.ui.form.Slider",
       check : "Number",
       apply : "_applyKnobFactor",
       nullable : true
-    },
-
-
-    /**
-     * Enabling this propert will cause the change event only fired 50% of
-     * the time which is ok for scrolling and speeds up the scrolling.
-     *
-     * @internal
-     */
-    useAsScrollbar : {
-      check : "Boolean",
-      init : false
     }
-  },
-
-
-  /*
-  *****************************************************************************
-     EVENTS
-  *****************************************************************************
-  */
-
-
-  events : {
-    /**
-     * Fired on change of the property {@link #value}.
-     */
-    changeValue: 'qx.event.type.Data'
   },
 
 
@@ -266,8 +251,10 @@ qx.Class.define("qx.ui.form.Slider",
     __trackingEnd : null,
     __timer : null,
 
-    __nextValueEvent: 0,
-
+    // event delay stuff during drag
+    __dragTimer: null,
+    __lastValueEvent: null,
+    __dragValue: null,
 
     // overridden
     /**
@@ -422,7 +409,12 @@ qx.Class.define("qx.ui.form.Slider",
       {
         // Switch into drag mode
         this.__dragMode = true;
-
+        if (!this.__dragTimer){
+          // create a timer to fire delayed dragging events if dragging stops.
+          this.__dragTimer = new qx.event.Timer(100);
+          this.__dragTimer.addListener("interval", this._fireValue, this);
+        }
+        this.__dragTimer.start();
         // Compute dragOffset (includes both: inner position of the widget and
         // cursor position on knob)
         this.__dragOffset = cursorLocation + sliderLocation - knobLocation;
@@ -482,6 +474,12 @@ qx.Class.define("qx.ui.form.Slider",
 
         // Cleanup status flags
         delete this.__dragMode;
+
+        // as we come out of drag mode, make
+        // sure content gets synced
+        this.__dragTimer.stop();
+        this._fireValue();
+
         delete this.__dragOffset;
 
         // remove state
@@ -1008,23 +1006,28 @@ qx.Class.define("qx.ui.form.Slider",
     // property apply
     _applyValue : function(value, old) {
       if (value != null) {
-          this._updateKnobPosition();
-          if (this.getUseAsScrollbar()) {
-          // moderate ourselfes in firering events only spend
-          // a maximum of 50% of the time processing the event handlers
-          var start = new Date().getTime();
-          if (start > this.__nextValueEvent)
-          {
-            this.fireEvent('changeValue',qx.event.type.Data,[value, old]);
-            var duration = new Date().getTime() - start;
-            this.__nextValueEvent = start + duration * 2;
-          }
+        this._updateKnobPosition();
+        if (this.__dragMode) {
+          this.__dragValue = [value,old];
         } else {
-          this.fireEvent('changeValue',qx.event.type.Data,[value, old]);
+          this.fireEvent("changeValue", qx.event.type.Data, [value,old]);
         }
       } else {
         this.resetValue();
       }
+    },
+
+
+    /**
+     * Helper for applyValue which fires the changeValue event.
+     */
+    _fireValue: function(){
+      if (!this.__dragValue){
+        return;
+      }
+      var tmp = this.__dragValue;
+      this.__dragValue = null;
+      this.fireEvent("changeValue", qx.event.type.Data, tmp);
     },
 
 

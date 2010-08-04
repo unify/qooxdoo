@@ -26,21 +26,21 @@ qx.Class.define("apiviewer.ui.tabview.AbstractPage",
   {
     this.base(arguments);
 
-    this.setLayout(new qx.ui.layout.Canvas());    
+    this.setLayout(new qx.ui.layout.Canvas());
     this.setShowCloseButton(true);
-    
+
     this._bindings = [];
-    
+
     this._viewer = this._createViewer();
     this.add(this._viewer, {edge : 0});
     this.__bindViewer(this._viewer);
-    
+
     this.setClassNode(classNode);
   },
 
   properties :
   {
-    classNode : 
+    classNode :
     {
       apply: "_applyClassNode"
     }
@@ -49,38 +49,42 @@ qx.Class.define("apiviewer.ui.tabview.AbstractPage",
   members :
   {
     _viewer : null,
-    
+
     _bindings : null,
-    
+
     _createViewer : function () {
       throw new Error("Abstract method call!");
     },
-    
+
     _applyClassNode : function(value, old)
     {
       this._viewer.setDocNode(value);
-      
+
       this.setLabel(value.getFullName());
       this.setIcon(apiviewer.TreeUtil.getIconUrl(value));
       this.setUserData("nodeName", value.getFullName());
+
+      qx.event.Timer.once(function(e) {
+        this._viewer.getContentElement().scrollToY(0);
+      }, this, 0);
     },
 
     __bindViewer : function(viewer)
     {
       var uiModel = apiviewer.UiModel.getInstance();
       var bindings = this._bindings;
-      
+
       bindings.push(uiModel.bind("showInherited", viewer, "showInherited"));
       bindings.push(uiModel.bind("expandProperties", viewer, "expandProperties"));
       bindings.push(uiModel.bind("showProtected", viewer, "showProtected"));
       bindings.push(uiModel.bind("showPrivate", viewer, "showPrivate"));
     },
-    
+
     __removeBinding : function()
     {
       var uiModel = apiviewer.UiModel.getInstance();
       var bindings = this._bindings;
-      
+
       while (bindings.length > 0)
       {
         var id = bindings.pop();

@@ -36,18 +36,18 @@ qx.Class.define("qx.ui.form.Form",
 
     this.__groups = [];
     this.__buttons = [];
-    this.__validationManager = new qx.ui.form.validation.Manager();
-    this.__resetter = new qx.ui.form.Resetter();
+    this._validationManager = new qx.ui.form.validation.Manager();
+    this._resetter = new qx.ui.form.Resetter();
   },
 
 
   members :
   {
     __groups : null,
-    __validationManager : null,
+    _validationManager : null,
     __groupCounter : 0,
     __buttons : null,
-    __resetter : null,
+    _resetter : null,
 
     /*
     ---------------------------------------------------------------------------
@@ -77,16 +77,18 @@ qx.Class.define("qx.ui.form.Form",
       // save the given arguments
       this.__groups[this.__groupCounter].items.push(item);
       this.__groups[this.__groupCounter].labels.push(label);
-      // if no name is given, use the label without whitespaces
+      // if no name is given, use the label without not working character
       if (name == null) {
-        name = label.replace(/\s+/g, "");
+        name = label.replace(
+          /\s+|&|-|\+|\*|\/|\||!|\.|,|:|\?|;|~|%|\{|\}|\(|\)|\[|\]|<|>|=|\^|@|\\/g, ""
+        );
       }
       this.__groups[this.__groupCounter].names.push(name);
 
       // add the item to the validation manager
-      this.__validationManager.add(item, validator, validatorContext);
+      this._validationManager.add(item, validator, validatorContext);
       // add the item to the reset manager
-      this.__resetter.add(item);
+      this._resetter.add(item);
     },
 
 
@@ -137,8 +139,8 @@ qx.Class.define("qx.ui.form.Form",
      * Resets the form. This means reseting all form items and the validation.
      */
     reset : function() {
-      this.__resetter.reset();
-      this.__validationManager.reset();
+      this._resetter.reset();
+      this._validationManager.reset();
     },
 
 
@@ -148,7 +150,7 @@ qx.Class.define("qx.ui.form.Form",
      */
     redefineResetter : function()
     {
-      this.__resetter.redefine();
+      this._resetter.redefine();
     },
 
 
@@ -165,7 +167,7 @@ qx.Class.define("qx.ui.form.Form",
      * @return {Boolean | null} The validation result.
      */
     validate : function() {
-      return this.__validationManager.validate();
+      return this._validationManager.validate();
     },
 
 
@@ -176,7 +178,7 @@ qx.Class.define("qx.ui.form.Form",
      * @return {qx.ui.form.validation.Manager} The used manager.
      */
     getValidationManager : function() {
-      return this.__validationManager;
+      return this._validationManager;
     },
 
 
@@ -209,32 +211,6 @@ qx.Class.define("qx.ui.form.Form",
     getButtons : function()
     {
       return this.__buttons;
-    },
-
-
-    /**
-     * Takes all the added form items, group headers and buttons and gives them
-     * to the renderer. The renderer is responsible for all the UI related
-     * tasks.
-     *
-     * @param rendererClass {Class?} The class of the renderer which should be
-     *   used. If no rendere is given, the default renderer
-     *   ({@link qx.ui.form.renderer.Single}) will be used.
-     * @return {qx.ui.form.renderer.IFormRenderer} Instance of the renderer.
-     *
-     * @deprecated Create the renderer and add the form as constructor
-     *   parameter instead.
-     */
-    createView : function(rendererClass) {
-      qx.log.Logger.deprecatedMethodWarning(
-        arguments.callee,
-        "This message will removed. Use new rendererClass(form) instead."
-      );
-      if (rendererClass == null) {
-        rendererClass = qx.ui.form.renderer.Single;
-      }
-      // create the renderer
-      return new rendererClass(this);
     },
 
 

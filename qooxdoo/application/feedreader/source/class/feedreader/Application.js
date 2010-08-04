@@ -88,7 +88,35 @@ qx.Class.define("feedreader.Application",
       qx.io.PartLoader.getInstance().addListener("partLoaded", function(e) {
         this.debug("part loaded: " + e.getData().getName());
       }, this);
+      
+      // Load current locale part
+      var currentLanguage = qx.locale.Manager.getInstance().getLanguage();
+      var knownParts = qx.Part.getInstance().getParts();
+      // if the locale is available as part
+      if (knownParts[currentLanguage]) {
+        // load this part
+        qx.io.PartLoader.require([currentLanguage], function() {
+          // forcing identical locale
+          qx.locale.Manager.getInstance().setLocale(currentLanguage);
+          // build the GUI after the initial locals has been loaded
+          this.buildUpGui();
+        }, this);
+      } else {
+        // if we cant find the default locale, print a warning and load the gui
+        this.warn(
+          "Cannot load locale part for current language " + 
+          currentLanguage + ", falling back to English."
+        );
+        this.buildUpGui();
+      }
+    },
 
+    
+    /**
+     * Main routine which builds the whole GUI.
+     */
+    buildUpGui : function() 
+    {
       // Initialize commands
       this._initializeCommands();
 
@@ -101,25 +129,17 @@ qx.Class.define("feedreader.Application",
       // Initialize the bindings
       this._setUpBinding();
 
-      // set up the default view of the tree
+      // Set up the default view of the tree
       this.__treeView.getRoot().setOpen(true);
       this.__treeView.getRoot().getChildren()[0].setOpen(true);
       this.__treeView.getRoot().getChildren()[1].setOpen(true);
       this.__treeView.setHideRoot(true);
 
-      // preselect the qooxdoo feed
+      // Preselect the qooxdoo feed
       this.__treeController.getSelection().push(
         this.__staticFeedFolder.getFeeds().getItem(0)
       );
-    },
-
-
-    /**
-     * Invokes a fetching of the data.
-     */
-    finalize : function()
-    {
-      this.base(arguments);
+      
       this.reload();
     },
 

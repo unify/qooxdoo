@@ -92,18 +92,18 @@ qx.Class.define("feedreader.view.AddFeedWindow",
       this.__form = new qx.ui.form.Form();
       // set the headline of the form
       this.__form.addGroupHeader(this.tr("Feed Information"));
-      
+
       // add the title textfield
       this.__titleTextfield = new qx.ui.form.TextField().set({
         required: true,
         width: 250
       });
       this.__form.add(this.__titleTextfield, this.tr("Title"));
-      
+
       // add the url textfield
       this.__urlTextfield = new qx.ui.form.TextField().set({required: true});
       this.__form.add(this.__urlTextfield, this.tr("URL"), qx.util.Validate.checkUrl);
-      
+
       // add the button
       var addButton = new qx.ui.form.Button(this.tr("Add"), "icon/16/actions/dialog-apply.png");
       addButton.set({
@@ -112,14 +112,23 @@ qx.Class.define("feedreader.view.AddFeedWindow",
       });
       addButton.addListener("execute", this._addFeed, this);
       this.__form.addButton(addButton);
-      
+
+      //when pressing enter on textfields, try to add the feed
+      this.addListener("keypress", function(e) {
+        if (e.getTarget() instanceof qx.ui.form.TextField &&
+            e.getKeyIdentifier() === "Enter") {
+          this._addFeed();
+        }
+      });
+
       // use a placeholder rendere to render the form
       this.add(new qx.ui.form.renderer.SinglePlaceholder(this.__form));
     },
 
 
     /**
-     * Handles button clicks on 'Add' button
+     * Handles button clicks on 'Add' button or/and
+     * pressing enter key on textfields
      *
      * @param e {qx.event.type.Event} Execute event
      */
@@ -134,7 +143,7 @@ qx.Class.define("feedreader.view.AddFeedWindow",
         this.__titleTextfield.setValue("");
         this.__urlTextfield.setValue("");
 
-        this.close();        
+        this.close();
       }
     }
   },

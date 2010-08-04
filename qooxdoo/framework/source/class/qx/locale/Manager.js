@@ -23,6 +23,7 @@
 #require(qx.event.dispatch.Direct)
 #require(qx.bom.client.Locale)
 #require(qx.locale.LocalizedString)
+#cldr
 */
 
 /**
@@ -262,10 +263,16 @@ qx.Class.define("qx.locale.Manager",
 
 
     /**
-     * Add a translation to the translation manager
+     * Add a translation to the translation manager.
      *
-     * @param languageCode {String} language code of the translation like de, de_AT, en, en_GB, fr, ...
-     * @param translationMap {Map} mapping of message identifiers (english text) to the target language
+     * If <code>languageCode</code> already exists, its map will be updated with
+     * <code>translationMap</code> (new keys will be added, existing keys will be
+     * overwritten).
+     *
+     * @param languageCode {String} language code of the translation like <i>de, de_AT, en, en_GB, fr, ...</i>
+     * @param translationMap {Map} mapping of message identifiers to message strings in the target
+     *                             language, e.g. <i>{"greeting_short" : "Hello"}</i>. Plural forms
+     *                             are separate keys.
      * @return {void}
      */
     addTranslation : function(languageCode, translationMap)
@@ -285,24 +292,28 @@ qx.Class.define("qx.locale.Manager",
 
 
     /**
-     * Add a localization to the localization manager
+     * Add a localization to the localization manager.
      *
-     * @param localeCode {String} locale code of the translation like de, de_AT, en, en_GB, fr, ...
-     * @param translationMap {Map} mapping of locale keys to the target locale
+     * If <code>localeCode</code> already exists, its map will be updated with
+     * <code>localeMap</code> (new keys will be added, existing keys will be overwritten).
+     *
+     * @param localeCode {String} locale code of the translation like <i>de, de_AT, en, en_GB, fr, ...</i>
+     * @param localeMap {Map} mapping of locale keys to the target locale values, e.g.
+     *                        <i>{"cldr_date_format_short" : "M/d/yy"}</i>.
      * @return {void}
      */
-    addLocale : function(localeCode, translationMap)
+    addLocale : function(localeCode, localeMap)
     {
       var catalog = this.__locales;
       if (catalog[localeCode])
       {
-        for (var key in translationMap) {
-          catalog[localeCode][key] = translationMap[key];
+        for (var key in localeMap) {
+          catalog[localeCode][key] = localeMap[key];
         }
       }
       else
       {
-        catalog[localeCode] = translationMap;
+        catalog[localeCode] = localeMap;
       }
     },
 

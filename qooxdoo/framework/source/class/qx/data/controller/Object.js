@@ -139,8 +139,23 @@ qx.Class.define("qx.data.controller.Object",
             options, reverseOptions
           );
         } else {
-          // if the model is null, reset the targets
-          targetObject["reset" + qx.lang.String.firstUp(targetProperty)]();
+          // if the model is null, reset the current target
+          if (targetProperty.indexOf("[") == -1) {
+            targetObject["reset" + qx.lang.String.firstUp(targetProperty)]();
+          } else {
+            var open = targetProperty.indexOf("[");
+            var index = parseInt(
+              targetProperty.substring(open + 1, targetProperty.length - 1)
+            );
+            targetProperty = targetProperty.substring(0, open);
+            var targetArray = targetObject["get" + qx.lang.String.firstUp(targetProperty)]();
+            if (index == "last") {
+              index = targetArray.length;
+            }
+            if (targetArray) {
+              targetArray.setItem(index, null);
+            }
+          }
         }
       }
     },
@@ -324,6 +339,7 @@ qx.Class.define("qx.data.controller.Object",
     }
   },
 
+
   /*
    *****************************************************************************
       DESTRUCT
@@ -331,6 +347,9 @@ qx.Class.define("qx.data.controller.Object",
    */
 
   destruct : function() {
-    this.__bindings = this.__targets = null;
+    // set the model to null to get the bindings removed
+    if (this.getModel() != null && !this.getModel().isDisposed()) {
+      this.setModel(null);
+    }
   }
 });

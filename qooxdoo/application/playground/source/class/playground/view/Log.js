@@ -14,6 +14,7 @@
 
    Authors:
      * Martin Wittemann (martinwittemann)
+     * Adrian Olaru (adrianolaru)
 
 ************************************************************************ */
 /**
@@ -39,8 +40,16 @@ qx.Class.define("playground.view.Log",
       allowGrowX : true,
       allowGrowY : true
     });
-
     this.add(caption);
+
+    //toolbar of the log pane
+    var toolbar = new qx.ui.toolbar.ToolBar();
+    var clearButton = new qx.ui.toolbar.Button(this.tr("Clear"));
+    clearButton.addListener("execute", function(e) {
+      this.clear();
+    }, this);
+    toolbar.add(clearButton);
+    this.add(toolbar);
 
     // log pane
     var logArea = new qx.ui.embed.Html('');
@@ -77,9 +86,7 @@ qx.Class.define("playground.view.Log",
      * Clears the log.
      */
     clear : function() {
-      if (this.__logElem) {
-        this.__logElem.innerHTML = "";
-      }
+      this.__logAppender.clear();
     },
 
 
@@ -94,9 +101,6 @@ qx.Class.define("playground.view.Log",
 
       // Clear buffer
       qx.log.Logger.clear();
-
-      // Unregister again, so that the logger can flush again the next time the tab is clicked.
-      qx.log.Logger.unregister(this.__logAppender);
     }
   },
 

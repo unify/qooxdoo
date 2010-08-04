@@ -39,7 +39,7 @@
  *
  * *External Documentation*
  *
- * <a href='http://qooxdoo.org/documentation/1.1/widget/Atom' target='_blank'>
+ * <a href='http://manual.qooxdoo.org/1.2/pages/widget/atom.html' target='_blank'>
  * Documentation of this widget in the qooxdoo wiki.</a>
  *
  *
@@ -122,7 +122,7 @@ qx.Class.define("qx.ui.basic.Atom",
     },
 
 
-    /** Any URI String supported by qx.ui.basic.Image to display a icon */
+    /** Any URI String supported by qx.ui.basic.Image to display an icon */
     icon :
     {
       check : "String",

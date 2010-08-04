@@ -91,14 +91,6 @@ qx.Mixin.define("qx.ui.core.MSingleSelectionHandling",
      *    items contains more than one elements.
      */
     setSelection : function(items) {
-      // @deprecated for 1.1
-      if (!this.getEnabled()) {
-        this.warn(
-          "Setting the selection on disabled '" + this.classname + "' is deprecated: " +
-          ("The current behavior will change from doing nothing to selecting the given items.")
-        );
-        this.trace();
-      }
       switch(items.length)
       {
         case 0:
@@ -117,14 +109,6 @@ qx.Mixin.define("qx.ui.core.MSingleSelectionHandling",
      * Clears the whole selection at once.
      */
     resetSelection : function() {
-      // @deprecated for 1.1
-      if (!this.getEnabled()) {
-        this.warn(
-          "Resetting the selection on disabled '" + this.classname + "' is deprecated: " +
-          ("The current behavior will change from doing nothing to reset the selection.")
-        );
-        this.trace();
-      }
       this.__getManager().resetSelected();
     },
 
@@ -148,13 +132,16 @@ qx.Mixin.define("qx.ui.core.MSingleSelectionHandling",
       return this.__getManager().isSelectionEmpty();
     },
 
+
     /**
      * Returns all elements which are selectable.
      *
+     * @param all {boolean} true for all selectables, false for the
+     *   selectables the user can interactively select
      * @return {qx.ui.core.Widget[]} The contained items.
      */
-    getSelectables: function() {
-      return this.__getManager().getSelectables();
+    getSelectables: function(all) {
+      return this.__getManager().getSelectables(all);
     },
 
 
@@ -202,7 +189,7 @@ qx.Mixin.define("qx.ui.core.MSingleSelectionHandling",
             if (that._isItemSelectable) {
               return that._isItemSelectable(item);
             } else {
-              return item.isEnabled() && item.isVisible();
+              return item.isVisible();
             }
           }
         });

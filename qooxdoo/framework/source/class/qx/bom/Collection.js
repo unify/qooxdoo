@@ -1537,7 +1537,7 @@
     *****************************************************************************
     */
 
-    defer : function(statics, members)
+    defer : function(statics)
     {
       // Define alias as used by jQuery if not already in use.
       if (window.$ == null) {

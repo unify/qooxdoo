@@ -825,7 +825,8 @@ qx.Class.define("testrunner.runner.TestRunner",
         this.__scrollToResult();
       }
 
-      // store selected test in cookie
+      // store selected test
+      this.__setCurrentTestArray(this.tests.selected);
       qx.bom.Cookie.set("selectedTest", this.tests.selected);
     },  // treeGetSelection
 
@@ -901,9 +902,11 @@ qx.Class.define("testrunner.runner.TestRunner",
 
             if (that.getCurrentTest()) {
               if (that.getCurrentTest()[level] == currNode.label) {
-                t.setOpen(true);
-                // Store node to select:
-                initalSelected = t;
+                if (that.getCurrentTest()[level - 1] == currNode.parent.label) {
+                  t.setOpen(true);
+                  // Store node to select:
+                  initalSelected = t;
+                }
               }
             }
 
@@ -980,7 +983,7 @@ qx.Class.define("testrunner.runner.TestRunner",
         // Finally select the element
         selectedElement.widgetLinkFull.getTree().setSelection([selectedElement.widgetLinkFull]);
       }
-      else {
+      else if (!this.reloadswitch.getValue()) {
         var node = fulltree.getRoot();
         for (var i=0; i<3; i++) {
           if (node.hasChildren()) {
@@ -1296,8 +1299,10 @@ qx.Class.define("testrunner.runner.TestRunner",
 
       // destroy widget and model trees to avoid leaking memory on reload.
       var oldRoot = this.widgets["treeview.full"].getRoot();
-      this.widgets["treeview.full"].setRoot(null);
-      oldRoot.destroy();
+      if (oldRoot) {
+        this.widgets["treeview.full"].setRoot(null);
+        oldRoot.destroy();
+      }
 
       this.tests.handler.ttree.widgetLinkFull = null;
       this.tests.handler.ttree.widgetLinkFlat = null;

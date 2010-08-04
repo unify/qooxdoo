@@ -24,7 +24,7 @@
 
 ************************************************************************ */
 
-qx.Class.define("demobrowser.demo.virtual.ListComplex",
+qx.Class.define("demobrowser.demo.virtual.Complex",
 {
   extend : qx.application.Standalone,
 

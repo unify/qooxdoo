@@ -59,7 +59,12 @@ qx.Class.define("qx.ui.window.Manager",
     // interface implementation
     changeActiveWindow : function(active, oldActive) {
       if (active) {
+        this.updateStack();
         this.bringToFront(active);
+        active.setActive(true);
+      }
+      if (oldActive) {
+        oldActive.resetActive();
       }
     },
 
@@ -87,24 +92,36 @@ qx.Class.define("qx.ui.window.Manager",
 
       var windows = this.__desktop.getWindows();
       var zIndex = this._minZIndex - 1;
+      var zIndexOnTop = zIndex + windows.length;
+      var zIndexModal = zIndexOnTop * 2;
       var hasActive = false;
-      var win, last = null;
+      var last = null;
 
-      for (var i=0, l=windows.length; i<l; i++)
+      for (var i = 0, l = windows.length; i < l; i++)
       {
-        win = windows[i];
+        var win = windows[i];
         if (!win.isVisible()) {
           continue;
         }
 
-        // we use only every second z index to easily insert a blocker between
-        // two windows
-        zIndex += 2;
-        win.setZIndex(zIndex);
-
-        // move blocker below the topmost modal window
-        if (win.getModal()) {
-          this.__desktop.blockContent(zIndex - 1);
+        /*
+         * We use only every second z index to easily
+         * insert a blocker between two windows
+         *
+         * Modal Windows stays on top of
+         * AlwaysOnTop Windows, which stays on top of
+         * Normal Windows.
+         */
+        if(win.isAlwaysOnTop()) {
+          zIndexOnTop +=2;
+          win.setZIndex(zIndexOnTop);
+        } else if (win.isModal()) {
+          zIndexModal +=2;
+          win.setZIndex(zIndexModal);
+          this.__desktop.blockContent(zIndexModal - 1);
+        } else {
+          zIndex +=2;
+          win.setZIndex(zIndex);
         }
 
         // ensure that at least one window is active

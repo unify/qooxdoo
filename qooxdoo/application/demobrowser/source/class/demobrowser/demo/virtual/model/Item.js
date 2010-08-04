@@ -16,16 +16,37 @@
      * Christian Hagendorn (chris_schmidt)
 
 ************************************************************************ */
-
-/**
- * EXPERIMENTAL!
- */
-qx.Interface.define("qx.ui.list.core.IModelProvider",
+qx.Class.define("demobrowser.demo.virtual.model.Item",
 {
-  members :
-  {
-    getLabel : function(item) {},
+  extend : qx.core.Object,
 
-    getIcon : function(item) {}
+  construct : function(label, icon)
+  {
+    this.base(arguments);
+
+    if (label != null) {
+      this.setLabel(label);
+    }
+
+    if (icon != null) {
+      this.setIcon(icon);
+    }
+  },
+
+  properties :
+  {
+    label :
+    {
+      check : "String",
+      event : "changeLabel",
+      nullable : true
+    },
+
+    icon :
+    {
+      check : "String",
+      event : "changeIcon",
+      nullable : true
+    }
   }
 });

@@ -29,9 +29,17 @@
 #  can optionally be sent by email.
 
 import optparse, re, sys, os, codecs
-sys.path.append(os.path.join('..', 'app', 'batserver'))
-import qxtest
+try:
+  import json
+except ImportError, e:
+  try:
+    import simplejson as json
+  except ImportError, e:
+    print "No Json module available, quitting!"
+    sys.exit(1)
 
+sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), '..', 'app', 'batserver'))
+import qxtest
 
 filter_errors = ["Use of deprecated global identifier", "Multiply declared identifier", "Protected data field"]
 filter_classes = []

@@ -183,7 +183,7 @@ class Generator(object):
 
 
         def computeClassList(includeWithDeps, excludeWithDeps, includeNoDeps, excludeNoDeps, variants, verifyDeps=False, script=None):
-            self._console.info("Resolving dependencies...")
+            self._console.info("Resolving dependencies")
             self._console.indent()
             classList = self._depLoader.getClassList(includeWithDeps, excludeWithDeps, includeNoDeps, excludeNoDeps, variants, verifyDeps, script)
             self._console.outdent()
@@ -657,10 +657,12 @@ class Generator(object):
         if not apiPath:
             return
 
-        classList = classListProducer()
-        apiPath   = self._config.absPath(apiPath)
+        apiPath         = self._config.absPath(apiPath)
+        self._apiLoader = ApiLoader(self._classesObj, self._docs, self._cache, self._console, )
 
-        self._apiLoader      = ApiLoader(self._classesObj, self._docs, self._cache, self._console, )
+        classList = self._job.get("let/ARGS", [])
+        if not classList:
+            classList = classListProducer()
 
         self._apiLoader.storeApi(classList, apiPath)
         
@@ -1125,9 +1127,9 @@ class Generator(object):
                 self._console.info("Class: %s" % classId)
 
                 self._console.indent()
-                for depId in depsLoad:
+                for depId in sorted(depsLoad):
                     self._console.info("%s: %s (load)" % (relstring, depId))
-                for depId in depsRun:
+                for depId in sorted(depsRun):
                     self._console.info("%s: %s (run)"  % (relstring, depId))
                 self._console.outdent()
                     
@@ -1729,7 +1731,7 @@ class Generator(object):
         eolStyle = fixsettings.get("eol-style", "LF")
         tabWidth = fixsettings.get("tab-width", 2)
         for pos, classId in enumerate(classes):
-            self._console.progress(pos, numClasses)
+            self._console.progress(pos+1, numClasses)
             classEntry   = self._classes[classId]
             filePath     = classEntry['path']
             fileEncoding = classEntry['encoding']

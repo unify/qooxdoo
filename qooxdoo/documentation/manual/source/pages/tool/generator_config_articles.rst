@@ -31,7 +31,6 @@ This should make it more intuitive to maintain a config file.
 
     Since each config key, particularly action keys, interpret their corresponding config entries, they know which entries represent paths. To handle those paths correctly, the ``Config`` module provides a utility method ``Config.absPath(self, path)`` which will calculate the absolute path from the given path relative to the config file's location.
 
-xxx
 
 .. _pages/tool/generator_config_articles#file_globs:
 
@@ -48,16 +47,10 @@ Some config keys take file paths as their attributes. Where specified, *file glo
  []                 matches any of the enclosed characters; character ranges are possible using a hyphen, e.g. [a-z] (regexp: <same>)  
 =================  ==================================================================================================================
 
-XXX
----
-
-XXX
-^^^
-
 .. _pages/tool/generator_config_articles#examples:
 
 Examples
-""""""""
+--------
 
 Given a set of files like ``file9.js,  file10.js,  file11.js``, here are some file globs and their resolution:
 
@@ -149,13 +142,12 @@ and the "joblist" key will get the value [1,2,3].
 A special situation arises if you are using a **top-level let**, i.e. a *let* section on the highest level in the config file, and not in any job definition. This *let* map will be automatically applied to every job run, without any explicit reference (so be aware of undesired side effects of bindings herein). 
 
 When assembling a job to run, the precedence of all the various *let* maps is 
-.. note::
 
-    local job let < config-level let < 'extend' job let's
+::
 
-xxx
+    local job let < config-level let < 'extend' job lets
 
- With imported jobs top-level definitions will take precedence over any definitions from the external config file (as if they were the 'first' let section in the chain).
+With imported jobs top-level definitions will take precedence over any definitions from the external config file (as if they were the 'first' let section in the chain).
 
 .. _pages/tool/generator_config_articles#log_key:
 
@@ -333,8 +325,6 @@ The first important thing to note is:
 
     All URI handling within qooxdoo is related to libraries.
 
-xxx
-
 Within qooxdoo the :ref:`library <pages/tool/generator_config_articles#library_key_and_manifest_files>` is a fundamental concept, and libraries in this sense contain all the things you are able to include in the final Web application, such as
 class files (.js),
 graphics (.gif, .png, ...),
@@ -467,45 +457,18 @@ This is e.g. the case in a sample application, where the *boot* part lists 'qx.b
 i18n-with-boot
 --------------
 
-*(experimental)*
+Setting this sub-key to *false* will result in I18N information (translations, CLDR data, ...) being put in their own separate parts. The utility of this is:
 
-Setting this sub-key to *false* will result in I18N information (translations, CLDR data, ...) being put in their own separate files. The utility of this is
-
-* the loader package gets smaller, which allows for faster application startup
-* you can handle I18N data more individually
+* The loader package gets smaller, which allows for faster application startup
+* You can handle I18N data more individually
 
 Here are the details:
 
-* Currently, I18N data, i.e. translations from the .po files and CLDR data, is integrated as Javascript data in the application loader (which in turn is per default integrated with the first package, the boot package, but that's a different story).
-* Setting *packages/i18n-with-boot* to *false* removes this data from the loader script.
-* Rather, data for *each individual locale* (en, en_US, de, de_DE, ...) will be collated in a separate file, with a *-<locale>.js* ending, and alongside the normal script code. So if your script code is in the path *script/myapp.js*, translation and CLDR data for the *en_US* locale will be in the file *script/myapp-en_US.js*.
-* The structure of each file is a simple JSON-style map::
+* By default, I18N data, i.e. translations from the .po files and CLDR data, is integrated as Javascript data in the application loader (which in turn is per default integrated with the first package, the boot package, but that's a different story).
+* Setting *packages/i18n-with-boot: false* removes this data from the loader script.
+* Rather, data for *each individual locale* (en, en_US, de, de_DE, ...) will be collated in a dedicated *part*, the part name being that of the respective language code. As usual, each part is made up of packages. In the case of an I18N part, these are the corresponding data package plus fall-back packages for key lookup (e.g. ["C", "en", "en_US"] for the part "en_US"). Each package is a normal qooxdoo package with only the data section, and without the code section. (See :doc:`/pages/development/parts_overview` for more details).
 
-    { "<locale>" : { "Translations" : {<translations_map>},
-                            {"Locales"        : {<cldr_map>}
-    }
-
-* In the loader script , the name and location of those i18n files will be registered, in a variable ``qx.$$i18n``, which is a map which has a ``"uris"`` sub-key. It looks like this::
-
-    { "uris" : { "en_US" : "<tag:file>",
-                      "de"       : "<tag:file>",
-                     ...
-                   }
-    }
-
-  The value for each locale has to be decoded by the ``qx.$$loader.decodeUris()`` method, in order to obtain a usable URI.
-
-So far, so good. This is the point where the application developer takes over. The application will not load the I18N files by itself. You have to do it, with the following steps:
-
-* Read the location of the I18N files fom the ``qx.i18n["uris"]`` map and decode it with ``qx.$$loader.decodeUris()``.
-* Load the I18N files (e.g. with ``qx.io.remote.Request``).
-* Evaluate the returned file contents, to recover it as Javascript data.
-* For each locale, register the contents with these methods of the Locale Manager:
-
-  * ``qx.locale.Manager.getInstance().addTranslation(<locale>, <translations_map>);``
-  * ``qx.locale.Manager.getInstance().addLocale(<locale>, <cldr_map>);``
-
-After that, the corresponding locale is ready to be used in the normal way in your application. This has to be done before the first translateable string or localizable data is to be converted.
+So far, so good. This is the point where the application developer has to take over. The application will not load the I18N parts by itself. You have to do it using the usual part loading API (e.g. ``qx.io.PartLoader.require(["en_US"])``). You might want to do that early in the application run cycle, e.g. during application start-up and before the first translateable string or localizable data is to be converted. After loading the part, the corresponding locale is ready to be used in the normal way in your application. The `Feedreader <http://demo.qooxdoo.org/1.2.x/feedreader>`_ application uses this technique to load a different I18N part when the language is changed in its *Preferences* dialog.
 
 .. _pages/tool/generator_config_articles#include_key_top-level_-_adding_features:
 

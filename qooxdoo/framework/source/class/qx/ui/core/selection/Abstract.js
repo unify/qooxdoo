@@ -146,6 +146,10 @@ qx.Class.define("qx.ui.core.selection.Abstract",
     __anchorItem : null,
     __mouseDownOnSelected : null,
 
+    // flag that signals a user interaction which means the selection change was
+    // triggered by mouse or keyboard [BUG #3344]
+    _userInteraction : false,
+
 
     /*
     ---------------------------------------------------------------------------
@@ -480,27 +484,6 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      * by the user (clicked on etc.)
      *
      * @return {Object} The lead item or <code>null</code>
-     *
-     * @deprecated Use public 'getLeadItem' instead.
-     */
-    _getLeadItem : function() {
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        qx.log.Logger.deprecatedMethodWarning(
-          arguments.callee,
-          "Please use public 'getLeadItem' instead."
-        );
-      }
-
-      return this.getLeadItem();
-    },
-
-
-    /**
-     * Returns the current lead item. Generally the item which was last modified
-     * by the user (clicked on etc.)
-     *
-     * @return {Object} The lead item or <code>null</code>
      */
     getLeadItem : function() {
       return this.__leadItem !== null ? this.__leadItem : null;
@@ -729,9 +712,11 @@ qx.Class.define("qx.ui.core.selection.Abstract",
     /**
      * Returns all selectable items of the container.
      *
+     * @param all {boolean} true for all selectables, false for the
+      *   selectables the user can interactively select
      * @return {Array} A list of items
      */
-    getSelectables : function() {
+    getSelectables : function(all) {
       throw new Error("Abstract method call: getSelectables()");
     },
 
@@ -848,17 +833,24 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      */
     handleMouseOver : function(event)
     {
+      // this is a method invloced by a user interaction so be carefull
+      // set / clear the mark this._userInteraction [BUG #3344]
+      this._userInteraction = true;
+
       if (!this.getQuick()) {
+        this._userInteraction = false;
         return;
       }
 
       var mode = this.getMode();
       if (mode !== "one" && mode !== "single") {
+        this._userInteraction = false;
         return;
       }
 
       var item = this._getSelectableFromMouseEvent(event);
       if (item === null) {
+        this._userInteraction = false;
         return;
       }
 
@@ -870,6 +862,8 @@ qx.Class.define("qx.ui.core.selection.Abstract",
 
       // Fire change event as needed
       this._fireChange("quick");
+
+      this._userInteraction = false;
     },
 
 
@@ -882,8 +876,13 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      */
     handleMouseDown : function(event)
     {
+      // this is a method invloced by a user interaction so be carefull
+      // set / clear the mark this._userInteraction [BUG #3344]
+      this._userInteraction = true;
+
       var item = this._getSelectableFromMouseEvent(event);
       if (item === null) {
+        this._userInteraction = false;
         return;
       }
 
@@ -895,6 +894,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
       if (this.isItemSelected(item) && !isShiftPressed && !isCtrlPressed && !this.getDrag())
       {
         this.__mouseDownOnSelected = item;
+        this._userInteraction = false;
         return;
       }
       else
@@ -980,6 +980,8 @@ qx.Class.define("qx.ui.core.selection.Abstract",
 
       // Fire change event as needed
       this._fireChange("click");
+
+      this._userInteraction = false;
     },
 
 
@@ -992,6 +994,10 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      */
     handleMouseUp : function(event)
     {
+      // this is a method invloced by a user interaction so be carefull
+      // set / clear the mark this._userInteraction [BUG #3344]
+      this._userInteraction = true;
+
       // Read in keyboard modifiers
       var isCtrlPressed = event.isCtrlPressed() || (qx.bom.client.Platform.MAC && event.isMetaPressed());
       var isShiftPressed = event.isShiftPressed();
@@ -1000,6 +1006,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
       {
         var item = this._getSelectableFromMouseEvent(event);
         if (item === null || !this.isItemSelected(item)) {
+          this._userInteraction = false;
           return;
         }
 
@@ -1020,6 +1027,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
             this._setAnchorItem(item);
           }
         }
+        this._userInteraction = false;
       }
 
       // Cleanup operation
@@ -1058,6 +1066,9 @@ qx.Class.define("qx.ui.core.selection.Abstract",
       this.__mouseX = event.getDocumentLeft();
       this.__mouseY = event.getDocumentTop();
 
+      // this is a method invloced by a user interaction so be carefull
+      // set / clear the mark this._userInteraction [BUG #3344]
+      this._userInteraction = true;
 
       // Detect move directions
       var dragX = this.__mouseX + this.__frameScroll.left;
@@ -1115,6 +1126,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
       this._autoSelect();
 
       event.stopPropagation();
+      this._userInteraction = false;
     },
 
 
@@ -1356,6 +1368,10 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      */
     handleKeyPress : function(event)
     {
+      // this is a method invloced by a user interaction so be carefull
+      // set / clear the mark this._userInteraction [BUG #3344]
+      this._userInteraction = true;
+
       var current, next;
       var key = event.getKeyIdentifier();
       var mode = this.getMode();
@@ -1512,6 +1528,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
         // Fire change event as needed
         this._fireChange("key");
       }
+      this._userInteraction = false;
     },
 
 
