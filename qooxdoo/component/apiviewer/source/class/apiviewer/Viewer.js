@@ -178,7 +178,6 @@ qx.Class.define("apiviewer.Viewer",
 
       var expandBtn = new qx.ui.toolbar.RadioButton(this.tr("Properties"), "apiviewer/image/property18.gif");
       expandBtn.setId("btn_expand");
-      expandBtn.setValue(true);
       expandBtn.setToolTipText(this.tr("Show/hide all generated property methods."));
       part.add(expandBtn);
 
