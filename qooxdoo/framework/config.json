@@ -30,7 +30,9 @@
     "test-inline",
     //"test-copy-files",
     "test-source",
-    "translation"
+    "translation",
+    "qxoo-build",
+    "qxoo-noopt"
   ],
 
 
@@ -46,6 +48,97 @@
 
   "jobs":
   {
+
+    "qxoo" : 
+    {
+      "library" :
+      [
+        {
+          "manifest" : "${QOOXDOO_PATH}/framework/Manifest.json",
+          "uri" : ".."          
+        }
+      ],
+
+      "cache" : { "compile" : "${CACHE}" },
+      
+      "include" : 
+      [
+        "qx.Class",
+        "qx.Mixin",
+        "qx.Interface"
+      ],
+      
+      "exclude" :
+      [
+        "qx.event.GlobalError"
+      ],
+
+      "variants" :
+      {
+        "qx.debug" : ["off"],
+        "qx.aspects" : ["off"]
+      },
+
+      "settings" :
+      {
+        "qx.globalErrorHandling" : "off"
+      },
+
+      "compile-options" :
+      {
+        "paths" :
+        {
+          "loader-template" : "../tool/data/generator/oo.loader.tmpl.js"
+        },
+        "uris" :
+        {
+          "script"   : ".",
+          "resource" : "."
+        }
+      }
+    },
+
+
+    "qxoo-build" : 
+    {
+      "extend" : [ "qxoo" ],
+      
+      "compile-options" :
+      {
+        "paths" :
+        {
+          "file" : "build/script/qx-oo.js"
+        },
+        "code" :
+        {
+          "format"   : true,
+          "optimize" : [ "variables", "basecalls", "privates", "strings" ]
+        }
+      },
+      "compile" : { "type" : "build" }
+    },
+    
+    
+    "qxoo-noopt" : 
+    {
+      "extend" : [ "qxoo" ],
+      
+      "compile-options" :
+      {
+        "paths" :
+        {
+          "file" : "build/script/qx-oo-noopt.js"
+        },
+        "code" :
+        {
+          "format"   : true,
+          "optimize" : [ ]
+        }
+      },
+      "compile" : { "type" : "build" }
+    },
+    
+    
     "source" :
     {
       "extend" : ["appconf::source"],
@@ -140,6 +233,8 @@
 
     "test-copy-files" :
     {
+      "cache"  : { "compile" : "${CACHE}" },
+
       "copy-files" :
       {
         "files"    : [ "test" ],

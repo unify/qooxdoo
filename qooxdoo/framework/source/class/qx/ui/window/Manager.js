@@ -59,7 +59,6 @@ qx.Class.define("qx.ui.window.Manager",
     // interface implementation
     changeActiveWindow : function(active, oldActive) {
       if (active) {
-        this.updateStack();
         this.bringToFront(active);
         active.setActive(true);
       }
@@ -101,14 +100,12 @@ qx.Class.define("qx.ui.window.Manager",
       for (var i = 0, l = windows.length; i < l; i++)
       {
         var win = windows[i];
-        // ignore invlislbe windows
+        // ignore invisible windows
         if (!win.isVisible()) {
           continue;
         }
         // take the first window as active window
-        if (active == null) {
-          active = win;
-        }
+        active = active || win;
 
         // We use only every second z index to easily insert a blocker between 
         // two windows         
@@ -118,7 +115,9 @@ qx.Class.define("qx.ui.window.Manager",
           win.setZIndex(zIndexModal);
           this.__desktop.blockContent(zIndexModal - 1);
           zIndexModal +=2;
-          
+          //just activate it if it's modal
+          active = win; 
+
         } else if (win.isAlwaysOnTop()) {
           win.setZIndex(zIndexOnTop);
           zIndexOnTop +=2;
@@ -129,20 +128,15 @@ qx.Class.define("qx.ui.window.Manager",
         }
 
         // store the active window
-        if (win.isActive()) {
+        if (!active.isModal() && 
+            win.isActive() || 
+            win.getZIndex() > active.getZIndex()) {
           active = win;
-        } else {
-          if (!active.isActive()) {
-            if (win.getZIndex() > active.getZIndex()) {
-              active = win;
-            }
-          }
         }
       }
 
-      if (active) {
-        this.__desktop.setActiveWindow(active);
-      }
+      //set active window or null otherwise
+      this.__desktop.setActiveWindow(active);
     },
 
 
