@@ -1,9 +1,19 @@
 /* ************************************************************************
 
-   Unify Framework
+   qooxdoo - the new era of web development
+
+   http://qooxdoo.org
 
    Copyright:
-     2009-2010 Deutsche Telekom AG, Germany, http://telekom.com
+     2009-2010 Deutsche Telekom AG, Germany, http://www.telekom.com
+
+   License:
+     LGPL: http://www.gnu.org/licenses/lgpl.html
+     EPL: http://www.eclipse.org/org/documents/epl-v10.php
+     See the LICENSE file in the project's top-level directory for details.
+
+   Authors:
+     * Sebastian Werner (wpbasti)
 
    ======================================================================
 
@@ -48,7 +58,7 @@ qx.Class.define("qx.bom.Uri",
 
 
     /**
-     * Parses a string into a simple JavaScript Object.
+     * Parses a URI string into a simple JavaScript Object.
      *
      * @param str {String} URI string
      * @param mode {String?"loose"} One of "loose" or "strict".
@@ -56,7 +66,7 @@ qx.Class.define("qx.bom.Uri",
      *    These are the available keys: "source", "protocol", "authority", "userInfo", "user",
      *    "password", "host", "port", "relative", "path", "directory", "file", "querystr", "query" and "anchor".
      */
-    parse : function(str, mode)
+    parseUri : function(str, mode)
     {
       var parser = this.__urlParsers[mode||"loose"];
       if (qx.core.Variant.isSet("qx.debug", "on")) 
