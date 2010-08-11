@@ -58,12 +58,6 @@ qx.Class.define("qx.ui.menubar.Button",
       init : "menubar-button"
     },
 
-    show :
-    {
-      refine : true,
-      init : "inherit"
-    },
-
     focusable :
     {
       refine : true,

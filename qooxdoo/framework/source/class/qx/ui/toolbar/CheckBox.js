@@ -60,12 +60,6 @@ qx.Class.define("qx.ui.toolbar.CheckBox",
       init : "toolbar-button"
     },
 
-    show :
-    {
-      refine : true,
-      init : "inherit"
-    },
-
     focusable :
     {
       refine : true,
