@@ -40,16 +40,19 @@ qx.Class.define("inspector.console.Util",
       var result = null;
 
       try {
-        if (qx.core.Variant.isSet("qx.client", "webkit|mshtml|gecko")) {
+        if (qx.core.Variant.isSet("qx.client", "opera") && qx.bom.client.Engine.VERSION < 9.8) {
+          result = (function(code) {
+            return iFrameWindow.eval(code);
+          }).call(qx.core.Init.getApplication().getSelectedObject(), code);
+        } else {
           if (qx.core.Variant.isSet("qx.client", "mshtml") ||
               qx.core.Variant.isSet("qx.client", "webkit")) {
             code = code.replace(/^(\s*var\s+)(.*)$/, "$2");
           }
 
           var returnCode = "";
-          // Fix for webkit version > nightly
-          if (qx.core.Variant.isSet("qx.client", "webkit") &&
-              qx.bom.client.Engine.FULLVERSION >= 528) {
+          if (qx.core.Variant.isSet("qx.client", "webkit") || 
+              qx.core.Variant.isSet("qx.client", "opera")) {
             returnCode = "return eval('" + code + "');"
           } else {
             returnCode = "return eval.call(window, '" + code + "');"
@@ -66,10 +69,6 @@ qx.Class.define("inspector.console.Util",
             "};"].join("")
           );
           result = inspector.$$inspector.call(qx.core.Init.getApplication().getSelectedObject());
-        } else if (qx.core.Variant.isSet("qx.client", "opera")) {
-          result = (function(code) {
-            return iFrameWindow.eval(code);
-          }).call(qx.core.Init.getApplication().getSelectedObject(), code);
         }
 
         // If the result on eval was an exeption -> throw it
