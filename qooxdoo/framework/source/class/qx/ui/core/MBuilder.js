@@ -105,8 +105,8 @@ qx.Mixin.define("qx.ui.core.MBuilder",
 
         for (var i=0, l=events.length; i<l; i++)
         {
-          conf = events[i];
-          func = base + String.firstUp(conf.event);
+          type = events[i];
+          func = base + String.firstUp(type);
 
           if (qx.core.Variant.isSet("qx.debug", "on"))
           {
@@ -117,7 +117,7 @@ qx.Mixin.define("qx.ui.core.MBuilder",
             }
           }
 
-          obj.addListener(conf.event, this[func], this, conf.capture);
+          obj.addListener(type, this[func], this, false);
         }
       }
       
