@@ -112,7 +112,7 @@ qx.Mixin.define("qx.ui.core.MBuilder",
           {
             if (!this[func])
             {
-              this.error('Missing method: ' + func + ' to add event listener "' + conf.event + '" to instance of class "' + entry.create.classname + '"');
+              this.error('Missing method: ' + func + ' to add event listener "' + type + '" to instance of class "' + entry.create.classname + '"');
               continue;
             }
           }
