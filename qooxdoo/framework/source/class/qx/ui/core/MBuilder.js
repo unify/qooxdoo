@@ -120,6 +120,11 @@ qx.Mixin.define("qx.ui.core.MBuilder",
           obj.addListener(conf.event, this[func], this, conf.capture);
         }
       }
+      
+      var init = entry.init;
+      if (init) {
+        init.call(obj);
+      }
 
       return obj;
     },
