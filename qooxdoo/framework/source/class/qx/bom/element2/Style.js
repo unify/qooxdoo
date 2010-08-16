@@ -111,7 +111,7 @@ qx.Class.define("qx.bom.element2.Style",
       if (typeof name == "string")
       {
         // Find real name, apply if supported
-        name = style[name] !== undefined && name || names[name] || this.property(name);
+        name = name in style && name || names[name] || this.property(name);
         if (name) {
           style[name] = value == null ? "" : value;
         }
@@ -121,10 +121,9 @@ qx.Class.define("qx.bom.element2.Style",
         for (var key in name)
         {
           // Find real name, apply if supported
-          key = style[key] !== undefined && key || names[key] || this.property(key);
-          if (key)
-          {
-            value = name[key];
+          value = name[key];
+          key = key in style && key || names[key] || this.property(key);
+          if (key) {
             style[key] = value == null ? "" : value;
           }
         }
