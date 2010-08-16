@@ -101,7 +101,7 @@ qx.Mixin.define("qx.ui.core.MBuilder",
       {
         var String = qx.lang.String;
         var base = "_on" + (entry.id ? String.firstUp(entry.id) : "");
-        var conf, func;
+        var func, type;
 
         for (var i=0, l=events.length; i<l; i++)
         {
