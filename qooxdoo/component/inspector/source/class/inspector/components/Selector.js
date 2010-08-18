@@ -17,247 +17,403 @@
      * Christian Hagendorn (chris_schmidt)
 
 ************************************************************************ */
+/**
+ * The <code>Selector</code> is for visualizing the inspected object in the
+ * inspected application and also for selecting an object with the mouse.
+ */
 qx.Class.define("inspector.components.Selector",
 {
   extend : qx.core.Object,
 
   /**
    * Creates the selector.
-   * 
-   * @param inspectorModel {inspector.components.IInspectorModel} model
+   *
+   * @param inspectorModel {inspector.components.IInspectorModel} inspector model.
    */
   construct : function(inspectorModel)
   {
     this.base(arguments);
-    
+
     this.__model = inspectorModel;
     this.__model.addListener("changeApplication", this.__onChangeApplication, this);
     this.__model.addListener("changeInspected", this.__onChangeInspected, this);
+
+    this.__timerHighlighter = new qx.event.Timer(this.self(arguments).DURATION);
+    this.__timerHighlighter.addListener("interval", this.__onHighlighterInterval, this);
+  },
+
+  statics :
+  {
+    /** {Integer} The border size for the highlighter. */
+    BORDER : 2,
+
+    /** {String} The border color for the highlighter. */
+    BORDER_COLOR : "red",
+
+    /** {Integer} The max zIndex highlighter and click layer. */
+    Z_INDEX : 1e6,
+
+    /** {String} The background color for the click layer. */
+    BACKGROUND_COLOR : "black",
+
+    /** {Number} The opacity for the click layer. */
+    OPACITY : 0.1,
+
+    /** {Integer} The duration in msec how long the highlighter is shown. */
+    DURATION : 1000
   },
 
   members :
   {
-    __msec : 1000,
-    
-    getAddedWidgets: function() {
-      return this._addedWidgets;
-    },
+    /** {inspector.components.IInspectorModel} The inspector model instance */
+    __model : null,
 
-    start: function() {
-      this._catchClickLayer.show();
-    },
+    /** {qx.ui.core.Widget} Reference to the click layer in the inspected application. */
+    __catchClickLayer : null,
 
-    end: function() {
-      this._catchClickLayer.hide();
-    },
+    /** {qx.ui.core.Widget} Reference to the highlighter in the inspected application. */
+    __highlighter : null,
 
-    __onChangeInspected : function(e) {
-      var object = e.getData();
+    /** {qx.event.Timer} Timer reference for hiding the highlighter */
+    __timerHighlighter : null,
 
-      if (object == null || object.classname == "qx.ui.root.Application" || object.classname == "qx.ui.root.Page") {
-        return;
-      }
-      this._highlight(object);
+    /** {Window} Reference to the DOM window of the inspected application */
+    __applicationWindow : null,
 
-      // check for an old time
-      if (this._highlightTimerId != null) {
-        window.clearTimeout(this._highlightTimerId);
-      }
-
-      var self = this;
-      self._highlightTimerId = window.setTimeout(function() {
-        self._highlightOverlay.hide();
-        self._highlightTimerId = null;
-      }, this.__msec);
-    },
-
-    __onChangeApplication : function()
+    /**
+     * Shows the click layer to start the object selection in the inspected application.
+     */
+    start : function()
     {
-      this._iFrameWindow = this.__model.getWindow();
-      this._addedWidgets = [];
-      
-      if (this._iFrameWindow == null) {
+      if (this.__catchClickLayer != null) {
+        this.__catchClickLayer.show();
+      }
+    },
+
+    /**
+     * Hides the click layer to stop the object selection in the inspected application.
+     */
+    stop : function()
+    {
+      if (this.__catchClickLayer != null) {
+        this.__catchClickLayer.hide();
+      }
+    },
+
+    /**
+     * Listener for the "changeApplication", creates the click layer and the highlighter
+     * in the inspected application.
+     *
+     * @param e {qx.event.type.Event} the fired event.
+     */
+    __onChangeApplication : function(e)
+    {
+      this.__applicationWindow = this.__model.getWindow();
+
+      if (this.__applicationWindow == null) {
         return;
       }
-      
-      this._rootApplication = this._iFrameWindow.qx.core.Init.getApplication().getRoot();
-      
-      this._createRootNode();
-      this._createCatchClickLayer();
-      this._createHighlightStuff();
+
+      this.__catchClickLayer = this.__createCatchClickLayer();
+      this.__highlighter = this.__createHighlighter();
     },
-    
-    _createRootNode : function() {
-      this._rootNodes = [];
-      
-      this._rootNodes.push(this._rootApplication);
-      
-      if (this._rootApplication.classname == "qx.ui.root.Page") {
-        var objects = this._iFrameWindow.qx.core.ObjectRegistry.getRegistry();
-        for (var key in objects) {
-          var object = objects[key];
-          if (object.classname == "qx.ui.root.Inline") {
-            this._rootNodes.push(object);
-          }
-        }
+
+    /**
+     * Listener for the "changeInspected", shows the highlighter for the {@link #DURATION}.
+     *
+     * @param e {qx.event.type.Data} the fired event.
+     */
+    __onChangeInspected : function(e) {
+      var inspected = e.getData();
+
+      if (inspected == null || this.__applicationWindow == null) {
+        return;
+      }
+
+      this.__timerHighlighter.restart();
+
+      this.__highlight(inspected);
+    },
+
+    /**
+     * Listener for the "interval", stops the timer and hide the highlighter.
+     *
+     * @param e {qx.event.type.Event} the fired event.
+     */
+    __onHighlighterInterval : function(e)
+    {
+      this.__timerHighlighter.stop();
+      this.__highlighter.hide();
+    },
+
+    /**
+     * Helper method to create and add the highlighter to the inspected application,
+     * also adds the highlighter to the excludes list from the inspector model.
+     *
+     * @return {qx.ui.core.Widget} the created highlighter.
+     */
+    __createHighlighter : function() {
+      var highlightDecorator = new this.__applicationWindow.qx.ui.decoration.Single(
+        this.self(arguments).BORDER,
+        "solid",
+        this.self(arguments).BORDER_COLOR);
+      this.__model.addToExcludes(highlightDecorator);
+
+      var highlightOverlay = new this.__applicationWindow.qx.ui.core.Widget();
+      this.__model.addToExcludes(highlightOverlay);
+      highlightOverlay.setDecorator(highlightDecorator);
+      highlightOverlay.setZIndex(this.self(arguments).Z_INDEX - 2);
+      highlightOverlay.hide();
+
+      var applicationRoot = this.__model.getApplication().getRoot();
+      applicationRoot.add(highlightOverlay);
+
+      return highlightOverlay;
+    },
+
+    /**
+     * Helper method to create and add the click layer to the inspected application,
+     * also adds the click layer to the excludes list from the inspector model.
+     *
+     * @return {qx.ui.core.Widget} the created click layer.
+     */
+    __createCatchClickLayer : function()
+    {
+      var catchClickLayer = new this.__applicationWindow.qx.ui.core.Widget();
+      this.__model.addToExcludes(catchClickLayer);
+      catchClickLayer.setBackgroundColor(this.self(arguments).BACKGROUND_COLOR);
+      catchClickLayer.setOpacity(this.self(arguments).OPACITY);
+      catchClickLayer.setZIndex(this.self(arguments).Z_INDEX - 1);
+      catchClickLayer.testId = "catchClickLayer";
+      catchClickLayer.hide();
+
+      catchClickLayer.addListener("click", this.__onClick, this);
+      catchClickLayer.addListener("mousemove", this.__onMouseMove, this);
+
+      this.__addToApplicationRoot(catchClickLayer);
+
+      return catchClickLayer;
+    },
+
+    /**
+     * Helper method to add the passes widget to the inspected application in full size.
+     *
+     * @param widget {qx.ui.core.Widget} to add in full size.
+     */
+    __addToApplicationRoot : function(widget)
+    {
+      var applicationRoot = this.__model.getApplication().getRoot();
+
+      var win = this.__applicationWindow;
+      if (win.qx.Class.isSubClassOf(widget.constructor, win.qx.ui.root.Application)) {
+        applicationRoot.add(widget, {edge: 0});
+      }
+      else
+      {
+        widget.setHeight(qx.bom.Document.getHeight(win));
+        widget.setWidth(qx.bom.Document.getWidth(win));
+        applicationRoot.add(widget, {left: 0, top: 0});
       }
     },
-    
-    _createCatchClickLayer: function() {
-      // initialize the layer to catch the clicks
-      this._catchClickLayer = new this._iFrameWindow.qx.ui.core.Widget();
-      this._addedWidgets.push(this._catchClickLayer);
-      this._catchClickLayer.setBackgroundColor("black");
-      this._catchClickLayer.setOpacity(0.1);
-      this._catchClickLayer.setZIndex(1e6 - 1);
-      this._catchClickLayer.hide();
-      
-      if (this._rootApplication.classname == "qx.ui.root.Application") {
-        this._rootApplication.add(this._catchClickLayer, {left: 0, top: 0, right: 0, bottom: 0});
-      } else {
-        this._catchClickLayer.setHeight(qx.bom.Document.getHeight(this._iFrameWindow));
-        this._catchClickLayer.setWidth(qx.bom.Document.getWidth(this._iFrameWindow));
-        this._rootApplication.add(this._catchClickLayer, {left: 0, top: 0});
+
+    /**
+     * Listener for the "click", tries to fined the clicked object in all application roots
+     * and sets the found object as inspected.
+     *
+     * @param e {qx.event.type.Mouse} the fired event.
+     */
+    __onClick : function(e) {
+      this.__catchClickLayer.hide();
+
+      var xPosition = e.getDocumentLeft();
+      var yPosition = e.getDocumentTop();
+
+      var clickedElement = this.__searchWidgetInAllRoots(xPosition, yPosition);
+
+      this.__highlighter.hide();
+      this.__model.setInspected(clickedElement);
+    },
+
+    /**
+     * Listener for the "mousemove", tries to fined the object below the mouse pointer
+     * and highlights the found object.
+     *
+     * @param e {qx.event.type.Mouse} the fired event.
+     */
+    __onMouseMove : function(e) {
+      var xPosition = e.getDocumentLeft();
+      var yPosition = e.getDocumentTop();
+
+      var object = this.__searchWidgetInAllRoots(xPosition, yPosition);
+      this.__highlight(object);
+    },
+
+    /**
+     * Helper method to find a object in all roots which match to the passed position.
+     *
+     * @param xPosition {Integer} x position
+     * @param yPosition {Integer} y position
+     *
+     * @return {qx.ui.core.Widget} found widget.
+     */
+    __searchWidgetInAllRoots : function(xPosition, yPosition)
+    {
+      var widget = null;
+      var rootNodes = this.__model.getRoots();
+      for (var i = 0; i < rootNodes.length; i++) {
+        widget = this.__searchWidget(rootNodes[i], xPosition, yPosition);
+        if (widget != rootNodes[i]) {
+          break;
+        }
       }
-        
-      // register the handler to catch the clicks and select the clicked widget
-      this._catchClickLayer.addListener("click", function(e) {
-        // hide the layer that catches the click
-        this._catchClickLayer.hide();
-        // get the current mouse position
-        var xPosition = e.getDocumentLeft();
-        var yPosition = e.getDocumentTop();
-        // search the widget at the current position
-        var clickedElement = null;
-        for (var i = 0; i < this._rootNodes.length; i++) {
-          clickedElement = this._searchWidget(this._rootNodes[i], xPosition, yPosition);
-          if (clickedElement != this._rootNodes[i]) {
-            break;
-          }
-        }
-        // hide the highlight
-        this._highlightOverlay.hide();
-        // select the widget with the given id in the tree
-        this.__model.setInspected(clickedElement);
-      }, this);
-
-      // register the mousemove handler
-      this._catchClickLayer.addListener("mousemove", function(e) {
-        // get the current mouse position
-        var xPosition = e.getDocumentLeft();
-        var yPosition = e.getDocumentTop();
-        // search the widget at the current position
-        var object = null;
-        for (var i = 0; i < this._rootNodes.length; i++) {
-          object = this._searchWidget(this._rootNodes[i], xPosition, yPosition);
-          if (object != this._rootNodes[i]) {
-            break;
-          }
-        }
-        // highlight the widget under the mouse pointer
-        this._highlight(object);
-      }, this);
+      return widget;
     },
 
-    _createHighlightStuff: function() {
-      // create the border used to highlight the widgets
-      this._highlightDecorator = new this._iFrameWindow.qx.ui.decoration.Single(2, "solid", "red");
-      this._addedWidgets.push(this._highlightDecorator);
-
-      // create a new overlay atom object
-      this._highlightOverlay = new this._iFrameWindow.qx.ui.core.Widget();
-      this._addedWidgets.push(this._highlightOverlay);
-      this._highlightOverlay.setDecorator(this._highlightDecorator);
-      this._highlightOverlay.setZIndex(1e6 - 2);
-      this._highlightOverlay.hide();
-      this._rootApplication.add(this._highlightOverlay);
-    },
-
-    _searchWidget: function(widget, x, y) {
+    /**
+     * Helper method to find a object which match to the passed position.
+     *
+     * The algorithm has a complexity of O(n). The algorithm begins form the
+     * passed start node and tries to find the object which match to the passed
+     * position. The the start node is returned, when the algorithm coudn't find
+     * a object which match to the passed values.
+     *
+     * @param widget {qx.ui.core.Widget|qx.html.Element} start node.
+     * @param x {Integer} x position
+     * @param y {Integer} y position
+     *
+     * @return {qx.ui.core.Widget} found widget or start node.
+     */
+    __searchWidget: function(widget, x, y) {
       var returnWidget = widget;
-      // visit all children
+      var excludes = this.__model.getExcludes();
+
       for (var i = 0; i < widget._getChildren().length; i++) {
-        // get the current child
         var childWidget = widget._getChildren()[i];
-        // ignore the catchClickLayer and highlightOverlay atom
-        if (childWidget == this._catchClickLayer || childWidget == this._highlightOverlay) {
-          continue;
-        }
-        // check for a spacer
-        try {
-          if (childWidget instanceof this._iFrameWindow.qx.ui.core.Spacer) {
+
+        try
+        {
+          var win = this.__applicationWindow;
+
+          if (qx.lang.Array.contains(excludes, childWidget) ||
+              win.qx.Class.isSubClassOf(childWidget.constructor, win.qx.ui.core.Spacer)) {
             continue;
           }
         } catch (ex) {}
-        // get the coordinates of the current widget
-        if (childWidget.getContainerElement) {
-          var domElement = childWidget.getContainerElement().getDomElement();
-        } else if (childWidget.getDomElement) {
-          var domElement = childWidget.getDomElement();
+
+        var domElement = null;
+        if (this.__isWidget(childWidget)) {
+          domElement = childWidget.getContainerElement().getDomElement();
+        } else if (this.__isQxHtmlElement(childWidget)) {
+          domElement = childWidget.getDomElement();
         } else {
           return childWidget;
         }
 
-        var coordinates = this._getCoordinates(domElement);
-        // if the element is visible
+        var coordinates = this.__getCoordinates(domElement);
+
         if (coordinates != null) {
           // if the element is under the mouse position
           if (coordinates.right >= x && coordinates.left <= x &&
               coordinates.bottom >= y && coordinates.top <= y) {
-            returnWidget = this._searchWidget(childWidget, x, y);
+            returnWidget = this.__searchWidget(childWidget, x, y);
           }
         }
       }
       return returnWidget;
     },
 
-    _getCoordinates: function(element) {
-      // return null if no element is given
+    /**
+     * Returns the coordinates from the passed DOM element in relation to
+     * it's top level body element.
+     *
+     * @param element {Element} DOM element to get the coordinates.
+     * @return {Map|null} with the coordinates <code>left, right, top, bottom</code> as key.
+     */
+    __getCoordinates: function(element) {
       if (element == null) {
         return null;
       }
-      var returnObject = {};
-      returnObject.left = qx.bom.element.Location.getLeft(element);
-      returnObject.right = qx.bom.element.Location.getRight(element);
-      returnObject.top = qx.bom.element.Location.getTop(element);
-      returnObject.bottom = qx.bom.element.Location.getBottom(element);
-      return returnObject;
+      var result = {};
+      result.left = qx.bom.element.Location.getLeft(element);
+      result.right = qx.bom.element.Location.getRight(element);
+      result.top = qx.bom.element.Location.getTop(element);
+      result.bottom = qx.bom.element.Location.getBottom(element);
+      return result;
     },
 
-    _highlight: function(object) {
-      if (object.classname == "qx.ui.root.Inline") {
-        return;
-      }
-      
+    /**
+     * Helper method to highlight the passed object.
+     *
+     * @param object {qx.ui.core.Widget|qx.html.Element} object to highlight.
+     */
+    __highlight: function(object) {
       var element = null;
-      if (object.getContainerElement && object.getContainerElement().getDomElement) {
+
+      if (this.__isWidget(object) && !this.__isRootElement(object)) {
         element = object.getContainerElement().getDomElement();
-      } else if (object.getDomElement) {
+      } else if (this.__isQxHtmlElement(object)) {
         element = object.getDomElement();
-      }
-      // do not highlight if the element is not shown on the screen
-      if (element == null) {
-        this._highlightOverlay.hide();
+      } else {
+        this.__highlighter.hide();
         return;
       }
 
-      // get the coordinates
-      var coordinates = this._getCoordinates(element);
-      var left = coordinates.left - 2;
-      var right = coordinates.right + 2;
-      var top = coordinates.top - 2;
-      var bottom = coordinates.bottom + 2;
+      // if element is null, the object is not rendered.
+      if (element == null) {
+        this.__highlighter.hide();
+        return;
+      }
 
-      // set the values to the selected object
-      this._highlightOverlay.renderLayout(left, top, right - left, bottom - top);
-      this._highlightOverlay.show();
+      var coordinates = this.__getCoordinates(element);
+      var left = coordinates.left - this.self(arguments).BORDER;
+      var right = coordinates.right + this.self(arguments).BORDER;
+      var top = coordinates.top - this.self(arguments).BORDER;
+      var bottom = coordinates.bottom + this.self(arguments).BORDER;
+
+      this.__highlighter.renderLayout(left, top, right - left, bottom - top);
+      this.__highlighter.show();
+    },
+
+    /**
+     * Helper method to check if the passed object is a root element.
+     *
+     * @param object {qx.core.Object} object to check.
+     * @return <code>true</code> if root element, <code>false</code> otherwise.
+     */
+    __isRootElement : function (object)
+    {
+      var win = this.__applicationWindow;
+      return win.qx.Class.isSubClassOf(object.constructor, win.qx.ui.root.Abstract);
+    },
+
+    /**
+     * Helper method to check if the passed object is a widget.
+     *
+     * @param object {qx.core.Object} object to check.
+     * @return <code>true</code> if widget, <code>false</code> otherwise.
+     */
+    __isWidget : function (object)
+    {
+      var win = this.__applicationWindow;
+      return win.qx.Class.isSubClassOf(object.constructor, win.qx.ui.core.Widget);
+    },
+
+    /**
+     * Helper method to check if the passed object is a <code>qx.html.Element</code>.
+     *
+     * @param object {qx.core.Object} object to check.
+     * @return <code>true</code> if <code>qx.html.Element</code>, <code>false</code> otherwise.
+     */
+    __isQxHtmlElement : function (object)
+    {
+      var win = this.__applicationWindow;
+      return win.qx.Class.isSubClassOf(object.constructor, win.qx.html.Element);
     }
   },
 
   destruct : function()
   {
-    this._iFrameWindow = this._addedWidgets = this._rootApplication = this._rootNodes = null;
-    this._disposeObjects("_catchClickLayer", "_highlightDecorator",
-      "_highlightOverlay");
+    this.__model = this.__applicationWindow = null;
+    this._disposeObjects("__catchClickLayer", "__highlighter", "__timerHighlighter");
   }
 });
