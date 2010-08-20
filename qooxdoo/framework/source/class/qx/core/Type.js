@@ -151,6 +151,10 @@ qx.Class.define("qx.core.Type",
     {
       var result, nativeCheck, variant, type, hack, nodeType, clazz, construct, iface, mixin, addon, i, l;
       
+      if (!errorClass) {
+        errorClass = Error;
+      }
+      
       if (value == null) 
       {
         result = check == "Null";

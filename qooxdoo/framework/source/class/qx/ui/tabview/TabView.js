@@ -470,11 +470,11 @@ qx.Class.define("qx.ui.tabview.TabView",
      */
     _onChangeSelection : function(e)
     {
-      var pane      = this.getChildControl("pane");
-      var button    = e.getData()[0];
+      var pane = this.getChildControl("pane");
+      var button = e.getData()[0];
       var oldButton = e.getOldData()[0];
-      var value     = null;
-      var old       = null;
+      var value = [];
+      var old = [];
 
       if (button)
       {
@@ -535,8 +535,15 @@ qx.Class.define("qx.ui.tabview.TabView",
      *
      * @param e {qx.event.type.Mouse} mouse click event
      */
-    _onPageClose : function(e) {
-      this.remove(e.getTarget());
+    _onPageClose : function(e)
+    {
+      // reset the old close button states, before remove page
+      // see http://bugzilla.qooxdoo.org/show_bug.cgi?id=3763 for details
+      var page = e.getTarget()
+      var closeButton = page.getButton().getChildControl("close-button");
+      closeButton.reset();
+
+      this.remove(page);
     }
   },
 
