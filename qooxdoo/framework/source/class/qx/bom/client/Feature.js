@@ -66,7 +66,7 @@ qx.Class.define("qx.bom.client.Feature",
     XPATH : !!document.evaluate,
 
     /** {Boolean} Flag to detect if is an AIR client */
-    AIR : navigator.userAgent.indexOf("adobeair") !== -1,
+    AIR : navigator.userAgent.toLowerCase().indexOf("adobeair") !== -1,
 
     /** {Boolean} Flag to detect if is a Gears client */
     GEARS : !!(window.google && window.google.gears),

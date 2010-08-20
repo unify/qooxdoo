@@ -117,9 +117,6 @@ qx.Class.define("qx.bom.client.System",
 
     /** {Boolean} Flag to detect if the client system is an iPhone or iPod touch */
     IPHONE : false,
-	
-    /** {Boolean} Flag to detect if the client system is Adobe AIR */
-    AIR : false,
 
     /** {Boolean} Flag to detect if the client system is assumed */
     UNKNOWN_SYSTEM : false,
@@ -165,9 +162,7 @@ qx.Class.define("qx.bom.client.System",
       "Mac OS X 10_0" : "osx0",
       "Mac OS X 10.0" : "osx0",
       "Mac OS X" : "osx",
-      "Mac OS 9" : "os9",
-
-      "AdobeAIR" : "air"
+      "Mac OS 9" : "os9"
     },
 
 
