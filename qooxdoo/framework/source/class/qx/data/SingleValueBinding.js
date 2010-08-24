@@ -535,7 +535,8 @@ qx.Class.define("qx.data.SingleValueBinding",
           eventName = "change" + qx.lang.String.firstUp(propertyname);
         } else {
           throw new qx.core.AssertionError(
-            "No event could be found for the property", propertyname
+            "Binding property " + propertyname + " of object " + source + 
+            " not possible: No event available. "
           );
         }
       }
@@ -685,11 +686,11 @@ qx.Class.define("qx.data.SingleValueBinding",
         value, targetObject, targetPropertyChain, options
       );
       // check if the converted value is null
-      if (value == null) {
+      if (value === undefined) {
         this.__resetTargetValue(targetObject, targetPropertyChain);
       }
-      // only set the initial value if one is given
-      if (value != undefined) {
+      // only set the initial value if one is given (may be null)
+      if (value !== undefined) {
         try {
           this.__setTargetValue(targetObject, targetPropertyChain, value);
 
@@ -705,13 +706,12 @@ qx.Class.define("qx.data.SingleValueBinding",
           if (options && options.onSetFail) {
             options.onSetFail(e);
           } else {
-            this.warn(
+            qx.log.Logger.warn(
               "Failed so set value " + value + " on " + targetObject
                + ". Error message: " + e
             );
           }
         }
-
       }
     },
 
@@ -832,7 +832,7 @@ qx.Class.define("qx.data.SingleValueBinding",
           var data = sourceObject.getItem(arrayIndex);
 
           // reset the target if the data is not set
-          if (data == undefined) {
+          if (data === undefined) {
             qx.data.SingleValueBinding.__resetTargetValue(targetObject, targetProperty);
           }
 
@@ -866,7 +866,7 @@ qx.Class.define("qx.data.SingleValueBinding",
 
         // try to set the value
         try {
-          if (data != undefined) {
+          if (data !== undefined) {
             qx.data.SingleValueBinding.__setTargetValue(targetObject, targetProperty, data);
           } else {
             qx.data.SingleValueBinding.__resetTargetValue(targetObject, targetProperty);
@@ -885,7 +885,7 @@ qx.Class.define("qx.data.SingleValueBinding",
           if (options && options.onSetFail) {
             options.onSetFail(e);
           } else {
-            this.warn(
+            qx.log.Logger.warn(
               "Failed so set value " + data + " on " + targetObject
                + ". Error message: " + e
             );

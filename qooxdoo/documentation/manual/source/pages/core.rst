@@ -37,4 +37,3 @@ Data Binding
 .. toctree::
 
    data_binding
-

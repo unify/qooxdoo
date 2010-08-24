@@ -155,10 +155,12 @@ qx.Class.define("qx.ui.core.Widget",
     /** Mouse button is released on the widget. */
     mouseup : "qx.event.type.Mouse",
 
-    /** Widget is clicked using. */
+    /** Widget is clicked using left or middle button.
+        {@link qx.event.type.Mouse#getButton} for more details.*/
     click : "qx.event.type.Mouse",
 
-    /** Widget is double clicked using the left mouse button. */
+    /** Widget is double clicked using left or middle button. 
+        {@link qx.event.type.Mouse#getButton} for more details.*/
     dblclick : "qx.event.type.Mouse",
 
     /** Widget is clicked using the right mouse button. */
@@ -170,6 +172,11 @@ qx.Class.define("qx.ui.core.Widget",
     /** Fired if the mouse wheel is used over the widget. */
     mousewheel : "qx.event.type.MouseWheel",
 
+
+    touchstart : "qx.event.type.Touch",
+    touchend : "qx.event.type.Touch",
+    touchmove : "qx.event.type.Touch",
+    touchcancel : "qx.event.type.Touch",
 
 
     /**
@@ -2329,23 +2336,17 @@ qx.Class.define("qx.ui.core.Widget",
         var elem = this.__decoratorElement = pool.getDecoratorElement(value);
         elem.setStyle("zIndex", 5);
 
-        // Tint decorator
-        var bgcolor = this.getBackgroundColor();
-        elem.tint(bgcolor);
-
         // Add to container
         container.add(elem);
       }
       else
       {
         delete this.__decoratorElement;
-        this._applyBackgroundColor(this.getBackgroundColor());
       }
 
-      // Remove background color from container
-      if (value && !old && bgcolor) {
-        this.getContainerElement().setStyle("backgroundColor", null);
-      }
+      // Apply background color and Opacity
+      this._applyBackgroundColor(this.getBackgroundColor());
+      this._applyOpacity(this.getOpacity());
 
       // Apply change
       if (this.__checkInsetsModified(old, value))
@@ -2487,16 +2488,23 @@ qx.Class.define("qx.ui.core.Widget",
     {
       this.getContainerElement().setStyle("opacity", value == 1 ? null : value);
 
-      // Fix for AlphaImageLoader - see Bug #1894 for details
-      if (qx.core.Variant.isSet("qx.client", "mshtml") &&
-          qx.bom.element.Decoration.isAlphaImageLoaderEnabled())
-      {
-        // Do not apply this fix on images - see Bug #2748
-        if (!qx.Class.isSubClassOf(this.getContentElement().constructor, qx.html.Image))
+      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
+        // Also apply opacity on the decorator, otherwise it is compleate transperance
+        // See Bug #3552 for details
+        if (this.__decoratorElement) {
+          this.__decoratorElement.setStyle("opacity", value == 1 ? null : value);
+        }
+
+        // Fix for AlphaImageLoader - see Bug #1894 for details
+        if (qx.bom.element.Decoration.isAlphaImageLoaderEnabled())
         {
-          // 0.99 is necessary since 1.0 is ignored and not being applied
-          var contentElementOpacity = (value == 1 || value == null) ? null : 0.99;
-          this.getContentElement().setStyle("opacity", contentElementOpacity);
+          // Do not apply this fix on images - see Bug #2748
+          if (!qx.Class.isSubClassOf(this.getContentElement().constructor, qx.html.Image))
+          {
+            // 0.99 is necessary since 1.0 is ignored and not being applied
+            var contentElementOpacity = (value == 1 || value == null) ? null : 0.99;
+            this.getContentElement().setStyle("opacity", contentElementOpacity);
+          }
         }
       }
     },
