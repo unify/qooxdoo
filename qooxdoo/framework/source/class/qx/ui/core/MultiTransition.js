@@ -22,13 +22,30 @@ qx.Class.define("qx.ui.core.MultiTransition",
   extend : qx.core.Object,
   implement : qx.ui.core.ITransition,
   
+  
+  
+  /*
+  *****************************************************************************
+     CONSTRUCTOR
+  *****************************************************************************
+  */
+    
   construct : function()
   {
     this.base(arguments);
     
+    // Create internal data structure
     this.__transitions = [];
   },
   
+  
+  
+  /*
+  *****************************************************************************
+     MEMBERS
+  *****************************************************************************
+  */
+    
   members :
   {
     /** {Array} List of single transitions */
@@ -81,7 +98,7 @@ qx.Class.define("qx.ui.core.MultiTransition",
       var style = [];
       var all = this.__transitions;
       for (var i=0, l=all.length; i<l; i++) {
-        style.push(all[i].getStyle())
+        style.push(all[i].getStyle());
       }
       
       return style.join(",");

@@ -70,7 +70,7 @@ qx.Class.define("qx.ui.core.Transition",
     /** Specifies the name of the CSS property to which the transition is applied. */
     property : 
     {
-      check : ["top","left","opacity"],
+      check : ["top","left","opacity","transform"],
       nullable : true,
       apply : "_applyTransition"
     },

@@ -419,6 +419,16 @@ qx.Class.define("qx.ui.core.Widget",
       event : "changeTransition",
       apply : "_applyTransition"
     },
+    
+    
+    /** Transformation inside the final layout */
+    transform :
+    {
+      check : "qx.ui.core.Transform",
+      nullable : true,
+      event : "changeTransform",
+      apply : "_applyTransform"
+    },
 
 
 
@@ -2480,6 +2490,12 @@ qx.Class.define("qx.ui.core.Widget",
     _applyTransition : function(value, old) {
       this.getContainerElement().setStyle("transition", value == null ? null : value.getStyle());
     },
+    
+    
+    // property apply
+    _applyTransform : function(value, old) {
+      this.getContainerElement().setStyle("transform", value == null ? null : value.getStyle());
+    },    
 
 
     // property apply
