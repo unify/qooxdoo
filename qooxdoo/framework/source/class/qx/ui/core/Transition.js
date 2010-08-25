@@ -127,6 +127,7 @@ qx.Class.define("qx.ui.core.Transition",
       if (value == null) {
         value = this.__computedValue = this.__computeStyle();
       }
+      this.debug("Transition Style: " + value);
       return value;
     },
     
@@ -136,8 +137,10 @@ qx.Class.define("qx.ui.core.Transition",
      * 
      * @return {String} CSS style to apply to the transition property
      */
-    __computeStyle : function() {
-      return (this.getProperty() || "all") + " " + this.getDuration() + "ms " + this.getTiming() + " " + this.getDelay() + "ms";
+    __computeStyle : function() 
+    {
+      var prop = qx.lang.String.hyphenate(qx.bom.element2.Style.property(this.getProperty() || "all"));
+      return prop + " " + this.getDuration() + "ms " + this.getTiming() + " " + this.getDelay() + "ms";
     }
   }
 });

@@ -65,6 +65,13 @@ qx.Class.define("qx.ui.core.Transform",
       apply : "_applyTransform"
     },
     
+    /** specifies a 2D translation by the vector [tx, ty], where tx is the first translation-value parameter and ty is the optional second translation-value parameter. If <ty> is not provided, ty has zero as a value. */
+    translate : 
+    {
+      group : ["translateX", "translateY"],
+      shorthand : true
+    },    
+    
     /** Specifies a scale operation using the [sx,1] scaling vector, where sx is given as the parameter. */
     scaleX : 
     {
@@ -79,6 +86,13 @@ qx.Class.define("qx.ui.core.Transform",
       check : "Number",
       nullable : true,
       apply : "_applyTransform"
+    },
+    
+    /** Specifies a 2D scale operation by the [sx,sy] scaling vector described by the 2 parameters. If the second parameter is not provided, it is takes a value equal to the first. */
+    scale : 
+    {
+      group : ["scaleX", "scaleY"],
+      shorthand : true
     },
     
     /** Specifies a 2D rotation by the angle specified in the parameter about the origin of the element, as defined by the transform-origin property. */
@@ -103,7 +117,14 @@ qx.Class.define("qx.ui.core.Transform",
       check : "Number",
       nullable : true,
       apply : "_applyTransform"
-    }
+    },
+    
+    /** specifies a skew transformation along the X and Y axes. The first angle parameter specifies the skew on the X axis. The second angle parameter specifies the skew on the Y axis. If the second parameter is not given then a value of 0 is used for the Y angle (ie. no skew on the Y axis). */
+    skew : 
+    {
+      group : ["skewX", "skewY"],
+      shorthand : true
+    }    
   },
   
   
