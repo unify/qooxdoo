@@ -20,6 +20,7 @@
 qx.Class.define("qx.ui.core.Transition",
 {
   extend : qx.core.Object,
+  implement : qx.ui.core.ITransition,
   
   
   
@@ -33,8 +34,9 @@ qx.Class.define("qx.ui.core.Transition",
    * @param property {String} Property to animate
    * @param duration {Integer} Duration to animate property in
    * @param timing {String} Name of timing function to use
+   * @param delay {Integer} Delay to start animation
    */
-  construct : function(property, duration, timing)
+  construct : function(property, duration, timing, delay)
   {
     this.base(arguments);
     
@@ -48,6 +50,10 @@ qx.Class.define("qx.ui.core.Transition",
     
     if (timing != null) {
       this.setTiming(timing);
+    }
+    
+    if (delay != null) {
+      this.setDelay(delay);
     }
   },
   
@@ -114,11 +120,7 @@ qx.Class.define("qx.ui.core.Transition",
     },
     
     
-    /**
-     * Returns the compiled style to apply
-     * 
-     * @return {String} CSS style to apply to the transition property
-     */
+    // interface method
     getStyle : function()
     {
       var value = this.__computedValue;

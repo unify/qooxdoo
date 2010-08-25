@@ -414,7 +414,7 @@ qx.Class.define("qx.ui.core.Widget",
     /** Transition to apply to movement, colors, opacity, etc. */
     transition :
     {
-      check : "qx.ui.core.Transition",
+      check : "qx.ui.core.ITransition",
       nullable : true,
       event : "changeTransition",
       apply : "_applyTransition"
