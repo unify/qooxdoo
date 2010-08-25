@@ -405,6 +405,22 @@ qx.Class.define("qx.ui.core.Widget",
 
 
 
+    /*
+    ---------------------------------------------------------------------------
+      ANIMATION PROPERTIES
+    ---------------------------------------------------------------------------
+    */
+    
+    /** Transition to apply to movement, colors, opacity, etc. */
+    transition :
+    {
+      check : "qx.ui.core.Transition",
+      nullable : true,
+      event : "changeTransition",
+      apply : "_applyTransition"
+    },
+
+
 
 
     /*
@@ -2458,6 +2474,12 @@ qx.Class.define("qx.ui.core.Widget",
     _applyTextColor : function(value, old) {
       // empty template
     },
+    
+    
+    // property apply
+    _applyTransition : function(value, old) {
+      this.getContainerElement().setStyle("transition", value == null ? null : value.getStyle());
+    },
 
 
     // property apply
@@ -2739,6 +2761,10 @@ qx.Class.define("qx.ui.core.Widget",
 
     /** {Boolean} Whether the selectors needs to be recomputed before updating appearance */
     __updateSelector : null,
+    
+    
+    /** {String} Caches the selector */
+    __structureSelector : null,
 
 
     /**

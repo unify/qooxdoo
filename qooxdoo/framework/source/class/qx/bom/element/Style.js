@@ -86,7 +86,8 @@ qx.Class.define("qx.bom.element.Style",
         "appearance",
         "userSelect",
         "textOverflow",
-        "borderImage"
+        "borderImage",
+        "transition"
       ];
 
       var styleNames = {};
