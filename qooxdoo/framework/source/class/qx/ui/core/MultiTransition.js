@@ -17,6 +17,11 @@
 
 ************************************************************************ */
 
+/**
+ * A multi transition can combine single transitions into one instance
+ * which may be used for the {@link qx.ui.core.Widget#transition} as
+ * it offers the same interface as single transitions.
+ */
 qx.Class.define("qx.ui.core.MultiTransition",
 {
   extend : qx.core.Object,

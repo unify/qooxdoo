@@ -17,6 +17,12 @@
 
 ************************************************************************ */
 
+/**
+ * The Transition object is a container to define a specifications
+ * regarding a property transition. Currently supports all properties
+ * which are well enough supported by most browsers: "top","left","opacity" and
+ * "transform" (via {@link qx.ui.core.Widget#transform})
+ */
 qx.Class.define("qx.ui.core.Transition",
 {
   extend : qx.core.Object,

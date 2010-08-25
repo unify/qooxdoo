@@ -17,6 +17,10 @@
 
 ************************************************************************ */
 
+/**
+ * Container for a set of transforms which should be applied post-layout
+ * to widget instances via {@link qx.ui.core.Widget#transform}.
+ */
 qx.Class.define("qx.ui.core.Transform",
 {
   extend : qx.core.Object,
