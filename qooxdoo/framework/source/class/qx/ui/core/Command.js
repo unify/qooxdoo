@@ -25,6 +25,7 @@
 qx.Class.define("qx.ui.core.Command",
 {
   extend : qx.core.Object,
+  include : qx.data.MBinding,
 
 
   /**
