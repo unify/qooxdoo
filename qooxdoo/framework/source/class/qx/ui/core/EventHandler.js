@@ -100,6 +100,12 @@ qx.Class.define("qx.ui.core.EventHandler",
       dragchange : 1,
       droprequest : 1,
       
+      // transition events
+      transitionEnd : 1,
+      animationEnd : 1,
+      animationStart : 1,
+      animationIteration : 1,
+      
       // touch events
       touchstart : 1,
       touchend : 1,

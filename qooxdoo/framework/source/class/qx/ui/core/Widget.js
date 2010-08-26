@@ -24,6 +24,7 @@
 #require(qx.core.property.Multi)
 #use(qx.ui.core.EventHandler)
 #use(qx.event.handler.DragDrop)
+#use(qx.event.handler.Transition)
 
 #asset(qx/static/blank.gif)
 
