@@ -50,7 +50,6 @@ qx.Class.define("qx.event.type.Transition",
 
       return this;
     },
-    
 
 
     // overridden
@@ -62,7 +61,6 @@ qx.Class.define("qx.event.type.Transition",
 
       return clone;
     },    
-  
 
 
     /**

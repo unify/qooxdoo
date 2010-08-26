@@ -546,8 +546,8 @@ qx.Class.define("qx.ui.core.Widget",
       nullable : true,
       init : null
     },
-
-
+    
+    
     /**
      * Mapping to native style property cursor.
      *
@@ -659,6 +659,22 @@ qx.Class.define("qx.ui.core.Widget",
       apply : "_applyVisibility",
       event : "changeVisibility"
     },
+    
+    
+    /**
+     * Controls the visibility to chose when the element has an opacity of zero.
+     * 
+     * Using this property one may control whether the elements will be ignored
+     * in the layout at this stage or will still block the previously used dimensions.
+     * 
+     * See {@link #visibility} for details on the values.
+     */
+    transparentVisibility :
+    {
+      check : ["hidden", "excluded"],
+      init : "hidden",
+      apply : "_applyTransparentVisibility"
+    },    
 
 
     /**
@@ -2488,8 +2504,13 @@ qx.Class.define("qx.ui.core.Widget",
     
     
     // property apply
-    _applyTransition : function(value, old) {
-      this.getContainerElement().setStyle("transition", value == null ? null : value.getStyle());
+    _applyTransition : function(value, old) 
+    {
+      if (value) {
+        value = value.getStyle();
+      }
+      
+      this.getContainerElement().setStyle("transition", value);
     },
     
     
@@ -2525,6 +2546,12 @@ qx.Class.define("qx.ui.core.Widget",
       // Update visibility cache
       qx.ui.core.queue.Visibility.add(this);
     },
+    
+    
+    // property apply
+    _applyTransparentVisibility : function(value, old) {
+      
+    },
 
 
     // property apply
@@ -2532,7 +2559,8 @@ qx.Class.define("qx.ui.core.Widget",
     {
       this.getContainerElement().setStyle("opacity", value == 1 ? null : value);
 
-      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
+      if (qx.core.Variant.isSet("qx.client", "mshtml")) 
+      {
         // Also apply opacity on the decorator, otherwise it is compleate transperance
         // See Bug #3552 for details
         if (this.__decoratorElement) {
