@@ -29,6 +29,12 @@ qx.Interface.define("qx.ui.core.ITransition",
      * 
      * @return {String} CSS style to apply to the transition property
      */
-    getStyle : function() {}
+    getStyle : function() {},
+    
+    
+    /**
+     * Whether the transition have impact on opacity behavior
+     */
+    controlsOpacity : function() {}
   }
 });

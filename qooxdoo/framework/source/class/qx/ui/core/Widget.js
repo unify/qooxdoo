@@ -115,7 +115,6 @@ qx.Class.define("qx.ui.core.Widget",
      */
     createChildControl : "qx.event.type.Data",
 
-
     /**
      * Fired on resize (after layout) of the widget.
      * The data property of the event contains the widget's computed location
@@ -671,8 +670,8 @@ qx.Class.define("qx.ui.core.Widget",
      */
     transparentVisibility :
     {
-      check : ["hidden", "excluded"],
-      init : "hidden",
+      check : ["visible", "hidden", "excluded"],
+      init : "visible",
       apply : "_applyTransparentVisibility"
     },    
 
@@ -2506,12 +2505,105 @@ qx.Class.define("qx.ui.core.Widget",
     // property apply
     _applyTransition : function(value, old) 
     {
-      if (value) {
-        value = value.getStyle();
+      var oldControlsOpacity = old && old.controlsOpacity();
+      
+      if (this.getTransparentVisibility() != "visible")
+      {
+        if (value) 
+        {
+          if (!oldControlsOpacity && value.controlsOpacity())
+          {
+            this.addListener("transitionEnd", this.__onTransparentVisibilityTransitionEnd);
+            this.addListener("appear", this.__onTransparentVisibilityAppear);
+          }
+
+          value = value.getStyle();
+        }
+        else if (oldControlsOpacity) 
+        {
+          this.removeListener("transitionEnd", this.__onTransitionEndOpacityHelper);
+          this.removeListener("appear", this.__onTransparentVisibilityAppear);
+        }
       }
       
       this.getContainerElement().setStyle("transition", value);
     },
+    
+    
+    /**
+     * Reacts on transitionEnd event
+     * 
+     * @param e {qx.event.type.Transition} Transition event
+     */ 
+    __onTransparentVisibilityTransitionEnd : function(e)
+    {
+      if (e.getProperty() != "opacity") {
+        return;
+      }
+      
+      if (this.getOpacity() == 0) {
+        this.setVisibility(this.getTransparentVisibility());
+      }
+    },
+    
+    
+    __onTransparentVisibilityAppear : function(e)
+    {
+      if (this.getOpacity() != 0 && this.getTransparentVisibility() != "visible")
+      {
+        // When widget auto toggles visibility property via transparentVisibility
+        // then we need to re-execute the apply routine of the opacity property
+        // when the appear event is fired. This first re-integrates the widget in
+        // layout and afterwards controls the opacity. Makes most sense when used
+        // in combination with a opacity transition.
+        this._applyOpacity(this.getOpacity());
+      }
+    },
+    
+    
+    // property apply
+    _applyTransparentVisibility : function(value, old) {
+      
+    },
+
+
+    // property apply
+    _applyOpacity : function(value, old)
+    {
+      // Display widget again first when:
+      // - Widgets previous opacity was zero
+      // - Widgets visibility when transparent in non-visible
+      // - Widget is current invisible
+      if (old == 0 && this.getTransparentVisibility() != "visible" && !this.isVisible())
+      {
+        // Display widget again and wait for appear event to toggle opacity back
+        this.show();
+        return;
+      }
+      
+      this.getContainerElement().setStyle("opacity", value == 1 ? null : value);
+
+      if (qx.core.Variant.isSet("qx.client", "mshtml")) 
+      {
+        // Also apply opacity on the decorator, otherwise it is compleate transperance
+        // See Bug #3552 for details
+        if (this.__decoratorElement) {
+          this.__decoratorElement.setStyle("opacity", value == 1 ? null : value);
+        }
+
+        // Fix for AlphaImageLoader - see Bug #1894 for details
+        if (qx.bom.element.Decoration.isAlphaImageLoaderEnabled())
+        {
+          // Do not apply this fix on images - see Bug #2748
+          if (!qx.Class.isSubClassOf(this.getContentElement().constructor, qx.html.Image))
+          {
+            // 0.99 is necessary since 1.0 is ignored and not being applied
+            var contentElementOpacity = (value == 1 || value == null) ? null : 0.99;
+            this.getContentElement().setStyle("opacity", contentElementOpacity);
+          }
+        }
+      }
+    },    
     
     
     // property apply
@@ -2548,40 +2640,6 @@ qx.Class.define("qx.ui.core.Widget",
     },
     
     
-    // property apply
-    _applyTransparentVisibility : function(value, old) {
-      
-    },
-
-
-    // property apply
-    _applyOpacity : function(value, old)
-    {
-      this.getContainerElement().setStyle("opacity", value == 1 ? null : value);
-
-      if (qx.core.Variant.isSet("qx.client", "mshtml")) 
-      {
-        // Also apply opacity on the decorator, otherwise it is compleate transperance
-        // See Bug #3552 for details
-        if (this.__decoratorElement) {
-          this.__decoratorElement.setStyle("opacity", value == 1 ? null : value);
-        }
-
-        // Fix for AlphaImageLoader - see Bug #1894 for details
-        if (qx.bom.element.Decoration.isAlphaImageLoaderEnabled())
-        {
-          // Do not apply this fix on images - see Bug #2748
-          if (!qx.Class.isSubClassOf(this.getContentElement().constructor, qx.html.Image))
-          {
-            // 0.99 is necessary since 1.0 is ignored and not being applied
-            var contentElementOpacity = (value == 1 || value == null) ? null : 0.99;
-            this.getContentElement().setStyle("opacity", contentElementOpacity);
-          }
-        }
-      }
-    },
-
-
     // property apply
     _applyCursor : function(value, old)
     {

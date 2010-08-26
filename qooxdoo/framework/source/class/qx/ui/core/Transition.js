@@ -138,6 +138,12 @@ qx.Class.define("qx.ui.core.Transition",
     },
     
     
+    // interface method
+    controlsOpacity : function() {
+      return this.getProperty() == "opacity";
+    },
+    
+    
     /**
      * Computes the style value to apply
      * 

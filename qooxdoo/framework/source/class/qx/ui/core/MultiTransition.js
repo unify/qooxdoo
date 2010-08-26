@@ -93,11 +93,7 @@ qx.Class.define("qx.ui.core.MultiTransition",
     },
     
     
-    /**
-     * Returns the computed style
-     * 
-     * @return {String} The computed style to apply
-     */
+    // interface implementation
     getStyle : function()
     {
       var style = [];
@@ -107,6 +103,23 @@ qx.Class.define("qx.ui.core.MultiTransition",
       }
       
       return style.join(",");
-    }  
+    },
+    
+    
+    // interface implementation    
+    controlsOpacity : function()
+    {
+      var all = this.__transitions;
+      var controls = false;
+      for (var i=0, l=all.length; i<l; i++) 
+      {
+        controls = all[i].controlsOpacity();
+        if(controls) {
+          break;
+        }
+      }
+      
+      return controls;      
+    }
   }
 });
