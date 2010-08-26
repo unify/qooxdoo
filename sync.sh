@@ -1,7 +1,5 @@
 #!/bin/bash
 
-mkdir -p demo
-
 echo ">>> Building API Viewer..."
 cd ../qooxdoo/qooxdoo/framework
 ./generate.py api > /dev/null || exit 1
@@ -16,11 +14,3 @@ cd ../qooxdoo/qooxdoo/framework
 cd ~-
 echo ">>> Syncing Test Runner..."
 rsync -r --delete ../qooxdoo/qooxdoo/framework/test .
-
-
-echo ">>> Building Demo Browser..."
-cd ../qooxdoo/qooxdoo/application/demobrowser
-./generate.py build > /dev/null || exit 1
-cd ~-
-echo ">>> Syncing Demo Browser..."
-rsync -r --delete ../qooxdoo/qooxdoo/application/demobrowser/ demo/
