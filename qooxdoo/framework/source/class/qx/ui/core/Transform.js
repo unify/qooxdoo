@@ -56,7 +56,7 @@ qx.Class.define("qx.ui.core.Transform",
     /** Specifies a translation by the given amount in the X direction. */
     translateX : 
     {
-      check : "Array",
+      check : "Number",
       nullable : true,
       apply : "_applyTransform"
     },
@@ -64,7 +64,7 @@ qx.Class.define("qx.ui.core.Transform",
     /** Specifies a translation by the given amount in the Y direction. */
     translateY : 
     {
-      check : "Array",
+      check : "Number",
       nullable : true,
       apply : "_applyTransform"
     },
