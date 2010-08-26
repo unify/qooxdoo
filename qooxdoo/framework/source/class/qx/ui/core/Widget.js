@@ -2549,6 +2549,12 @@ qx.Class.define("qx.ui.core.Widget",
     },
     
     
+    /**
+     * Listener for appear event which is fired on widgets which are
+     * invisible when transparent.
+     * 
+     * @param e {qx.event.type.Event} Event object
+     */
     __onTransparentVisibilityAppear : function(e)
     {
       if (this.getOpacity() != 0 && this.getTransparentVisibility() != "visible")
