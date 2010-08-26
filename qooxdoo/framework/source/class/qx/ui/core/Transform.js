@@ -215,8 +215,6 @@ qx.Class.define("qx.ui.core.Transform",
         style = style.join(" ");
       }
       
-      this.debug("Transform Style: " + style);
-      
       return style;
     }
   }

@@ -133,7 +133,7 @@ qx.Class.define("qx.ui.core.Transition",
       if (value == null) {
         value = this.__computedValue = this.__computeStyle();
       }
-      this.debug("Transition Style: " + value);
+
       return value;
     },
     

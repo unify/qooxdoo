@@ -2516,14 +2516,16 @@ qx.Class.define("qx.ui.core.Widget",
             this.addListener("transitionEnd", this.__onTransparentVisibilityTransitionEnd);
             this.addListener("appear", this.__onTransparentVisibilityAppear);
           }
-
-          value = value.getStyle();
         }
         else if (oldControlsOpacity) 
         {
           this.removeListener("transitionEnd", this.__onTransitionEndOpacityHelper);
           this.removeListener("appear", this.__onTransparentVisibilityAppear);
         }
+      }
+      
+      if (value) {
+        value = value.getStyle();
       }
       
       this.getContainerElement().setStyle("transition", value);
