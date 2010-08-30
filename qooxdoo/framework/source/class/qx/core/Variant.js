@@ -54,6 +54,8 @@
  *  <td>qx.debug                   <td>[ "on", "off" ]                    <td>"on"
  *  </tr><tr>
  *  <td>qx.dynlocale     <td>[ "on", "off" ]                    <td>"on"
+ *  </tr><tr>
+ *  <td>qx.mobile     <td>[ "on", "off" ]                    <td>"off"
  *  </tr>
  * </table>
  */
@@ -391,6 +393,7 @@ qx.Bootstrap.define("qx.core.Variant",
     statics.define("qx.client", [ "gecko", "mshtml", "opera", "webkit" ], qx.bom.client.Engine.NAME);
     statics.define("qx.debug", [ "on", "off" ], "on");
     statics.define("qx.dynlocale", [ "on", "off" ], "on");
+    statics.define("qx.mobile", [ "on", "off" ], "off");
 
     statics.__init();
   }

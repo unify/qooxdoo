@@ -1294,8 +1294,14 @@ qx.Theme.define("qx.theme.modern.Appearance",
 
       style : function(states)
       {
+        if (states.pressed || states.checked || (states.hovered && !states.disabled)) {
+          var padding = 1;
+        } else {
+          var padding = 3;
+        }
+
         return {
-          padding : states.pressed || states.checked ? 1 : states.hovered ? 1 : 3,
+          padding : padding,
           icon : "decoration/arrows/down.png",
           marginTop : undefined,
           marginBottom : undefined
@@ -2284,7 +2290,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
      style : function(states)
      {
        return {
-         decorator : states.pressed || states.hovered ? "selected" : undefined,
+         decorator : (states.pressed || states.hovered) && !states.disabled ? "selected" : undefined,
          textColor : states.pressed || states.hovered ? "text-selected" : undefined,
          padding   : [ 3, 8 ]
        };
