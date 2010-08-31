@@ -2470,65 +2470,56 @@ qx.Class.define("qx.ui.core.Widget",
 
 
 
-
     /*
     ---------------------------------------------------------------------------
-      OTHER PROPERTIES
+      TRANSISITION / TRANSFORM / VISIBILITY
     ---------------------------------------------------------------------------
-    */
-
-    // property apply
-    _applyToolTipText : function(value, old)
-    {
-      if (qx.core.Variant.isSet("qx.dynlocale", "on"))
-      {
-        if (this.__toolTipTextListenerId) {
-          return;
-        }
-        var manager = qx.locale.Manager.getInstance();
-        this.__toolTipTextListenerId = manager.addListener("changeLocale",
-          function() {
-            if (value && value.translate) {
-              this.setToolTipText(value.translate());
-            }
-          }
-        , this);
-      }
-    },
-
-    // property apply
-    _applyTextColor : function(value, old) {
-      // empty template
-    },
-    
+    */    
     
     // property apply
     _applyTransition : function(value, old) 
     {
-      var oldControlsOpacity = old && old.controlsOpacity();
-      
-      if (this.getTransparentVisibility() != "visible")
-      {
-        if (value) 
-        {
-          if (!oldControlsOpacity && value.controlsOpacity())
-          {
-            this.addListener("transitionEnd", this.__onTransparentVisibilityTransitionEnd);
-            this.addListener("appear", this.__onTransparentVisibilityAppear);
-          }
-        }
-        else if (oldControlsOpacity) 
-        {
-          this.removeListener("transitionEnd", this.__onTransitionEndOpacityHelper);
-          this.removeListener("appear", this.__onTransparentVisibilityAppear);
-        }
-      }
+      this.__syncTransitionHelperEvents();
       
       if (value) {
         value = value.getStyle();
       }
       
       this.getContainerElement().setStyle("transition", value);
+    },
+    
+    
+    // property apply
+    _applyTransparentVisibility : function(value, old) {
+      this.__syncTransitionHelperEvents();
+    },    
+    
+
+    /**
+     * Helper used by {@link #transition} and {@link #transparentVisibility} properties.
+     */
+    __syncTransitionHelperEvents : function()
+    {
+      if (this.getTransparentVisibility() != "visible")
+      {
+        var transition = this.getTransition();
+        if (transition) 
+        {
+          this.addListener("transitionEnd", this.__onTransparentVisibilityTransitionEnd);
+          this.addListener("appear", this.__onTransparentVisibilityAppear);
+          
+          this.__hasTransitionHelperEvents = true;
+          return;
+        }
+      }
+
+      if (this.__hasTransitionHelperEvents)
+      {
+        this.removeListener("transitionEnd", this.__onTransparentVisibilityTransitionEnd);
+        this.removeListener("appear", this.__onTransparentVisibilityAppear);
+        
+        this.__hasTransitionHelperEvents = false;
+      }
     },
     
     
@@ -2568,12 +2559,6 @@ qx.Class.define("qx.ui.core.Widget",
       }
     },
     
-    
-    // property apply
-    _applyTransparentVisibility : function(value, old) {
-      
-    },
-
 
     // property apply
     _applyOpacity : function(value, old)
@@ -2585,15 +2570,14 @@ qx.Class.define("qx.ui.core.Widget",
       if (old == 0 && this.getTransparentVisibility() != "visible" && !this.isVisible())
       {
         // Display widget again and wait for appear event to toggle opacity back
-        this.show();
+        this.setVisibility("visible");
         return;
       }
       
       this.getContainerElement().setStyle("opacity", value == 1 ? null : value);
 
       // Fix for AlphaImageLoader - see Bug #1894 for details
-      if (qx.core.Variant.isSet("qx.client", "mshtml") &&
-          qx.bom.element.Decoration.isAlphaImageLoaderEnabled())
+      if (qx.core.Variant.isSet("qx.client", "mshtml") && qx.bom.element.Decoration.isAlphaImageLoaderEnabled())
       {
         // Do not apply this fix on images - see Bug #2748
         if (!qx.Class.isSubClassOf(this.getContentElement().constructor, qx.html.Image))
@@ -2610,14 +2594,8 @@ qx.Class.define("qx.ui.core.Widget",
     _applyTransform : function(value, old) {
       this.getContainerElement().setStyle("transform", value == null ? null : value.getStyle());
     },    
-
-
-    // property apply
-    _applyZIndex : function(value, old) {
-      this.getContainerElement().setStyle("zIndex", value == null ? 0 : value);
-    },
-
-
+    
+    
     // property apply
     _applyVisibility : function(value, old)
     {
@@ -2640,6 +2618,48 @@ qx.Class.define("qx.ui.core.Widget",
     },
     
     
+        
+    
+    
+    
+    /*
+    ---------------------------------------------------------------------------
+      OTHER PROPERTIES
+    ---------------------------------------------------------------------------
+    */
+
+    // property apply
+    _applyToolTipText : function(value, old)
+    {
+      if (qx.core.Variant.isSet("qx.dynlocale", "on"))
+      {
+        if (this.__toolTipTextListenerId) {
+          return;
+        }
+        var manager = qx.locale.Manager.getInstance();
+        this.__toolTipTextListenerId = manager.addListener("changeLocale",
+          function() {
+            if (value && value.translate) {
+              this.setToolTipText(value.translate());
+            }
+          }
+        , this);
+      }
+    },
+
+    // property apply
+    _applyTextColor : function(value, old) {
+      // empty template
+    },
+    
+
+
+    // property apply
+    _applyZIndex : function(value, old) {
+      this.getContainerElement().setStyle("zIndex", value == null ? 0 : value);
+    },
+
+
     // property apply
     _applyCursor : function(value, old)
     {
