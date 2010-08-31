@@ -809,6 +809,7 @@ qx.Class.define("qx.ui.window.Window",
       });
     },
 
+
     /**
      * Return <code>true</code> if the window is in maximized state,
      * but note that the window in maximized state could also be invisible, this
@@ -818,10 +819,10 @@ qx.Class.define("qx.ui.window.Window",
      * @return {Boolean} <code>true</code> if the window is maximized,
      *   <code>false</code> otherwise.
      */
-    isMaximized : function()
-    {
+    isMaximized : function() {
       return this.hasState("maximized");
     },
+    
 
     /**
      * Return the window mode as <code>String</code>:
@@ -841,6 +842,8 @@ qx.Class.define("qx.ui.window.Window",
         }
       }
     },
+
+
 
     /*
     ---------------------------------------------------------------------------
@@ -928,17 +931,16 @@ qx.Class.define("qx.ui.window.Window",
      *
      * @param e {qx.event.type.Focus} focus event
      */
-    _onWindowFocusOut : function(e) {
+    _onWindowFocusOut : function(e) 
+    {
       // only needed for non-modal windows
-      if (this.getModal())
-      {
+      if (this.getModal()) {
         return;
       }
 
       // get the current focused widget and check if it is a child
       var current = e.getRelatedTarget();
-      if (current != null && !qx.ui.core.Widget.contains(this, current))
-      {
+      if (current != null && !qx.ui.core.Widget.contains(this, current)) {
         this.setActive(false);
       }
     },
