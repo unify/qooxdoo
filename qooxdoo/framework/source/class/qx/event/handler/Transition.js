@@ -72,10 +72,7 @@ qx.Class.define("qx.event.handler.Transition",
     /** {Map} Supported event types */
     SUPPORTED_TYPES :
     {
-      transitionEnd : 1,
-      animationEnd : 1,
-      animationStart : 1,
-      animationIteration : 1
+      transitionEnd : 1
     },
 
     /** {Integer} Which target check to use */
@@ -105,19 +102,13 @@ qx.Class.define("qx.event.handler.Transition",
     {
       "webkit" :
       {
-        transitionEnd : "webkitTransitionEnd",
-        animationEnd : "webkitAnimationEnd",
-        animationStart : "webkitAnimationStart",
-        animationIteration : "webkitAnimationIteration"
+        transitionEnd : "webkitTransitionEnd"
       },
 
       "gecko" :
       {
         // needs to be completely lowercase as of Firefox 4.0 beta 4
-        transitionEnd : "transitionend",
-        animationEnd : "animationEnd",
-        animationStart : "animationStart",
-        animationIteration : "animationIteration"
+        transitionEnd : "transitionend"
       },
 
       "default" : null
@@ -127,19 +118,13 @@ qx.Class.define("qx.event.handler.Transition",
     {
       "webkit" :
       {
-        webkitTransitionEnd : "transitionEnd",
-        webkitAnimationEnd : "animationEnd",
-        webkitAnimationStart : "animationStart",
-        webkitAnimationIteration : "animationIteration"
+        webkitTransitionEnd : "transitionEnd"
       },
 
       "gecko" :
       {
         // needs to be completely lowercase as of Firefox 4.0 beta 4
-        transitionend : "transitionEnd",
-        animationEnd : "animationEnd",
-        animationStart : "animationStart",
-        animationIteration : "animationIteration"
+        transitionend : "transitionEnd"
       },
 
       "default" : null
