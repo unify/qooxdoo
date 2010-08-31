@@ -46,12 +46,12 @@ qx.Bootstrap.define("qx.core.property.Debug",
       var name = config.name;
 
       if (args.length == 0) {
-        throw new Error("Called set() method of property " + name + " with no arguments!");
+        throw new Error("Called set() method of property " + name + " on object " + obj + " with no arguments!");
       }
       
       if (args.length > 1) 
       {
-        obj.warn("Called set() method of property " + name + " with too many arguments!");
+        obj.warn("Called set() method of property " + name + " on object " + obj + " with too many arguments!");
         obj.trace();
       }
       
@@ -59,7 +59,7 @@ qx.Bootstrap.define("qx.core.property.Debug",
       if (value == null)
       {
         if (!config.nullable) {
-          throw new Error("Property " + name + " is not nullable!");
+          throw new Error("Property " + name + " in object " + obj + " is not nullable!");
         }
       }
       else
@@ -70,7 +70,7 @@ qx.Bootstrap.define("qx.core.property.Debug",
           try {
             qx.core.Type.check(value, check, obj);
           } catch(ex) {
-            throw new Error("Could not set() property " + name + ": " + ex);
+            throw new Error("Could not set() property " + name + " of object " + obj + ": " + ex);
           }
         }
       }
@@ -88,7 +88,7 @@ qx.Bootstrap.define("qx.core.property.Debug",
     {
       if (args.length != 0) 
       {
-        obj.warn("Called reset method of property " + config.name + " with too many arguments!");
+        obj.warn("Called reset method of property " + config.name + " on " + obj + " with too many arguments!");
         obj.trace();
       }      
     },
@@ -105,7 +105,7 @@ qx.Bootstrap.define("qx.core.property.Debug",
     {
       if (args.length != 0) 
       {
-        obj.warn("Called get method of property " + config.name + " with too many arguments!");
+        obj.warn("Called get method of property " + config.name + " on " + obj + " with too many arguments!");
         obj.trace();
       }      
     },
