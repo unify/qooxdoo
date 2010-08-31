@@ -113,10 +113,11 @@ qx.Class.define("qx.event.handler.Transition",
 
       "gecko" :
       {
-        transitionEnd : "mozTransitionEnd",
-        animationEnd : "mozAnimationEnd",
-        animationStart : "mozAnimationStart",
-        animationIteration : "mozAnimationIteration"
+        // needs to be completely lowercase as of Firefox 4.0 beta 4
+        transitionEnd : "transitionend",
+        animationEnd : "animationEnd",
+        animationStart : "animationStart",
+        animationIteration : "animationIteration"
       },
 
       "default" : null
@@ -134,10 +135,11 @@ qx.Class.define("qx.event.handler.Transition",
 
       "gecko" :
       {
-        mozTransitionEnd : "transitionEnd",
-        mozAnimationEnd : "animationEnd",
-        mozAnimationStart : "animationStart",
-        mozAnimationIteration : "animationIteration"
+        // needs to be completely lowercase as of Firefox 4.0 beta 4
+        transitionend : "transitionEnd",
+        animationEnd : "animationEnd",
+        animationStart : "animationStart",
+        animationIteration : "animationIteration"
       },
 
       "default" : null
