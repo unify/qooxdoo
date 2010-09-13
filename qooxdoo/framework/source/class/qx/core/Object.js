@@ -22,6 +22,7 @@
 /* ************************************************************************
 
 #require(qx.core.property.Simple)
+#require(qx.core.property.Group)
 #require(qx.core.ObjectRegistry)
 #use(qx.event.dispatch.Direct)
 #use(qx.event.handler.Object)
