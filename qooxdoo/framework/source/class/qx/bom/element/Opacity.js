@@ -14,6 +14,7 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
+     * Christian Hagendorn (chris_schmidt)
 
    ======================================================================
 
@@ -73,6 +74,12 @@ qx.Class.define("qx.bom.element.Opacity",
 
   statics :
   {
+    /** 
+     * {Boolean} <code>true</code> when the style attribute "opacity" is supported,
+     * <code>false</code> otherwise.
+     */
+    SUPPORT_CSS3_OPACITY : false,
+
     /**
      * Compiles the given opacity value into a cross-browser CSS string.
      * Accepts numbers between zero and one
@@ -95,7 +102,11 @@ qx.Class.define("qx.bom.element.Opacity",
           opacity = 0;
         }
 
-        return "zoom:1;filter:alpha(opacity=" + (opacity * 100) + ");";
+        if (qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY) {
+          return "opacity:" + opacity + ";";
+        } else {
+          return "zoom:1;filter:alpha(opacity=" + (opacity * 100) + ");";
+        }
       },
 
       "gecko" : function(opacity)
@@ -105,7 +116,7 @@ qx.Class.define("qx.bom.element.Opacity",
           opacity = 0.999999;
         }
 
-        if (qx.bom.client.Engine.VERSION < 1.7) {
+        if (!qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY) {
           return "-moz-opacity:" + opacity + ";";
         } else {
           return "opacity:" + opacity + ";";
@@ -136,28 +147,39 @@ qx.Class.define("qx.bom.element.Opacity",
     {
       "mshtml" : function(element, opacity)
       {
-        // Read in computed filter
-        var filter = qx.bom.element.Style.get(element, "filter", qx.bom.element.Style.COMPUTED_MODE, false);
-
-        // Remove opacity filter
-        if (opacity >= 1)
+        if (qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY)
         {
-          element.style.filter = filter.replace(/alpha\([^\)]*\)/gi, "");
-          return;
-        }
+          if (opacity == 1) {
+            opacity = "";
+          }
 
-        if (opacity < 0.00001) {
-          opacity = 0;
+          element.style.opacity = opacity;
         }
+        else
+        {
+          // Read in computed filter
+          var filter = qx.bom.element.Style.get(element, "filter", qx.bom.element.Style.COMPUTED_MODE, false);
 
-        // IE has trouble with opacity if it does not have layout (hasLayout)
-        // Force it by setting the zoom level
-        if (!element.currentStyle || !element.currentStyle.hasLayout) {
-          element.style.zoom = 1;
+          // Remove opacity filter
+          if (opacity >= 1)
+          {
+            element.style.filter = filter.replace(/alpha\([^\)]*\)/gi, "");
+            return;
+          }
+  
+          if (opacity < 0.00001) {
+            opacity = 0;
+          }
+  
+          // IE has trouble with opacity if it does not have layout (hasLayout)
+          // Force it by setting the zoom level
+          if (!element.currentStyle || !element.currentStyle.hasLayout) {
+            element.style.zoom = 1;
+          }
+  
+          // Remove old alpha filter and add new one
+          element.style.filter = filter.replace(/alpha\([^\)]*\)/gi, "") + "alpha(opacity=" + opacity * 100 + ")";
         }
-
-        // Remove old alpha filter and add new one
-        element.style.filter = filter.replace(/alpha\([^\)]*\)/gi, "") + "alpha(opacity=" + opacity * 100 + ")";
       },
 
       "gecko" : function(element, opacity)
@@ -167,7 +189,7 @@ qx.Class.define("qx.bom.element.Opacity",
           opacity = 0.999999;
         }
 
-        if (qx.bom.client.Engine.VERSION < 1.7) {
+        if (!qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY) {
           element.style.MozOpacity = opacity;
         } else {
           element.style.opacity = opacity;
@@ -196,16 +218,23 @@ qx.Class.define("qx.bom.element.Opacity",
     {
       "mshtml" : function(element)
       {
-        // Read in computed filter
-        var filter = qx.bom.element.Style.get(element, "filter", qx.bom.element.Style.COMPUTED_MODE, false);
+        if (qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY)
+        {
+          element.style.opacity = "";
+        }
+        else
+        {
+          // Read in computed filter
+          var filter = qx.bom.element.Style.get(element, "filter", qx.bom.element.Style.COMPUTED_MODE, false);
 
-        // Remove old alpha filter
-        element.style.filter = filter.replace(/alpha\([^\)]*\)/gi, "");
+          // Remove old alpha filter
+          element.style.filter = filter.replace(/alpha\([^\)]*\)/gi, "");
+        }
       },
 
       "gecko" : function(element)
       {
-        if (qx.bom.client.Engine.VERSION < 1.7) {
+        if (!qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY) {
           element.style.MozOpacity = "";
         } else {
           element.style.opacity = "";
@@ -233,23 +262,36 @@ qx.Class.define("qx.bom.element.Opacity",
     {
       "mshtml" : function(element, mode)
       {
-        var filter = qx.bom.element.Style.get(element, "filter", mode, false);
-
-        if (filter)
+        if (qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY)
         {
-          var opacity = filter.match(/alpha\(opacity=(.*)\)/);
+          var opacity = qx.bom.element.Style.get(element, "opacity", mode, false);
 
-          if (opacity && opacity[1]) {
-            return parseFloat(opacity[1]) / 100;
+          if (opacity != null) {
+            return parseFloat(opacity);
           }
-        }
 
-        return 1.0;
+          return 1.0;
+        }
+        else
+        {
+          var filter = qx.bom.element.Style.get(element, "filter", mode, false);
+  
+          if (filter)
+          {
+            var opacity = filter.match(/alpha\(opacity=(.*)\)/);
+  
+            if (opacity && opacity[1]) {
+              return parseFloat(opacity[1]) / 100;
+            }
+          }
+  
+          return 1.0;
+        }
       },
 
       "gecko" : function(element, mode)
       {
-        var opacity = qx.bom.element.Style.get(element, qx.bom.client.Engine.VERSION < 1.7 ? "MozOpacity" : "opacity", mode, false);
+        var opacity = qx.bom.element.Style.get(element, !qx.bom.element.Opacity.SUPPORT_CSS3_OPACITY ? "MozOpacity" : "opacity", mode, false);
 
         if (opacity == 0.999999) {
           opacity = 1.0;
@@ -273,5 +315,9 @@ qx.Class.define("qx.bom.element.Opacity",
         return 1.0;
       }
     })
+  },
+
+  defer : function(statics) {
+    statics.SUPPORT_CSS3_OPACITY = (typeof document.documentElement.style.opacity == "string");
   }
 });

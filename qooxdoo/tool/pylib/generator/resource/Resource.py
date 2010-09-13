@@ -25,55 +25,53 @@ from misc import filetool, Path, json
 from misc.imginfo import ImgInfo
 from generator import Context
 
-memcache = {}
 
-class ImageInfo(object):
-    def __init__(self, console, cache):
-        self._console = console
-        self._cache = cache
+class Resource(object):
+    
+    def __init__(self, path=None):
+        self.id     = None
+        self.path   = path
+        self.lib    = None
+        self.isCombinedImage = False
+
+    def __str__(self):
+        return self.id
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+
+class Image(Resource):
+    
+    def __init__(self, path=None):
+        super(Image, self).__init__(path)
+        self.format = None
+        self.width  = None
+        self.height = None
+        self.combImg = None
+        self.top     = None
+        self.left    = None
 
     imgpatt = re.compile(r'\.(png|jpeg|gif)$', re.I)
 
-    def getImageInfos(self, rootDir):
-        result = {}
+    def analyzeImage(self):
 
-        for img in filetool.find(rootDir, imgpatt):
-            self._console.debug("Analysing image: %s" % img)
-            #mo = self.imgpatt.search(img)
-            imgInfo = ImgInfo(img).getImageInfo()
-            if imgInfo:
-                result[img] = {'width': imgInfo[0], 'height': imgInfo[1], 'type': imgInfo[2]}
+        if self.format and self.width and self.height:
+            return
 
-        return result
+        # imgInfo = (width, height, format/type)
+        imgInfo = ImgInfo(self.path).getInfo()
+        if not imgInfo or not imgInfo[0] or not imgInfo[1] or not imgInfo[2]:
+            raise RuntimeError, "Unable to get image info from file: %s" % self.path 
 
-    def getImageInfo(self, fileName, assetId):
-        img = fileName
-        
-        #if memcache.has_key(img):
-        #    return memcache[img]
+        self.width  = imgInfo[0]
+        self.height = imgInfo[1]
+        self.format = imgInfo[2]
 
-        cacheId = "img-%s" % fileName
-
-        #imgInfo = self._cache.readmulti(cacheId, fileName)
-        #if imgInfo != None:
-        #    return imgInfo
-        
-        self._console.debug("Analysing image: %s" % img)
-        imgInfo = ImgInfo(img).getInfo()
-        if imgInfo:
-            #result = memcache[img] = {'width': imgInfo[0], 'height': imgInfo[1], 'type': imgInfo[2]}
-            result = {'width': imgInfo[0], 'height': imgInfo[1], 'type': imgInfo[2]}
-        else:
-            result = {}
-
-        #self._cache.writemulti(cacheId, result)
-
-        return result
+        return
 
 
-class ImgInfoFmt(object):
-    "Class to hide image meta info encoding"
-    def __init__(self, *arrspec, **kwspec):
+    def setProperties(self, *arrspec, **kwspec):
         self.width = self.height = self.type = self.mappedId = self.left = self.top = None
         # this part of the constructor supports the img format as used in the 
         # .meta files: [width, height, type [, mapped, off-x, off-y]]
@@ -151,18 +149,16 @@ class ImgInfoFmt(object):
             self.mtype     = None
             self.mlib      = None
 
-
 ##
 # Class to represent a combined image to the generator, i.e. essentially
 # the information of the .meta file without exposing its file layout.
 
-class CombinedImage(object):
+class CombinedImage(Image):
 
     def __init__(self, path=None):
-        self._console = Context.console
-        self.path   = path
-        self.embeds = {}     # embedded images dict
-        self.info   = None   # ImgInfoFmt obj
+        super(CombinedImage, self).__init__(path)
+        self.embeds = []  # embedded images
+        self.isCombinedImage = True
         if path:
             self.parseMetaFile(path)
 
@@ -175,24 +171,22 @@ class CombinedImage(object):
 
         # Loop through the images of the .meta file
         for imageId, imageSpec_ in imgDict.items():
-            self._console.debug("found embedded image: %r" % imageId)
-            # sort of like this: imagePath : [width, height, type, combinedUri, off-x, off-y]
-
-            imageObject = ImgInfoFmt(imageSpec_) # turn this into an ImgInfoFmt object, to abstract from representation in .meta file
-            self.embeds[imageId] = imageObject
-
+            # sort of like this: imageId : [width, height, type, combinedUri, off-x, off-y]
+            imageObject = Image()
+            imageObject.id = imageId
+            imageObject = imageObject.setProperties(imageSpec_)
+            self.embeds.append(imageObject)
         return
 
     def getEmbeddedImages(self):
         result = {}
         for img, imgObj in self.embeds.items():
             result[img] = imgObj
-        
         return result
-
 
     @staticmethod
     def isCombinedImage(fpath):
         i = fpath.rfind(".")
         meta_fname = fpath[:i] + '.meta'
         return os.path.exists(meta_fname)
+
