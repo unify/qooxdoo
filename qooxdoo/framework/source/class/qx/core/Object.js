@@ -573,7 +573,7 @@ qx.Class.define("qx.core.Object",
     {
       var argumentsArray = qx.lang.Array.fromArguments(varargs);
       argumentsArray.unshift(this);
-      this.__Logger[level].apply(this.__Logger, argumentsArray);
+      qx.log.Logger[level].apply(qx.log.Logger, argumentsArray);
     },
 
 
