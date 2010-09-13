@@ -17,10 +17,10 @@
 
 ************************************************************************ */
 
-
-
 /**
  * Low-level Range API which is used together with the low-level Selection API
+ * 
+ * @break {qx.bom.Selection}
  */
 qx.Class.define("qx.bom.Range",
 {

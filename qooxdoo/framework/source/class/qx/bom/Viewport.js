@@ -99,6 +99,7 @@ qx.Class.define("qx.bom.Viewport",
      * * Internet Explorer 7.0
      *
      * @signature function(win)
+     * @break {qx.bom.Document}
      * @param win {Window?window} The window to query
      * @return {Integer} The width of the viewable area of the page (excludes scrollbars).
      */
