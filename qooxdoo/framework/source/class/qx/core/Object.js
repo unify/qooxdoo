@@ -22,6 +22,7 @@
 /* ************************************************************************
 
 #require(qx.core.property.Simple)
+#require(qx.core.property.Group)
 #require(qx.core.ObjectRegistry)
 #use(qx.event.dispatch.Direct)
 #use(qx.event.handler.Object)
@@ -510,48 +511,48 @@ qx.Class.define("qx.core.Object",
     /**
      * Logs a debug message.
      *
-     * @param msg {var} the message to log. If this is not a string, the
-     *          object dump will be logged.
-     * @return {void}
+     * @param varargs {var} The item(s) to log. Any number of arguments is 
+     * supported. If an argument is not a string, the object dump will be 
+     * logged.
      */
     debug : function(msg) {
-      qx.log.Logger.debug(this, msg);
+      this.__logMessage("debug", arguments);
     },
 
 
     /**
      * Logs an info message.
      *
-     * @param msg {var} the message to log. If this is not a string, the
-     *      object dump will be logged.
-     * @return {void}
+     * @param varargs {var} The item(s) to log. Any number of arguments is 
+     * supported. If an argument is not a string, the object dump will be 
+     * logged.
      */
     info : function(msg) {
-      qx.log.Logger.info(this, msg);
+      this.__logMessage("info", arguments);
     },
 
 
     /**
      * Logs a warning message.
      *
-     * @param msg {var} the message to log. If this is not a string, the
-     *      object dump will be logged.
-     * @return {void}
+     * @param varargs {var} The item(s) to log. Any number of arguments is 
+     * supported. If an argument is not a string, the object dump will be 
+     * logged.
      */
-    warn : function(msg) {
-      qx.log.Logger.warn(this, msg);
+    warn : function(varargs) {
+      this.__logMessage("warn", arguments);
     },
 
 
     /**
      * Logs an error message.
      *
-     * @param msg {var} the message to log. If this is not a string, the
-     *      object dump will be logged.
-     * @return {void}
+     * @param varargs {var} The item(s) to log. Any number of arguments is 
+     * supported. If an argument is not a string, the object dump will be 
+     * logged.
      */
-    error : function(msg) {
-      qx.log.Logger.error(this, msg);
+    error : function(varargs) {
+      this.__logMessage("error", arguments);
     },
 
 
@@ -562,6 +563,21 @@ qx.Class.define("qx.core.Object",
      */
     trace : function() {
       qx.log.Logger.trace(this);
+    },
+
+
+    /**
+     * Helper that calls the appropriate logger function with the current object
+     * and any number of items.
+     * 
+     * @param level {String} The log level of the message
+     * @param varargs {arguments} Arguments list to be logged 
+     */
+    __logMessage : function(level, varargs)
+    {
+      var argumentsArray = qx.lang.Array.fromArguments(varargs);
+      argumentsArray.unshift(this);
+      qx.log.Logger[level].apply(qx.log.Logger, argumentsArray);
     },
 
 

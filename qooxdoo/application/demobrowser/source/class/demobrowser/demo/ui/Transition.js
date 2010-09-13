@@ -65,6 +65,16 @@ qx.Class.define("demobrowser.demo.ui.Transition",
       btnTransform.addListener("execute", function(e) {
         tester.setTransform(tester.getTransform() ? null : transform);
       });  
+      
+      
+      // Fade+Transform Button
+      var btnFadeTransform = new qx.ui.form.Button("Fade+Transform");
+      doc.add(btnFadeTransform, {left: 20, top: 110});      
+      btnFadeTransform.addListener("execute", function(e) {
+        var orig = !!tester.getTransform();
+        tester.setTransform(orig ? null : transform);
+        tester.setOpacity(orig ? 1 : 0);
+      });      
 
 
 
@@ -84,10 +94,10 @@ qx.Class.define("demobrowser.demo.ui.Transition",
       
       // Apply transition
       var transLocation = new qx.ui.core.MultiTransition;
-      transLocation.add(new qx.ui.core.Transition("top"));
-      transLocation.add(new qx.ui.core.Transition("left"));
-      transLocation.add(new qx.ui.core.Transition("opacity"));
-      transLocation.add(new qx.ui.core.Transition("transform"));
+      transLocation.add(new qx.ui.core.Transition("top", 600));
+      transLocation.add(new qx.ui.core.Transition("left", 600));
+      transLocation.add(new qx.ui.core.Transition("opacity", 600));
+      transLocation.add(new qx.ui.core.Transition("transform", 600));
       tester.setTransition(transLocation);      
 
       // Specific transform for active state

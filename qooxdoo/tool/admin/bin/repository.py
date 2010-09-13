@@ -191,14 +191,6 @@ class Repository:
       path = os.path.join(path, "demodata.json")
       storeDemoData(self.data, path)
 
-  
-  def buildAllTestrunners(self, job="test"):
-    console.indent()
-    for libraryName, library in self.libraries.iteritems():
-      for versionName, libraryVersion in library.children.iteritems():
-        libraryVersion.buildTestrunner(job)
-    console.outdent()
-
 
   def lintCheckAll(self):
     for libraryName, library in self.libraries.iteritems():
@@ -216,6 +208,7 @@ class Repository:
         ret, out, err = runGenerator(libraryVersion.path, job, cwd)
         console.debug(out)
         if ret > 0:
+          libraryVersion.issues.append( {job : errout} )
           console.error(err)
     console.outdent()
 
@@ -392,25 +385,8 @@ class LibraryVersion:
       pass
     
     return False
-  
-  
-  def buildTestrunner(self, job="test"):
-    console.info("Building Testrunner for %s %s... " %(self.parent.name, self.name))
-    if not (self.hasGenerator and self.hasUnitTests):
-      console.write("Nothing to do.", "info")
-      return
-    
-    rcode, output, errout = runGenerator(self.path, job)
-    if rcode > 0:
-      self.issues.append( {"testrunnerBuild" : errout} )
-      console.write("ERROR: ")
-      console.indent()
-      console.error(errout)
-      console.outdent()
-    else:
-      console.write(" Done.", "info")
-  
-  
+
+
   def getLintResult(self):
     if not self.hasGenerator:
       raise Exception("%s %s has no generate.py script!" %(self.parent.name, self.name))
@@ -485,13 +461,11 @@ class LibraryVersion:
             "QOOXDOO_PATH" : "../../../../qooxdoo/" + qxVersion
           }
           
-          status = variant.build(buildTarget, macro)
-          #DEBUG
-          #status = {"buildError" : None}
+          variant.build(buildTarget, macro)
           
-          if status["buildError"]:
+          if buildTarget in variant.issues:
             console.warn("%s %s demo %s %s generation against qooxdoo %s failed!" %(self.parent.name, self.name, variantName, buildTarget, qxVersion))
-            console.warn(status["buildError"])
+            console.warn(variant.issues[buildTarget])
           elif demoBrowser:
             demoData = copy.deepcopy(variant.data)
             demoData["tags"].append( "qxVersion_" + qxVersion)
@@ -499,12 +473,11 @@ class LibraryVersion:
           
       # source version of demo
       elif buildTarget == "source":
-        status = variant.build(buildTarget)
-        #DEBUG
-        #status = {"buildError" : None}
-        if status["buildError"]:          
+        variant.build(buildTarget)
+        
+        if buildTarget in variant.issues:
           console.warn("%s %s demo %s %s generation failed!" %(self.parent.name, self.name, variantName, buildTarget))
-          console.warn(status["buildError"])
+          console.warn(variant.issues[buildTarget])
         elif demoBrowser:
           demoBrowserBase = os.path.split(demoBrowser)[0]
           for qxVersion in qxVersions:
@@ -591,28 +564,22 @@ class Demo:
   
   def build(self, target="build", macro=None):
     console.info("Generating %s version of demo variant %s for library %s version %s..." %(target, self.name, self.parent.parent.name, self.parent.name) )
-    demoBuildStatus = {}
         
     try:
       rcode, output, errout = runGenerator(self.path, target, macro)
     except Exception, e:
+      self.issues.append( {target : str(e)} )
       msg = "Error running generator: " + str(e)
       console.write("")
-      console.error(e)
-      demoBuildStatus["buildError"] = msg 
-      return demoBuildStatus
+      console.error(e) 
+      return
     
     if rcode > 0:
       console.error(errout)
       console.info(output)
       if not errout:
         errout = "Unknown error"
-      self.issues.append( {"build" : errout} )
-      demoBuildStatus["buildError"] = errout
-    else:
-      demoBuildStatus["buildError"] = None
-    
-    return demoBuildStatus
+      self.issues.append( {target : errout} )
   
   def _getData(self):
     libName = self.parent.parent.name
@@ -811,17 +778,19 @@ def main():
           repository.buildAllDemos(job[6:], options.demobrowser, options.copydemos)
         else:
           repository.buildAllDemos(job[6:])
-      # store repository data json file in the demobrowser's script directory 
+      
+      # store repository data JSON file in the demobrowser's script directory 
       elif job == "store-data":
-        # save the repository information as JSON for the contribDemobrowser
         outPath = os.path.join(options.demobrowser, "script")
         repository.storeData(outPath)
+      
       # run a lint check on all libraries
       elif job == "lint-check":
         repository.lintCheckAll()
-     
-      elif job == "test":
-        repository.buildAllTestrunners()
+      
+      # any other job: run it on all library versions
+      else:
+        repository.runGeneratorForAll(job)
       
   if options.storeissues:
     repository.storeIssues()
