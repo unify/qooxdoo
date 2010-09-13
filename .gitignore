@@ -12,4 +12,8 @@ qooxdoo/component/inspector/test
 qooxdoo/component/inspector/api
 qooxdoo/documentation/manual/build
 qooxdoo/application/feedreader/inspector
+qooxdoo/application/demobrowser/build
+qooxdoo/application/demobrowser/source/script
+qooxdoo/framework/api
+qooxdoo/framework/test
 .settings/*
