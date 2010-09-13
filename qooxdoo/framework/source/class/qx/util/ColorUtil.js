@@ -205,7 +205,7 @@ qx.Class.define("qx.util.ColorUtil",
      *
      * @param str {String} any string
      * @return {Array} returns an array of red, green, blue on a successful transformation
-     * @throws an error if the string could not be parsed
+     * @throws {Error} an error if the string could not be parsed
      */
     cssStringToRgb : function(str)
     {

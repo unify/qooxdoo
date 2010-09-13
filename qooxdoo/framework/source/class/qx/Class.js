@@ -71,6 +71,12 @@
  *   }
  * }
  * </pre>
+ * 
+ * @break {qx.core.property.Core}
+ * @break {qx.core.property.Debug}
+ * @break {qx.core.property.Group}
+ * @break {qx.core.property.Simple}
+ * @break {qx.core.property.Multi}
  */
 qx.Bootstrap.define("qx.Class",
 {
