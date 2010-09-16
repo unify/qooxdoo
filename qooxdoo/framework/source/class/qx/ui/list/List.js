@@ -65,6 +65,20 @@ qx.Class.define("qx.ui.list.List",
       init : true
     },
 
+    // overridden
+    width :
+    {
+      refine : true,
+      init : 100
+    },
+
+    // overridden
+    height :
+    {
+      refine : true,
+      init : 200
+    },
+
     /** Data array containing the data which should be shown in the list. */
     model :
     {
@@ -150,6 +164,8 @@ qx.Class.define("qx.ui.list.List",
 
     /** {qx.ui.virtual.layer.WidgetCell} widget cell renderer. */
     _layer : null,
+    
+    __lookupTable : null,
 
     // overridden
     _createChildControlImpl : function(id)
@@ -172,7 +188,7 @@ qx.Class.define("qx.ui.list.List",
      * @return {var|null} the model data from the row.
      */
     _getDataFromRow : function(row) {
-      var data = this.getModel().getItem(row);
+      var data = this.getModel().getItem(this._lookup(row));
 
       if (data != null) {
         return data;
@@ -186,6 +202,8 @@ qx.Class.define("qx.ui.list.List",
      */
     _init : function()
     {
+      this.__lookupTable = [];
+      
       this.getPane().addListener("resize", this._onResize, this);
 
       this._initBackground();
@@ -221,7 +239,7 @@ qx.Class.define("qx.ui.list.List",
       }
 
       this._widgetCellProvider.removeBindings();
-      this.__updateRowCount();
+      this.__buildUpLookupTable();
     },
 
     // apply method
@@ -252,6 +270,7 @@ qx.Class.define("qx.ui.list.List",
     // apply method
     _applyDelegate : function(value, old) {
       this._widgetCellProvider.setDelegate(value);
+      this.__buildUpLookupTable();
     },
 
     /**
@@ -269,7 +288,7 @@ qx.Class.define("qx.ui.list.List",
      * @param e {qx.event.type.Data} model change event.
      */
     _onModelChange : function(e) {
-      this.__updateRowCount();
+      this.__buildUpLookupTable();
     },
 
     /**
@@ -277,8 +296,101 @@ qx.Class.define("qx.ui.list.List",
      */
     __updateRowCount : function()
     {
-      this.getPane().getRowConfig().setItemCount(this.getModel().getLength());
+      this.getPane().getRowConfig().setItemCount(this.__lookupTable.length);
       this.getPane().fullUpdate();
+    },
+    
+    /**
+     * Internal method for building the lookup table.
+     */
+    __buildUpLookupTable : function()
+    {
+      this.__lookupTable = [];
+      
+      var model = this.getModel();
+
+      if (model == null) {
+        return;
+      }
+      
+      this._runDelegateFilter(model);
+      this.__updateRowCount();
+    },
+    
+    /**
+     * Invokes a filtering using the filter given in the delegate.
+     *
+     * @param model {qx.data.IListData} The model.
+     */
+    _runDelegateFilter : function (model)
+    {
+      var filter = this._getDelegate("filter");
+
+      for (var i = 0,l = model.length; i < l; ++i)
+      {
+        if (filter == null || filter(model.getItem(i))) {
+          this.__lookupTable.push(i);
+        }
+      }
+    },
+    
+    /**
+     * Returns the delegate method given my its name.
+     *
+     * @param method {String} The name of the delegate method.
+     * @return {Function|null} The requested method or null, if no method is set.
+     */
+    _getDelegate : function (method)
+    {
+      var delegate = this.getDelegate();
+
+      if (this._containsDelegateMethod(delegate, method))
+      {
+        return delegate[method];
+      }
+
+      return null;
+    },
+    
+    /**
+     * Checks, if the given delegate is valid or if a specific method is given.
+     *
+     * @param delegate {Object} The delegate object.
+     * @param specificMethod {String} The name of the method to search for.
+     * @return {Boolean} True, if everything was ok.
+     */
+    _containsDelegateMethod : function (delegate, specificMethod)
+    {
+      var Type = qx.lang.Type;
+
+      if (Type.isObject(delegate))
+      {
+        if (Type.isString(specificMethod))
+        {
+          return Type.isFunction(delegate[specificMethod]);
+        }
+        else
+        {
+          for (var methodName in this._validDelegates)
+          {
+            if (Type.isFunction(delegate[methodName]))
+            {
+              return true;
+            }
+          }
+        }
+      }
+
+      return false;
+    },
+    
+    /**
+     * Performs a lookup.
+     *
+     * @param index {Number} The index to look at.
+     */
+    _lookup : function(index) {
+      return this.__lookupTable[index];
     }
   },
 

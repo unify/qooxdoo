@@ -36,7 +36,7 @@ qx.Class.define("qx.test.ui.list.List",
 
       this.flush();
 
-      this.assertEquals(300, this._list.getPane().getColumnConfig().getItemSize(0));
+      this.assertEquals(this._list.getPane().getBounds().width, this._list.getPane().getColumnConfig().getItemSize(0));
       this.assertEquals(30, this._list.getPane().getRowConfig().getDefaultItemSize());
       this.assertEquals(this._model.getLength(), this._list.getPane().getRowConfig().getItemCount());
       this.assertEquals(this._model, this._list.getModel());
@@ -108,6 +108,27 @@ qx.Class.define("qx.test.ui.list.List",
       this.assertEquals("qx/icon/16/places/folder.png", this._list._layer.getRenderedCellWidget(0,0).getIcon());
     },
 
+    testFilter : function()
+    {
+      var filteredModel = new qx.data.Array();
+      for (var i = 0; i < 100; i++) {
+        if (i % 2 == 0) {
+          filteredModel.push("item " + (i + 1));
+        }
+      }
+      
+      var delegate = {
+        filter : function(data) {
+          return ((parseInt(data.slice(5, data.length)) - 1) % 2 == 0);
+        } 
+      }
+      this._list.setDelegate(delegate);
+      this.flush();
+      
+      this.assertModelEqualsRowData(filteredModel, this._list);
+      this.assertEquals(filteredModel.getLength(), this._list.getPane().getRowConfig().getItemCount(), "two");
+    },
+    
     testDisabledElements : function()
     {
       var disabledItem = 3;
@@ -131,10 +152,17 @@ qx.Class.define("qx.test.ui.list.List",
       this.flush();
 
       for (var i = 0; i < 10; i++) {
+        var widget = this._list._layer.getRenderedCellWidget(i,0);
+        
+        if (widget == null) {
+          // row is not rendered
+          continue;
+        }
+        
         if (i != disabledItem) {
-          this.assertTrue(this._list._layer.getRenderedCellWidget(i,0).isEnabled());
+          this.assertTrue(widget.isEnabled());
         } else {
-          this.assertFalse(this._list._layer.getRenderedCellWidget(i,0).isEnabled());
+          this.assertFalse(widget.isEnabled());
         }
       }
     }
