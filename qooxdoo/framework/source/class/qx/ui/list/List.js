@@ -186,8 +186,7 @@ qx.Class.define("qx.ui.list.List",
      */
     _init : function()
     {
-      this.addListener("resize", this._onResize, this);
-      this.setScrollbarX("off");
+      this.getPane().addListener("resize", this._onResize, this);
 
       this._initBackground();
       this._initLayer();
