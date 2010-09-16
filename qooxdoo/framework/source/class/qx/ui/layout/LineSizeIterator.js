@@ -24,7 +24,7 @@
  */
 qx.Class.define("qx.ui.layout.LineSizeIterator",
 {
-  extend : Object,
+  extend : qx.core.Object,
 
   /**
    * @param children {qx.ui.core.Widget[]} The children of the flow layout to
@@ -33,6 +33,8 @@ qx.Class.define("qx.ui.layout.LineSizeIterator",
    */
   construct : function(children, spacing)
   {
+    this.base(arguments);
+    
     this.__children = children;
     this.__spacing = spacing;
 
