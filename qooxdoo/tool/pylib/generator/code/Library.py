@@ -24,7 +24,8 @@ import os, re, sys
 from misc import filetool, Path
 from misc.NameSpace import NameSpace
 from ecmascript.frontend import lang
-from generator.resource.ImageInfo import ImageInfo, ImgInfoFmt, CombinedImage
+from generator.resource.ImageInfo import ImageInfo, ImgInfoFmt, CombinedImage as CombImage
+from generator.resource.Resource import Resource, Image, CombinedImage
 from generator import Context as context
 
 ##
@@ -43,9 +44,7 @@ class Library(object):
         self._docs = {}
         self._translations = {}
 
-        self._resources = []
-        self.resources  = C()
-        self.resources.combImages = set()
+        self.resources  = set()
 
         self._path = context.config.absPath(self._config.get("path", ""))
 
@@ -114,7 +113,8 @@ class Library(object):
         return self.namespace
 
     def getResources(self):
-        return self._resources
+        #return self._resources
+        return self.resources
 
     def scan(self):
         self._console.info("Scanning %s..." % self._path)
@@ -122,6 +122,7 @@ class Library(object):
 
         self._scanClassPath(self._classPath, self._classUri, self._encoding)
         self._scanTranslationPath(self._translationPath)
+        #self._scanResourcePath1(self._resourcePath)  # Beware: this is a second traversal through the file system!
         self._scanResourcePath(self._resourcePath)
 
         self._console.outdent()
@@ -192,11 +193,15 @@ class Library(object):
         return liblist
 
 
-    def _scanResourcePath(self, path):
+    def _scanResourcePath1(self, path):
         if not os.path.exists(path):
             raise ValueError("The given resource path does not exist: %s" % path)
 
         self._console.debug("Scanning resource folder...")
+
+        self._resources = []
+        self.resources  = C()
+        self.resources.combImages = set()
 
         for root, dirs, files in filetool.walk(path):
             # filter ignored directories
@@ -207,8 +212,50 @@ class Library(object):
             for file in files:
                 fpath = os.path.join(root, file)
                 self._resources.append(fpath)
-                if CombinedImage.isCombinedImage(fpath):
+                if CombImage.isCombinedImage(fpath):
                     self.resources.combImages.add(os.path.normpath(fpath))
+
+        return
+
+
+
+    def _scanResourcePath(self, path):
+        if not os.path.exists(path):
+            raise ValueError("The given resource path does not exist: %s" % path)
+
+        self._console.debug("Scanning resource folder...")
+
+        # TODO: this should go to __init__
+        #self.resources  = self.resources1
+        #self._resources = self.resources1
+
+        path = os.path.abspath(path)
+        lib_prefix_len = len(path)
+        if not path.endswith(os.sep):
+            lib_prefix_len += 1
+
+        for root, dirs, files in filetool.walk(path):
+            # filter ignored directories
+            for dir in dirs:
+                if self._ignoredDirectories.match(dir):
+                    dirs.remove(dir)
+
+            for file in files:
+                fpath = os.path.join(root, file)
+                fpath = os.path.normpath(fpath)
+                if Image.isImage(fpath):
+                    if CombinedImage.isCombinedImage(fpath):
+                        res = CombinedImage(fpath)
+                    else:
+                        res = Image(fpath)
+                    res.analyzeImage()
+                else:
+                    res = Resource(fpath)
+                
+                res.id = fpath[lib_prefix_len:]
+                res.lib= self
+
+                self.resources.add(res)
 
         return
 

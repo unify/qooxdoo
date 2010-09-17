@@ -10,6 +10,7 @@ qooxdoo/component/inspector/source/script
 qooxdoo/component/inspector/build
 qooxdoo/component/inspector/test
 qooxdoo/component/inspector/api
+qooxdoo/component/apiviewer/source/script
 qooxdoo/documentation/manual/build
 qooxdoo/application/feedreader/inspector
 qooxdoo/application/demobrowser/build
