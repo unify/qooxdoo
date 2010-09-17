@@ -52,7 +52,7 @@ qx.Class.define("qx.ui.decoration.Grid",
   {
     this.base(arguments);
 
-    if (qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
+    if (false && qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
     {
       this.__impl = new qx.ui.decoration.css3.BorderImage();
       if (baseImage) {

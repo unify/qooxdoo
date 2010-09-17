@@ -112,8 +112,9 @@ def _handleResources(script, generator, filtered=True):
         for packageId, package in enumerate(packages):
             allresources.update(package.data.resources)
     else:
-        # just use everything from the main library
+        # get the main library
         mainlib = [x for x in script.libraries if x.namespace == script.namespace][0]
+        #reslist = [x.path for x in mainlib.getResources()]
         reslist = mainlib.getResources()
         #for res in reslist:
         #    resid, resValue = mainlib.analyseResource(res) 

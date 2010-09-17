@@ -46,7 +46,7 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
     this.base(arguments);
     this._setOrientation(orientation);
 
-    if (qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
+    if (false && qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
     {
       this.__impl = new qx.ui.decoration.css3.BorderImage();
       if (baseImage) {
@@ -175,7 +175,6 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
      */
     __setBorderImage : function(baseImage)
     {
-
       this.__impl.setBorderImage(baseImage);
 
       var base = qx.util.AliasManager.getInstance().resolve(baseImage);
@@ -190,16 +189,14 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
         var leftSlice = ResourceManager.getImageWidth(prefix + "-l" + ext);
         var rightSlice = ResourceManager.getImageWidth(prefix + "-r" + ext);
         this.__impl.setSlice([0, rightSlice, 0, leftSlice]);
-    }
+      }
       else
       {
         var bottomSlice = ResourceManager.getImageHeight(prefix + "-b" + ext);
         var topSlice = ResourceManager.getImageHeight(prefix + "-t" + ext);
         this.__impl.setSlice([topSlice, 0, bottomSlice, 0]);
       }
-
     }
-
   },
 
 

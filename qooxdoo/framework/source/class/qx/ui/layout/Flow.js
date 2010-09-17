@@ -233,10 +233,7 @@ qx.Class.define("qx.ui.layout.Flow",
         children = children.concat().reverse();
       }
 
-      var lineCalculator = new qx.ui.layout.LineSizeIterator(
-        children,
-        this.getSpacingX()
-      );
+      var lineCalculator = new qx.ui.layout.LineSizeIterator(children, this.getSpacingX());
 
       var lineTop = 0;
       while (lineCalculator.hasMoreLines())
@@ -245,6 +242,8 @@ qx.Class.define("qx.ui.layout.Flow",
         this.__renderLine(line, lineTop, availWidth);
         lineTop += line.height + this.getSpacingY();
       }
+      
+      lineCalculator.dispose();
     },
 
 
@@ -277,7 +276,7 @@ qx.Class.define("qx.ui.layout.Flow",
 
         var top = util.computeVerticalAlignOffset(
           child.getAlignY() || this.getAlignY(),
-          marginTop + size.height + marginBottom,
+          size.height,
           line.height,
           marginTop, marginBottom
         );
@@ -320,10 +319,7 @@ qx.Class.define("qx.ui.layout.Flow",
      */
     __computeSize : function(availWidth)
     {
-      var lineCalculator = new qx.ui.layout.LineSizeIterator(
-        this._getLayoutChildren(),
-        this.getSpacingX()
-      );
+      var lineCalculator = new qx.ui.layout.LineSizeIterator(this._getLayoutChildren(), this.getSpacingX());
 
       var height = 0;
       var width = 0;
@@ -336,6 +332,8 @@ qx.Class.define("qx.ui.layout.Flow",
         width = Math.max(width, line.width);
         height += line.height;
       }
+      
+      lineCalculator.dispose();
 
       return {
         width : width,

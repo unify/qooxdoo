@@ -169,6 +169,14 @@ qx.Class.define("qx.ui.tabview.TabButton",
       }
 
     },
+    
+    
+    // overridden
+    _applyGap : function(value, old)
+    {
+      // FIXME
+      
+    },
 
 
     // overridden
