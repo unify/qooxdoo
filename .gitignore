@@ -18,3 +18,5 @@ qooxdoo/framework/api
 qooxdoo/framework/test
 .settings/*
 *.pyc
+.DS_Store
+.project
