@@ -17,3 +17,4 @@ qooxdoo/application/demobrowser/source/script
 qooxdoo/framework/api
 qooxdoo/framework/test
 .settings/*
+*.pyc
