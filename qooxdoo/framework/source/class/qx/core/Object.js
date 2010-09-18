@@ -262,10 +262,6 @@ qx.Class.define("qx.core.Object",
     ---------------------------------------------------------------------------
     */
 
-    /** {Class} Pointer to the regular event registration class */
-    __Registration : qx.event.Registration,
-
-
     /**
      * Add event listener to this object.
      *
@@ -277,11 +273,12 @@ qx.Class.define("qx.core.Object",
      *         to attach the event handler to the bubbling phase.
      * @return {String} An opaque id, which can be used to remove the event listener
      *         using the {@link #removeListenerById} method.
+     * @break {qx.event.Registration}
      */
     addListener : function(type, listener, self, capture)
     {
       if (!this.$$disposed) {
-        return this.__Registration.addListener(this, type, listener, self, capture);
+        return qx.event.Registration.addListener(this, type, listener, self, capture);
       }
 
       return null;
@@ -326,7 +323,7 @@ qx.Class.define("qx.core.Object",
     removeListener : function(type, listener, self, capture)
     {
       if (!this.$$disposed) {
-        return this.__Registration.removeListener(this, type, listener, self, capture);
+        return qx.event.Registration.removeListener(this, type, listener, self, capture);
       }
 
       return false;
@@ -343,7 +340,7 @@ qx.Class.define("qx.core.Object",
     removeListenerById : function(id)
     {
       if (!this.$$disposed) {
-        return this.__Registration.removeListenerById(this, id);
+        return qx.event.Registration.removeListenerById(this, id);
       }
 
       return false;
@@ -359,7 +356,7 @@ qx.Class.define("qx.core.Object",
      * @return {Boolean} Whether the object has a listener of the given type.
      */
     hasListener : function(type, capture) {
-      return this.__Registration.hasListener(this, type, capture);
+      return qx.event.Registration.hasListener(this, type, capture);
     },
 
 
@@ -373,7 +370,7 @@ qx.Class.define("qx.core.Object",
     dispatchEvent : function(evt)
     {
       if (!this.$$disposed) {
-        return this.__Registration.dispatchEvent(this, evt);
+        return qx.event.Registration.dispatchEvent(this, evt);
       }
 
       return true;
@@ -393,7 +390,7 @@ qx.Class.define("qx.core.Object",
     fireEvent : function(type, clazz, args)
     {
       if (!this.$$disposed) {
-        return this.__Registration.fireEvent(this, type, clazz, args);
+        return qx.event.Registration.fireEvent(this, type, clazz, args);
       }
 
       return true;
@@ -415,7 +412,7 @@ qx.Class.define("qx.core.Object",
     fireNonBubblingEvent : function(type, clazz, args)
     {
       if (!this.$$disposed) {
-        return this.__Registration.fireNonBubblingEvent(this, type, clazz, args);
+        return qx.event.Registration.fireNonBubblingEvent(this, type, clazz, args);
       }
 
       return true;
@@ -436,6 +433,7 @@ qx.Class.define("qx.core.Object",
      *     {@link qx.event.type.Event#preventDefault}
      * @return {Boolean} whether the event default was prevented or not.
      *     Returns true, when the event was NOT prevented.
+     * @break {qx.event.type.Data}
      */
     fireDataEvent : function(type, data, oldData, cancelable)
     {
@@ -444,7 +442,7 @@ qx.Class.define("qx.core.Object",
         if (oldData === undefined) {
           oldData = null;
         }
-        return this.__Registration.fireNonBubblingEvent(
+        return qx.event.Registration.fireNonBubblingEvent(
           this, type, qx.event.type.Data, [data, oldData, !!cancelable]
         );
       }
@@ -568,6 +566,7 @@ qx.Class.define("qx.core.Object",
      * 
      * @param level {String} The log level of the message
      * @param varargs {arguments} Arguments list to be logged 
+     * @break {qx.log.Logger}
      */
     __logMessage : function(level, varargs)
     {
