@@ -56,8 +56,7 @@ qx.Bootstrap.define("qx.core.property.Group",
      */
     expandShortHand : function(input)
     {
-      var lArray = qx.lang.Array;
-      var result = input instanceof Array ? lArray.clone(input) : lArray.fromArguments(input);
+      var result = input instanceof Array ? input.concat() : Array.prototype.slice.call(input);
 
       // Copy Values (according to the length)
       switch(result.length)

@@ -66,12 +66,6 @@
  *
  * Automatically normalizes cross-browser differences for setting and reading
  * CSS attributes. Optimized for performance.
- *
- * @break {qx.bom.element.Cursor}
- * @break {qx.bom.element.Overflow}
- * @break {qx.bom.element.Clip}
- * @break {qx.bom.element.BoxSizing}
- * @break {qx.bom.element.Opacity}
  */
 qx.Class.define("qx.bom.element.Style",
 {

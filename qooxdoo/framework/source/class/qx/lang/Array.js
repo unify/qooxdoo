@@ -42,6 +42,8 @@
  *
  * The string/array generics introduced in JavaScript 1.6 are supported by
  * {@link qx.lang.Generics}.
+ *
+ * @optional {qx.core.Assert}
  */
 qx.Class.define("qx.lang.Array",
 {

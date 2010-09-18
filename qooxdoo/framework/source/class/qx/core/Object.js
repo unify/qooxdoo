@@ -39,10 +39,6 @@
  * * generic setter/getter support
  * * interfaces for logging console
  * * user friendly OO interfaces like {@link #self} or {@link #base}
- * 
- * @break {qx.event.type.Data}
- * @break {qx.event.Registration}
- * @break {qx.log.Logger}
  */
 qx.Class.define("qx.core.Object",
 {

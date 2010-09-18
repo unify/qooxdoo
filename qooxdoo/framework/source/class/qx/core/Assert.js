@@ -32,10 +32,6 @@
  * If an assertion fails an {@link AssertionError} is thrown.
  *
  * Assertions are used in unit tests as well.
- * 
- * @break {qx.core.AssertionError}
- * @break {qx.lang.Json}
- * @break {qx.lang.String}
  */
 qx.Class.define("qx.core.Assert",
 {

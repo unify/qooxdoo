@@ -28,8 +28,6 @@
  * call assertions. It is included into {@link qx.core.Object} if debugging code
  * is enabled. It is further included into all unit tests
  * {@link qx.dev.unit.TestCase}.
- * 
- * @break {qx.core.Assert}
  */
 qx.Mixin.define("qx.core.MAssert",
 {
