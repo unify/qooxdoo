@@ -28,7 +28,8 @@
 ##
 
 import sys, re
-from ecmascript.frontend import lang, comment
+from ecmascript.frontend                 import lang, comment
+from ecmascript.frontend.SyntaxException import SyntaxException
 import Scanner
 
 ##
@@ -42,15 +43,28 @@ def tokens_2_obj(content):
         yield token
     yield Token(('eof', '', token.spos+token.len, 0))
 
+
+def scanner_slice(self, a, b):
+    return self.content[a:b]
+
+
 ##
 # Interface function
 def parseStream(content, uniqueId=""):
     tokens = []
     line = column = sol = 1
     scanner = Scanner.LQueue(tokens_2_obj(content, ))
+    scanner.content = content
+    scanner.slice = scanner_slice
     for tok in scanner:
-        # tok isinstanceof Scanner.Token()
-        token = {"source": tok.value, "detail" : "", "line": line, "column": tok.spos - sol + 1, "id": uniqueId}
+        # some inital values (tok isinstanceof Scanner.Token())
+        token = {
+            "source" : tok.value, 
+            "detail" : "",
+            "line"   : line, 
+            "column" : tok.spos - sol + 1, 
+            "id"     : uniqueId
+            }
 
         # white space
         if (tok.name == 'white'):
@@ -90,8 +104,16 @@ def parseStream(content, uniqueId=""):
                 token['detail'] = 'doublequotes'
             else:
                 token['detail'] = 'singlequotes'
-            token['source'] = parseString(scanner, tok.value)
+            try:
+                token['source'] = parseString(scanner, tok.value)
+            except SyntaxException, e:
+                desc = e.args[0] + " starting with %r..." % (tok.value + e.args[1])[:20]
+                raiseSyntaxException(token, desc)
             token['source'] = token['source'][:-1]
+            # adapt line number -- this assumes multi-line strings are not generally out
+            linecnt = len(re.findall("\n", token['source']))
+            if linecnt > 0:
+                line += linecnt
 
         # identifier, operator
         elif tok.name in ("ident", "op", "mulop"):
@@ -134,8 +156,12 @@ def parseStream(content, uniqueId=""):
                     # accumulate multiline comments
                     if (len(tokens) == 0 or
                         not is_last_escaped_token(tokens)):
-                        commnt = parseCommentM(scanner)
                         token['type'] = 'comment'
+                        try:
+                            commnt = parseCommentM(scanner)
+                        except SyntaxException, e:
+                            desc = e.args[0] + " starting with \"%r...\"" % (tok.value + e.args[1])[:20]
+                            raiseSyntaxException(token, desc)
                         token['source'] = tok.value + commnt
                         token['detail'] = comment.getFormat(token['source'])
                         token['begin'] = not hasLeadingContent(tokens)
@@ -199,12 +225,25 @@ def parseStream(content, uniqueId=""):
 # parse a string (both double and single quoted)
 def parseString(scanner, sstart):
     # parse string literals
-    result = ""
+    result = []
     for token in scanner:
-        result += token.value
-        if (token.value == sstart and not Scanner.is_last_escaped(result)):  # be aware of escaped quotes
-            break
-    return result
+        result.append(token.value)
+        if token.value == sstart:
+            res = u"".join(result)
+            if not Scanner.is_last_escaped(res):  # be aware of escaped quotes
+                break
+    else:
+        # this means we've run out of tokens without finishing the string
+        res = u"".join(result)
+        raise SyntaxException("Non-terminated string", res)
+
+    return res
+
+
+def parseString1(scanner, sstart):
+    # parse string literals
+    tokens = parseDelimited(scanner, sstart)
+    return scanner.slice(scanner, tokens[0].spos, tokens[-1].spos + tokens[-1].len)
 
 
 ##
@@ -232,6 +271,21 @@ def parseRegexp(scanner):
     return rexp
 
 
+def parseRegexp1(scanner):
+    # leading '/' is already consumed
+    tokens = parseDelimited(scanner, '/')
+
+    # regexp modifiers
+    try:
+        if scanner.peek()[0].name == "ident":
+            token = scanner.next()
+            tokens.append(token)
+    except StopIteration:
+        pass
+
+    return scanner.slice(scanner, tokens[0].spos, tokens[-1].spos + tokens[-1].len)
+
+
 ##
 # parse an inline comment // ...
 def parseCommentI(scanner):
@@ -242,6 +296,11 @@ def parseCommentI(scanner):
             break
         result += token.value
     return result
+
+
+def parseCommentI1(scanner):
+    tokens = parseDelimited (scanner, '\n')  # TODO: assumes universal newline!
+    return scanner.slice(scanner, tokens[0].spos, tokens[-1].spos + tokens[-1].len)
 
 
 ##
@@ -256,10 +315,41 @@ def parseCommentM(scanner):
             if not Scanner.is_last_escaped(res):
                 break
     else:
+        # this means we've run out of tokens without finishing the comment
         res = u"".join(result)
+        raise SyntaxException("Run-away comment", res)
 
     return res
 
+def parseCommentM1(scanner):
+    tokens = parseDelimited(scanner, '*/')
+    return scanner.slice(scanner, tokens[0].spos, tokens[-1].spos + tokens[-1].len)
+
+
+##
+# generic element parser for delimited strings (string/regex literals, 
+# comments)
+# both start token and terminator token will be part of the element
+def parseDelimited(scanner, terminator):
+    tokens = []
+    for token in scanner:
+        tokens.append(token)
+        if token.value == terminator:
+            if not is_last_escaped_tokobj (tokens):
+                break
+    else:
+        res = scanner.slice(tokens[0].spos, token.spos + token.len)
+        raise SyntaxException ("Run-away element", res)
+
+    return tokens
+
+
+
+##
+# syntax exception helper
+def raiseSyntaxException (token, desc = u""):
+    msg = desc + " (%s:%d)" % (token['id'], token['line'])
+    raise SyntaxException (msg)
 
 ##
 # check if the preceding tokens contain an odd number of '\'
@@ -268,6 +358,18 @@ def is_last_escaped_token(tokens):
     i   = 1
     while True:
         if tokens[-i]['source'] == '\\':
+            cnt += 1
+            i -= 1
+        else:
+            break
+    return cnt % 2 == 1
+
+
+def is_last_escaped_tokobj(tokens):
+    cnt = 0
+    i   = 1
+    while True:
+        if tokens[-i].value == '\\':
             cnt += 1
             i -= 1
         else:

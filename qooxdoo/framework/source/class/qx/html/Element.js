@@ -490,10 +490,6 @@ qx.Class.define("qx.html.Element",
 
       this.__modifiedChildren = true;
 
-      // IE9 (1.9.7616.6000) Preview 4 fix for bug #4050
-      // TODO check if the fix is needed with the next IE9 release
-      qx.html.Element._modified[this.$$hash];
-
       qx.html.Element._modified[this.$$hash] = this;
       qx.html.Element._scheduleFlush("element");
     },
@@ -2135,10 +2131,6 @@ qx.Class.define("qx.html.Element",
         // Store job info
         this.__styleJobs[key] = true;
 
-        // IE9 (1.9.7616.6000) Preview 4 fix for bug #4050
-        // TODO check if the fix is needed with the next IE9 release
-        qx.html.Element._modified[this.$$hash];
-
         // Register modification
         qx.html.Element._modified[this.$$hash] = this;
         qx.html.Element._scheduleFlush("element");
@@ -2198,10 +2190,6 @@ qx.Class.define("qx.html.Element",
           // Store job info
           this.__styleJobs[key] = true;
         }
-
-        // IE9 (1.9.7616.6000) Preview 4 fix for bug #4050
-        // TODO check if the fix is needed with the next IE9 release
-        qx.html.Element._modified[this.$$hash];
 
         // Register modification
         qx.html.Element._modified[this.$$hash] = this;
@@ -2315,10 +2303,6 @@ qx.Class.define("qx.html.Element",
 
         // Store job info
         this.__attribJobs[key] = true;
-
-        // IE9 (1.9.7616.6000) Preview 4 fix for bug #4050
-        // TODO check if the fix is needed with the next IE9 release
-        qx.html.Element._modified[this.$$hash];
 
         // Register modification
         qx.html.Element._modified[this.$$hash] = this;
@@ -2441,10 +2425,6 @@ qx.Class.define("qx.html.Element",
 
         // Store job info
         this.__propertyJobs[key] = true;
-
-        // IE9 (1.9.7616.6000) Preview 4 fix for bug #4050
-        // TODO check if the fix is needed with the next IE9 release
-        qx.html.Element._modified[this.$$hash];
 
         // Register modification
         qx.html.Element._modified[this.$$hash] = this;
