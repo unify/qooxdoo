@@ -2958,6 +2958,13 @@ qx.Class.define("qx.ui.core.Widget",
         for (var prop in newStyles)
         {
           var config = qx.core.property.Util.getPropertyDefinition(this.constructor, prop);
+          
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (!config) {
+              throw new Error(this + ": Unknown property during syncAppearance(): " + prop);
+            }
+          }
 
           // Expand groups
           // This is duplicated somehow to the property group implementation, 
