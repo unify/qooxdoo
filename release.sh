@@ -8,8 +8,11 @@ version=`cat qooxdoo/version.txt`
 echo ">>> Tagging qooxdoo $version"
 git tag -m "Tagged qooxdoo $version" $version || exit 1
 
-echo ">>> Pushing changes..."
-git push || exit 1
+echo ">>> Pushing tag $version..."
+git push $version || exit 1
+
+echo ">>> Sleeping for 30 seconds"
+sleep 30
 
 echo ">>> Preparing release..."
 mkdir ../qts-release/qooxdoo-$version || exit 1
