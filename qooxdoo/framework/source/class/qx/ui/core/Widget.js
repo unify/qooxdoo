@@ -2802,7 +2802,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
       
       // Clear state and queue
-      delete this.__states[state];
+      this.__states[state] = false;
 
       // Fast path for hovered state
       if (!qx.ui.core.queue.Visibility.isVisible(this)) {
