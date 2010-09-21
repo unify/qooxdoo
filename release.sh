@@ -6,7 +6,7 @@ echo ">>> Path: $root"
 cd $root || exit 1
 version=`cat qooxdoo/version.txt`
 echo ">>> Tagging qooxdoo $version"
-git tag -m "Tagged qooxdoo $version" $version || exit 1
+git tag -a -m "Tagged qooxdoo $version" $version || exit 1
 
 echo ">>> Pushing tag $version..."
 git push $version || exit 1
