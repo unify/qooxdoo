@@ -9,7 +9,7 @@ echo ">>> Tagging qooxdoo $version"
 git tag -a -m "Tagged qooxdoo $version" $version || exit 1
 
 echo ">>> Pushing tag $version..."
-git push $version || exit 1
+git push origin $version || exit 1
 
 echo ">>> Sleeping for 30 seconds"
 sleep 30
