@@ -659,6 +659,13 @@
         for (propertyName in values) 
         {
           propertyId = propertyNameToId[propertyName];
+          
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (propertyId === undefined) {
+              throw new Error(obj + ": Invalid property to import: " + propertyName);
+            }
+          }
         
           // Ignore if there is a higher priorized value
           // Earliest return option: Higher priorized value set

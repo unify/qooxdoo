@@ -619,7 +619,13 @@ class Generator(object):
 
             # Execute real tasks
             if "copy-resources" in jobTriggers:
-                self.runResources(script.classes)
+                #self.runResources1(script.classes)
+                self.runResources(script)
+                #import cProfile
+                #cProfile.runctx("self.runResources(script)", globals(), locals(),
+                #cProfile.runctx("self.runResources1(script.classes)", globals(), locals(),
+                #"d:/tmp/runresources.prof"
+                #)
             if "compile" in jobTriggers:
                 # get parts config; sets
                 # script.boot
@@ -866,10 +872,13 @@ class Generator(object):
                     return False
                 return True
 
+            # ---------------------------------------
+
             inclregexps = self._job.get("provider/include", ["*"])
             exclregexps = self._job.get("provider/exclude", [])
             inclregexps = map(textutil.toRegExp, inclregexps)
             exclregexps = map(textutil.toRegExp, exclregexps)
+            rh          = self._resourceHandler
 
             data = {}
             # Class deps
@@ -896,15 +905,23 @@ class Generator(object):
                 val["run"] = newval
 
             # Resource deps
-            assetFilter, classToAssetHints = self._resourceHandler.getResourceFilterByAssets(data.keys())
-            # -- the next line is expensive 
-            classToResources  = self._resourceHandler.getResourcesByClass(self._job.get("library", []), classToAssetHints)
+            # class list
+            classObjs = [x for x in script.classesObj if x.id in data.keys()]
+            # resource list
+            resourceObjs = []
+            for libObj in script.libraries:
+                resourceObjs.extend(libObj.getResources())
+            exclpatt = re.compile("\.(?:meta|py)$", re.I)  # remove unwanted files
+            for res in resourceObjs[:]:
+                if exclpatt.search(res.id):
+                    resourceObjs.remove(res)
+            # map resources to class.resources
+            classObjs = rh.mapResourcesToClasses(resourceObjs, classObjs)
 
+            for clazz in classObjs:
+                reskeys = ["/resource/resources#"+x.id for x in clazz.resources]
+                data[clazz.id]["run"].extend(reskeys)
 
-            for classId in classToResources:
-                if classId in data:
-                    data[classId]["run"].extend(["/resource/resources#"+x for x in classToResources[classId]])
-                
             # Message key deps
             for classId in data:
                 classKeys = self._locale.getTranslation(classId, {})
@@ -914,7 +931,7 @@ class Generator(object):
 
             # CLDR dependency
             for classId in data:
-                if self._classesObj[classId].getMeta("cldr"):
+                if self._classesObj[classId].getHints("cldr"):
                     data[classId]["run"].append("/locale/locale-${lang}#cldr")
 
             # transform dep keys ("qx.Class" -> "qx/Class.js")
@@ -923,6 +940,11 @@ class Generator(object):
                 #newkey += ".js"
                 data[newkey] = data[key]
                 del data[key]
+
+            # sort information for each class (for stable output)
+            for classvals in data.values():
+                for key in classvals:
+                    classvals[key] = sorted(classvals[key], reverse=True)
 
             # write to file
             file = depsLogConf.get('json/file', "deps.json")
@@ -1272,7 +1294,43 @@ class Generator(object):
 
 
 
-    def runResources(self, classList):
+    def runResources(self, script):
+        if not self._job.get("copy-resources", False):
+            return
+
+        self._console.info("Copying resources...")
+        classList     = script.classesObj
+        resTargetRoot = self._job.get("copy-resources/target", "build")
+        resTargetRoot = self._config.absPath(resTargetRoot)
+        self.approot  = resTargetRoot  # this is a hack, because resource copying generates uri's
+        rh            = self._resourceHandler
+
+        # resource list
+        resourceObjs = []
+        for libObj in script.libraries:
+            resourceObjs.extend(libObj.getResources())
+        exclpatt = re.compile("\.(?:meta|py)$", re.I)  # remove unwanted files
+        for res in resourceObjs[:]:
+            if exclpatt.search(res.id):
+                resourceObjs.remove(res)
+        # map resources to class.resources
+        classList = rh.mapResourcesToClasses(resourceObjs, classList)
+
+        self._console.indent()
+        # make resources to copy unique
+        resources_to_copy = set(_res for cls in classList for _res in cls.resources)
+        # Copy resources
+        #for lib in libs:
+        for res in resources_to_copy:
+            # construct target path
+            resTarget = os.path.join(resTargetRoot, 'resource', res.id)
+            # Copy
+            self._copyResources(res.path, os.path.dirname(resTarget))
+
+        self._console.outdent()
+
+
+    def runResources1(self, classList):
         # only run for copy jobs
         if not self._job.get("copy-resources", False):
             return
@@ -1282,7 +1340,7 @@ class Generator(object):
         resTargetRoot = self._config.absPath(resTargetRoot)
         self.approot  = resTargetRoot  # this is a hack, because resource copying generates uri's
         libs          = self._job.get("library", [])
-        resourceFilter, classMap = self._resourceHandler.getResourceFilterByAssets(classList)
+        resourceFilter, _ = self._resourceHandler.getResourceFilterByAssets(classList)
 
         self._console.indent()
         # Copy resources
@@ -1475,7 +1533,11 @@ class Generator(object):
             # wpbasti: Rename: Border => Inset as in qooxdoo JS code
             prefix       = imgspec['prefix']
             border_width = imgspec['border-width']
-            self._imageClipper.slice(image, prefix, border_width)
+            if 'trim-width' in imgspec:
+                trim_width = imgspec['trim-width']
+            else:
+                trim_width = True
+            self._imageClipper.slice(image, prefix, border_width, trim_width)
 
 
     def runImageCombining(self):
