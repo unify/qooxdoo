@@ -299,6 +299,9 @@ qx.Class.define("qx.ui.form.AbstractField",
      * Called after the contentElement has a width and a innerWidth.
      *
      * Note: This was introduced to fix BUG#1585
+     * 
+     * @param innerHeight {Integer} Height of element
+     * @param element {qx.html.Element} HTML element object
      */
     _renderContentElement : function(innerHeight, element) {
       //use it in child classes

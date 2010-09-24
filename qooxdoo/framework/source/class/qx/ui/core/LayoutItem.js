@@ -907,12 +907,6 @@ qx.Class.define("qx.ui.core.LayoutItem",
     getLayoutParent : function() {
       return this.$$parent || null;
     },
-
-
-    // NEW for Property System
-    _getParent : function() {
-      return this.$$parent || null;
-    },
     
     
     /**
