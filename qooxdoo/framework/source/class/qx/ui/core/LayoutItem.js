@@ -963,29 +963,6 @@ qx.Class.define("qx.ui.core.LayoutItem",
       }
 
       return null;
-    },
-
-
-
-
-
-    /*
-    ---------------------------------------------------------------------------
-      CLONE SUPPORT
-    ---------------------------------------------------------------------------
-    */
-
-    // overridden
-    clone : function()
-    {
-      var clone = this.base(arguments);
-
-      var props = this.__layoutProperties;
-      if (props) {
-        clone.__layoutProperties = qx.lang.Object.clone(props);
-      }
-
-      return clone;
     }
   },
 

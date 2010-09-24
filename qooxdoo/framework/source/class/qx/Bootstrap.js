@@ -288,6 +288,7 @@ qx.Bootstrap.define("qx.Bootstrap",
      * Find a class by its name
      *
      * @param name {String} class name to resolve
+     * @param errorMsg {String} error message to throw when class is not available
      * @return {Class} the class
      */
     getByName : function(name, errorMsg)

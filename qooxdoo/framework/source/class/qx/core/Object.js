@@ -515,7 +515,7 @@ qx.Class.define("qx.core.Object",
      * supported. If an argument is not a string, the object dump will be 
      * logged.
      */
-    debug : function(msg) {
+    debug : function(varargs) {
       this.__logMessage("debug", arguments);
     },
 
@@ -527,7 +527,7 @@ qx.Class.define("qx.core.Object",
      * supported. If an argument is not a string, the object dump will be 
      * logged.
      */
-    info : function(msg) {
+    info : function(varargs) {
       this.__logMessage("info", arguments);
     },
 
