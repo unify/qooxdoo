@@ -239,6 +239,7 @@ qx.Class.define("qx.dom.Hierarchy",
      * is found that matches the specified expression. If no matching
      * element is found then <code>null</code> will be returned.
      *
+     * @param elem {Element} DOM element to query
      * @param selector {String} Expression to filter the elements with
      * @return {Element|null} Found parent element which matches the expression
      */ 
