@@ -22,7 +22,7 @@
 /* ************************************************************************
 
 #require(qx.event.handler.UserAction)
-#require(qx.event.handler.Touch)
+#---require(qx.event.handler.Touch)
 
 ************************************************************************ */
 
