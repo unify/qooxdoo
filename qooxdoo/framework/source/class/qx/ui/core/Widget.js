@@ -4112,34 +4112,7 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       qx.ui.core.queue.Dispose.add(this);
-    },
-
-
-
-
-
-    /*
-    ---------------------------------------------------------------------------
-      CLONE SUPPORT
-    ---------------------------------------------------------------------------
-    */
-
-    // overridden
-    clone : function()
-    {
-      var clone = this.base(arguments);
-
-      if (this.getChildren)
-      {
-        var children = this.getChildren();
-        for (var i=0, l=children.length; i<l; i++) {
-          clone.add(children[i].clone());
-        }
-      }
-
-      return clone;
     }
-
   },
 
 

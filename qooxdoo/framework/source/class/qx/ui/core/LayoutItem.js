@@ -907,12 +907,6 @@ qx.Class.define("qx.ui.core.LayoutItem",
     getLayoutParent : function() {
       return this.$$parent || null;
     },
-
-
-    // NEW for Property System
-    _getParent : function() {
-      return this.$$parent || null;
-    },
     
     
     /**
@@ -963,29 +957,6 @@ qx.Class.define("qx.ui.core.LayoutItem",
       }
 
       return null;
-    },
-
-
-
-
-
-    /*
-    ---------------------------------------------------------------------------
-      CLONE SUPPORT
-    ---------------------------------------------------------------------------
-    */
-
-    // overridden
-    clone : function()
-    {
-      var clone = this.base(arguments);
-
-      var props = this.__layoutProperties;
-      if (props) {
-        clone.__layoutProperties = qx.lang.Object.clone(props);
-      }
-
-      return clone;
     }
   },
 

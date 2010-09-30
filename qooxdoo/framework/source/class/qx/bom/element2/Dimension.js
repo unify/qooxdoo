@@ -18,18 +18,18 @@
 ************************************************************************ */
 
 /**
- * Rewritten support for applying style properties.
- *
- * Differences to old implementation:
- *
- * * Faster compution
- * * No special support for scroll bars which not that much
- *
+ * Query element dimensions
  */
 qx.Class.define("qx.bom.element2.Dimension",
 {
   statics :
   {
+    /**
+     * Returns the content width of the given element.
+     * 
+     * @param elem {Element} DOM element to query
+     * @return {Integer} Content width of the given element
+     */ 
     getContentWidth : function(elem)
     {
       var Style = qx.bom.element2.Style;
@@ -40,6 +40,12 @@ qx.Class.define("qx.bom.element2.Dimension",
     },
 
 
+    /**
+     * Returns the content height of the given element.
+     * 
+     * @param elem {Element} DOM element to query
+     * @return {Integer} Content height of the given element
+     */ 
     getContentHeight : function(elem)
     {
       var Style = qx.bom.element2.Style;
@@ -50,10 +56,23 @@ qx.Class.define("qx.bom.element2.Dimension",
     },
 
 
+    /**
+     * Returns the width of the given element.
+     * 
+     * @param elem {Element} DOM element to query
+     * @return {Integer} Width of the given element
+     */ 
     getWidth : function(elem) {
       return elem.offsetWidth;
     },
 
+
+    /**
+     * Returns the height of the given element.
+     * 
+     * @param elem {Element} DOM element to query
+     * @return {Integer} Height of the given element
+     */ 
     getHeight : function(elem) {
       return elem.offsetHeight;
     }
