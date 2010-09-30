@@ -20,7 +20,7 @@
 ################################################################################
 
 ##
-# Class -- Internal representation of a qooxdoo class
+# Class -- Internal representation of a qooxdoo class; derives from Resource
 ##
 
 import os, sys, re, types, codecs
@@ -28,6 +28,8 @@ from misc                           import util, filetool
 from ecmascript.frontend            import treeutil, tokenizer, treegenerator, lang
 from ecmascript.frontend.Script import Script
 from ecmascript.transform.optimizer import variantoptimizer
+from generator.resource.AssetHint   import AssetHint
+from generator.resource.Resource    import Resource
 
 DefaultIgnoredNamesDynamic = None
 QXGLOBALS = [
@@ -46,21 +48,18 @@ for symb in lang.GLOBALS + QXGLOBALS:
 GlobalSymbolsCombinedPatt = re.compile('|'.join(r'^%s\b' % x for x in lang.GLOBALS + QXGLOBALS))
 
 
-class Class(object):
-
-
-    count = []
+class Class(Resource):
 
     def __init__(self, id, path, library, context, container):
         #__slots__       = ('id', 'path', 'size', 'encoding', 'library', 'context', 'source', 'scopes', 'translations')
         global console, cache, DefaultIgnoredNamesDynamic
+        super(Class, self).__init__(path)
         self.id         = id   # qooxdoo name of class, classId
-        self.path       = path  # file path of this class
-        self.size       = -1
-        self.encoding   = 'utf-8'
-        self.library    = library
+        self.library    = library     # Library()
         self.context    = context
         self._classesObj= container   # this is ugly, but curr. used to identify known names
+        self.size       = -1
+        self.encoding   = 'utf-8'
         self.source     = u''  # source text of this class
         #self.ast        = None # ecmascript.frontend.tree instance
         self.scopes     = None # an ecmascript.frontend.Script instance
@@ -960,73 +959,65 @@ class Class(object):
     #   Resource Support
     # --------------------------------------------------------------------------
 
-    ##
-    # resource = Resource()
-    def needsResource(self, resource, expandMacroFunc=None):
+    def getAssets(self, assetMacros={}):
 
         if self._assetRegex == None:
             # prepare a regex encompassing all asset hints, asset macros resolved
             classAssets = self.getHints()['assetDeps'][:]
-            iresult  = []  # ["a/b/c.png", "a/b/d/.*", ...]
+            iresult  = []  # [AssetHint]
             for res in classAssets:
                 # expand file glob into regexp
                 res = re.sub(r'\*', ".*", res)
                 # expand macros
-                if res.find('${')>-1 and expandMacroFunc:
-                    expres = expandMacroFunc(res)
+                if res.find('${')>-1:
+                    expres = self._expandMacrosInMeta(assetMacros, res)
                 else:
                     expres = [res]
-                # collect resulting asset expressions
+                # collect resulting asset objects
                 for e in expres:
-                    if e not in iresult:
-                        iresult.append(e)
-            # turn into a regex
-            Class.count.extend(iresult)
-            if iresult: # we have hints
-                iresult = [re.compile(x) for x in iresult]
-            else:
-                #iresult = re.compile(r'.\A')  # a never-match regex (stackoverflow 940822)
-                #iresult = [re.compile('^$')]
-                pass  # TODO: no need for empty list or never-match regex
-            self._assetRegex = iresult
-
-        for patt in self._assetRegex:
-            if patt.search(resource.id):
-                return True
-
-        return False
-
-
-    def getAssets(self, expandMacroFunc=None):
-
-        if self._assetRegex == None:
-            # prepare a regex encompassing all asset hints, asset macros resolved
-            classAssets = self.getHints()['assetDeps'][:]
-            iresult  = []  # ["a/b/c.png", "a/b/d/.*", ...]
-            for res in classAssets:
-                # expand file glob into regexp
-                res = re.sub(r'\*', ".*", res)
-                # expand macros
-                if res.find('${')>-1 and expandMacroFunc:
-                    expres = expandMacroFunc(res)
-                else:
-                    expres = [res]
-                # collect resulting asset expressions
-                for e in expres:
-                    if e not in iresult:
-                        iresult.append(e)
-            # turn into a regex
-            #Class.count.extend(iresult)
-            if iresult: # we have hints
-                iresult = [re.compile(x) for x in iresult]
-            else:
-                #iresult = re.compile(r'.\A')  # a never-match regex (stackoverflow 940822)
-                #iresult = [re.compile('^$')]
-                pass  # TODO: no need for empty list or never-match regex
+                    assethint = AssetHint(res)
+                    assethint.clazz = self
+                    assethint.expanded = e
+                    assethint.regex = re.compile(e)
+                    if assethint not in iresult:
+                        iresult.append(assethint)
             self._assetRegex = iresult
 
         return self._assetRegex
-    
+
+
+    ##
+    # expand asset macros in asset strings, like "qx/decoration/${theme}/*"
+    def _expandMacrosInMeta(self, assetMacros, res):
+        
+        def expMacRec(rsc):
+            if rsc.find('${')==-1:
+                return [rsc]
+            result = []
+            nres = rsc[:]
+            mo = re.search(r'\$\{(.*?)\}',rsc)
+            if mo:
+                themekey = mo.group(1)
+                if themekey in assetMacros:
+                    # create an array with all possibly variants for this replacement
+                    iresult = []
+                    for val in assetMacros[themekey]:
+                        iresult.append(nres.replace('${'+themekey+'}', val))
+                    # for each variant replace the remaining macros
+                    for ientry in iresult:
+                        result.extend(expMacRec(ientry))
+                else:
+                    nres = nres.replace('${'+themekey+'}','') # just remove '${...}'
+                    nres = nres.replace('//', '/')    # get rid of '...//...'
+                    result.append(nres)
+                    console.warn("Warning: (%s): Cannot replace macro '%s' in #asset hint" % (self.id, themekey))
+            else:
+                raise SyntaxError, "Non-terminated macro in string: %s" % rsc
+            return result
+
+        result = expMacRec(res)
+        return result
+
 
     # --------------------------------------------------------------------------
     #   Compiler Hints Support
@@ -1139,7 +1130,8 @@ class Class(object):
         try:
             meta["assetDeps"]    = _extractAssetDeps(content)
         except ValueError, e:
-            raise ValueError, e.message + u' in: %r' % filePath
+            e.args = (e.args[0] + u' in: %r' % filePath,) + e.args[1:]
+            raise e
         meta["cldr"]         = _extractCLDRDeps(content)
 
         console.outdent()

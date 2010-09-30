@@ -100,6 +100,8 @@ qx.Class.define("qx.ui.table.pane.Scroller",
 
     // init focus indicator
     this.__focusIndicator = this.getChildControl("focus-indicator");
+    // need to run the apply method at least once [BUG #4057]
+    this.initShowCellFocusIndicator();
 
     // force creation of the resize line
     this.getChildControl("resize-line").hide();
@@ -1169,6 +1171,10 @@ qx.Class.define("qx.ui.table.pane.Scroller",
                        ],
                        true);
         this.__firedClickEvent = true;
+      } else if (!this.isEditing()) {
+        // if no cellClick event should be fired, act like a mousedown which 
+        // invokes the change of the selection e.g. [BUG #1632]
+        this._onMousedownPane(e);
       }
     },
 

@@ -21,12 +21,15 @@
 
 import os, re, sys
 
-from misc import filetool, Path
-from misc.NameSpace import NameSpace
-from ecmascript.frontend import lang
-from generator.resource.ImageInfo import ImageInfo, ImgInfoFmt, CombinedImage as CombImage
-from generator.resource.Resource import Resource, Image, CombinedImage
-from generator import Context as context
+from misc                         import filetool, Path
+from misc.NameSpace               import NameSpace
+from ecmascript.frontend          import lang
+from generator.code.Class         import Class
+from generator.resource.ImageInfo import ImageInfo, ImgInfoFmt
+from generator.resource.Resource  import Resource
+from generator.resource.Image     import Image
+from generator.resource.CombinedImage import CombinedImage
+from generator                    import Context as context
 
 ##
 # pickle complains when I use NameSpace!?
@@ -41,12 +44,14 @@ class Library(object):
         self._console = console
 
         self._classes = {}
+        self._classesObj = []
         self._docs = {}
         self._translations = {}
 
         self.resources  = set()
 
         self._path = context.config.absPath(self._config.get("path", ""))
+        self.manifest = context.config.absPath(self._config.get("manifest", ""))
 
         if self._path == "":
             raise ValueError("Missing path information!")
@@ -62,6 +67,15 @@ class Library(object):
 
         self._translationPath = os.path.join(self._path, self._config.get("translation","source/translation"))
         self._resourcePath    = os.path.join(self._path, self._config.get("resource","source/resource"))
+        #TODO: clean up the others later
+        self.categories = {}
+        self.categories["classes"] = {}
+        self.categories["translations"] = {}
+        self.categories["resources"] = {}
+
+        self.categories["classes"]["path"]  = self._classPath
+        self.categories["translations"]["path"]  = self._translationPath
+        self.categories["resources"]["path"] = self._resourcePath
 
         self.namespace = self._config.get("namespace")
         if not self.namespace: raise RuntimeError
@@ -91,6 +105,27 @@ class Library(object):
         self.__dict__ = d
 
 
+    def mostRecentlyChangedFile(self):
+        youngFiles = {}
+        # for each interesting library part
+        for category in self.categories:
+            catPath = self.categories[category]["path"]
+            if category == "translation" and not os.path.isdir(catPath):
+                continue
+            # find youngest file
+            file, mtime = filetool.findYoungest(catPath)
+            youngFiles[mtime] = file
+            
+        # also check the Manifest file
+        file, mtime = filetool.findYoungest(self.manifest)
+        youngFiles[mtime] = file
+        
+        # and return the maximum of those
+        youngest = sorted(youngFiles.keys())[-1]
+
+        return (youngFiles[youngest], youngest)
+
+
     _codeExpr = re.compile(r'''qx.(Bootstrap|List|Class|Mixin|Interface|Theme).define\s*\(\s*["']((?u)[^"']+)["']''', re.M)
     _illegalIdentifierExpr = re.compile(lang.IDENTIFIER_ILLEGAL_CHARS)
     _ignoredDirectories    = re.compile(r'%s' % '|'.join(filetool.VERSIONCONTROL_DIR_PATTS), re.I)
@@ -99,6 +134,9 @@ class Library(object):
 
     def getClasses(self):
         return self._classes
+
+    def getClasses1(self):
+        return self._classesObj
 
 
     def getDocs(self):
@@ -113,7 +151,6 @@ class Library(object):
         return self.namespace
 
     def getResources(self):
-        #return self._resources
         return self.resources
 
     def scan(self):
@@ -122,7 +159,6 @@ class Library(object):
 
         self._scanClassPath(self._classPath, self._classUri, self._encoding)
         self._scanTranslationPath(self._translationPath)
-        #self._scanResourcePath1(self._resourcePath)  # Beware: this is a second traversal through the file system!
         self._scanResourcePath(self._resourcePath)
 
         self._console.outdent()
@@ -193,41 +229,11 @@ class Library(object):
         return liblist
 
 
-    def _scanResourcePath1(self, path):
-        if not os.path.exists(path):
-            raise ValueError("The given resource path does not exist: %s" % path)
-
-        self._console.debug("Scanning resource folder...")
-
-        self._resources = []
-        self.resources  = C()
-        self.resources.combImages = set()
-
-        for root, dirs, files in filetool.walk(path):
-            # filter ignored directories
-            for dir in dirs:
-                if self._ignoredDirectories.match(dir):
-                    dirs.remove(dir)
-
-            for file in files:
-                fpath = os.path.join(root, file)
-                self._resources.append(fpath)
-                if CombImage.isCombinedImage(fpath):
-                    self.resources.combImages.add(os.path.normpath(fpath))
-
-        return
-
-
-
     def _scanResourcePath(self, path):
         if not os.path.exists(path):
             raise ValueError("The given resource path does not exist: %s" % path)
 
         self._console.debug("Scanning resource folder...")
-
-        # TODO: this should go to __init__
-        #self.resources  = self.resources1
-        #self._resources = self.resources1
 
         path = os.path.abspath(path)
         lib_prefix_len = len(path)
@@ -253,7 +259,7 @@ class Library(object):
                     res = Resource(fpath)
                 
                 res.id = Path.posifyPath(fpath[lib_prefix_len:])
-                res.lib= self
+                res.library= self
 
                 self.resources.add(res)
 
@@ -322,7 +328,8 @@ class Library(object):
                 try:
                     fileCodeId = self._getCodeId(fileContent)
                 except ValueError, e:
-                    raise ValueError, e.message + u' (%s)' % fileName
+                    e.args[0] = e.args[0] + u' (%s)' % fileName
+                    raise e
 
                 # Ignore all data files (e.g. translation, doc files, ...)
                 if fileCodeId == None:
@@ -348,6 +355,17 @@ class Library(object):
                     "package" : filePackage,
                     "size" : fileSize
                 }
+                # TODO: Clazz still relies on a context dict!
+                contextdict = {}
+                contextdict["console"] = context.console
+                contextdict["cache"] = context.cache
+                contextdict["jobconf"] = context.jobconf
+                # TODO: currently creation of throw-away objects (unless they're .append'ed)
+                clazz = Class(self._classes[filePathId], filePath, self, contextdict, self._classesObj)
+                clazz.encoding = encoding
+                clazz.size     = fileSize     # dependency logging uses this
+                clazz.package  = filePackage  # Apiloader uses this
+                #self._classesObj.append(clazz)
 
         self._console.indent()
         self._console.debug("Found %s classes" % len(self._classes))

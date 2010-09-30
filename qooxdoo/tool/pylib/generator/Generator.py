@@ -32,11 +32,11 @@ from generator.code.Class            import Class
 from generator.code.DependencyLoader import DependencyLoader
 from generator.code.PartBuilder      import PartBuilder
 from generator.code.TreeCompiler     import TreeCompiler
-from generator.code.Library          import Library
 from generator.code.Script           import Script
 from generator.code.Package          import Package
 from generator.code.Part             import Part
 from generator.code.CodeGenerator    import CodeGenerator
+from generator.resource.Library      import Library
 from generator.resource.ResourceHandler  import ResourceHandler
 from generator.resource.ImageClipping    import ImageClipping
 from generator.resource.ImageInfo        import ImgInfoFmt
@@ -192,11 +192,10 @@ class Generator(object):
             return classList
 
 
-        def scanLibrary(library):
+        def scanLibrary(libraryKey):
 
             def getJobsLib(path):
                 lib = None
-                #path = os.path.abspath(os.path.normpath(path))  # this shouldn't be necessary, and breaks in some scenarios (s. bug#1861)
                 libMaps = self._job.getFeature("library")
                 for l in libMaps:
                     if l['path'] == path:
@@ -235,23 +234,20 @@ class Generator(object):
             _classesObj = {}
             _docs = {}
             _translations = {}
-            _libs = {}          # {"name.space" : <"library" config entry>}
             _libraries = []     # [generator.code.Library]
-            if not isinstance(library, types.ListType):
-                return (_namespaces, _classes, _docs, _translations, _libs)
+            if not isinstance(libraryKey, types.ListType):
+                return (_namespaces, _classes, _docs, _translations, _libraries)
 
-            for lib in library:
-                key  = lib["path"]
+            for lib in libraryKey:
 
-                checkFile = mostRecentlyChangedIn(lib)[0]
-                cacheId   = "lib-%s" % lib["manifest"] #key
-                libObj      = self._cache.read(cacheId, checkFile, memory=True)
-                if libObj:
-                    self._console.debug("Use memory cache for %s" % key)
+                libObj    = Library(lib, self._console)
+                checkFile = libObj.mostRecentlyChangedFile()[0]
+                cacheId   = "lib-%s" % libObj.manifest
+                checkObj  = self._cache.read(cacheId, checkFile, memory=True)
+                if checkObj:
+                    self._console.debug("Use memory cache for %s" % libObj._path)
+                    libObj = checkObj  # continue with cached obj
                 else:
-                    libObj = Library(lib, self._console)
-                    namespace = getJobsLib(key)['namespace']
-                    libObj._namespace = namespace  # patch namespace
                     libObj.scan()
                     self._cache.write(cacheId, libObj, memory=True)
 
@@ -262,7 +258,7 @@ class Generator(object):
                 _classes.update(classes)
 
                 for key,entry in classes.items():
-                    clazz = Class(key, entry["path"], lib, self._context, _classesObj)
+                    clazz = Class(key, entry["path"], libObj, self._context, _classesObj)
                     clazz.encoding = entry["encoding"]
                     clazz.size     = entry["size"]     # dependency logging uses this
                     clazz.package  = entry["package"]  # Apiloader uses this
@@ -270,14 +266,13 @@ class Generator(object):
 
                 _docs.update(libObj.getDocs())
                 _translations[namespace] = libObj.getTranslations()
-                _libs[namespace] = lib
                 _libraries.append(libObj)
 
             self._console.outdent()
             self._console.debug("Loaded %s libraries" % len(_namespaces))
             self._console.debug("")
 
-            return (_namespaces, _classes, _classesObj, _docs, _translations, _libs, _libraries)
+            return (_namespaces, _classes, _classesObj, _docs, _translations, _libraries)
 
 
 
@@ -525,7 +520,6 @@ class Generator(object):
          self._classesObj,
          self._docs,
          self._translations,
-         self._libs,
          self._libraries)     = scanLibrary(config.get("library"))
 
 
@@ -619,13 +613,7 @@ class Generator(object):
 
             # Execute real tasks
             if "copy-resources" in jobTriggers:
-                #self.runResources1(script.classes)
                 self.runResources(script)
-                #import cProfile
-                #cProfile.runctx("self.runResources(script)", globals(), locals(),
-                #cProfile.runctx("self.runResources1(script.classes)", globals(), locals(),
-                #"d:/tmp/runresources.prof"
-                #)
             if "compile" in jobTriggers:
                 # get parts config; sets
                 # script.boot
@@ -907,16 +895,8 @@ class Generator(object):
             # Resource deps
             # class list
             classObjs = [x for x in script.classesObj if x.id in data.keys()]
-            # resource list
-            resourceObjs = []
-            for libObj in script.libraries:
-                resourceObjs.extend(libObj.getResources())
-            exclpatt = re.compile("\.(?:meta|py)$", re.I)  # remove unwanted files
-            for res in resourceObjs[:]:
-                if exclpatt.search(res.id):
-                    resourceObjs.remove(res)
             # map resources to class.resources
-            classObjs = rh.mapResourcesToClasses(resourceObjs, classObjs)
+            classObjs = rh.mapResourcesToClasses(script.libraries, classObjs)
 
             for clazz in classObjs:
                 reskeys = ["/resource/resources#"+x.id for x in clazz.resources]
@@ -1286,12 +1266,10 @@ class Generator(object):
         self._console.info("Updating translations...")
         self._console.indent()
         for namespace in namespaces:
-            lib = self._libs[namespace]
-            self._locale.updateTranslations(namespace, os.path.join(lib['path'],lib['translation']), 
-                                            locales)
+            lib = [x for x in self._libraries if x.namespace == namespace][0]
+            self._locale.updateTranslations(namespace, lib._translationPath, locales)
 
         self._console.outdent()
-
 
 
     def runResources(self, script):
@@ -1305,16 +1283,8 @@ class Generator(object):
         self.approot  = resTargetRoot  # this is a hack, because resource copying generates uri's
         rh            = self._resourceHandler
 
-        # resource list
-        resourceObjs = []
-        for libObj in script.libraries:
-            resourceObjs.extend(libObj.getResources())
-        exclpatt = re.compile("\.(?:meta|py)$", re.I)  # remove unwanted files
-        for res in resourceObjs[:]:
-            if exclpatt.search(res.id):
-                resourceObjs.remove(res)
         # map resources to class.resources
-        classList = rh.mapResourcesToClasses(resourceObjs, classList)
+        classList = rh.mapResourcesToClasses(script.libraries, classList)
 
         self._console.indent()
         # make resources to copy unique
@@ -1329,56 +1299,6 @@ class Generator(object):
 
         self._console.outdent()
 
-
-    def runResources1(self, classList):
-        # only run for copy jobs
-        if not self._job.get("copy-resources", False):
-            return
-
-        self._console.info("Copying resources...")
-        resTargetRoot = self._job.get("copy-resources/target", "build")
-        resTargetRoot = self._config.absPath(resTargetRoot)
-        self.approot  = resTargetRoot  # this is a hack, because resource copying generates uri's
-        libs          = self._job.get("library", [])
-        resourceFilter, _ = self._resourceHandler.getResourceFilterByAssets(classList)
-
-        self._console.indent()
-        # Copy resources
-        for lib in libs:
-            #libp = Library(lib,self._console)
-            #ns   = libp.getNamespace()
-
-            # construct a path to the source root for the resources
-            #  (to be used later as a stripp-off from the resource source path)
-            libpath = os.path.join(lib['path'],lib['resource'])
-            libpath = os.path.normpath(libpath)
-
-            # get relevant resources for this lib
-            resList  = self._resourceHandler.findAllResources([lib], resourceFilter)
-
-            # for each needed resource
-            for res in resList:
-                # Get source and target paths, and invoke copying
-
-                # Get a source path
-                resSource = os.path.normpath(res)
-
-                # Construct a target path
-                # strip off a library prefix...
-                #  relpath = respath - libprefix
-                relpath = (Path.getCommonPrefix(libpath, resSource))[2]
-                if relpath[0] == os.sep:
-                    relpath = relpath[1:]
-                # ...to construct a suitable target path
-                #  target = targetRoot + relpath
-                resTarget = os.path.join(resTargetRoot, 'resource', relpath)
-
-                # Copy
-                self._copyResources(res, os.path.dirname(resTarget))
-
-        self._console.outdent()
-
-    
 
     def runCollectEnvironmentInfo(self):
         letConfig = self._job.get('let',{})

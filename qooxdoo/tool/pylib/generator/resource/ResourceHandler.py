@@ -20,182 +20,44 @@
 ################################################################################
 
 import re, string, types, sys, os, collections
-import functools
 
-from generator.code.Library import Library
-from misc import Path
-from generator.resource.ImageInfo import CombinedImage as CombImage, ImgInfoFmt
-from generator.resource.Resource import CombinedImage
+from generator.resource.CombinedImage import CombinedImage
+from generator import Context
 
 class ResourceHandler(object):
 
     def __init__(self, generatorobj, librariesObj):
+        global console
         self._genobj  = generatorobj
-        self._resList = None
-        self._libraries = librariesObj
+        console  = Context.console
 
-
-    ##
-    # Find relevant resources/assets, implementing shaddowing of resources.
-    # Yields resources [file_path1, ...]
-    # includes necessary combined images, unless useCombImgs=False
-    # filter is a positivie filter (ie. the things you *want*)
-    def findAllResources(self, libraries, filter=None, useCombImgs=True):
-
-        combinedImages    = set(())
-
-        # go through all libs (weighted) and collect necessary resources
-        for lib in libraries:
-            for resource in self.findLibResources(lib, ):
-                if CombinedImage.isCombinedImage(resource):
-                    combinedImages.add(resource)
-                if (filter and not filter(resource)):
-                    continue
-                else:
-                    yield resource
-
-        # go through the combined images
-        if filter:
-            for combpath in combinedImages:
-                combimg = CombImage(combpath)
-                for embimg in combimg.getEmbeddedImages():
-                    if filter(embimg):
-                        yield combpath
-                        break  # one match is enough
-        else: 
-            # if there is no filter, the comb. images have been added in the 
-            # first loop
-            pass
-
-        return
 
 
     ##
-    # Yield the resources of a single lib
-    # @param lib jobconf.get("library", [])
-    def findLibResources(self, lib, filter=None):
-
-        def getCache(lib):
-            cacheId = "resinlib-%s" % lib._path
-            liblist = self._genobj._cache.read(cacheId, dependsOn=None, memory=True)
-            return liblist, cacheId
-
-        def isSkipFile(f):
-            if [x for x in map(lambda x: re.search(x, f), ignoredFiles) if x!=None]:
-                return True
-            else:
-                return False
-
-        # - Main --------------------------------------------------------------
-        cacheList    = []  # to poss. populate cache
-        cacheId      = ""  # will be filled in getCache()
-        ignoredFiles = [r'\.meta$',]  # files not considered as resources
-
-        # create wrapper object
-        libObj = Library(lib, self._genobj._console)
-        # retrieve list of library resources
-        libList, cacheId = getCache(libObj)
-        if libList:
-            inCache = True
-        else:
-            libList = libObj.scanResourcePath()
-            inCache = False
-
-        lib_prefix_len = len(libObj._resourcePath)
-        if not libObj._resourcePath.endswith(os.sep):
-            lib_prefix_len += 1
-        # go through list of library resources and add suitable
-        for resource in libList:
-            # scanResourcePath() yields absolute paths to a resource, but
-            # we only want to match against the 'resource' part of it
-            #resourcePart = Path.getCommonPrefix(libObj._resourcePath, resource)[2]
-            resourcePart = resource[lib_prefix_len:]
-            if not inCache:
-                cacheList.append(resource)
-            if isSkipFile(resource):
-                continue
-            elif (filter and not filter(resourcePart)):
-                continue
-            else:
-                yield resource
-
-        if not inCache:
-            # cache write
-            self._genobj._cache.write(cacheId, cacheList, memory=True, writeToFile=False)
-
-        return
-
-                        
-        
-
-    def getResourceFilterByAssets(self, classes):
-        # returns a function that takes a resource path and return true if one
-        # of the <classes> needs it
-
-        if not self._resList:
-            self._resList, self._assetsOfClass = self._getResourcelistFromClasslist(classes)  # get consolidated resource list
-            self._resList = [re.compile(x) for x in self._resList]  # convert to regexp's
-            for classId in self._assetsOfClass:
-                self._assetsOfClass[classId] = set(re.compile(x) for x in self._assetsOfClass[classId])
-
-        def filter(respath):
-            respath = Path.posifyPath(respath)
-            for res in self._resList:
-                mo = res.search(respath)  # this might need a better 'match' algorithm
-                if mo:
-                    return True
-            return False
-
-        return filter, self._assetsOfClass
-
-
-    def getResourceFilterByFilepath(self, filepatt=None, inversep=lambda x: x):
-        """Returns a filter function that takes a resource path and returns
-           True/False, depending on whether the resource should be included.
-           <filepatt> pattern to match against a resource path, <inversep> if
-           the match result should be reversed (for exclusions); example:
-               getResourceFilterByFilepath(re.compile(r'.*/qx/icon/.*'), lambda x: not x)
-           returns only res paths that do *not* match '/qx/icon/'"""
-        if not filepatt:
-            #filepatt = re.compile(r'\.(?:png|jpeg|gif)$', re.I)
-            filepatt = re.compile(r'.*/resource/.*')
-
-        def filter(respath):
-            if inversep(re.search(filepatt,respath)):
-                return True
-            else:
-                return False
-
-        return filter
-
-
-    ##
-    # Create a resource structure suitable for serializing (like CodeGenerator.
-    # generateResourceInfoCode, but with simpler input params). The main simpli-
+    # Create a resource structure suitable for serializing. The main simpli-
     # fication is that no resource *selection* is done in this method. It basi-
-    # cally just takes lists of resource paths and creates an info structure for
+    # cally just takes a lists of resources and creates an info structure for
     # them. Combined images are honored.
     #
     # Takes:
-    #   [(libObj, ["resourcePath"]),...]
+    #   [resourceObj1,...]
     #   formatAsTree = True/False
     # returns:
     #   resource structure {"gui/test.png" : [32, 32, "png", "gui"], ...}
     # or:
     #   {"gui" : {"test.png" : [32, 32, "png", "gui"], ...}, ...}
-    def createResourceStruct(self, libsAndResources, formatAsTree=False, updateOnlyExistingSprites=False):
+    def createResourceStruct(self, resources, formatAsTree=False, updateOnlyExistingSprites=False):
         
         skippatt = re.compile(r'\.(meta|py)$', re.I)
         result = {}
         if formatAsTree:
             result = ExtMap()
 
-        # Create a flat result from libsAndResources
-        for libObj, resList in libsAndResources:
-            for res in resList:
-                if skippatt.search(res.path):
-                    continue
-                result[res.id] = res
+        # Filter unwanted files
+        for res in resources:
+            if skippatt.search(res.path):
+                continue
+            result[res.id] = res
 
         # Update simple images
         for combImg in (x for x in result.values() if isinstance(x, CombinedImage)):
@@ -217,144 +79,46 @@ class ResourceHandler(object):
         return result
             
     ##
-    # check if sprites in a combined image occur in a resource list
-    def embedsInList(self, combObj, resList):
-        matchingEmbeds = []
-        for embed in combObj.embeds: # embed = Image()
-            if embed in resList:
-                matchingEmbeds.append(embed)
-        return matchingEmbeds
-
-    def assetsMatchResource(self, assetSet, resource, resVal):
-        resId, embImgs = resVal  # embImgs = False | [embId, ...]
-
-        for assetRex in assetSet:
-            if embImgs:
-                for embId in embImgs:
-                    if assetRex.match(embId):
-                        return True
-            # we deliberately include combined images here, in case someone #assets the combined image directly
-            if assetRex.match(resId):
-                return True
-
-        return False
-
-
-    def assetIdFromPath(self, resource, lib):
-        def extractAssetPart(libresuri, imguri):
-            pre,libsfx,imgsfx = Path.getCommonPrefix(libresuri, imguri) # split libresuri from imguri
-            if imgsfx[0] == os.sep: imgsfx = imgsfx[1:]  # strip leading '/'
-            return imgsfx                # use the bare img suffix as its asset Id
-
-        librespath = os.path.normpath(os.path.join(lib['path'], lib['resource']))
-        assetId = extractAssetPart(librespath, resource)
-        assetId = Path.posifyPath(assetId)
-        return assetId
-
-
-
-    ##
-    # map resources to classes
-    # works on resource and class objects
-    # modifies the classes, by adding resources that are useful to the class
-    def mapResourcesToClasses(self, resources, classes):
-        assetMacros     = self._genobj._job.get('asset-let',{})
-        expandMacroFunc = functools.partial(self._expandMacrosInMeta, assetMacros)
-        assetPatts = {}
-        for clazz in classes:
-            assetPatts[clazz] = clazz.getAssets(expandMacroFunc)
-        for res in resources:
-            for clazz, patts in assetPatts.items():
-                for patt in patts:
-                    if patt.search(res.id):
-                        clazz.resources.add(res)
-                        break
-            #for clazz in classes:
-            #    if clazz.needsResource(res, expandMacroFunc):
-            #        clazz.resources.add(res) 
-            #    # check for embedded images
-            #    if isinstance(res, CombinedImage):
-            #        for embed in res.embeds:
-            #            if clazz.needsResource(embed, expandMacroFunc):
-            #                clazz.resources.add(res)
-            #                break
+    # Map resources to classes.
+    # Takes a list of Library's and a list of Class'es, and modifies the
+    # classes' .resources member to hold suitable resources from the Libs.
+    def mapResourcesToClasses(self, libs, classes):
         
-        #from generator.code.Class import Class
-        #from pprint import pprint
-        #print "Class.count:", 
-        #pprint(sorted(Class.count))
-        return classes
-
-
-    def _getResourcelistFromClasslist(self, classList):
-        """Return a consolidated list of resource fileId's of all classes in classList;
-           handles meta info."""
-        result   = []  # list of needed resourceIds
-        classMap = {}  # map of resourceIds per class {classId : set(resourceIds)}
+        # Resource list
+        resources = []
+        for libObj in libs:
+            resources.extend(libObj.getResources()) # weightedness of same res id through order of script.libraries
+        # remove unwanted files
+        exclpatt = re.compile("\.(?:meta|py)$", re.I)
+        for res in resources[:]:
+            if exclpatt.search(res.id):
+                resources.remove(res)
+        
+        # Asset pattern list  -- this is basically an optimization, to condense
+        # asset patterns
         assetMacros = self._genobj._job.get('asset-let',{})
+        assetHints  = []
+        for clazz in classes:
+            assetHints.extend(clazz.getAssets(assetMacros))
 
-        self._genobj._console.info("Compiling resource list...")
-        self._genobj._console.indent()
-        for clazz in classList:
-            classMap[clazz] = set(())
-            #classRes = (self._genobj._depLoader.getMeta(clazz))['assetDeps'][:]
-            classRes = (self._genobj._classesObj[clazz].getHints())['assetDeps'][:]
-            iresult  = []
-            for res in classRes:
-                # here it might need some massaging of 'res' before lookup and append
-                # expand file glob into regexp
-                res = re.sub(r'\*', ".*", res)
-                # expand macros
-                if res.find('${')>-1:
-                    expres = self._expandMacrosInMeta(assetMacros, res)
-                else:
-                    expres = [res]
-                for r in expres:
-                    classMap[clazz].add(r)
-                    if r not in result + iresult:
-                        iresult.append(r)
-            self._genobj._console.debug("%s: %s" % (clazz, repr(iresult)))
-            result.extend(iresult)
+        # Go through resources and asset patterns
+        for res in resources:
+            for hint in assetHints:
+                # add direct matches
+                if hint.regex.match(res.id):
+                    hint.seen = True
+                    hint.clazz.resources.add(res)
+                # add matches of embedded images
+                if isinstance(res, CombinedImage):
+                    for embed in res.embeds:
+                        if hint.regex.match(embed.id):
+                            hint.seen = True
+                            hint.clazz.resources.add(res)
 
-        #from pprint import pprint
-        #print "Class.count:" 
-        #pprint(sorted(result))
-        self._genobj._console.outdent()
-        return result, classMap
-
-
-    # wpbasti: Isn't this something for the config class?
-    # Do we have THE final solution for these kind of variables yet?
-    # The support for macros, themes, variants and all the types of variables make me somewhat crazy.
-    # Makes it complicated for users as well.
-    def _expandMacrosInMeta(self, assetMacros, res):
+        # Now that the resource mapping is done, check if we have unfullfilled hints
+        for hint in assetHints:
+            if not hint.seen:
+                console.warn("! Warning: No resource matched #asset(%s) (%s)" % (hint.source, hint.clazz.id))
         
-        def expMacRec(rsc):
-            if rsc.find('${')==-1:
-                return [rsc]
-            result = []
-            nres = rsc[:]
-            mo = re.search(r'\$\{(.*?)\}',rsc)
-            if mo:
-                themekey = mo.group(1)
-                if themekey in assetMacros:
-                    # create an array with all possibly variants for this replacement
-                    iresult = []
-                    for val in assetMacros[themekey]:
-                        iresult.append(nres.replace('${'+themekey+'}', val))
-                    # for each variant replace the remaining macros
-                    for ientry in iresult:
-                        result.extend(expMacRec(ientry))
-                else:
-                    nres = nres.replace('${'+themekey+'}','') # just remove '${...}'
-                    #nres = os.path.normpath(nres)     # get rid of '...//...'
-                    nres = nres.replace('//', '/')    # get rid of '...//...'
-                    result.append(nres)
-                    self._genobj._console.warn("Empty replacement of macro '%s' in asset spec." % themekey)
-            else:
-                raise SyntaxError, "Non-terminated macro in string: %s" % rsc
-            return result
-
-        result = expMacRec(res)
-        return result
+        return classes
 
