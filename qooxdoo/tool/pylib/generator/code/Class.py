@@ -31,6 +31,8 @@ from ecmascript.transform.optimizer import variantoptimizer
 from generator.resource.AssetHint   import AssetHint
 from generator.resource.Resource    import Resource
 
+from generator.Generator import namespaces as gen_namespaces
+
 DefaultIgnoredNamesDynamic = None
 QXGLOBALS = [
     #"clazz",
@@ -217,14 +219,13 @@ class Class(Resource):
             # get deps from class code (tree)
             def analyzeClassTree(variantSet):
 
-                loadtimeDeps = []
-                runtimeDeps  = []
-                undefDeps    = []
+                loadDeps = []
+                runDeps  = []
 
                 tree = self.tree(variantSet)
-                self._analyzeClassDepsNode(tree, loadtimeDeps, runtimeDeps, undefDeps, False, variantSet)
+                self._analyzeClassDepsNode(tree, loadDeps, runDeps, False, variantSet)
 
-                return loadtimeDeps, runtimeDeps, undefDeps
+                return loadDeps, runDeps
 
             # ------------------------------------------------------
             # Notes:
@@ -251,11 +252,13 @@ class Class(Resource):
             ignore.extend(DependencyItem(x,-1) for x in metaIgnore)
 
             # Read content data
-            (autoLoad, autoRun, autoWarn) = analyzeClassTree(variantSet)
+            (treeLoad, treeRun) = ([], [])  # will be filled by _analyzeClassDepsNode
+            self._analyzeClassDepsNode(self.tree(variantSet), treeLoad, treeRun, inFunction=False, variants=variantSet)
+            #(treeLoad, treeRun) = analyzeClassTree(variantSet)
             
             # Process content data
             if not "auto-require" in metaIgnore:
-                for dep in autoLoad:
+                for dep in treeLoad:
                     item = dep.name
                     if item in metaOptional:
                         pass
@@ -265,7 +268,7 @@ class Class(Resource):
                         load.append(dep)
 
             if not "auto-use" in metaIgnore:
-                for dep in autoRun:
+                for dep in treeRun:
                     item = dep.name
                     if item in metaOptional:
                         pass
@@ -283,7 +286,6 @@ class Class(Resource):
                 "load"   : load,
                 "run"    : run,
                 "ignore" : ignore,
-                'undef'  : autoWarn
             }
 
             return deps
@@ -306,120 +308,150 @@ class Class(Resource):
         # end:dependencies()
 
 
+    # -- all methods below this line up to _analyzeClassDepsNode() are only used by that -------------------
+    
+    def checkDeferNode(self, assembled, node):
+        deferNode = None
+        if assembled == "qx.Class.define" or assembled == "qx.Bootstrap.define" or assembled == "qx.List.define":
+            if node.hasParentContext("call/operand"):
+                deferNode = treeutil.selectNode(node, "../../params/2/keyvalue[@key='defer']/value/function/body/block")
+        return deferNode
+
+
+    def reduceAssembled(self, assembled, node):
+        # try to deduce a qooxdoo class from <assembled>
+        assembledId = ''
+        if assembled in self._classesObj:
+            assembledId = assembled
+        elif "." in assembled:
+            parts = assembled.split(".")
+            p = gen_namespaces
+            found = []
+            for part in parts:
+                if part in p:
+                    found.append(part)
+                    p = p[part]
+                else:
+                    break
+            if found:
+                assembledId = ".".join(found)
+
+        return assembledId
+
+
+    def reduceAssembled1(self, assembled, node):
+        # try to deduce a qooxdoo class from <assembled>
+        assembledId = ''
+        if assembled in self._classesObj:
+            assembledId = assembled
+        elif "." in assembled:
+            for entryId in self._classesObj:
+                if assembled.startswith(entryId) and re.match(r'%s\b' % entryId, assembled):
+                    if len(entryId) > len(assembledId): # take the longest match
+                        assembledId = entryId
+        return assembledId
+
+
+    def reduceAssembled1(self, assembled, node):
+        def tryKnownClasses(assembled):
+            result = ''
+            for entryId in self._classesObj.keys() + ["this"]:
+                if assembled.startswith(entryId) and re.match(r'%s\b' % entryId, assembled):
+                    if len(entryId) > len(assembledId): # take the longest match
+                        result = entryId
+            return result
+
+        def tryReduceClassname(assembled, node):
+            result = ''
+            # 'new <name>()'
+            if (node.hasParentContext("instantiation/*/*/operand")):
+                result = assembled  # whole <name>
+            # '"extend" : <name>'
+            elif (node.hasParentContext("keyvalue/*") and node.parent.parent.get('key') == 'extend'):
+                result = assembled  # whole <name>
+            # 'call' functor
+            elif (node.hasParentContext("call/operand")):
+                result = assembled[:assembled.rindex('.')] # drop the method name after last '.'
+            return result
+
+        if assembled in self._classesObj:
+            assembledId = assembled
+        elif "." in assembled:
+            assembledId = tryKnownClasses(assembled)
+            if not assembledId:
+                assembledId = tryReduceClassname(assembled, node)
+        if not assembledId:
+            assembledId = assembled
+        return assembledId
+
+
+    def isUnknownClass(self, assembled, node, fileId):
+        # check name in 'new ...' position
+        if (node.hasParentContext("instantiation/*/*/operand")
+        # check name in "'extend' : ..." position
+        or (node.hasParentContext("keyvalue/*") and node.parent.parent.get('key') == 'extend')):
+            # skip built-in classes (Error, document, RegExp, ...)
+            if (assembled in lang.BUILTIN + ['clazz'] or re.match(r'this\b', assembled)):
+               return False
+            # skip scoped vars - expensive, therefore last test
+            elif self._isScopedVar(assembled, node, fileId):
+                return False
+            else:
+                return True
+
+        return False
+        
+    def addId(self, node, inFunction, assembledId, assembled, runtime, loadtime, lineno, variants):
+        if inFunction:
+            target = runtime
+        else:
+            target = loadtime
+
+        if not assembledId in (x.name for x in target):
+            target.append(DependencyItem(assembledId, lineno))
+
+        if (not inFunction and  # only for loadtime items
+            self.context['jobconf'].get("dependencies/follow-static-initializers", False) and
+            node.hasParentContext("call/operand")  # it's a method call
+           ):  
+            deps = self.getMethodDeps(assembledId, assembled, variants)
+            loadtime.extend([x for x in deps if x not in loadtime]) # add uniquely
+
+        return
+
+
+    def followCallDeps(self, node, fileId, assembledId):
+        if (assembledId and
+            assembledId in self._classesObj and       # we have a class id
+            assembledId != fileId and
+            self.context['jobconf'].get("dependencies/follow-static-initializers", False) and
+            node.hasParentContext("call/operand")  # it's a method call
+           ):
+            return True
+        return False
+
+
+    def splitClassAttribute(self, assembledId, assembled):
+        if assembledId == assembled:  # just a class id
+            clazzId   = assembledId
+            attribute = u''
+        else:
+            clazzId   = assembledId
+            attribute = assembled[ len(assembledId) +1 :] # a.b.c.d = a.b.c + '.' + d
+            
+        return clazzId, attribute
+
     ##
     # analyze a class AST for dependencies (compiler hints not treated here)
     # does not follow dependencies to other classes (ie. it's a "shallow" analysis)!
     # the "variants" param is only to support getMethodDeps()!
-    def _analyzeClassDepsNode(self, node, loadtime, runtime, warn, inFunction, variants):
-
-        def checkDeferNode(assembled, node):
-            deferNode = None
-            if assembled == "qx.Class.define" or assembled == "qx.Bootstrap.define" or assembled == "qx.List.define":
-                if node.hasParentContext("call/operand"):
-                    deferNode = treeutil.selectNode(node, "../../params/2/keyvalue[@key='defer']/value/function/body/block")
-            return deferNode
-
-        def reduceAssembled(assembled, node):
-            # try to deduce a qooxdoo class from <assembled>
-            assembledId = ''
-            if assembled in self._classesObj:
-                assembledId = assembled
-            elif "." in assembled:
-                for entryId in self._classesObj:
-                    if assembled.startswith(entryId) and re.match(r'%s\b' % entryId, assembled):
-                        if len(entryId) > len(assembledId): # take the longest match
-                            assembledId = entryId
-            return assembledId
-
-        def reduceAssembled1(assembled, node):
-            def tryKnownClasses(assembled):
-                result = ''
-                for entryId in self._classesObj.keys() + ["this"]:
-                    if assembled.startswith(entryId) and re.match(r'%s\b' % entryId, assembled):
-                        if len(entryId) > len(assembledId): # take the longest match
-                            result = entryId
-                return result
-
-            def tryReduceClassname(assembled, node):
-                result = ''
-                # 'new <name>()'
-                if (node.hasParentContext("instantiation/*/*/operand")):
-                    result = assembled  # whole <name>
-                # '"extend" : <name>'
-                elif (node.hasParentContext("keyvalue/*") and node.parent.parent.get('key') == 'extend'):
-                    result = assembled  # whole <name>
-                # 'call' functor
-                elif (node.hasParentContext("call/operand")):
-                    result = assembled[:assembled.rindex('.')] # drop the method name after last '.'
-                return result
-
-            if assembled in self._classesObj:
-                assembledId = assembled
-            elif "." in assembled:
-                assembledId = tryKnownClasses(assembled)
-                if not assembledId:
-                    assembledId = tryReduceClassname(assembled, node)
-            if not assembledId:
-                assembledId = assembled
-            return assembledId
-
-        def isUnknownClass(assembled, node, fileId):
-            # check name in 'new ...' position
-            if (node.hasParentContext("instantiation/*/*/operand")
-            # check name in "'extend' : ..." position
-            or (node.hasParentContext("keyvalue/*") and node.parent.parent.get('key') == 'extend')):
-                # skip built-in classes (Error, document, RegExp, ...)
-                if (assembled in lang.BUILTIN + ['clazz'] or re.match(r'this\b', assembled)):
-                   return False
-                # skip scoped vars - expensive, therefore last test
-                elif self._isScopedVar(assembled, node, fileId):
-                    return False
-                else:
-                    return True
-
-            return False
-        
-        def addId(assembledId, runtime, loadtime, lineno):
-            if inFunction:
-                target = runtime
-            else:
-                target = loadtime
-
-            if not assembledId in (x.name for x in target):
-                target.append(DependencyItem(assembledId, lineno))
-
-            if (not inFunction and  # only for loadtime items
-                self.context['jobconf'].get("dependencies/follow-static-initializers", False) and
-                node.hasParentContext("call/operand")  # it's a method call
-               ):  
-                deps = self.getMethodDeps(assembledId, assembled, variants)
-                loadtime.extend([x for x in deps if x not in loadtime]) # add uniquely
-
-            return
-
-
-        def followCallDeps(assembledId):
-            if (assembledId and
-                assembledId in self._classesObj and       # we have a class id
-                assembledId != fileId and
-                self.context['jobconf'].get("dependencies/follow-static-initializers", False) and
-                node.hasParentContext("call/operand")  # it's a method call
-               ):
-                return True
-            return False
-
-
-        def splitClassAttribute(assembledId, assembled):
-            if assembledId == assembled:  # just a class id
-                clazzId   = assembledId
-                attribute = u''
-            else:
-                clazzId   = assembledId
-                attribute = assembled[ len(assembledId) +1 :] # a.b.c.d = a.b.c + '.' + d
-                
-            return clazzId, attribute
-
-        # -----------------------------------------------------------
+    #
+    # i tried an iterative version once, wrapping the main function body into a
+    # loop over treeutil.nodeIteratorNonRec(); surprisingly, it seem slightly
+    # slower than the recursive version on first measurements; also, it still
+    # needed a recursive call when coming across a 'defer' node, and i'm not
+    # sure how to handle this sub-recursion when the main body is an iteration.
+    def _analyzeClassDepsNode(self, node, loadtime, runtime, inFunction, variants):
 
         fileId = self.id
 
@@ -427,12 +459,12 @@ class Class(Resource):
             assembled = (treeutil.assembleVariable(node))[0]
 
             # treat dependencies in defer as requires
-            deferNode = checkDeferNode(assembled, node)
+            deferNode = self.checkDeferNode(assembled, node)
             if deferNode != None:
-                self._analyzeClassDepsNode(deferNode, loadtime, runtime, warn, False, variants)
+                self._analyzeClassDepsNode(deferNode, loadtime, runtime, False, variants)
 
             # try to reduce to a class name
-            assembledId = reduceAssembled(assembled, node)
+            assembledId = self.reduceAssembled(assembled, node)
 
             (context, className, classAttribute) = self._isInterestingReference(assembled, node, fileId)
             # postcond: 
@@ -440,25 +472,13 @@ class Class(Resource):
             # - might be a known qooxdoo class, or an unknown class (use 'className in self._classes')
             # - if assembled contained ".", classAttribute will contain approx. non-class part
 
-            #if assembledId:
-            #    if assembledId in self._classes and assembledId != fileId:
-            #        #print "-- adding: %s" % assembledId
-            #        #print "-- nameba: %s" % className
-            #        #if not className: import pydb; pydb.debugger()
-            #        addId(assembledId, runtime, loadtime)
-            #else:
-            #    if isUnknownClass(assembled, node, fileId):
-            #        #print "-- warning: %s" % assembled
-            #        #print "-- namebas: %s" % className
-            #        warn.append(assembled)
-
             if className:
                 if className != fileId: # not checking for self._classes here!
                     #print "-- adding: %s (%s:%s)" % (className, treeutil.getFileFromSyntaxItem(node), node.get('line',False))
-                    addId(className, runtime, loadtime, node.get('line', -1))
+                    self.addId(node, inFunction, className, assembled, runtime, loadtime, node.get('line', -1), variants)
 
             # an attempt to fix static initializers (bug#1455)
-            if not inFunction and followCallDeps(assembledId):
+            if not inFunction and self.followCallDeps(node, fileId, assembledId):
                 console.debug("Looking for rundeps in '%s' of '%s'" % (assembled, assembledId))
                 if False: # use old getMethodDeps()
                     ldeps = self.getMethodDeps(assembledId, assembled, variants)
@@ -469,7 +489,7 @@ class Class(Resource):
                     loadtime.extend([x for x in ldeps if x not in loadtime]) # add uniquely
                 else: # new getMethodDeps()
                     console.indent()
-                    classId, attribId = splitClassAttribute(assembledId, assembled)
+                    classId, attribId = self.splitClassAttribute(assembledId, assembled)
                     ldeps = self.getMethodDeps1(classId, attribId, variants)
                     ld = [x[0] for x in ldeps]
                     loadtime.extend([x for x in ld if x not in loadtime]) # add uniquely
@@ -480,192 +500,7 @@ class Class(Resource):
 
         if node.hasChildren():
             for child in node.children:
-                self._analyzeClassDepsNode(child, loadtime, runtime, warn, inFunction, variants)
-
-        return
-
-        # end:_analyzeClassDepsNode
-
-
-    ##
-    # This is an iterative version of the previous (recursive) method.
-    # Surprisingly, initial timings suggest that it is slightly slower (!) than
-    # the recursive version. I leave it in, in case I want to pick up on
-    # iterative solutions in the future.
-    # NOT USED
-    def _analyzeClassDepsNode_1(self, node_, loadtime, runtime, warn, inFunction, variants):
-
-        def checkDeferNode(assembled, node):
-            deferNode = None
-            if assembled == "qx.Class.define" or assembled == "qx.Bootstrap.define" or assembled == "qx.List.define":
-                if node.hasParentContext("call/operand"):
-                    deferNode = treeutil.selectNode(node, "../../params/2/keyvalue[@key='defer']/value/function/body/block")
-            return deferNode
-
-        def reduceAssembled(assembled, node):
-            # try to deduce a qooxdoo class from <assembled>
-            assembledId = ''
-            if assembled in self._classesObj:
-                assembledId = assembled
-            elif "." in assembled:
-                for entryId in self._classesObj:
-                    if assembled.startswith(entryId) and re.match(r'%s\b' % entryId, assembled):
-                        if len(entryId) > len(assembledId): # take the longest match
-                            assembledId = entryId
-            return assembledId
-
-        def reduceAssembled1(assembled, node):
-            def tryKnownClasses(assembled):
-                result = ''
-                for entryId in self._classesObj.keys() + ["this"]:
-                    if assembled.startswith(entryId) and re.match(r'%s\b' % entryId, assembled):
-                        if len(entryId) > len(assembledId): # take the longest match
-                            result = entryId
-                return result
-
-            def tryReduceClassname(assembled, node):
-                result = ''
-                # 'new <name>()'
-                if (node.hasParentContext("instantiation/*/*/operand")):
-                    result = assembled  # whole <name>
-                # '"extend" : <name>'
-                elif (node.hasParentContext("keyvalue/*") and node.parent.parent.get('key') == 'extend'):
-                    result = assembled  # whole <name>
-                # 'call' functor
-                elif (node.hasParentContext("call/operand")):
-                    result = assembled[:assembled.rindex('.')] # drop the method name after last '.'
-                return result
-
-            if assembled in self._classesObj:
-                assembledId = assembled
-            elif "." in assembled:
-                assembledId = tryKnownClasses(assembled)
-                if not assembledId:
-                    assembledId = tryReduceClassname(assembled, node)
-            if not assembledId:
-                assembledId = assembled
-            return assembledId
-
-        def isUnknownClass(assembled, node, fileId):
-            # check name in 'new ...' position
-            if (node.hasParentContext("instantiation/*/*/operand")
-            # check name in "'extend' : ..." position
-            or (node.hasParentContext("keyvalue/*") and node.parent.parent.get('key') == 'extend')):
-                # skip built-in classes (Error, document, RegExp, ...)
-                if (assembled in lang.BUILTIN + ['clazz'] or re.match(r'this\b', assembled)):
-                   return False
-                # skip scoped vars - expensive, therefore last test
-                elif self._isScopedVar(assembled, node, fileId):
-                    return False
-                else:
-                    return True
-
-            return False
-        
-        def addId(assembledId, runtime, loadtime, lineno):
-            if inFunction:
-                target = runtime
-            else:
-                target = loadtime
-
-            if not assembledId in (x.name for x in target):
-                target.append(DependencyItem(assembledId, lineno))
-
-            if (not inFunction and  # only for loadtime items
-                self.context['jobconf'].get("dependencies/follow-static-initializers", False) and
-                node.hasParentContext("call/operand")  # it's a method call
-               ):  
-                deps = self.getMethodDeps(assembledId, assembled, variants)
-                loadtime.extend([x for x in deps if x not in loadtime]) # add uniquely
-
-            return
-
-
-        def followCallDeps(assembledId):
-            if (assembledId and
-                assembledId in self._classesObj and       # we have a class id
-                assembledId != fileId and
-                self.context['jobconf'].get("dependencies/follow-static-initializers", False) and
-                node.hasParentContext("call/operand")  # it's a method call
-               ):
-                return True
-            return False
-
-
-        def splitClassAttribute(assembledId, assembled):
-            if assembledId == assembled:  # just a class id
-                clazzId   = assembledId
-                attribute = u''
-            else:
-                clazzId   = assembledId
-                attribute = assembled[ len(assembledId) +1 :] # a.b.c.d = a.b.c + '.' + d
-                
-            return clazzId, attribute
-
-        # -----------------------------------------------------------
-
-        fileId = self.id
-
-        for parent_types, node in treeutil.nodeIteratorNonRec(node_):
-
-            if 'function/body' in parent_types:
-                inFunction = True
-            else:
-                inFunction = False
-
-            if node.type == "variable":
-                assembled = (treeutil.assembleVariable(node))[0]
-
-                # treat dependencies in defer as requires
-                deferNode = checkDeferNode(assembled, node)
-                if deferNode != None:
-                    self._analyzeClassDepsNode(deferNode, loadtime, runtime, warn, False, variants)
-
-                # try to reduce to a class name
-                assembledId = reduceAssembled(assembled, node)
-
-                (context, className, classAttribute) = self._isInterestingReference(assembled, node, fileId)
-                # postcond: 
-                # - if className != '' it is an interesting reference
-                # - might be a known qooxdoo class, or an unknown class (use 'className in self._classes')
-                # - if assembled contained ".", classAttribute will contain approx. non-class part
-
-                #if assembledId:
-                #    if assembledId in self._classes and assembledId != fileId:
-                #        #print "-- adding: %s" % assembledId
-                #        #print "-- nameba: %s" % className
-                #        #if not className: import pydb; pydb.debugger()
-                #        addId(assembledId, runtime, loadtime)
-                #else:
-                #    if isUnknownClass(assembled, node, fileId):
-                #        #print "-- warning: %s" % assembled
-                #        #print "-- namebas: %s" % className
-                #        warn.append(assembled)
-
-                if className:
-                    if className != fileId: # not checking for self._classes here!
-                        #print "-- adding: %s (%s:%s)" % (className, treeutil.getFileFromSyntaxItem(node), node.get('line',False))
-                        addId(className, runtime, loadtime, node.get('line', -1))
-
-                # an attempt to fix static initializers (bug#1455)
-                if not inFunction and followCallDeps(assembledId):
-                    console.debug("Looking for rundeps in '%s' of '%s'" % (assembled, assembledId))
-                    if False: # use old getMethodDeps()
-                        ldeps = self.getMethodDeps(assembledId, assembled, variants)
-                        # getMethodDeps is mutual recursive calling into the current function, but
-                        # only does so with inFunction=True, so this branch is never hit through the
-                        # recursive call
-                        # make run-time deps of the called method load-deps of the current
-                        loadtime.extend([x for x in ldeps if x not in loadtime]) # add uniquely
-                    else: # new getMethodDeps()
-                        console.indent()
-                        classId, attribId = splitClassAttribute(assembledId, assembled)
-                        ldeps = self.getMethodDeps1(classId, attribId, variants)
-                        ld = [x[0] for x in ldeps]
-                        loadtime.extend([x for x in ld if x not in loadtime]) # add uniquely
-                        console.outdent()
-
-                # end(while)
+                self._analyzeClassDepsNode(child, loadtime, runtime, inFunction, variants)
 
         return
 
@@ -1205,7 +1040,7 @@ class Class(Resource):
         runtime  = []
         loadtime = []
         warn     = []
-        self._analyzeClassDepsNode(fileId, funcNode, runtime, loadtime, warn, True, variants)
+        self._analyzeClassDepsNode(funcNode, runtime, loadtime, True, variants)
 
         # remove reference to itself
         while fileId in loadtime:
