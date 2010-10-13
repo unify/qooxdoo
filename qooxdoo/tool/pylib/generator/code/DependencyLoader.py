@@ -132,20 +132,12 @@ class DependencyLoader(object):
             result.append(item)
 
             # reading dependencies
-            if self._console.getLevel() is "info":
-                self._console.dot()
             self._console.debug("Gathering dependencies: %s" % item)
             self._console.indent()
-            #
-            import cProfile
-            def foo(a):
-                a.append(self.getCombinedDeps(item, variants, buildType))
-            a = []
-            self.counter += 1
-            #cProfile.runctx("foo(a)", globals(), locals(), "/home/thron7/tmp/prof/deps.prof"+str(self.counter))
-            #deps = a[0]
-            deps = self.getCombinedDeps(item, variants, buildType)
+            deps, cached = self.getCombinedDeps(item, variants, buildType)
             self._console.outdent()
+            if self._console.getLevel() is "info":
+                self._console.dot("%s" % "." if cached else "*")
 
             # and evaluate them
             deps["warn"] = self._checkDepsAreKnown(deps,)  # add 'warn' key to deps
@@ -158,15 +150,17 @@ class DependencyLoader(object):
 
             # process lists
             try:
-              skipList = deps["warn"] + deps["ignore"]
+              skipList = [x.name for x in deps["warn"] + deps["ignore"]]
 
               for subitem in deps["load"]:
-                  if not subitem in result and not subitem in excludeWithDeps and not subitem in skipList:
-                      classlistFromClassRecursive(subitem.name, excludeWithDeps, variants, result)
+                  subname = subitem.name
+                  if subname not in result and subname not in excludeWithDeps and subname not in skipList:
+                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result)
 
               for subitem in deps["run"]:
-                  if not subitem in result and not subitem in excludeWithDeps and not subitem in skipList:
-                      classlistFromClassRecursive(subitem.name, excludeWithDeps, variants, result)
+                  subname = subitem.name
+                  if subname not in result and subname not in excludeWithDeps and subname not in skipList:
+                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result)
 
             except NameError, detail:
                 raise NameError("Could not resolve dependencies of class: %s \n%s" % (item, detail))
@@ -221,16 +215,21 @@ class DependencyLoader(object):
         runFinal  = []
 
         # add static dependencies
-        classObj = self._classesObj[fileId]
-        static   = classObj.dependencies(variants)
-        #static   = self.getDeps(fileId, variants)
+        classObj         = self._classesObj[fileId]
+
+        static, cached   = classObj.dependencies (variants)
+
         loadFinal.extend(static["load"])
         runFinal.extend(static["run"])
+
+        # fix self-references
+        loadFinal = [x for x in loadFinal if x.name != fileId]
+        runFinal  = [x for x in runFinal  if x.name != fileId]
 
         # fix source dependency to qx.core.Variant
         if len(variants) and buildType == "source" :
             #depsUnOpt = self.getDeps(fileId, {})  # get unopt deps
-            depsUnOpt = classObj.dependencies({})  # get unopt deps
+            depsUnOpt, cached= classObj.dependencies({})  # get unopt deps
             # this might incur extra generation if unoptimized deps
             # haven't computed before for this fileId
             for depItem in depsUnOpt["load"]:
@@ -256,7 +255,7 @@ class DependencyLoader(object):
             "ignore" : static['ignore'],
         }
 
-        return deps
+        return deps, cached
 
 
 
@@ -293,7 +292,7 @@ class DependencyLoader(object):
                 return
 
             # reading dependencies
-            deps = self.getCombinedDeps(classId, variants, buildType)
+            deps, _ = self.getCombinedDeps(classId, variants, buildType)
 
             # path is needed for recursion detection
             if not classId in path:
@@ -304,7 +303,7 @@ class DependencyLoader(object):
                 item = dep.name
                 if item in available and not item in result:
                     if item in path:
-                        other = self.getCombinedDeps(item, variants)
+                        other, _ = self.getCombinedDeps(item, variants)
                         self._console.warn("Detected circular dependency between: %s and %s" % (classId, item))
                         self._console.indent()
                         self._console.debug("%s depends on: %s" % (classId, ", ".join(map(str, deps["load"]))))
@@ -344,7 +343,7 @@ class DependencyLoader(object):
 
         # for each load dependency add a directed edge
         for classId in includeWithDeps:
-            deps = self.getCombinedDeps(classId, variants)
+            deps, _ = self.getCombinedDeps(classId, variants)
             for depClassId in deps["load"]:
                 if depClassId in includeWithDeps:
                     gr.add_edge(depClassId, classId)

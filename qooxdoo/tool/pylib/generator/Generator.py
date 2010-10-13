@@ -23,10 +23,9 @@
 import re, os, sys, zlib, optparse, types, string, glob
 import functools, codecs, operator
 
-namespaces = {}
-
 from misc import filetool, textutil, util, Path, PathType, json, copytool
 from misc.PathType import PathType
+from misc.Trie     import Trie
 from ecmascript import compiler
 from ecmascript.transform.optimizer  import privateoptimizer
 from misc.ExtMap                     import ExtMap
@@ -597,6 +596,7 @@ class Generator(object):
             script.namespace = self.getAppName()
             script.variants  = variants
             script.libraries = self._libraries
+            script.jobconfig = self._job
             # set source/build version
             if "compile" in jobTriggers:
                 if config.get("compile/type", "") == "source":
@@ -611,7 +611,6 @@ class Generator(object):
             script.classesObj = [self._classesObj[id] for id in script.classes]
 
             script.namespaces = script.createTrie(script.classesObj)  #TODO: experimental
-            namespaces = script.namespaces
 
             # prepare 'script' object
             if set(("compile", "log")).intersection(jobTriggers):
@@ -764,7 +763,7 @@ class Generator(object):
             for packageId, package in enumerate(packages):
                 for classId in sorted(package.classes):
                     classObj = ClassIdToObject[classId]
-                    classDeps = classObj.dependencies(variants)
+                    classDeps, _ = classObj.dependencies(variants)
                     ignored_names = [x.name for x in classDeps["ignore"]]
 
                     for dep in classDeps["load"]:
@@ -796,7 +795,7 @@ class Generator(object):
                     if classId not in depsMap:
                         depsMap[classId] = (packageId, [], [])
                     classObj = ClassIdToObject[classId]
-                    classDeps = classObj.dependencies(variants)
+                    classDeps, _ = classObj.dependencies(variants)
                     ignored_names = [x.name for x in classDeps["ignore"]]
 
                     for dep in classDeps["load"]:
