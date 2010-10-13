@@ -30,6 +30,7 @@ qx.Interface.define("qx.ui.window.IWindowManager",
     /**
      * Connect the window manager to the window desktop
      *
+     * @break {qx.ui.window.IDesktop}
      * @param desktop {IDesktop} The connected desktop
      */
     setDesktop : function(desktop) {
@@ -52,6 +53,7 @@ qx.Interface.define("qx.ui.window.IWindowManager",
     /**
      * Ask the manager to bring a window to the front.
      *
+     * @break {qx.ui.window.Window}
      * @param win {Window} window to bring to front
      */
     bringToFront : function(win) {
@@ -61,6 +63,7 @@ qx.Interface.define("qx.ui.window.IWindowManager",
     /**
      * Ask the manager to send a window to the back.
      *
+     * @break {qx.ui.window.Window}
      * @param win {Window} window to sent to back
      */
     sendToBack : function(win) {
