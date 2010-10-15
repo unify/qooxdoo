@@ -141,6 +141,7 @@ qx.Class.define("qx.bom.element.Opacity",
      * @param opacity {Float} A float number between 0 and 1
      * @return {void}
      * @signature function(element, opacity)
+     * @break {qx.bom.element.Style}
      */
     set : qx.core.Variant.select("qx.client",
     {

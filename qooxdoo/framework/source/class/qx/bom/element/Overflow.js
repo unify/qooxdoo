@@ -217,6 +217,7 @@ qx.Class.define("qx.bom.element.Overflow",
      *   {@link qx.bom.element.Style#CASCADED_MODE}, {@link qx.bom.element.Style#LOCAL_MODE}.
      *   The computed mode is the default one.
      * @return {String} computed overflow value
+     * @break {qx.bom.element.Style}
      */
     getX : qx.core.Variant.select("qx.client",
     {
@@ -361,6 +362,7 @@ qx.Class.define("qx.bom.element.Overflow",
      *   {@link qx.bom.element.Style#CASCADED_MODE}, {@link qx.bom.element.Style#LOCAL_MODE}.
      *   The computed mode is the default one.
      * @return {String} computed overflow value
+     * @break {qx.bom.element.Style}
      */
     getY : qx.core.Variant.select("qx.client",
     {

@@ -90,6 +90,7 @@ qx.Class.define("qx.bom.element.Clip",
      * @return {Map} Map which contains <code>left</code>, <code>top</code>
      *   <code>width</code> and <code>height</code> of the clipped area.
      *   Each one could be null or any integer value.
+     * @break {qx.bom.element.Style}
      */
     get : function(element, mode)
     {

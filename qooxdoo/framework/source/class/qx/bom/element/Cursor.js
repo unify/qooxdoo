@@ -76,6 +76,7 @@ qx.Class.define("qx.bom.element.Cursor",
      *   {@link qx.bom.element.Style#CASCADED_MODE}, {@link qx.bom.element.Style#LOCAL_MODE}.
      *   The computed mode is the default one.
      * @return {String} Computed cursor value of the given element.
+     * @break {qx.bom.element.Style}
      */
     get : function(element, mode) {
       return qx.bom.element.Style.get(element, "cursor", mode, false);
