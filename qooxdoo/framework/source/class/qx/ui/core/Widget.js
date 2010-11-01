@@ -64,8 +64,6 @@
  * @require {qx.core.property.Group}
  * @require {qx.core.property.Multi}
  * @require {qx.ui.core.EventHandler}
- * @require {qx.event.handler.DragDrop}
- * @require {qx.event.handler.Transition}
  */
 qx.Class.define("qx.ui.core.Widget",
 {

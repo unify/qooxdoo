@@ -25,6 +25,7 @@
  * @require {qx.event.handler.Mouse}
  * @require {qx.event.handler.Focus}
  * @require {qx.event.handler.Transition}
+ * @require {qx.event.handler.DragDrop}
  */
 qx.Class.define("qx.ui.core.EventHandler",
 {
