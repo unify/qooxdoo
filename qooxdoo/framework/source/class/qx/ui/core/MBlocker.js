@@ -29,6 +29,9 @@
  */
 qx.Mixin.define("qx.ui.core.MBlocker",
 {
+  /**
+   * @break {qx.ui.core.Blocker}
+   */
   construct: function() {
     this.__blocker = new qx.ui.core.Blocker(this);
   },

@@ -60,6 +60,12 @@
  * Documentation of this widget in the qooxdoo wiki.</a>
  *
  * @state disabled set by {@link #enabled}
+ *
+ * @require {qx.core.property.Group}
+ * @require {qx.core.property.Multi}
+ * @require {qx.ui.core.EventHandler}
+ * @require {qx.event.handler.DragDrop}
+ * @require {qx.event.handler.Transition}
  */
 qx.Class.define("qx.ui.core.Widget",
 {
