@@ -27,6 +27,10 @@
 
 /**
  * This is the base class for all qooxdoo applications.
+ *
+ * @require {qx.event.handler.Application}
+ * @require {qx.event.handler.Window}
+ * @require {qx.event.dispatch.Direct}
  */
 qx.Class.define("qx.core.Init",
 {
