@@ -309,6 +309,11 @@ qx.Class.define("qx.event.handler.Application",
      */
     _onNativeLoad : qx.event.GlobalError.observeMethod(function()
     {
+      // Work-around for js-tools
+      if (qx.jstools) {
+        qx.$$loader = {scriptLoaded : true};
+      }
+      
       this.__domReady = true;
       this.__fireReady();
     }),
