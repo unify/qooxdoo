@@ -376,14 +376,14 @@ qx.Class.define("apiviewer.Viewer",
 
   /*
   *****************************************************************************
-     SETTINGS
+     DEFER
   *****************************************************************************
   */
 
-  settings :
+  defer : function()
   {
-    "apiviewer.title"            : "qooxdoo",
-    "apiviewer.initialTreeDepth" : 1
+    qx.core.Setting.define("apiviewer.title", "qooxdoo");
+    qx.core.Setting.define("apiviewer.initialTreeDepth", 1);
   },
 
 
