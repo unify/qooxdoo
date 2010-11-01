@@ -88,7 +88,7 @@ qx.Class.define("qx.ui.core.SingleSelectionManager",
     {
       check : "Boolean",
       init : true,
-      apply : "__applyAllowEmptySelection"
+      apply : "_applyAllowEmptySelection"
     }
   },
 
@@ -215,7 +215,7 @@ qx.Class.define("qx.ui.core.SingleSelectionManager",
 
 
     // apply method
-    __applyAllowEmptySelection : function(value, old)
+    _applyAllowEmptySelection : function(value, old)
     {
       if (!value) {
         this.__setSelected(this.__selected);
