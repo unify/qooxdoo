@@ -220,6 +220,7 @@ qx.Bootstrap.define("qx.Class",
         }
       }
 
+      /*
       // Process settings
       if (config.settings)
       {
@@ -235,6 +236,7 @@ qx.Bootstrap.define("qx.Class",
           qx.core.Variant.define(key, config.variants[key].allowedValues, config.variants[key].defaultValue);
         }
       }
+      */
 
       // Interface support for non-static classes
       if (config.implement)
