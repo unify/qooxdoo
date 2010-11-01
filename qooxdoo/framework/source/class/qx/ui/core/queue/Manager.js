@@ -268,6 +268,9 @@ qx.Class.define("qx.ui.core.queue.Manager",
   *****************************************************************************
   */
 
+  /**
+   * @require {qx.event.handler.UserAction}
+   */
   defer : function(statics)
   {
     // Initialize deferred call

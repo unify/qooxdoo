@@ -766,6 +766,9 @@ qx.Class.define("apiviewer.dao.Class",
     },
 
 
+    /**
+     * @break {apiviewer.dao.ClassItem}
+     */
     _addChildNode : function(childNode)
     {
       switch (childNode.type) {

@@ -834,6 +834,8 @@ qx.Class.define("qx.io.remote.Exchange",
      *
      * @param value {var} Current value
      * @param old {var} Previous value
+     *
+     * @break {qx.io.remote.transport.XmlHttp}
      */
     _applyImplementation : function(value, old)
     {

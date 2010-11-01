@@ -29,6 +29,8 @@
 /**
  * This class provides unified key event handler for Internet Explorer,
  * Firefox, Opera and Safari.
+ *
+ * @require {qx.event.dispatch.DomBubbling}
  */
 qx.Class.define("qx.event.handler.Keyboard",
 {

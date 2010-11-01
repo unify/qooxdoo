@@ -29,6 +29,8 @@
 /**
  * This class provides a unified mouse event handler for Internet Explorer,
  * Firefox, Opera and Safari
+ *
+ * @require {qx.event.dispatch.DomBubbling}
  */
 qx.Class.define("qx.event.handler.Mouse",
 {

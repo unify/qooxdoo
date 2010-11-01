@@ -621,6 +621,9 @@ qx.Class.define("qx.ui.menu.Manager",
      *
      * @param menu {qx.ui.menu.Menu} The active menu
      * @return {void}
+     *
+     * @break {qx.ui.menubar.Button}
+     * @break {qx.ui.menu.AbstractButton}
      */
     _onKeyPressLeft : function(menu)
     {

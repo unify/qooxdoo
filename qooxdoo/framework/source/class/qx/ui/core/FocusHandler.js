@@ -20,6 +20,8 @@
 
 /**
  * Each focus root delegates the focus handling to instances of the FocusHandler.
+ *
+ * @require {qx.event.handler.Keyboard}
  */
 qx.Class.define("qx.ui.core.FocusHandler",
 {

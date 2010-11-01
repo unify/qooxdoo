@@ -20,6 +20,8 @@
 
 /**
  * Connects the widgets to the browser DOM events.
+ *
+ * @require {qx.event.handler.Keyboard}
  */
 qx.Class.define("qx.ui.core.EventHandler",
 {
