@@ -97,10 +97,9 @@ qx.Class.define("qx.theme.manager.Meta",
      */
     initialize : function()
     {
-      var setting = qx.core.Setting;
       var theme, obj;
 
-      theme = setting.get("qx.theme");
+      theme = qx.core.Setting.get("qx.theme");
       if (theme)
       {
         obj = qx.Theme.getByName(theme);
