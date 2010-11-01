@@ -116,6 +116,7 @@ qx.Class.define("apiviewer.dao.ClassItem",
     /**
      * If the item is overwridden from one of the super classes, get the item, which is overwridden.
      *
+     * @break {apiviewer.dao.Class}
      * @return {ClassItem} the overwridden class item
      */
     getOverriddenFrom : function()
@@ -128,6 +129,7 @@ qx.Class.define("apiviewer.dao.ClassItem",
      * Get the node, which contains the documentation for this node. Overridden properties
      * and methods may refer to the overridden item for documentation.
      *
+     * @break {apiviewer.dao.Class}
      * @return {ClassItem} The node, which contains the documentation for this node.
      */
     getDocNode : function()
