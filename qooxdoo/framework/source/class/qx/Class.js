@@ -71,9 +71,6 @@
  *   }
  * }
  * </pre>
- *
- * @break {qx.core.property.Simple}
- * @break {qx.core.property.Multi}
  */
 qx.Bootstrap.define("qx.Class",
 {
@@ -181,6 +178,7 @@ qx.Bootstrap.define("qx.Class",
         }
         catch(ex)
         {
+          // Hell!
           if (implicitType) {
             ex.message = 'Assumed static class because no "extend" key was found. ' + ex.message;
           }
