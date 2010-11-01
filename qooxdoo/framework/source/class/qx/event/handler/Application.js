@@ -162,7 +162,7 @@ qx.Class.define("qx.event.handler.Application",
     __fireReady : function()
     {
       // Wrapper qxloader needed to be compatible with old generator
-      if (!this.__isReady && this.__domReady && qx.$$loader.scriptLoaded)
+      if (!this.__isReady && this.__domReady && qx.$$loader && qx.$$loader.scriptLoaded)
       {
         // wrap the call in a try-catch because e.g. bom applications don't
         // have an application and no qx.application setting
