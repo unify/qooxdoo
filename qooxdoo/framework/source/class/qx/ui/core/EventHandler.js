@@ -22,6 +22,9 @@
  * Connects the widgets to the browser DOM events.
  *
  * @require {qx.event.handler.Keyboard}
+ * @require {qx.event.handler.Mouse}
+ * @require {qx.event.handler.Focus}
+ * @require {qx.event.handler.Transition}
  */
 qx.Class.define("qx.ui.core.EventHandler",
 {
