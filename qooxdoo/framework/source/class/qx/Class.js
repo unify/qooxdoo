@@ -138,10 +138,6 @@ qx.Bootstrap.define("qx.Class",
      *       <tr><th>properties</th><td>Map</td><td>Map of property definitions. For a description of the format of a property definition see
      *           {@link qx.core.property}.</td></tr>
      *       <tr><th>members</th><td>Map</td><td>Map of instance members of the class.</td></tr>
-     *       <tr><th>settings</th><td>Map</td><td>Map of settings for this class. For a description of the format of a setting see
-     *           {@link qx.core.Setting}.</td></tr>
-     *       <tr><th>variants</th><td>Map</td><td>Map of settings for this class. For a description of the format of a setting see
-     *           {@link qx.core.Variant}</td></tr>
      *       <tr><th>events</th><td>Map</td><td>
      *           Map of events the class fires. The keys are the names of the events and the values are the
      *           corresponding event type class names.
@@ -219,24 +215,6 @@ qx.Bootstrap.define("qx.Class",
           }
         }
       }
-
-      /*
-      // Process settings
-      if (config.settings)
-      {
-        for (var key in config.settings) {
-          qx.core.Setting.define(key, config.settings[key]);
-        }
-      }
-
-      // Process variants
-      if (config.variants)
-      {
-        for (var key in config.variants) {
-          qx.core.Variant.define(key, config.variants[key].allowedValues, config.variants[key].defaultValue);
-        }
-      }
-      */
 
       // Interface support for non-static classes
       if (config.implement)
@@ -665,8 +643,6 @@ qx.Bootstrap.define("qx.Class",
         "statics"    : "object",    // Map
         "properties" : "object",    // Map
         "members"    : "object",    // Map
-        "settings"   : "object",    // Map
-        "variants"   : "object",    // Map
         "events"     : "object",    // Map
         "defer"      : "function",  // Function
         "destruct"   : "function"   // Function
@@ -683,8 +659,6 @@ qx.Bootstrap.define("qx.Class",
       {
         "type"       : "string",    // String
         "statics"    : "object",    // Map
-        "settings"   : "object",    // Map
-        "variants"   : "object",    // Map
         "defer"      : "function"   // Function
       },
 
@@ -730,7 +704,7 @@ qx.Bootstrap.define("qx.Class",
         }
 
         // Validate maps
-        var maps = [ "statics", "properties", "members", "settings", "variants", "events" ];
+        var maps = [ "statics", "properties", "members", "events" ];
         for (var i=0, l=maps.length; i<l; i++)
         {
           var key = maps[i];
@@ -785,28 +759,6 @@ qx.Bootstrap.define("qx.Class",
             qx.Mixin.checkCompatibility(config.include);
           } catch(ex) {
             throw new Error('Error in include definition of class "' + name + '"! ' + ex.message);
-          }
-        }
-
-        // Validate settings
-        if (config.settings)
-        {
-          for (var key in config.settings)
-          {
-            if (key.substr(0, key.indexOf(".")) != name.substr(0, name.indexOf("."))) {
-              throw new Error('Forbidden setting "' + key + '" found in "' + name + '". It is forbidden to define a default setting for an external namespace!');
-            }
-          }
-        }
-
-        // Validate variants
-        if (config.variants)
-        {
-          for (var key in config.variants)
-          {
-            if (key.substr(0, key.indexOf(".")) != name.substr(0, name.indexOf("."))) {
-              throw new Error('Forbidden variant "' + key + '" found in "' + name + '". It is forbidden to define a variant for an external namespace!');
-            }
           }
         }
       },
