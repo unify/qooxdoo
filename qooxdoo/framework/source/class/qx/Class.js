@@ -71,6 +71,9 @@
  *   }
  * }
  * </pre>
+ *
+ * @break {qx.core.property.Simple}
+ * @break {qx.core.property.Multi}
  */
 qx.Bootstrap.define("qx.Class",
 {
