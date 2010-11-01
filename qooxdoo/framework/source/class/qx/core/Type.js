@@ -37,8 +37,12 @@
  * 
  * * Lists of possible values e.g. ["top","bottom"]
  * * Custom check functions e.g. function(value) { return xxx } (should return boolean)
+ *
+ * @break {qx.Class}
+ * @break {qx.Mixin}
+ * @break {qx.Interface}
  */
-qx.Class.define("qx.core.Type",
+qx.Bootstrap.define("qx.core.Type",
 {
   statics :
   {
@@ -252,7 +256,7 @@ qx.Class.define("qx.core.Type",
         else
         {
           // Check classes, interfaces, mixins
-          clazz = qx.Class.getByName(check);
+          clazz = qx.Bootstrap.getByName(check);
           if (clazz) 
           {
             result = value.hasOwnProperty && value instanceof clazz;
@@ -284,7 +288,7 @@ qx.Class.define("qx.core.Type",
               mixin = qx.Mixin.getByName(check);
               if (mixin) 
               {
-                result = qx.Class.hasMixin(construct, mixin);
+                result = qx.Class && qx.Class.hasMixin(construct, mixin);
                 
                 if (qx.core.Variant.isSet("qx.debug", "on"))
                 {
