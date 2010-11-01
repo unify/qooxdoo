@@ -158,7 +158,7 @@ qx.Bootstrap.define("qx.core.Variant",
           if (qx.core.Variant.compilerIsSet("qx.debug", "on"))
           {
             if ((key.split(".")).length < 2) {
-              throw new Error('Malformed settings key "' + key + '". Must be following the schema "namespace.key".');
+              throw new Error('Malformed variants key "' + key + '". Must be following the schema "namespace.key".');
             }
           }
 
@@ -174,39 +174,6 @@ qx.Bootstrap.define("qx.core.Variant",
         try {
           delete window.qxvariants;
         } catch(ex) {};
-
-        this.__loadUrlVariants(this.__variants);
-      }
-    },
-
-
-    /**
-     * Load variants from URL parameters if the setting <code>"qx.allowUrlSettings"</code>
-     * is set to true.
-     *
-     * The url scheme for variants is: <code>qxvariant:VARIANT_NAME:VARIANT_VALUE</code>.
-     */
-    __loadUrlVariants : function()
-    {
-      if (qx.core.Setting.get("qx.allowUrlVariants") != true) {
-        return;
-      }
-
-      var urlVariants = document.location.search.slice(1).split("&");
-
-      for (var i=0; i<urlVariants.length; i++)
-      {
-        var variant = urlVariants[i].split(":");
-        if (variant.length != 3 || variant[0] != "qxvariant") {
-          continue;
-        }
-
-        var key = variant[1];
-        if (!this.__variants[key]) {
-          this.__variants[key] = {};
-        }
-
-        this.__variants[key].value = decodeURIComponent(variant[2]);
       }
     },
 
