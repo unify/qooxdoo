@@ -154,6 +154,8 @@ qx.Class.define("qx.bom.History",
     /**
      * Get the singleton instance of the history manager.
      *
+     * @break {qx.bom.NativeHistory}
+     * @break {qx.bom.IframeHistory}
      * @return {History}
      */
     getInstance : function()
