@@ -509,14 +509,11 @@ qx.Class.define("qx.util.Json",
   },
 
 
-  settings :
+  defer : function(statics) 
   {
-    "qx.jsonEncodeUndefined" : true,
-    "qx.jsonDebugging"       : false
-  },
-
-
-  defer : function(statics) {
+    qx.core.Setting.define("qx.jsonEncodeUndefined", true);
+    qx.core.Setting.define("qx.jsonDebugging", false);
+    
     statics.__nativeDateToJSON = Date.prototype.toJSON;
   }
 });

@@ -3614,8 +3614,14 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
   },
 
 
-  settings : {
-    "qx.bom.htmlarea.HtmlArea.debug" : "off"
+  /*
+  ---------------------------------------------------------------------------
+    DEFER
+  ---------------------------------------------------------------------------
+  */
+  
+  defer : function() {
+    qx.core.Setting.define("qx.bom.htmlarea.HtmlArea.debug", "off");
   },
 
 

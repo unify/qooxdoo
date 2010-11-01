@@ -1038,13 +1038,14 @@ qx.Class.define("qx.io.remote.Exchange",
 
   /*
   *****************************************************************************
-     SETTINGS
+     DEFER
   *****************************************************************************
   */
 
-  settings : {
-    "qx.ioRemoteDebug"       : false,
-    "qx.ioRemoteDebugData"   : false
+  defer : function() 
+  {
+    qx.core.Setting.define("qx.ioRemoteDebug", false);
+    qx.core.Setting.define("qx.ioRemoteDebugData", false);
   },
 
 

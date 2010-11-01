@@ -118,11 +118,11 @@ qx.Class.define("qx.theme.manager.Meta",
 
   /*
   *****************************************************************************
-     SETTINGS
+     DEFER
   *****************************************************************************
   */
 
-  settings : {
-    "qx.theme"           : "qx.theme.Modern"
+  defer : function(statics) {
+    qx.core.Setting.define("qx.theme", "qx.theme.Modern");
   }
 });

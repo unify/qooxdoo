@@ -732,25 +732,14 @@ qx.Class.define("qx.core.Object",
 
   /*
   *****************************************************************************
-     SETTINGS
-  *****************************************************************************
-  */
-
-  settings : {
-    "qx.disposerDebugging" : false
-  },
-
-
-
-
-  /*
-  *****************************************************************************
      DEFER
   *****************************************************************************
   */
 
   defer : function(statics, members)
   {
+    qx.core.Setting.define("qx.disposerDebugging", false);
+    
     // add asserts into each debug build
     if (qx.core.Variant.isSet("qx.debug", "on")) {
       qx.Class.include(statics, qx.core.MAssert);

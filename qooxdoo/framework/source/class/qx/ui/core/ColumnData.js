@@ -112,8 +112,8 @@ qx.Class.define("qx.ui.core.ColumnData",
     }
   },
 
-  settings :
+  defer : function()
   {
-    "qx.tableResizeDebug" : false
+    qx.core.Setting.define("qx.tableResizeDebug", false);
   }
 })
