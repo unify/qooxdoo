@@ -43,6 +43,8 @@
  * <li><strong>refine</strong>: Refinements are used to alter the init value of a property. No other changes are
  *   allowed/supported as the generated member methods are shared between classes/objects.</li>
  * </ul>
+ *
+ * @break {qx.core.ValidationError}
  */
 qx.Bootstrap.define("qx.core.property.Simple",
 {

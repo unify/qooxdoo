@@ -83,7 +83,6 @@
   var Bootstrap = qx.Bootstrap;
   var Type = qx.core.Type;
   var PropertyUtil = qx.core.property.Util;  
-  var ValidationError = qx.core.ValidationError;
 
   
   /*
@@ -232,6 +231,8 @@
    * <li><strong>themeable</strong>: Whether the property allows a themable value read dynamically from a theming system.
    *   The object containing this property needs to implement a method <code>getThemedValue</code>.</li>
    * </ul>
+   *
+   * @break {qx.core.ValidationError}
    */  
   qx.Bootstrap.define("qx.core.property.Multi",
   {
@@ -310,7 +311,7 @@
             }
           
             if (propertyValidate) {
-              Type.check(newValue, propertyValidate, context, ValidationError);
+              Type.check(newValue, propertyValidate, context, qx.core.ValidationError);
             }          
           
             var data = context[dataKey];
@@ -793,24 +794,18 @@
       */    
 
       /**
-       * Returns a list of all inheritable properties supported by the given class
+       * Returns a list of all inheritable properties supported by the given class.
+       *
+       * You may choose to access inheritable properties via: 
+       * obj.$$inheritables || qx.core.property.Multi.getInheritableProperties(obj) 
+       * for better performance.
        * 
        * @param clazz {Class} Class to query
        * @return {Map} All inheritable property names and a dictionary for faster lookup
        */
       getInheritableProperties : function(clazz)
       {
-        var result = clazz.$$inheritables;
-        if (result) 
-        {
-          if (qx.core.Variant.isSet("qx.debug", "on")) {
-            qx.log.Logger.debug(this, "You may choose to access inheritable properties via: obj.$$inheritables || qx.core.property.Multi.getInheritableProperties(obj) for better performance.");
-          }
-        
-          return result;
-        }
-      
-        result = clazz.$$inheritables = {};
+        var result = clazz.$$inheritables = {};
 
         // Find all local properties which are inheritable
         var props = clazz.$$properties;
