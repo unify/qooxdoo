@@ -8,7 +8,7 @@
  * <pre class='javascript'>
  * var win = new qx.ui.window.Window(
  *   "First Window",
- *   "icon/16/categories/internet.png"
+ *   "qx/icon/16/categories/internet.png"
  * );
  *
  * win.setPadding(10);

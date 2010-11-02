@@ -14,7 +14,7 @@
   *   offsetBottom : 20
   * });
   *
-  * popup.add(new qx.ui.basic.Atom("Hello World #1", "icon/32/apps/media-photo-album.png"));
+  * popup.add(new qx.ui.basic.Atom("Hello World #1", "qx/icon/32/apps/media-photo-album.png"));
   *
   * button.addListener("click", function(e)
   * {

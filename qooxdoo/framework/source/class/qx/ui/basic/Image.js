@@ -29,7 +29,7 @@
  * Here is a little example of how to use the widget.
  *
  * <pre class='javascript'>
- *   var image = new qx.ui.basic.Image("icon/32/actions/format-justify-left.png");
+ *   var image = new qx.ui.basic.Image("qx/icon/32/actions/format-justify-left.png");
  *
  *   this.getRoot().add(image);
  * </pre>

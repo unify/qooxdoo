@@ -31,7 +31,7 @@
  * Here is a little example of how to use the widget.
  *
  * <pre class='javascript'>
- *   var atom = new qx.ui.basic.Atom("Icon Right", "icon/32/actions/go-next.png");
+ *   var atom = new qx.ui.basic.Atom("Icon Right", "qx/icon/32/actions/go-next.png");
  *   this.getRoot().add(atom);
  * </pre>
  *

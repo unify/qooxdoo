@@ -509,7 +509,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "icon/16/apps/office-calendar.png",
+          icon : "qx/icon/16/apps/office-calendar.png",
           padding : [0, 3],
           decorator : undefined
         };
@@ -1393,11 +1393,11 @@ qx.Theme.define("qx.theme.Appearance",
       {
         var icon;
         if (states.small) {
-          icon = states.opened ? "icon/16/places/folder-open.png" : "icon/16/places/folder.png";
+          icon = states.opened ? "qx/icon/16/places/folder-open.png" : "qx/icon/16/places/folder.png";
         } else if (states.large) {
-          icon = states.opened ? "icon/32/places/folder-open.png" : "icon/32/places/folder.png";
+          icon = states.opened ? "qx/icon/32/places/folder-open.png" : "qx/icon/32/places/folder.png";
         } else {
-          icon = states.opened ? "icon/22/places/folder-open.png" : "icon/22/places/folder.png";
+          icon = states.opened ? "qx/icon/22/places/folder-open.png" : "qx/icon/22/places/folder.png";
         }
 
         return {
@@ -1415,9 +1415,9 @@ qx.Theme.define("qx.theme.Appearance",
       {
         return {
           icon :
-            states.small ? "icon/16/mimetypes/office-document.png" :
-            states.large ? "icon/32/mimetypes/office-document.png" :
-            "icon/22/mimetypes/office-document.png"
+            states.small ? "qx/icon/16/mimetypes/office-document.png" :
+            states.large ? "qx/icon/32/mimetypes/office-document.png" :
+            "qx/icon/22/mimetypes/office-document.png"
         };
       }
     },
@@ -1440,8 +1440,8 @@ qx.Theme.define("qx.theme.Appearance",
       {
         return {
           icon : states.opened ?
-            "icon/16/places/folder-open.png" :
-            "icon/16/places/folder.png"
+            "qx/icon/16/places/folder-open.png" :
+            "qx/icon/16/places/folder.png"
         };
       }
     },
@@ -1454,7 +1454,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "icon/16/mimetypes/office-document.png"
+          icon : "qx/icon/16/mimetypes/office-document.png"
         };
       }
     },
@@ -2466,7 +2466,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "icon/16/actions/dialog-ok.png"
+          icon : "qx/icon/16/actions/dialog-ok.png"
         };
       }
     },
@@ -2479,7 +2479,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "icon/16/actions/dialog-cancel.png"
+          icon : "qx/icon/16/actions/dialog-cancel.png"
         };
       }
     },
@@ -2537,7 +2537,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function()
       {
         return {
-          icon : "icon/16/actions/view-refresh.png"
+          icon : "qx/icon/16/actions/view-refresh.png"
         };
       }
     },

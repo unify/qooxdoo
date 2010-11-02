@@ -11,12 +11,12 @@
  * <pre class='javascript'>
  *   var tabView = new qx.ui.tabview.TabView();
  *
- *   var page1 = new qx.ui.tabview.Page("Layout", "icon/16/apps/utilities-terminal.png");
+ *   var page1 = new qx.ui.tabview.Page("Layout", "qx/icon/16/apps/utilities-terminal.png");
  *   page1.setLayout(new qx.ui.layout.VBox());
  *   page1.add(new qx.ui.basic.Label("Page Content"));
  *   tabView.add(page1);
  *
- *   var page2 = new qx.ui.tabview.Page("Notes", "icon/16/apps/utilities-notes.png");
+ *   var page2 = new qx.ui.tabview.Page("Notes", "qx/icon/16/apps/utilities-notes.png");
  *   tabView.add(page2);
  *
  *   this.getRoot().add(tabView);
