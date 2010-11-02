@@ -23,7 +23,7 @@
 /**
  * Modern color theme
  */
-qx.Theme.define("qx.theme.modern.Color",
+qx.Theme.define("qx.theme.Color",
 {
   colors :
   {

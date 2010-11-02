@@ -23,11 +23,11 @@
 ************************************************************************* */
 
 /**
- * The modern decoration theme.
+ * Thedecoration theme.
  *
  * @asset {qx/decoration/*}
  */
-qx.Theme.define("qx.theme.modern.Decoration",
+qx.Theme.define("qx.theme.Decoration",
 {
   decorations :
   {

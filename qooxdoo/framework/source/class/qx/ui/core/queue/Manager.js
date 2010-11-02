@@ -66,6 +66,11 @@ qx.Class.define("qx.ui.core.queue.Manager",
      * Flush all layout queues in the correct order. This function is called
      * deferred if {@link #scheduleFlush} is called.
      *
+     * @break {qx.ui.core.queue.Widget}
+     * @break {qx.ui.core.queue.Visibility}
+     * @break {qx.ui.core.queue.Appearance}
+     * @break {qx.ui.core.queue.Layout}
+     * @break {qx.ui.core.queue.Dispose}
      * @return {void}
      */
     flush : function()

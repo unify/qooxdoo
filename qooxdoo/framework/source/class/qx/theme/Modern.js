@@ -19,17 +19,15 @@
 ************************************************************************ */
 
 /**
- * Contemporary Theme
+ * Default qooxdoo theme
  */
-qx.Theme.define("qx.theme.Modern",
+qx.Theme.define("qx.theme.Default",
 {
-  title : "Modern",
-
   meta :
   {
-    color : qx.theme.modern.Color,
-    decoration : qx.theme.modern.Decoration,
-    font : qx.theme.modern.Font,
-    appearance : qx.theme.modern.Appearance
+    color : qx.theme.Color,
+    decoration : qx.theme.Decoration,
+    font : qx.theme.Font,
+    appearance : qx.theme.Appearance
   }
 });
