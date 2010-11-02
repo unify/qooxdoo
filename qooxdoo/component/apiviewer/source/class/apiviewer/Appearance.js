@@ -24,7 +24,7 @@
 qx.Theme.define("apiviewer.Appearance",
 {
   title: "Theme for API Viewer",
-  extend : qx.theme.modern.Appearance,
+  extend : qx.theme.Appearance,
 
   appearances :
   {
