@@ -43,9 +43,6 @@ qx.Bootstrap.define("qx.Theme",
      * <pre class='javascript'>
      * qx.Theme.define("name",
      * {
-     *   aliases : {
-     *     "aliasKey" : "resourceFolderOrUri"
-     *   },
      *   extend : otherTheme,
      *   include : [MMixinTheme],
      *   patch : [MMixinTheme],
@@ -98,8 +95,6 @@ qx.Bootstrap.define("qx.Theme",
       // Convert theme entry from Object to Function (for prototype inheritance)
       this.__convert(theme, config);
 
-      this.__initializeAliases(theme, config);
-
       // Store class reference in global class registry
       this.$$registry[name] = theme;
 
@@ -133,30 +128,6 @@ qx.Bootstrap.define("qx.Theme",
       } else {
         return [objectOrArray];
       }
-    },
-
-
-    /**
-     * Initialize alias inheritance
-     *
-     * @param theme {Map} The theme
-     * @param config {Map} config structure
-     */
-    __initializeAliases : function(theme, config)
-    {
-      var aliases = config.aliases || {};
-      if (config.extend && config.extend.aliases) 
-      {
-        var source = config.extend.aliases;
-        for (var key in source)
-        {
-          if (!(key in aliases)) {
-            aliases[key] = source[key];
-          }
-        }        
-      }
-
-      theme.aliases = aliases;
     },
 
 
@@ -315,16 +286,16 @@ qx.Bootstrap.define("qx.Theme",
       "on":
       {
         "title"       : "string", // String
-        "aliases"     : "object", // Map
         "type"        : "string", // String
         "extend"      : "object", // Theme
+
         "colors"      : "object", // Map
-        "borders"     : "object", // Map
         "decorations" : "object", // Map
         "fonts"       : "object", // Map
-        "widgets"     : "object", // Map
         "appearances" : "object", // Map
+
         "meta"        : "object", // Map
+
         "include"     : "object", // Array
         "patch"       : "object"  // Array
       },
@@ -338,11 +309,9 @@ qx.Bootstrap.define("qx.Theme",
       "on":
       {
         "color" : "object",
-        "border" : "object",
         "decoration" : "object",
         "font" : "object",
-        "appearance" : "object",
-        "widget" : "object"
+        "appearance" : "object"
       },
 
       "default" : null

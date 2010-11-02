@@ -109,7 +109,7 @@ qx.Theme.define("qx.theme.Appearance",
         }
 
         return {
-          source : "decoration/cursors/" + icon + ".gif",
+          source : "qx/decoration/cursors/" + icon + ".gif",
           position : "right-top",
           offset : [ 2, 16, 2, 6 ]
         };
@@ -262,7 +262,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "decoration/arrows/down.png",
+          icon : "qx/decoration/arrows/down.png",
           padding : 2,
           marginLeft : 1
         };
@@ -313,7 +313,7 @@ qx.Theme.define("qx.theme.Appearance",
         var invalid = states.invalid && !states.disabled ? "-invalid" : "";
 
         return {
-          icon: "decoration/form/" + icon + invalid + ".png",
+          icon: "qx/decoration/form/" + icon + invalid + ".png",
           gap: 6
         };
       }
@@ -353,7 +353,7 @@ qx.Theme.define("qx.theme.Appearance",
         var invalid = states.invalid && !states.disabled ? "-invalid" : "";
 
         return {
-          icon: "decoration/form/" + icon + invalid + ".png",
+          icon: "qx/decoration/form/" + icon + invalid + ".png",
           gap : 6
         };
       }
@@ -467,7 +467,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "decoration/arrows/up-small.png",
+          icon : "qx/decoration/arrows/up-small.png",
           padding : states.pressed ? [2, 2, 0, 4] : [1, 3, 1, 3],
           shadow: undefined
         };
@@ -482,7 +482,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "decoration/arrows/down-small.png",
+          icon : "qx/decoration/arrows/down-small.png",
           padding : states.pressed ? [2, 2, 0, 4] : [1, 3, 1, 3],
           shadow: undefined
         };
@@ -718,7 +718,7 @@ qx.Theme.define("qx.theme.Appearance",
 
       style : function(states)
       {
-        var icon = "decoration/scrollbar/scrollbar-";
+        var icon = "qx/decoration/scrollbar/scrollbar-";
         if (states.left) {
           icon += "left.png";
         } else if (states.right) {
@@ -896,8 +896,8 @@ qx.Theme.define("qx.theme.Appearance",
           padding : 5,
           center : true,
           icon : states.vertical ?
-            "decoration/arrows/down.png" :
-            "decoration/arrows/right.png"
+            "qx/decoration/arrows/down.png" :
+            "qx/decoration/arrows/right.png"
         };
       }
     },
@@ -913,8 +913,8 @@ qx.Theme.define("qx.theme.Appearance",
           padding : 5,
           center : true,
           icon : states.vertical ?
-            "decoration/arrows/up.png" :
-            "decoration/arrows/left.png"
+            "qx/decoration/arrows/up.png" :
+            "qx/decoration/arrows/left.png"
         };
       }
     },
@@ -1205,7 +1205,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          source : "decoration/toolbar/toolbar-handle-knob.gif",
+          source : "qx/decoration/toolbar/toolbar-handle-knob.gif",
           marginLeft : 3,
           marginRight : 3
         };
@@ -1252,7 +1252,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          source : "decoration/arrows/down-small.png"
+          source : "qx/decoration/arrows/down-small.png"
         };
       }
     },
@@ -1276,7 +1276,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "decoration/arrows/down.png",
+          icon : "qx/decoration/arrows/down.png",
           marginTop : undefined,
           marginBottom : undefined
         };
@@ -1298,7 +1298,7 @@ qx.Theme.define("qx.theme.Appearance",
 
         return {
           padding : padding,
-          icon : "decoration/arrows/down.png",
+          icon : "qx/decoration/arrows/down.png",
           marginTop : undefined,
           marginBottom : undefined
         };
@@ -1362,19 +1362,19 @@ qx.Theme.define("qx.theme.Appearance",
         var icon;
         if (states.selected && states.opened)
         {
-          icon = "decoration/tree/open-selected.png";
+          icon = "qx/decoration/tree/open-selected.png";
         }
         else if (states.selected && !states.opened)
         {
-          icon = "decoration/tree/closed-selected.png";
+          icon = "qx/decoration/tree/closed-selected.png";
         }
         else if (states.opened)
         {
-          icon = "decoration/tree/open.png";
+          icon = "qx/decoration/tree/open.png";
         }
         else
         {
-          icon = "decoration/tree/closed.png";
+          icon = "qx/decoration/tree/closed.png";
         }
 
         return {
@@ -1474,7 +1474,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "decoration/tree/open.png",
+          icon : "qx/decoration/tree/open.png",
           paddingLeft : 5,
           paddingTop : 2
         };
@@ -1486,7 +1486,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : "decoration/tree/closed.png",
+          icon : "qx/decoration/tree/closed.png",
           paddingLeft : 5,
           paddingTop : 2
         };
@@ -1641,9 +1641,9 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : states.active ? states.hovered ? "decoration/window/minimize-active-hovered.png" :
-                                                  "decoration/window/minimize-active.png" :
-                                                  "decoration/window/minimize-inactive.png",
+          icon : states.active ? states.hovered ? "qx/decoration/window/minimize-active-hovered.png" :
+                                                  "qx/decoration/window/minimize-active.png" :
+                                                  "qx/decoration/window/minimize-inactive.png",
           margin : [ 4, 8, 2, 0 ]
         };
       }
@@ -1656,9 +1656,9 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : states.active ? states.hovered ? "decoration/window/restore-active-hovered.png" :
-                                                  "decoration/window/restore-active.png" :
-                                                  "decoration/window/restore-inactive.png",
+          icon : states.active ? states.hovered ? "qx/decoration/window/restore-active-hovered.png" :
+                                                  "qx/decoration/window/restore-active.png" :
+                                                  "qx/decoration/window/restore-inactive.png",
           margin : [ 5, 8, 2, 0 ]
         };
       }
@@ -1671,9 +1671,9 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : states.active ? states.hovered ? "decoration/window/maximize-active-hovered.png" :
-                                                  "decoration/window/maximize-active.png" :
-                                                  "decoration/window/maximize-inactive.png",
+          icon : states.active ? states.hovered ? "qx/decoration/window/maximize-active-hovered.png" :
+                                                  "qx/decoration/window/maximize-active.png" :
+                                                  "qx/decoration/window/maximize-inactive.png",
           margin : [ 4, 8, 2, 0 ]
         };
       }
@@ -1686,9 +1686,9 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : states.active ? states.hovered ? "decoration/window/close-active-hovered.png" :
-                                                  "decoration/window/close-active.png" :
-                                                  "decoration/window/close-inactive.png",
+          icon : states.active ? states.hovered ? "qx/decoration/window/close-active-hovered.png" :
+                                                  "qx/decoration/window/close-active.png" :
+                                                  "qx/decoration/window/close-inactive.png",
           margin : [ 4, 8, 2, 0 ]
         };
       }
@@ -1796,7 +1796,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          source : states.horizontal ? "decoration/splitpane/knob-horizontal.png" : "decoration/splitpane/knob-vertical.png"
+          source : states.horizontal ? "qx/decoration/splitpane/knob-horizontal.png" : "qx/decoration/splitpane/knob-vertical.png"
         };
       }
     },
@@ -1850,7 +1850,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          source : "decoration/arrows/down.png",
+          source : "qx/decoration/arrows/down.png",
           paddingLeft : 5
         };
       }
@@ -1911,15 +1911,15 @@ qx.Theme.define("qx.theme.Appearance",
         };
 
         if (states.lastYear) {
-          result.icon = "decoration/arrows/rewind.png";
+          result.icon = "qx/decoration/arrows/rewind.png";
           result.marginRight = 1;
         } else if (states.lastMonth) {
-          result.icon = "decoration/arrows/left.png";
+          result.icon = "qx/decoration/arrows/left.png";
         } else if (states.nextYear) {
-          result.icon = "decoration/arrows/forward.png";
+          result.icon = "qx/decoration/arrows/forward.png";
           result.marginLeft = 1;
         } else if (states.nextMonth) {
-          result.icon = "decoration/arrows/right.png";
+          result.icon = "qx/decoration/arrows/right.png";
         }
 
         return result;
@@ -2052,7 +2052,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         var ret = {
-          icon : "decoration/arrows/down.png",
+          icon : "qx/decoration/arrows/down.png",
           padding : 2
         };
 
@@ -2135,7 +2135,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : states.hovered ? "decoration/arrows/up-invert.png" : "decoration/arrows/up.png"
+          icon : states.hovered ? "qx/decoration/arrows/up-invert.png" : "qx/decoration/arrows/up.png"
         };
       }
     },
@@ -2147,7 +2147,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          icon : states.hovered ? "decoration/arrows/down-invert.png" : "decoration/arrows/down.png"
+          icon : states.hovered ? "qx/decoration/arrows/down-invert.png" : "qx/decoration/arrows/down.png"
         };
       }
     },
@@ -2224,7 +2224,7 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          source : states.selected ? "decoration/arrows/right-invert.png" : "decoration/arrows/right.png",
+          source : states.selected ? "qx/decoration/arrows/right-invert.png" : "qx/decoration/arrows/right.png",
           alignY : "middle"
         };
       }
@@ -2239,8 +2239,8 @@ qx.Theme.define("qx.theme.Appearance",
       {
         return {
           icon : !states.checked ? undefined :
-            states.selected ? "decoration/menu/checkbox-invert.gif" :
-              "decoration/menu/checkbox.gif"
+            states.selected ? "qx/decoration/menu/checkbox-invert.gif" :
+              "qx/decoration/menu/checkbox.gif"
         };
       }
     },
@@ -2254,8 +2254,8 @@ qx.Theme.define("qx.theme.Appearance",
       {
         return {
           icon : !states.checked ? undefined :
-            states.selected ? "decoration/menu/radiobutton-invert.gif" :
-              "decoration/menu/radiobutton.gif"
+            states.selected ? "qx/decoration/menu/radiobutton-invert.gif" :
+              "qx/decoration/menu/radiobutton.gif"
         };
       }
     },
@@ -2524,7 +2524,7 @@ qx.Theme.define("qx.theme.Appearance",
         return {
           decorator : "table-column-button",
           padding   : 3,
-          icon      : "decoration/table/select-column-order.png"
+          icon      : "qx/decoration/table/select-column-order.png"
         };
       }
     },
@@ -2599,7 +2599,7 @@ qx.Theme.define("qx.theme.Appearance",
           padding   : states.hovered ? [ 3, 4, 2, 4 ] : [ 3, 4 ],
           decorator : states.hovered ? "table-header-cell-hovered" : "table-header-cell",
           sortIcon  : states.sorted ?
-              (states.sortedAscending ? "decoration/table/ascending.png" : "decoration/table/descending.png")
+              (states.sortedAscending ? "qx/decoration/table/ascending.png" : "qx/decoration/table/descending.png")
               : undefined
         };
       }
@@ -2790,8 +2790,8 @@ qx.Theme.define("qx.theme.Appearance",
       style : function(states)
       {
         return {
-          iconTrue : "decoration/table/boolean-true.png",
-          iconFalse : "decoration/table/boolean-false.png"
+          iconTrue : "qx/decoration/table/boolean-true.png",
+          iconFalse : "qx/decoration/table/boolean-false.png"
         };
       }
     },
