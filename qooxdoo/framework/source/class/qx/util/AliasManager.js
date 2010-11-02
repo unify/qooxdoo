@@ -42,8 +42,6 @@ qx.Class.define("qx.util.AliasManager",
     // Contains defined aliases (like icons/, widgets/, application/, ...)
     this.__aliases = {};
 
-    // Define static alias from setting
-    this.add("static", "qx/static");
   },
 
 
