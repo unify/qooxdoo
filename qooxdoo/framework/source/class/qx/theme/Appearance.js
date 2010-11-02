@@ -22,37 +22,33 @@
 
 ************************************************************************* */
 
-/* ************************************************************************
-
-#asset(qx/icon/Tango/16/places/folder-open.png)
-#asset(qx/icon/Tango/16/places/folder.png)
-#asset(qx/icon/Tango/16/mimetypes/office-document.png)
-
-#asset(qx/icon/Tango/16/actions/window-close.png)
-
-#asset(qx/icon/Tango/22/places/folder-open.png)
-#asset(qx/icon/Tango/22/places/folder.png)
-#asset(qx/icon/Tango/22/mimetypes/office-document.png)
-
-#asset(qx/icon/Tango/32/places/folder-open.png)
-#asset(qx/icon/Tango/32/places/folder.png)
-#asset(qx/icon/Tango/32/mimetypes/office-document.png)
-
-#asset(qx/icon/Tango/16/apps/office-calendar.png)
-#asset(qx/icon/Tango/16/apps/utilities-color-chooser.png)
-#asset(qx/icon/Tango/16/actions/view-refresh.png)
-
-#asset(qx/icon/Tango/16/actions/dialog-cancel.png)
-#asset(qx/icon/Tango/16/actions/dialog-ok.png)
-
-#asset(qx/decoration/Modern/*)
-
-************************************************************************* */
-
 /**
- * The modern appearance theme.
+ * Default qooxdoo theme.
+ *
+ * @asset {qx/icon/16/places/folder-open.png}
+ * @asset {qx/icon/16/places/folder.png}
+ * @asset {qx/icon/16/mimetypes/office-document.png}
+ * 
+ * @asset {qx/icon/16/actions/window-close.png}
+ * 
+ * @asset {qx/icon/22/places/folder-open.png}
+ * @asset {qx/icon/22/places/folder.png}
+ * @asset {qx/icon/22/mimetypes/office-document.png}
+ * 
+ * @asset {qx/icon/32/places/folder-open.png}
+ * @asset {qx/icon/32/places/folder.png}
+ * @asset {qx/icon/32/mimetypes/office-document.png}
+ * 
+ * @asset {qx/icon/16/apps/office-calendar.png}
+ * @asset {qx/icon/16/apps/utilities-color-chooser.png}
+ * @asset {qx/icon/16/actions/view-refresh.png}
+ * 
+ * @asset {qx/icon/16/actions/dialog-cancel.png}
+ * @asset {qx/icon/16/actions/dialog-ok.png}
+ * 
+ * @asset {qx/decoration/*}
  */
-qx.Theme.define("qx.theme.modern.Appearance",
+qx.Theme.define("qx.theme.Appearance",
 {
   appearances :
   {
@@ -1160,7 +1156,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         return {
-          icon : "qx/icon/Tango/16/actions/window-close.png"
+          icon : "qx/icon/16/actions/window-close.png"
         };
       }
     },

@@ -67,12 +67,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#asset(qx/static/blank.html)
-
-************************************************************************ */
-
 /**
  * A helper for using the browser history in JavaScript Applications without
  * reloading the main page.
@@ -93,6 +87,8 @@
  * implementation can be found at http://developer.yahoo.com/yui/history.
  * The original code is licensed under a BSD license
  * (http://developer.yahoo.com/yui/license.txt).
+ *
+ * @asset {qx/static/blank.html}
  */
 qx.Class.define("qx.bom.History",
 {

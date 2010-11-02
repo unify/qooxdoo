@@ -17,10 +17,9 @@ Authors:
 
 ************************************************************************ */
 
-/*
-#asset(qx/test/*)
-*/
-
+/**
+ * @asset {qx/test/*}
+ */
 qx.Class.define("qx.test.io.remote.transport.XmlHttp",
 {
   extend : qx.dev.unit.TestCase,

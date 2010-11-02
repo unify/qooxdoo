@@ -22,20 +22,15 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#asset(qx/static/blank.html)
-
-************************************************************************ */
-
 /**
  * Low-level Rich text editor which can be used by connecting it to an
  * existing DOM element (DIV node).
  * This component does not contain any {@link qx.ui} code resulting in a
  * smaller footprint.
  *
- *
  * Optimized for the use at a traditional webpage.
+ * 
+ * @asset {qx/static/blank.html}
  */
 qx.Class.define("qx.bom.htmlarea.HtmlArea",
 {

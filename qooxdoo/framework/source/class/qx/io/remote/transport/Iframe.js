@@ -22,16 +22,12 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#asset(qx/static/blank.gif)
-
-************************************************************************ */
-
 /**
  * Transports requests to a server using an IFRAME.
  *
  * This class should not be used directly by client programmers.
+ *
+ * @asset {qx/static/blank.gif}
  */
 qx.Class.define("qx.io.remote.transport.Iframe",
 {

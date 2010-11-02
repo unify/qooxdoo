@@ -17,12 +17,10 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-#asset(qx/icon/Tango/48/places/folder.png)
-#asset(qx/static/blank.gif)
-************************************************************************ */
-
-
+/**
+ * @asset {qx/icon/48/places/folder.png}
+ * @asset {qx/static/blank.gif}
+ */
 qx.Class.define("qx.test.ui.basic.Image",
 {
   extend : qx.test.ui.LayoutTestCase,
@@ -35,7 +33,7 @@ qx.Class.define("qx.test.ui.basic.Image",
     testSwitchScaling : function()
     {
       this.__image = new qx.ui.basic.Image;
-      this.__image.set({ source: "qx/icon/Tango/48/places/folder.png", scale: false });
+      this.__image.set({ source: "qx/icon/48/places/folder.png", scale: false });
       this.getRoot().add(this.__image);
       this.flush();
 
@@ -56,7 +54,7 @@ qx.Class.define("qx.test.ui.basic.Image",
 
     testSwitchPngToGif : function()
     {
-      var image = new qx.ui.basic.Image("qx/icon/Tango/48/places/folder.png");
+      var image = new qx.ui.basic.Image("qx/icon/48/places/folder.png");
       this.getRoot().add(image);
       this.flush();
 
@@ -82,7 +80,7 @@ qx.Class.define("qx.test.ui.basic.Image",
       var tagName = image.getContentElement().getNodeName();
       this.assertTrue(tagName == "img");
 
-      image.setSource("qx/icon/Tango/48/places/folder.png");
+      image.setSource("qx/icon/48/places/folder.png");
       this.flush();
 
       var tagNameAfter = image.getContentElement().getNodeName();
@@ -96,7 +94,7 @@ qx.Class.define("qx.test.ui.basic.Image",
 
     testSwitchDimension : function()
     {
-      var image = new qx.ui.basic.Image("qx/icon/Tango/48/places/folder.png");
+      var image = new qx.ui.basic.Image("qx/icon/48/places/folder.png");
       this.getRoot().add(image);
 
       image.set({ width: 100, height: 100 });
@@ -115,7 +113,7 @@ qx.Class.define("qx.test.ui.basic.Image",
 
     testSwitchWithDecorator : function()
     {
-      var image = new qx.ui.basic.Image("qx/icon/Tango/48/places/folder.png");
+      var image = new qx.ui.basic.Image("qx/icon/48/places/folder.png");
       this.getRoot().add(image);
 
       image.setDecorator("main");
@@ -132,7 +130,7 @@ qx.Class.define("qx.test.ui.basic.Image",
 
     testSwitchWithSelectable : function()
     {
-      var image = new qx.ui.basic.Image("qx/icon/Tango/48/places/folder.png");
+      var image = new qx.ui.basic.Image("qx/icon/48/places/folder.png");
       this.getRoot().add(image);
 
       image.setSelectable(true);
@@ -166,7 +164,7 @@ qx.Class.define("qx.test.ui.basic.Image",
 
 
     testLoadedEvent : function() {
-      var source = "../resource/qx/icon/Tango/32/places/folder.png";
+      var source = "../resource/qx/icon/32/places/folder.png";
       if (qx.io.ImageLoader.isLoaded(source)) {
         this.debug("testLoadedEvent skipped! Image already loaded.");
         return;

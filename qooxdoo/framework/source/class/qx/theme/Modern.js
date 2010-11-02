@@ -30,7 +30,6 @@ qx.Theme.define("qx.theme.Modern",
     color : qx.theme.modern.Color,
     decoration : qx.theme.modern.Decoration,
     font : qx.theme.modern.Font,
-    appearance : qx.theme.modern.Appearance,
-    icon : qx.theme.icon.Tango
+    appearance : qx.theme.modern.Appearance
   }
 });

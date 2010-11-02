@@ -17,12 +17,9 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#asset(qx/icon/Tango/22/emotes/face-angel.png)
-
-************************************************************************ */
-
+/** 
+ * @asset {qx/icon/22/emotes/face-angel.png}
+ */
 qx.Class.define("qx.test.ui.virtual.cell.ListItemWidgetCell",
 {
   extend : qx.dev.unit.TestCase,
