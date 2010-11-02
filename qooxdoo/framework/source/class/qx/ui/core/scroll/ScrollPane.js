@@ -18,12 +18,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#use(qx.event.handler.Element)
-
-************************************************************************ */
-
 /**
  * This class represents a scroll able pane. This means that this widget
  * may contain content which is bigger than the available (inner)

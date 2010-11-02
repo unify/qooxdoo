@@ -17,10 +17,9 @@
 
 ************************************************************************ */
 
-/*
-#use(qx.test.event.MockHandler)
-*/
-
+/**
+ * @require {qx.test.event.MockHandler}
+ */
 qx.Class.define("qx.test.event.Registration",
 {
   extend : qx.dev.unit.TestCase,

@@ -19,11 +19,6 @@
 
 ************************************************************************ */
 
-/*
-#use(qx.event.handler.ElementResize)
-*/
-
-
 /**
  * This classes could be used to insert qooxdoo islands into existing
  * web pages. You can use the isles to place any qooxdoo powered widgets

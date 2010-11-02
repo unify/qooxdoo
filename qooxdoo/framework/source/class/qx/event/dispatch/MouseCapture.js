@@ -17,14 +17,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#use(qx.event.handler.Focus)
-#use(qx.event.handler.Window)
-#use(qx.event.handler.Capture)
-
-************************************************************************ */
-
 /**
  * Implementation of the Internet Explorer specific event capturing mode for
  * mouse events http://msdn2.microsoft.com/en-us/library/ms536742.aspx.
