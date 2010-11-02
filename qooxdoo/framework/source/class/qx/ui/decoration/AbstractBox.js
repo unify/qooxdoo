@@ -177,7 +177,7 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
     {
       this.__impl.setBorderImage(baseImage);
 
-      var base = qx.util.AliasManager.getInstance().resolve(baseImage);
+      var base = baseImage;
       var split = /(.*)(\.[a-z]+)$/.exec(base);
       var prefix = split[1];
       var ext = split[2];

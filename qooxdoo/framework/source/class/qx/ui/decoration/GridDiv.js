@@ -310,7 +310,7 @@ qx.Class.define("qx.ui.decoration.GridDiv",
      * @return {String} the resolved image URL
      */
     _resolveImageUrl : function(image) {
-      return qx.util.AliasManager.getInstance().resolve(image);
+      return image;
     },
 
 

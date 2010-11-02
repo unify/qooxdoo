@@ -38,7 +38,6 @@ qx.Class.define("qx.ui.virtual.cell.AbstractImage",
   construct : function()
   {
     this.base(arguments);
-    this._aliasManager = qx.util.AliasManager.getInstance();
   },
 
 
@@ -52,7 +51,6 @@ qx.Class.define("qx.ui.virtual.cell.AbstractImage",
   {
     __defaultWidth : 16,
     __defaultHeight : 16,
-    _aliasManager : null,
 
 
     /**
@@ -114,7 +112,7 @@ qx.Class.define("qx.ui.virtual.cell.AbstractImage",
         imageData = {url: imageData};
       }
 
-      var url = this._aliasManager.resolve(imageData.url || null);
+      var url = qx.util.ResourceManager.getInstance().toUri(imageData.url || null);
       var sizes;
 
       if (imageData.width && imageData.height) {

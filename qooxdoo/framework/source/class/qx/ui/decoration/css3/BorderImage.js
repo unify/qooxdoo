@@ -303,9 +303,7 @@ qx.Class.define("qx.ui.decoration.css3.BorderImage",
      */
     _resolveImageUrl : function(image)
     {
-      return qx.util.ResourceManager.getInstance().toUri(
-        qx.util.AliasManager.getInstance().resolve(image)
-      );
+      return qx.util.ResourceManager.getInstance().toUri(image);
     }
   },
 

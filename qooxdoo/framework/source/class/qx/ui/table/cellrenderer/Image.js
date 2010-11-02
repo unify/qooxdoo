@@ -47,8 +47,6 @@ qx.Class.define("qx.ui.table.cellrenderer.Image",
     if (height) {
       this.__imageHeight = height;
     }
-
-    this.__am = qx.util.AliasManager.getInstance();
   },
 
 
@@ -62,7 +60,6 @@ qx.Class.define("qx.ui.table.cellrenderer.Image",
 
   members :
   {
-    __am : null,
     __imageHeight : 16,
     __imageWidth : 16,
 
@@ -79,22 +76,12 @@ qx.Class.define("qx.ui.table.cellrenderer.Image",
       if (cellInfo.value == "") {
         imageHints.url = null;
       } else {
-        imageHints.url = this.__am.resolve(cellInfo.value);
+        imageHints.url = qx.util.ResourceManager.getInstance().toUri(cellInfo.value);
       }
 
       imageHints.tooltip = cellInfo.tooltip;
 
       return imageHints;
     }
-  },
-
-  /*
-  *****************************************************************************
-     DESTRUCTOR
-  *****************************************************************************
-  */
-
-  destruct : function() {
-    this.__am = null;
   }
 });

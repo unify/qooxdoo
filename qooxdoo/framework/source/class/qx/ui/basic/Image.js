@@ -344,7 +344,7 @@ qx.Class.define("qx.ui.basic.Image",
      */
     _styleSource : function()
     {
-      var source = qx.util.AliasManager.getInstance().resolve(this.getSource());
+      var source = this.getSource();
 
       if (!source)
       {
@@ -575,11 +575,6 @@ qx.Class.define("qx.ui.basic.Image",
     {
       // Ignore the callback on already disposed images
       if (this.$$disposed === true) {
-        return;
-      }
-
-      // Ignore when the source has already been modified
-      if (source !== qx.util.AliasManager.getInstance().resolve(this.getSource())) {
         return;
       }
 

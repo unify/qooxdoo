@@ -113,8 +113,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
       // Support for images
       if (image)
       {
-        var resolved = qx.util.AliasManager.getInstance().resolve(image);
-        markup = qx.bom.element.Decoration.create(resolved, repeat, styles);
+        markup = qx.bom.element.Decoration.create(image, repeat, styles);
       }
       else
       {

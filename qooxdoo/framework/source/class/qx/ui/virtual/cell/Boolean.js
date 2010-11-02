@@ -33,7 +33,6 @@ qx.Class.define("qx.ui.virtual.cell.Boolean",
   construct : function()
   {
     this.base(arguments);
-    this.__aliasManager = qx.util.AliasManager.getInstance();
   },
 
 
@@ -84,18 +83,17 @@ qx.Class.define("qx.ui.virtual.cell.Boolean",
   {
     __imageTrue : null,
     __imageFalse : null,
-    __aliasManager : null,
 
 
     // property apply
     _applyIconTrue : function(value) {
-      this.__imageTrue = this.__aliasManager.resolve(value);
+      this.__imageTrue = qx.util.ResourceManager.getInstance().toUri(value);
     },
 
 
     // property apply
     _applyIconFalse : function(value) {
-      this.__imageFalse = this.__aliasManager.resolve(value);
+      this.__imageFalse = qx.util.ResourceManager.getInstance().toUri(value);
     },
 
 

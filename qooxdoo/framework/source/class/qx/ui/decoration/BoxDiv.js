@@ -248,9 +248,7 @@ qx.Class.define("qx.ui.decoration.BoxDiv",
       var ResourceManager = qx.util.ResourceManager.getInstance();
       if (value)
       {
-        var Alias = qx.util.AliasManager.getInstance();
-
-        var base = Alias.resolve(value);
+        var base = value;
         var split = /(.*)(\.[a-z]+)$/.exec(base);
         var prefix = split[1];
         var ext = split[2];

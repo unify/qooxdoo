@@ -170,22 +170,6 @@ qx.Class.define("qx.theme.manager.Decoration",
     // property apply
     _applyTheme : function(value, old)
     {
-      var aliasManager = qx.util.AliasManager.getInstance();
-
-      if (old)
-      {
-        for (var alias in old.aliases) {
-          aliasManager.remove(alias);
-        }
-      }
-
-      if (value)
-      {
-        for (var alias in value.aliases) {
-          aliasManager.add(alias, value.aliases[alias]);
-        }
-      }
-
       if (!value) {
         this.__dynamic = {};
       }

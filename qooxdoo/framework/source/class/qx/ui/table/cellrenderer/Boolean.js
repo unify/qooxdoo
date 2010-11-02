@@ -38,8 +38,6 @@ qx.Class.define("qx.ui.table.cellrenderer.Boolean",
   {
     this.base(arguments);
 
-    this.__aliasManager = qx.util.AliasManager.getInstance();
-
     this.initIconTrue();
     this.initIconFalse();
   },
@@ -59,7 +57,7 @@ qx.Class.define("qx.ui.table.cellrenderer.Boolean",
     iconTrue :
     {
       check : "String",
-      init : "decoration/table/boolean-true.png",
+      init : "qx/decoration/table/boolean-true.png",
       apply : "_applyIconTrue"
     },
 
@@ -69,7 +67,7 @@ qx.Class.define("qx.ui.table.cellrenderer.Boolean",
     iconFalse :
     {
       check : "String",
-      init : "decoration/table/boolean-false.png",
+      init : "qx/decoration/table/boolean-false.png",
       apply : "_applyIconFalse"
     }
   },
@@ -85,18 +83,17 @@ qx.Class.define("qx.ui.table.cellrenderer.Boolean",
   {
     __iconUrlTrue : null,
     __iconUrlFalse : false,
-    __aliasManager : null,
 
 
     // property apply
     _applyIconTrue : function(value) {
-      this.__iconUrlTrue = this.__aliasManager.resolve(value);
+      this.__iconUrlTrue = qx.util.ResourceManager.getInstance().toUri(value);
     },
 
 
     // property apply
     _applyIconFalse : function(value) {
-      this.__iconUrlFalse = this.__aliasManager.resolve(value);
+      this.__iconUrlFalse = qx.util.ResourceManager.getInstance().toUri(value);
     },
 
 
@@ -135,15 +132,5 @@ qx.Class.define("qx.ui.table.cellrenderer.Boolean",
 
       return imageHints;
     }
-  },
-
-  /*
-  *****************************************************************************
-     DESTRUCTOR
-  *****************************************************************************
-  */
-
-  destruct : function() {
-    this.__aliasManager = null;
   }
 });
