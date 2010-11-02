@@ -19,13 +19,6 @@
 
 ************************************************************************ */
 
-/*
-#require(qx.event.dispatch.Direct)
-#require(qx.bom.client.Locale)
-#require(qx.locale.LocalizedString)
-#cldr
-*/
-
 /**
  * The qx.locale.Manager provides static translation methods (like tr()) and
  * general locale information.

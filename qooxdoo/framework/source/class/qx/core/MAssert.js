@@ -17,12 +17,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.core.Assert)
-
-************************************************************************ */
-
 /**
  * This mixin includes all assertions from {@link qx.core.Assert} to conveniently
  * call assertions. It is included into {@link qx.core.Object} if debugging code

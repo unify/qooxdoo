@@ -31,19 +31,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#### OPTIONALS: Add these classes to enable specific features
-#optional(qx.bom.Element)
-
-#require(qx.type.BaseArray)
-#require(qx.bom.Selector)
-#require(qx.bom.element2.Class)
-#require(qx.bom.element2.Style)
-#require(qx.bom.element.Attribute)
-
-************************************************************************ */
-
 (function()
 {
   /**

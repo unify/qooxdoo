@@ -17,12 +17,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.core.Init)
-
-************************************************************************ */
-
 /**
  * For a GUI application that looks & feels like native desktop application
  * (often called "RIA" - Rich Internet Application).

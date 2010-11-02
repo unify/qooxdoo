@@ -19,16 +19,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.core.property.Simple)
-#require(qx.core.property.Group)
-#require(qx.core.ObjectRegistry)
-#use(qx.event.dispatch.Direct)
-#use(qx.event.handler.Object)
-
-************************************************************************ */
-
 /**
  * The qooxdoo root class. All other classes are direct or indirect subclasses of this one.
  *

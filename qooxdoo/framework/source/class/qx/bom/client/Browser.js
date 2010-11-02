@@ -31,10 +31,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-#require(qx.bom.client.System)
-************************************************************************ */
-
 /**
  * Basic browser detection for qooxdoo. Based on "qx.client" variant for
  * optimal performance and less overhead.

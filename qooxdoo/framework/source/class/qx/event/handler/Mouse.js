@@ -19,13 +19,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.event.handler.UserAction)
-#---require(qx.event.handler.Touch)
-
-************************************************************************ */
-
 /**
  * This class provides a unified mouse event handler for Internet Explorer,
  * Firefox, Opera and Safari

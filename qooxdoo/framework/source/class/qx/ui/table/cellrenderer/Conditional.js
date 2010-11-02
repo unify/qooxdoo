@@ -16,12 +16,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.util.format.NumberFormat)
-
-************************************************************************ */
-
 /**
  * The conditional cell renderer allows special per cell formatting based on
  * conditions on the cell's value.

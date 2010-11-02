@@ -17,13 +17,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.bom.client.Platform)
-#require(qx.bom.client.Engine)
-
-************************************************************************ */
-
 /**
  * This class comes with all relevant information regarding
  * the client's operating system. This class is examining the userAgent of

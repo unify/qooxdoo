@@ -18,20 +18,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.core.Setting)
-#require(qx.Interface)
-#require(qx.Mixin)
-
-#optional(qx.core.property.Simple)
-#optional(qx.core.property.Multi)
-#optional(qx.core.property.Group)
-
-#use(qx.lang.Core)
-
-************************************************************************ */
-
 /**
  * This class is one of the most important parts of qooxdoo's
  * object-oriented features.

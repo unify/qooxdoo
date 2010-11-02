@@ -19,12 +19,6 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#require(qx.core.Setting)
-
-/* ************************************************************************ */
-
 /**
  * Manage variants of source code. May it be for different debug options,
  * browsers or other environment flags.
@@ -42,22 +36,6 @@
  * Variants are used to implement browser optimized builds and to remove
  * debugging code from the build version. It is very similar to conditional
  * compilation in C/C++.
- *
- * Here is a list of pre-defined variant names, the possible values they take,
- * and their system default:
- * <table>
- *  <tr>
- *  <th>Variant name</th><th>Possible values</th><th>System default</th>
- *  </tr><tr>
- *  <td>qx.client          <td>[ "gecko", "mshtml", "opera", "webkit" ]   <td>&lt;auto-detected&gt;
- *  </tr><tr>
- *  <td>qx.debug                   <td>[ "on", "off" ]                    <td>"on"
- *  </tr><tr>
- *  <td>qx.dynlocale     <td>[ "on", "off" ]                    <td>"on"
- *  </tr><tr>
- *  <td>qx.mobile     <td>[ "on", "off" ]                    <td>"off"
- *  </tr>
- * </table>
  */
 qx.Bootstrap.define("qx.core.Variant",
 {

@@ -39,13 +39,6 @@
 
 ************************************************************************ */
 
-
-/* ************************************************************************
-
-#require(qx.lang.Core)
-
-************************************************************************ */
-
 /**
  * This class is the common superclass for all array classes in
  * qooxdoo. It supports all of the shiny 1.6 JavaScript array features
