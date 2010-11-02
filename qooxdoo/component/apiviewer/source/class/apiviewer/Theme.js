@@ -30,7 +30,6 @@ qx.Theme.define("apiviewer.Theme",
     color : qx.theme.modern.Color,
     decoration : qx.theme.modern.Decoration,
     font : qx.theme.modern.Font,
-    appearance : apiviewer.Appearance,
-    icon : qx.theme.icon.Tango
+    appearance : apiviewer.Appearance
   }
 });
