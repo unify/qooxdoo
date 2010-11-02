@@ -49,7 +49,6 @@ qx.Bootstrap.define("qx.Theme",
      *   colors : {},
      *   decorations : {},
      *   fonts : {},
-     *   widgets : {},
      *   appearances : {},
      *   meta : {}
      * });
@@ -277,7 +276,7 @@ qx.Bootstrap.define("qx.Theme",
 
 
     /** {Array} Keys which support inheritance */
-    __inheritableKeys : [ "colors", "borders", "decorations", "fonts", "widgets", "appearances", "meta" ],
+    __inheritableKeys : [ "colors", "decorations", "fonts", "appearances", "meta" ],
 
 
     /** {Map} allowed keys in theme definition */
@@ -347,7 +346,7 @@ qx.Bootstrap.define("qx.Theme",
         }
 
         // Validate maps
-        var maps = [ "colors", "borders", "decorations", "fonts", "widgets", "appearances", "meta" ];
+        var maps = [ "colors", "decorations", "fonts", "appearances", "meta" ];
         for (var i=0, l=maps.length; i<l; i++)
         {
           var key = maps[i];
