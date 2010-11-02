@@ -65,7 +65,6 @@ qx.Class.define("qx.theme.manager.Meta",
       var color = null;
       var decoration = null;
       var font = null;
-      var icon = null;
       var appearance = null;
 
       if (value)
@@ -73,20 +72,17 @@ qx.Class.define("qx.theme.manager.Meta",
         color = value.meta.color || null;
         decoration = value.meta.decoration || null;
         font = value.meta.font || null;
-        icon = value.meta.icon || null;
         appearance = value.meta.appearance || null;
       }
 
       var colorMgr = qx.theme.manager.Color.getInstance();
       var decorationMgr = qx.theme.manager.Decoration.getInstance();
       var fontMgr = qx.theme.manager.Font.getInstance();
-      var iconMgr = qx.theme.manager.Icon.getInstance();
       var appearanceMgr = qx.theme.manager.Appearance.getInstance();
 
       colorMgr.setTheme(color);
       decorationMgr.setTheme(decoration);
       fontMgr.setTheme(font);
-      iconMgr.setTheme(icon);
       appearanceMgr.setTheme(appearance);
     },
 
