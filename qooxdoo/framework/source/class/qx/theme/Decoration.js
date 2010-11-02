@@ -54,7 +54,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/selection.png",
+        backgroundImage  : "qx/decoration/selection.png",
         backgroundRepeat : "scale"
       }
     },
@@ -65,7 +65,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/selection.png",
+        backgroundImage  : "qx/decoration/selection.png",
         backgroundRepeat : "scale",
         bottom: [2, "solid", "#33508D"]
       }
@@ -87,7 +87,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/pane/pane.png",
+        baseImage : "qx/decoration/pane/pane.png",
         insets    : [0, 2, 3, 0]
       }
     },
@@ -97,7 +97,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/groupbox/groupbox.png"
+        baseImage : "qx/decoration/groupbox/groupbox.png"
       }
     },
 
@@ -110,7 +110,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
         outerColor : "invalid",
         innerColor : "white",
         innerOpacity : 0.5,
-        backgroundImage : "decoration/form/input.png",
+        backgroundImage : "qx/decoration/form/input.png",
         backgroundRepeat : "repeat-x",
         backgroundColor : "background-light"
       }
@@ -170,7 +170,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/form/tooltip-error.png",
+        baseImage : "qx/decoration/form/tooltip-error.png",
         insets    : [ 2, 5, 5, 2 ]
       }
     },
@@ -181,7 +181,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator: qx.ui.decoration.Background,
 
       style: {
-        backgroundImage: "decoration/form/tooltip-error-arrow.png",
+        backgroundImage: "qx/decoration/form/tooltip-error-arrow.png",
         backgroundPositionY: "center",
         backgroundRepeat: "no-repeat",
         insets: [0, 0, 0, 10]
@@ -200,7 +200,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/shadow/shadow.png",
+        baseImage : "qx/decoration/shadow/shadow.png",
         insets    : [ 4, 8, 8, 4 ]
       }
     },
@@ -210,7 +210,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/shadow/shadow-small.png",
+        baseImage : "qx/decoration/shadow/shadow-small.png",
         insets    : [ 0, 3, 3, 0 ]
       }
     },
@@ -231,7 +231,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage : "decoration/scrollbar/scrollbar-bg-horizontal.png",
+        backgroundImage : "qx/decoration/scrollbar/scrollbar-bg-horizontal.png",
         backgroundRepeat : "repeat-x"
       }
     },
@@ -242,7 +242,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage : "decoration/scrollbar/scrollbar-bg-vertical.png",
+        backgroundImage : "qx/decoration/scrollbar/scrollbar-bg-vertical.png",
         backgroundRepeat : "repeat-y"
       }
     },
@@ -252,7 +252,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Beveled,
 
       style : {
-        backgroundImage : "decoration/scrollbar/scrollbar-button-bg-horizontal.png",
+        backgroundImage : "qx/decoration/scrollbar/scrollbar-button-bg-horizontal.png",
         backgroundRepeat : "scale",
         outerColor : "border-main",
         innerColor : "white",
@@ -265,7 +265,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Beveled,
 
       style : {
-        backgroundImage : "decoration/scrollbar/scrollbar-button-bg-horizontal.png",
+        backgroundImage : "qx/decoration/scrollbar/scrollbar-button-bg-horizontal.png",
         backgroundRepeat : "scale",
         outerColor : "border-disabled",
         innerColor : "white",
@@ -278,7 +278,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Beveled,
 
       style : {
-        backgroundImage : "decoration/scrollbar/scrollbar-button-bg-vertical.png",
+        backgroundImage : "qx/decoration/scrollbar/scrollbar-button-bg-vertical.png",
         backgroundRepeat : "scale",
         outerColor : "border-main",
         innerColor : "white",
@@ -291,7 +291,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Beveled,
 
       style : {
-        backgroundImage : "decoration/scrollbar/scrollbar-button-bg-vertical.png",
+        backgroundImage : "qx/decoration/scrollbar/scrollbar-button-bg-vertical.png",
         backgroundRepeat : "scale",
         outerColor : "border-disabled",
         innerColor : "white",
@@ -315,7 +315,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/form/button.png",
+        baseImage : "qx/decoration/form/button.png",
         insets    : 2
       }
     },
@@ -326,7 +326,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/form/button-disabled.png",
+        baseImage : "qx/decoration/form/button-disabled.png",
         insets    : 2
       }
     },
@@ -337,7 +337,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/form/button-focused.png",
+        baseImage : "qx/decoration/form/button-focused.png",
         insets    : 2
       }
     },
@@ -348,7 +348,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/form/button-hovered.png",
+        baseImage : "qx/decoration/form/button-hovered.png",
         insets    : 2
       }
     },
@@ -359,7 +359,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/form/button-pressed.png",
+        baseImage : "qx/decoration/form/button-pressed.png",
         insets    : 2
       }
     },
@@ -370,7 +370,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/form/button-checked.png",
+        baseImage : "qx/decoration/form/button-checked.png",
         insets    : 2
       }
     },
@@ -381,7 +381,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/form/button-checked-focused.png",
+        baseImage : "qx/decoration/form/button-checked-focused.png",
         insets    : 2
       }
     },
@@ -435,7 +435,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
         outerColor : "border-input",
         innerColor : "white",
         innerOpacity : 0.5,
-        backgroundImage : "decoration/form/input.png",
+        backgroundImage : "qx/decoration/form/input.png",
         backgroundRepeat : "repeat-x",
         backgroundColor : "background-light"
       }
@@ -449,7 +449,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       {
         outerColor : "border-input",
         innerColor : "border-focused",
-        backgroundImage : "decoration/form/input-focused.png",
+        backgroundImage : "qx/decoration/form/input-focused.png",
         backgroundRepeat : "repeat-x",
         backgroundColor : "background-light"
       }
@@ -463,7 +463,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       {
         outerColor : "invalid",
         innerColor : "border-focused-invalid",
-        backgroundImage : "decoration/form/input-focused.png",
+        backgroundImage : "qx/decoration/form/input-focused.png",
         backgroundRepeat : "repeat-x",
         backgroundColor : "background-light",
         insets: [2]
@@ -480,7 +480,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
         outerColor : "border-disabled",
         innerColor : "white",
         innerOpacity : 0.5,
-        backgroundImage : "decoration/form/input.png",
+        backgroundImage : "qx/decoration/form/input.png",
         backgroundRepeat : "repeat-x",
         backgroundColor : "background-light"
       }
@@ -502,7 +502,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage : "decoration/toolbar/toolbar-gradient.png",
+        backgroundImage : "qx/decoration/toolbar/toolbar-gradient.png",
         backgroundRepeat : "scale"
       }
     },
@@ -515,7 +515,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       {
         outerColor : "#b6b6b6",
         innerColor : "#f8f8f8",
-        backgroundImage : "decoration/form/button-c.png",
+        backgroundImage : "qx/decoration/form/button-c.png",
         backgroundRepeat : "scale"
       }
     },
@@ -528,7 +528,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       {
         outerColor : "#b6b6b6",
         innerColor : "#f8f8f8",
-        backgroundImage : "decoration/form/button-checked-c.png",
+        backgroundImage : "qx/decoration/form/button-checked-c.png",
         backgroundRepeat : "scale"
       }
     },
@@ -556,7 +556,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/toolbar/toolbar-part.gif",
+        backgroundImage  : "qx/decoration/toolbar/toolbar-part.gif",
         backgroundRepeat : "repeat-y"
       }
     },
@@ -576,7 +576,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        baseImage : "decoration/tabview/tabview-pane.png",
+        baseImage : "qx/decoration/tabview/tabview-pane.png",
         insets : [ 4, 6, 7, 4 ]
       }
     },
@@ -586,7 +586,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-top-active.png"
+        baseImage : "qx/decoration/tabview/tab-button-top-active.png"
       }
     },
 
@@ -595,7 +595,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-top-inactive.png"
+        baseImage : "qx/decoration/tabview/tab-button-top-inactive.png"
       }
     },
 
@@ -604,7 +604,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-bottom-active.png"
+        baseImage : "qx/decoration/tabview/tab-button-bottom-active.png"
       }
     },
 
@@ -613,7 +613,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-bottom-inactive.png"
+        baseImage : "qx/decoration/tabview/tab-button-bottom-inactive.png"
       }
     },
 
@@ -622,7 +622,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-left-active.png"
+        baseImage : "qx/decoration/tabview/tab-button-left-active.png"
       }
     },
 
@@ -631,7 +631,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-left-inactive.png"
+        baseImage : "qx/decoration/tabview/tab-button-left-inactive.png"
       }
     },
 
@@ -640,7 +640,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-right-active.png"
+        baseImage : "qx/decoration/tabview/tab-button-right-active.png"
       }
     },
 
@@ -649,7 +649,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/tabview/tab-button-right-inactive.png"
+        baseImage : "qx/decoration/tabview/tab-button-right-inactive.png"
       }
     },
 
@@ -705,7 +705,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/window/captionbar-active.png"
+        baseImage : "qx/decoration/window/captionbar-active.png"
       }
     },
 
@@ -714,7 +714,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/window/captionbar-inactive.png"
+        baseImage : "qx/decoration/window/captionbar-inactive.png"
       }
     },
 
@@ -723,7 +723,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       decorator : qx.ui.decoration.Grid,
 
       style : {
-        baseImage : "decoration/window/statusbar.png"
+        baseImage : "qx/decoration/window/statusbar.png"
       }
     },
 
@@ -766,7 +766,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/table/header-cell.png",
+        backgroundImage  : "qx/decoration/table/header-cell.png",
         backgroundRepeat : "scale",
 
         widthBottom : 1,
@@ -810,7 +810,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/table/header-cell.png",
+        backgroundImage  : "qx/decoration/table/header-cell.png",
         backgroundRepeat : "scale",
 
         widthBottom : 1,
@@ -859,7 +859,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/table/header-cell.png",
+        backgroundImage  : "qx/decoration/table/header-cell.png",
         backgroundRepeat : "scale",
 
         widthRight : 1,
@@ -883,7 +883,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/menu/background.png",
+        backgroundImage  : "qx/decoration/menu/background.png",
         backgroundRepeat : "scale",
 
         width : 1,
@@ -919,7 +919,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage  : "decoration/menu/bar-background.png",
+        backgroundImage  : "qx/decoration/menu/bar-background.png",
         backgroundRepeat : "scale",
 
         width : 1,
@@ -941,7 +941,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
       style :
       {
-        backgroundImage : "decoration/app-header.png",
+        backgroundImage : "qx/decoration/app-header.png",
         backgroundRepeat : "scale"
       }
 
