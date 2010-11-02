@@ -22,7 +22,7 @@
  * Theme classes contain styling information for certain aspects of the
  * graphical user interface.
  *
- * Supported themes are: colors, decorations, fonts, icons, appearances.
+ * Supported themes are: colors, decorations, fonts, appearances.
  * The additional meta theme allows for grouping of the individual
  * themes.
  */
@@ -52,7 +52,6 @@ qx.Bootstrap.define("qx.Theme",
      *   colors : {},
      *   decorations : {},
      *   fonts : {},
-     *   icons : {},
      *   widgets : {},
      *   appearances : {},
      *   meta : {}
@@ -307,7 +306,7 @@ qx.Bootstrap.define("qx.Theme",
 
 
     /** {Array} Keys which support inheritance */
-    __inheritableKeys : [ "colors", "borders", "decorations", "fonts", "icons", "widgets", "appearances", "meta" ],
+    __inheritableKeys : [ "colors", "borders", "decorations", "fonts", "widgets", "appearances", "meta" ],
 
 
     /** {Map} allowed keys in theme definition */
@@ -323,7 +322,6 @@ qx.Bootstrap.define("qx.Theme",
         "borders"     : "object", // Map
         "decorations" : "object", // Map
         "fonts"       : "object", // Map
-        "icons"       : "object", // Map
         "widgets"     : "object", // Map
         "appearances" : "object", // Map
         "meta"        : "object", // Map
@@ -343,7 +341,6 @@ qx.Bootstrap.define("qx.Theme",
         "border" : "object",
         "decoration" : "object",
         "font" : "object",
-        "icon" : "object",
         "appearance" : "object",
         "widget" : "object"
       },
@@ -381,7 +378,7 @@ qx.Bootstrap.define("qx.Theme",
         }
 
         // Validate maps
-        var maps = [ "colors", "borders", "decorations", "fonts", "icons", "widgets", "appearances", "meta" ];
+        var maps = [ "colors", "borders", "decorations", "fonts", "widgets", "appearances", "meta" ];
         for (var i=0, l=maps.length; i<l; i++)
         {
           var key = maps[i];
