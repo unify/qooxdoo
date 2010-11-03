@@ -19,10 +19,6 @@
 
 /**
  * This is the base class for all qooxdoo applications.
- *
- * @require {qx.event.handler.Application}
- * @require {qx.event.handler.Window}
- * @require {qx.event.dispatch.Direct}
  */
 qx.Class.define("qx.core.Init",
 {
@@ -48,35 +44,18 @@ qx.Class.define("qx.core.Init",
      * Runs when the application is loaded. Automatically creates an instance
      * of the class defined by the setting <code>qx.application</code>.
      *
+     * @param appClass {Class} Application class to boot
      * @return {void}
      */
-    ready : function()
+    boot : function(appClass)
     {
       if (this.__application) {
         return;
       }
 
-      qx.log.Logger.debug(this, "Load runtime: " + (new Date - qx.Bootstrap.LOADSTART) + "ms");
-
-      var app = qx.core.Setting.get("qx.application");
-      var clazz = qx.Class.getByName(app);
-
-      if (clazz)
-      {
-        this.__application = new clazz;
-
-        var start = new Date;
-        this.__application.main();
-        qx.log.Logger.debug(this, "Main runtime: " + (new Date - start) + "ms");
-
-        var start = new Date;
-        this.__application.finalize();
-        qx.log.Logger.debug(this, "Finalize runtime: " + (new Date - start) + "ms");
-      }
-      else
-      {
-        qx.log.Logger.warn("Missing application class: " + app);
-      }
+      var app = this.__application = new appClass;
+      app.main();
+      app.finalize();
     },
 
 
@@ -123,7 +102,6 @@ qx.Class.define("qx.core.Init",
 
   defer : function(statics)
   {
-    qx.event.Registration.addListener(window, "ready", statics.ready, statics);
     qx.event.Registration.addListener(window, "shutdown", statics.__shutdown, statics);
     qx.event.Registration.addListener(window, "beforeunload", statics.__close, statics);
   }
