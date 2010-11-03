@@ -152,18 +152,18 @@ qx.Class.define("apiviewer.Viewer",
       toolbar.add(part);
       this.__firstPartHash = part.toHashCode();
 
-      var showPackages = new qx.ui.toolbar.RadioButton(this.tr("Content"), "icon/22/apps/utilities-dictionary.png");
+      var showPackages = new qx.ui.toolbar.RadioButton(this.tr("Content"), "qx/icon/22/apps/utilities-dictionary.png");
       showPackages.setUserData("value", "packages");
       showPackages.setValue(true);
       showPackages.setToolTipText(this.tr("Show/hide the packages."));
       part.add(showPackages);
 
-      var showSearch = new qx.ui.toolbar.RadioButton(this.tr("Search"), "icon/22/actions/edit-find.png");
+      var showSearch = new qx.ui.toolbar.RadioButton(this.tr("Search"), "qx/icon/22/actions/edit-find.png");
       showSearch.setUserData("value", "search");
       showSearch.setToolTipText(this.tr("Search for packages, classes and members."));
       part.add(showSearch);
 
-      var showLegend = new qx.ui.toolbar.RadioButton(this.tr("Legend"), "icon/22/apps/utilities-help.png");
+      var showLegend = new qx.ui.toolbar.RadioButton(this.tr("Legend"), "qx/icon/22/apps/utilities-help.png");
       showLegend.setUserData("value", "legend");
       showLegend.setToolTipText(this.tr("Show/hide the legend."));
       part.add(showLegend);
@@ -201,7 +201,7 @@ qx.Class.define("apiviewer.Viewer",
       toolbar.setOverflowHandling(true);
       
       // add a button for overflow handling
-      var chevron = new qx.ui.toolbar.MenuButton(null, "icon/22/actions/media-seek-forward.png");
+      var chevron = new qx.ui.toolbar.MenuButton(null, "qx/icon/22/actions/media-seek-forward.png");
       chevron.setAppearance("toolbar-button");  // hide the down arrow icon
       toolbar.add(chevron);
       toolbar.setOverflowIndicator(chevron);
