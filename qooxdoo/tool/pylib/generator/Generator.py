@@ -182,6 +182,10 @@ class Generator(object):
             {
               "type"   : "JClassDepJob"
             },
+            "test-interaction" :
+            {
+              "type"   : "JClassDepJob"
+            }
           }
 
 
@@ -245,7 +249,7 @@ class Generator(object):
                 libObj    = Library(lib, self._console)
                 checkFile = libObj.mostRecentlyChangedFile()[0]
                 cacheId   = "lib-%s" % libObj.manifest
-                checkObj  = self._cache.read(cacheId, checkFile, memory=True)
+                checkObj, _  = self._cache.read(cacheId, checkFile, memory=True)
                 if checkObj:
                     self._console.debug("Use memory cache for %s" % libObj._path)
                     libObj = checkObj  # continue with cached obj
@@ -561,6 +565,8 @@ class Generator(object):
                     self.runUpdateTranslation()
                 elif trigger == "pretty-print":
                     self._codeGenerator.runPrettyPrinting(self._classes, self._classesObj)
+                elif trigger == "test-interaction":
+                    self.runInteractionTest()
                 else:
                     pass
 
@@ -610,7 +616,10 @@ class Generator(object):
               # keep the list of class objects in sync
             script.classesObj = [self._classesObj[id] for id in script.classes]
 
-            script.namespaces = script.createTrie(script.classesObj)  #TODO: experimental
+            script.namespaces = script.createTrie(script.classesObj)  # TODO: experimental
+
+            featureMap = self._depLoader.registerDependeeFeatures(script.classesObj, variants, script.buildType)
+            self._treeCompiler._featureMap = featureMap
 
             # prepare 'script' object
             if set(("compile", "log")).intersection(jobTriggers):
@@ -765,6 +774,7 @@ class Generator(object):
                     classObj = ClassIdToObject[classId]
                     classDeps, _ = classObj.dependencies(variants)
                     ignored_names = [x.name for x in classDeps["ignore"]]
+                    ignored_names.append(classId) # fix self-references from Class.dependencies()
 
                     for dep in classDeps["load"]:
                         if dep.name not in ignored_names:
@@ -797,6 +807,7 @@ class Generator(object):
                     classObj = ClassIdToObject[classId]
                     classDeps, _ = classObj.dependencies(variants)
                     ignored_names = [x.name for x in classDeps["ignore"]]
+                    ignored_names.append(classId) # fix self-references from Class.dependencies()
 
                     for dep in classDeps["load"]:
                         if dep.name not in ignored_names:
@@ -1748,6 +1759,57 @@ class Generator(object):
             self._console.outdent()
 
         return
+
+
+    def runInteractionTest(self):
+        self._console.info("Running GUI test...")
+        
+        simulationConfig = {
+          "autHost" : self._job.get("test-interaction/aut-host", "file://"),
+          "autPath" : self._job.get("test-interaction/aut-path", ""),
+          "testBrowser" : self._job.get("test-interaction/test-browser", "*firefox3"),
+          "selServer" : self._job.get("test-interaction/selenium-host", "localhost"),
+          "selPort" : self._job.get("test-interaction/selenium-port", "4444"),
+          "qxPath" : self._config.get("let/QOOXDOO_PATH"),
+          "autName" : self._config.get("let/APPLICATION")
+        }
+        
+        app = self._config.get("let/APPLICATION")
+        for lib in self._libraries:
+            if lib.getNamespace() == app:
+                simulationConfig["classPath"] = lib._classPath
+        
+        testInclude = self._job.get("test-interaction/test-include", None)
+        if testInclude:
+            testInclude = self._expandRegExps(testInclude)
+            simulationConfig["testClasses"] = "[" + ",".join(testInclude) + "]"
+        else:
+            simulationConfig["application"] = self._job.get("test-interaction/test-application", None)
+        
+        simulationConfigString = ""
+        for key, value in simulationConfig.iteritems():
+            simulationConfigString += " %s=%s" %(key, value)
+        
+        options = self._job.get("test-interaction/simulation-options", "")
+        if options:
+            options = " ".join(options)
+        
+        javaClassPath = self._job.get("test-interaction/java-classpath", False)
+        if javaClassPath:
+            javaClassPath = "-cp %s" %javaClassPath
+        
+        if self._job.get("test-interaction/rhino-debugger", False):
+            rhinoClass = "org.mozilla.javascript.tools.debugger.Main"
+        else:
+            rhinoClass = "org.mozilla.javascript.tools.shell.Main"
+        
+        runnerScript = " %s/tool/rhino/Runner.js" %simulationConfig["qxPath"]
+        
+        cmd = "java %s %s %s %s %s" %(javaClassPath, rhinoClass, runnerScript, simulationConfigString, options)        
+        
+        self._console.debug("Selenium start command: " + cmd)
+        shell = ShellCmd()
+        shell.execute_logged(cmd, self._console, True)
 
 
     def _splitIncludeExcludeList(self, data):

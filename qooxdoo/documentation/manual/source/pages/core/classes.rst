@@ -33,6 +33,7 @@ Members
 -------
 
 Members of a class come in two flavors: 
+
 * Class members (also called "static" members) are attached to the class itself, not to individual instances
 * Instance members are attached to each individual instance of a class
 
@@ -152,6 +153,7 @@ Unfortunately, JavaScript is very limited in *enforcing* those protection mechan
 * *private*: members start with a double underscore ``__``
 
 There are some possibilities to enforce or at least check the various degrees of accessibility:
+
 * automatic renaming of private members in the build version could trigger errors when testing the final app
 * checking  instance of ``this`` in protected methods
 * ...
@@ -240,7 +242,7 @@ qooxdoo does, of course, allow for polymorphism, that is most easily seen in the
 .. _pages/classes#calling_the_superclass_constructor:
 
 Calling the Superclass Constructor
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It is hard to come up with an appealing syntax and efficient implementation for calling the superclass constructor from the constructor of a derived class. You simply cannot top Java's ``super()`` here. At least there is some generic way that does not involve to use the superclass name explicitly:
 
@@ -260,7 +262,7 @@ Unfortunately, to mimic a ``super()`` call the special variable ``arguments`` is
 .. _pages/classes#calling_an_overridden_method:
 
 Calling an Overridden Method
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Calling an overridden superclass method from within the overriding method (i.e. both methods have the same name) is similar to calling the superclass constructor:
 
@@ -278,7 +280,7 @@ Calling an overridden superclass method from within the overriding method (i.e. 
 .. _pages/classes#calling_the_superclass_method_or_constructor_with_all_parameters:
 
 Calling the Superclass Method or Constructor with all parameters
-----------------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This variant allows to pass all the parameters (unmodified):
 
@@ -306,7 +308,7 @@ This variant allows to pass all the parameters (unmodified):
 .. _pages/classes#calling_another_static_method:
 
 Calling another Static Method
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Here is an example for calling a static member without using a fully-qualified class name (compare to ``this.base(arguments)`` above):
 
@@ -330,10 +332,13 @@ The syntax for accessing static variables simply is ``this.self(arguments).someS
 
 In purely static classes for calling a static method from another static method, you can directly use the ``this`` keyword, e.g. ``this.someStaticMethod(x)``. 
 
-.. _pages/classes#interfaces:
+.. _pages/classes#usage_of_interfaces_and_mixins:
 
-Interfaces
-==========
+Usage of Interfaces and Mixins
+==============================
+
+Implementing an Interface
+-------------------------
 
 The class system supports :doc:`interfaces`. The implementation is based on the feature set of Java interfaces. Most relevant features of Java-like interfaces are supported. A class can define which interface or multiple interfaces it implements by using the ``implement`` key:
 
@@ -345,12 +350,13 @@ The class system supports :doc:`interfaces`. The implementation is based on the 
 
 .. _pages/classes#mixins:
 
-Mixins
-======
+Including a Mixin
+-----------------
 
 Unlike interfaces, :doc:`mixins` do contain concrete implementations of methods. They borrow some ideas from Ruby and similar scripting languages.
 
 Features:
+
 * Add mixins to the definition of a class: All members of the mixin are added to the class definition.
 * Add a mixin to a class after the class is defined. Enhances the functionality but is not allowed to overwrite existing members.
 * Patch existing classes. Change the implementation of existing methods. Should normally be avoided but, as some projects may need to patch qooxdoo, we better define a clean way to do so. 
@@ -363,58 +369,73 @@ The concrete implementations of mixins are used in a class through the key ``inc
       include : [qx.test.MPet, qx.test.MSleep]
     });
 
-.. _pages/classes#related_topics:
+Summary
+=======
 
-Related Topics
-==============
+Configuration
+-------------
 
-.. _pages/classes#feature_summary:
+.. list-table::
+   :header-rows: 1
 
-Feature summary
----------------
+   * - Key
+     - Type
+     - Description
 
-Some of the most prominent features include: 
-
-* Closed form of class declaration
-* Interfaces (Java-like)
-* Mixins (Ruby-like)
-* Easy calling of super classes (constructor or methods)
-* Better concepts for ``private``, ``protected`` and ``public`` members
-* Powerful dynamic :doc:`properties <understanding_properties>`
-* Migration support for existing applications
-* Browser specific builds (Gecko, Mshtml, Opera, Webkit)
-* Simplified settings
-* More runtime checks for the application development phase
-
-.. _pages/classes#browser_optimized_builds:
-
-Browser optimized builds
-------------------------
-
-Methods can be tagged to be specific for just one browser. The class system and the generator are responsible for selecting the correct version of the method for the current browser. The generator may create optimized builds and strip out all methods, which are not needed for a given browser.
-
-Features:
-* Runtime selection of the correct method depending on the current browser
-* Optimized builds
-
-  * Loader script which automatically loads the correct version
-  * Maybe toggle other optimizations for specific browsers as well (for example, do string optimizations only in IE)
-
-See :doc:`/pages/development/variants` for more details.
-
-.. _pages/classes#more_runtime_checks:
-
-More runtime checks
--------------------
-
-* More runtime checks in the source version
-* Strip the checks from the build version
-* Remove debugging code from the build version
-
-.. _pages/classes#class_declaration_quick_ref:
-
-Class Declaration Quick Ref
----------------------------
+   * - type	
+     - String
+     - Type of the class. Valid types are ``abstract``, ``static`` and ``singleton``. If unset it defaults to a regular non-static class.
+   
+   * - extend	
+     - Class
+     - The super class the current class inherits from.
+     
+   * - implement
+     - Interface | Interface[]
+     - Single interface or array of interfaces the class implements.
+   
+   * - include
+     - Mixin | Mixin[]
+     - Single mixin or array of mixins, which will be merged into the class.
+   
+   * - construct
+     - Function	
+     - The constructor of the class.
+   
+   * - statics
+     - Map
+     - Map of static members of the class.
+   
+   * - properties
+     - Map
+     - Map of property definitions. For a description of the format of a property definition see `qx.core.Property <http://demo.qooxdoo.org/1.2.x/apiviewer/#qx.core.Property>`_.
+   
+   * - members
+     - Map
+     - Map of instance members of the class.
+   
+   * - settings	
+     - Map
+     - Map of settings for this class. For a description of the format of a setting see `qx.core.Setting <http://demo.qooxdoo.org/1.2.x/apiviewer/#qx.core.Setting>`_.
+   
+   * - variants	
+     - Map
+     - Map of settings for this class. For a description of the format of a setting see `qx.core.Variant <http://demo.qooxdoo.org/1.2.x/apiviewer/#qx.core.Variant>`_.
+   
+   * - events	
+     - Map	 
+     - Map of events the class fires. The keys are the names of the events and the values are the corresponding event type class names.
+   
+   * - defer	
+     - Function	
+     - Function that is called at the end of processing the class declaration. It allows access to the declared statics, members and properties.
+   
+   * - destruct	
+     - Function	
+     - The destructor of the class.
+   
+References
+----------
 
 * :doc:`class_quickref` - a quick syntax overview
-
+* `API Documentation for Class <http://demo.qooxdoo.org/1.2.x/apiviewer/#qx.Class>`_

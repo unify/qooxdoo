@@ -705,7 +705,13 @@ qx.Class.define("qx.io.remote.Exchange",
 
       if (vImplementation)
       {
-        this.warn("Timeout: implementation " + vImplementation.toHashCode());
+        var str = "";
+        for (var key in vImplementation.getParameters())
+        {
+          str += "&" + key + "=" + vImplementation.getParameters()[key];
+        }
+        this.warn("Timeout: implementation " + vImplementation.toHashCode() + ", "
+                  + vImplementation.getUrl() + " [" + vImplementation.getMethod() + "], " + str);
         vImplementation.timeout();
       }
       else
@@ -990,29 +996,6 @@ qx.Class.define("qx.io.remote.Exchange",
 
             this.dispatchEvent(vResponse);
 
-            //this.debug("Result Text: " + vResponse.getContent());
-            //var vEventType;
-
-            /*
-            switch(value)
-            {
-              case "completed":
-                vEventType = "completed";
-                break;
-
-              case "aborted":
-                vEventType = "aborted";
-                break;
-
-              case "timeout":
-                vEventType = "timeout";
-                break;
-
-              case "failed":
-                vEventType = "failed";
-                break;
-            }
-            */
           }
 
           // Disconnect and dispose implementation

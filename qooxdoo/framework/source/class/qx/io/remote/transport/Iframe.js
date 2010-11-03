@@ -46,40 +46,40 @@ qx.Class.define("qx.io.remote.transport.Iframe",
   {
     this.base(arguments);
 
+    // Unique identifiers for iframe and form
     var vUniqueId = (new Date).valueOf();
     var vFrameName = "frame_" + vUniqueId;
     var vFormName = "form_" + vUniqueId;
 
-    // Mshtml allows us to define a full HTML as a parameter for createElement.
-    // Using this method is the only (known) working to register the frame
-    // to the known elements of the Internet Explorer.
+    // This is to prevent the "mixed secure and insecure content" warning in IE with https
+    var vFrameSource;
     if (qx.core.Variant.isSet("qx.client", "mshtml")) {
-      this.__frame = document.createElement('<iframe name="' + vFrameName + '"></iframe>');
-    } else {
-      this.__frame = document.createElement("iframe");
+      vFrameSource = "javascript:void(0)";
     }
 
-    this.__frame.src = "javascript:void(0)";
-    this.__frame.id = this.__frame.name = vFrameName;
-    this.__frame.onload = qx.lang.Function.bind(this._onload, this);
+    // Create a hidden iframe.
+    // The purpose of the iframe is to receive data coming back from the server (see below).
+    this.__frame = qx.bom.Iframe.create({id: vFrameName, name: vFrameName, src: vFrameSource});
 
-    this.__frame.style.display = "none";
+    qx.bom.element.Style.set(this.__frame, "display", "none");
 
-    document.body.appendChild(this.__frame);
+    // Create form element with textarea as conduit for request data.
+    // The target of the form is the hidden iframe, which means the response 
+    // coming back from the server is written into the iframe.
+    this.__form = qx.bom.Element.create("form", {id: vFormName, name: vFormName, target: vFrameName});
+    qx.bom.element.Style.set(this.__form, "display", "none");
+    qx.dom.Element.insertEnd(this.__form, qx.dom.Node.getBodyElement(document));
 
-    this.__form = document.createElement("form");
-    this.__form.target = vFrameName;
-    this.__form.id = this.__form.name = vFormName;
+    this.__data = qx.bom.Element.create("textarea", {id: "_data_", name: "_data_"});
+    qx.dom.Element.insertEnd(this.__data, this.__form);
 
-    this.__form.style.display = "none";
+    // Finally, attach iframe to DOM and add listeners
+    qx.dom.Element.insertEnd(this.__frame, qx.dom.Node.getBodyElement(document));
+    qx.event.Registration.addListener(this.__frame, "load", this._onload, this);
 
-    document.body.appendChild(this.__form);
-
-    this.__data = document.createElement("textarea");
-    this.__data.id = this.__data.name = "_data_";
-    this.__form.appendChild(this.__data);
-
-    this.__frame.onreadystatechange = qx.lang.Function.bind(this._onreadystatechange, this);
+    // qx.event.handler.Iframe does not yet support the readystatechange event
+    this.__onreadystatechangeWrapper = qx.lang.Function.listener(this._onreadystatechange, this);
+    qx.bom.Event.addNativeListener(this.__frame, "readystatechange", this.__onreadystatechangeWrapper);
   },
 
 
@@ -150,6 +150,7 @@ qx.Class.define("qx.io.remote.transport.Iframe",
     __lastReadyState : 0,
     __form : null,
     __frame : null,
+    __onreadystatechangeWrapper : null,
 
     /*
     ---------------------------------------------------------------------------
@@ -264,6 +265,14 @@ qx.Class.define("qx.io.remote.transport.Iframe",
      */
     _onload : qx.event.GlobalError.observeMethod(function(e)
     {
+
+      // Timing-issue in Opera
+      // Do not switch state to complete in case load event fires before content 
+      // of iframe was updated
+      if (qx.bom.client.Engine.NAME == "opera" && this.getIframeHtmlContent() == "") {
+        return;
+      }
+
       if (this.__form.src) {
         return;
       }
@@ -609,21 +618,21 @@ qx.Class.define("qx.io.remote.transport.Iframe",
   {
     if (this.__frame)
     {
-      this.__frame.onload = null;
-      this.__frame.onreadystatechange = null;
-
+      qx.event.Registration.removeListener(this.__frame, "load", this._onload, this);
+      qx.bom.Event.removeNativeListener(this.__frame, "readystatechange", this.__onreadystatechangeWrapper);
+      
       // Reset source to a blank image for gecko
       // Otherwise it will switch into a load-without-end behaviour
       if (qx.core.Variant.isSet("qx.client", "gecko")) {
         this.__frame.src = qx.util.ResourceManager.getInstance().toUri("qx/static/blank.gif");
       }
 
-      // Finally remove element node
-      document.body.removeChild(this.__frame);
+      // Finally, remove element node
+      qx.dom.Element.remove(this.__frame);
     }
 
     if (this.__form) {
-      document.body.removeChild(this.__form);
+      qx.dom.Element.remove(this.__form);
     }
 
     this.__frame = this.__form = this.__data = null;

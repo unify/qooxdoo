@@ -72,7 +72,7 @@ qx.Class.define("qx.locale.Manager",
      *
      * @param messageId {String} message id (may contain format strings)
      * @param varargs {Object} variable number of arguments applied to the format string
-     * @return {String} The translated string
+     * @return {String | LocalizedString} The translated message or localized string
      * @see qx.lang.String.format
      */
     tr : function(messageId, varargs)
@@ -93,7 +93,7 @@ qx.Class.define("qx.locale.Manager",
      * @param pluralMessageId {String} message id of the plural form (may contain format strings)
      * @param count {Integer} singular form if equals 1, otherwise plural
      * @param varargs {Object} variable number of arguments applied to the format string
-     * @return {String} The translated string
+     * @return {String | LocalizedString} The translated message or localized string
      * @see qx.lang.String.format
      */
     trn : function(singularMessageId, pluralMessageId, count, varargs)
@@ -118,7 +118,7 @@ qx.Class.define("qx.locale.Manager",
      * @param hint {String} hint for the translator of the message. Will be included in the .po file.
      * @param messageId {String} message id (may contain format strings)
      * @param varargs {Object} variable number of arguments applied to the format string
-     * @return {String} The translated string
+     * @return {String | LocalizedString} The translated message or localized string
      * @see qx.lang.String.format
      */
     trc : function(hint, messageId, varargs)
