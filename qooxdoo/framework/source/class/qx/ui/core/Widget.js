@@ -167,7 +167,7 @@ qx.Class.define("qx.ui.core.Widget",
     contextmenu : "qx.event.type.Mouse",
 
     /** Fired before the context menu is opened. */
-    beforeContextmenuOpen : "qx.event.type.Mouse",
+    beforeContextmenuOpen : "qx.event.type.Data",
 
     /** Fired if the mouse wheel is used over the widget. */
     mousewheel : "qx.event.type.MouseWheel",
@@ -3291,7 +3291,6 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       // Apply qooxdoo attribute
-      this.getContainerElement().setSelectable(value);
       this.getContentElement().setSelectable(value);
     },
 

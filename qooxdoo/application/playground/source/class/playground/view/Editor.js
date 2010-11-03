@@ -96,11 +96,21 @@ qx.Class.define("playground.view.Editor",
       this.add(this.__textarea, { flex : 1 });
       
       this.__editor = new qx.ui.core.Widget();
-      this.__editor.addListenerOnce("appear", function() {
-        this.__onEditorAppear();
-      }, this);
+      var highlightDisabled = false;
+      // FF2 does not have that...
+      // also block the editor for IE which seems not to work
+      // http://github.com/ajaxorg/editor/issues/issue/6            
+      if (!document.createElement("div").getBoundingClientRect || qx.bom.client.Browser.NAME == "ie") {
+        this.fireEvent("disableHighlighting");
+        highlightDisabled = true;
+      } else {
+        this.__editor.addListenerOnce("appear", function() {
+          this.__onEditorAppear();
+        }, this);
+      }
       this.__editor.setVisibility("excluded");
       this.add(this.__editor, { flex : 1 });
+
       
       // load the CSS files for the code editor
       qx.bom.Stylesheet.includeFile("resource/playground/css/editor.css");
@@ -113,7 +123,7 @@ qx.Class.define("playground.view.Editor",
       
       // chech the initial highlight state
       var shouldHighligth = qx.bom.Cookie.get("playgroundHighlight") !== "false";
-      this.useHighlight(shouldHighligth);
+      this.useHighlight(!highlightDisabled && shouldHighligth);
     },
 
 
@@ -124,9 +134,8 @@ qx.Class.define("playground.view.Editor",
      * @lint ignoreUndefined(require)
      */
      __onEditorAppear : function() {
-       // override the style rule for the focus border
-       
        var self = this;
+       
        // ajax.org code editor include
        require(
          {baseUrl: "resource/playground/editor"},
@@ -135,12 +144,10 @@ qx.Class.define("playground.view.Editor",
              "ace/VirtualRenderer",
              "ace/Document",
              "ace/mode/JavaScript",
-             "ace/mode/Css",
-             "ace/mode/Html",
-             "ace/mode/Xml",
-             "ace/mode/Text",
              "ace/UndoManager"
-         ], function(Editor, Renderer, Document, JavaScriptMode, CssMode, HtmlMode, XmlMode, TextMode, UndoManager) { 
+         ], function(
+           Editor, Renderer, Document, JavaScriptMode, UndoManager
+          ) { 
 
          var container = self.__editor.getContentElement().getDomElement();
          self.__ace = new Editor(new Renderer(container));

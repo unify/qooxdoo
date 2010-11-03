@@ -20,16 +20,16 @@
 #
 ################################################################################
 
-import os, sys, time
+import os, sys, time, functools
 import cPickle as pickle
 from misc import filetool
 from misc.securehash import sha_construct
 from generator.action.ActionLib import ActionLib
 
-memcache  = {}
+memcache  = {} # {key: {'content':content, 'time': (time.time()}}
 actionLib = None
 check_file     = u".cache_check_file"
-CACHE_REVISION = 23422   # Change this to the current qooxdoo svn revision when existing caches need clearing
+CACHE_REVISION = 23539   # Change this to the current qooxdoo svn revision when existing caches need clearing
 
 class Cache(object):
 
@@ -195,16 +195,16 @@ class Cache(object):
         contentId = "-".join(splittedId)
         multiId = "multi" + baseId
         
-        saved = self.read(multiId, None, True)
+        saved, _ = self.read(multiId, None, True)
         if saved and saved.has_key(contentId):
             temp = saved[contentId]
             
             if os.stat(dependsOn).st_mtime > temp["time"]:
-                return None
+                return None, temp["time"]
             
-            return temp["content"]
+            return temp["content"], temp["time"]
             
-        return None
+        return None, None
         
         
     def writemulti(self, cacheId, content):
@@ -213,7 +213,7 @@ class Cache(object):
         contentId = "-".join(splittedId)
         multiId = "multi" + baseId
 
-        saved = self.read(multiId, None, True)
+        saved, _ = self.read(multiId, None, True)
         if not saved:
             saved = {}
         
@@ -227,22 +227,27 @@ class Cache(object):
     # @param dependsOn  file name to compare cache file against
     # @param memory     if read from disk keep value also in memory; improves subsequent access
     def read(self, cacheId, dependsOn=None, memory=False):
-        if memcache.has_key(cacheId):
-            return memcache[cacheId]
+        if dependsOn:
+            dependsModTime = os.stat(dependsOn).st_mtime
 
+        # Mem cache
+        if cacheId in memcache:
+            memitem = memcache[cacheId]
+            if not dependsOn or dependsModTime < memitem['time']:
+                return memitem['content'], memitem['time']
+
+        # File cache
         filetool.directory(self._path)
         cacheFile = os.path.join(self._path, self.filename(cacheId))
 
         try:
             cacheModTime = os.stat(cacheFile).st_mtime
         except OSError:
-            return None
+            return None, None
 
-        # Out of date check
-        if dependsOn:
-            fileModTime = os.stat(dependsOn).st_mtime
-            if fileModTime > cacheModTime:
-                return None
+        # out of date check
+        if dependsOn and dependsModTime > cacheModTime:
+                return None, cacheModTime
 
         try:
             self._locked_files.add(cacheFile)
@@ -259,13 +264,13 @@ class Cache(object):
             self._locked_files.remove(cacheFile)
 
             if memory:
-                memcache[cacheId] = content
+                memcache[cacheId] = {'content':content, 'time': time.time()}
 
-            return content
+            return content, cacheModTime
 
         except (IOError, EOFError, pickle.PickleError, pickle.UnpicklingError):
             self._console.error("Could not read cache from %s" % self._path)
-            return None
+            return None, cacheModTime
 
 
     ##
@@ -297,4 +302,20 @@ class Cache(object):
                 raise e
 
         if memory:
-            memcache[cacheId] = content
+            memcache[cacheId] = {'time': time.time(), 'content':content}
+
+
+##
+# Caching decorator
+def caching(cacheobj, keyfn):
+    def realdecorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            cacheId = keyfn(*args, **kwargs)
+            res = cacheobj.read(cacheId)
+            if not res:
+                res = fn(*args, **kwargs)
+                cacheobj.write(cacheId, res)
+            return res
+        return wrapper
+    return realdecorator

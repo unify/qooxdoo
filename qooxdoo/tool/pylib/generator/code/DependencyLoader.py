@@ -39,6 +39,7 @@
 ##
 
 import sys, re, os, types
+from operator import attrgetter
 import graph
 
 from misc.ExtMap                import ExtMap
@@ -119,7 +120,7 @@ class DependencyLoader(object):
     def classlistFromInclude(self, includeWithDeps, excludeWithDeps, variants, 
                              verifyDeps=False, script=None):
 
-        def classlistFromClassRecursive(item, excludeWithDeps, variants, result):
+        def classlistFromClassRecursive(item, excludeWithDeps, variants, result, warn_deps):
             # support blocking
             if item in excludeWithDeps:
                 return
@@ -140,13 +141,14 @@ class DependencyLoader(object):
                 self._console.dot("%s" % "." if cached else "*")
 
             # and evaluate them
-            deps["warn"] = self._checkDepsAreKnown(deps,)  # add 'warn' key to deps
+            deps["warn"] = self._checkDepsAreKnown(deps)  # add 'warn' key to deps
             ignore_names = [x.name for x in deps["ignore"]]
             if verifyDeps:
                 for dep in deps["warn"]:
                     if dep.name not in ignore_names:
-                        self._console.nl()
-                        self._console.warn("Hint: Unknown global symbol referenced: %s (%s:%s)" % (dep.name, item, dep.line))
+                        warn_deps.append(dep)
+                        #self._console.nl()
+                        #self._console.warn("Hint: Unknown global symbol referenced: %s (%s:%s)" % (dep.name, item, dep.line))
 
             # process lists
             try:
@@ -155,12 +157,12 @@ class DependencyLoader(object):
               for subitem in deps["load"]:
                   subname = subitem.name
                   if subname not in result and subname not in excludeWithDeps and subname not in skipList:
-                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result)
+                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result, warn_deps)
 
               for subitem in deps["run"]:
                   subname = subitem.name
                   if subname not in result and subname not in excludeWithDeps and subname not in skipList:
-                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result)
+                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result, warn_deps)
 
             except NameError, detail:
                 raise NameError("Could not resolve dependencies of class: %s \n%s" % (item, detail))
@@ -181,6 +183,9 @@ class DependencyLoader(object):
         else:
             buildType = ""
 
+        result = []
+        warn_deps = []
+
         if len(includeWithDeps) == 0:
             self._console.info("Including all known classes")
             result = self._classesObj.keys()
@@ -191,14 +196,27 @@ class DependencyLoader(object):
                 result.remove(classId)
 
         else:
-            result = []
             self._console.info(" ", feed=False)
 
             for item in includeWithDeps:
-                classlistFromClassRecursive(item, excludeWithDeps, variants, result)
+                classlistFromClassRecursive(item, excludeWithDeps, variants, result, warn_deps)
 
             if self._console.getLevel() is "info":
                 self._console.nl()
+
+        # warn about unknown references
+        ignored_names = set()
+        # the current global ignore set is just the list of name spaces of the selected classes
+        for classid in result:
+            nsindex = classid.rfind(".")
+            if nsindex == -1:
+                continue # not interested in bare class names
+            classnamespace = classid[:nsindex]
+            ignored_names.add(classnamespace)
+        for dep in warn_deps:
+            if dep.name not in ignored_names:
+                self._console.warn("Hint: Unknown global symbol referenced: %s (%s:%s)" % (dep.name, dep.requestor, dep.line))
+
 
         return result
 
@@ -208,7 +226,7 @@ class DependencyLoader(object):
     # expressed in config options
     # - interface method
 
-    def getCombinedDeps(self, fileId, variants, buildType=""):
+    def getCombinedDeps(self, fileId, variants, buildType="", stripSelfReferences=True, projectClassNames=True):
 
         # init lists
         loadFinal = []
@@ -219,17 +237,32 @@ class DependencyLoader(object):
 
         static, cached   = classObj.dependencies (variants)
 
+        #if classObj.id == "qx.core.Property":
+        #    print static
+
         loadFinal.extend(static["load"])
         runFinal.extend(static["run"])
 
         # fix self-references
-        loadFinal = [x for x in loadFinal if x.name != fileId]
-        runFinal  = [x for x in runFinal  if x.name != fileId]
+        if stripSelfReferences:
+            loadFinal = [x for x in loadFinal if x.name != fileId]
+            runFinal  = [x for x in runFinal  if x.name != fileId]
+
+        if projectClassNames:
+            loads = loadFinal
+            loadFinal = []
+            for dep in loads:
+                if dep.name not in (x.name for x in loadFinal):
+                    loadFinal.append(dep)
+            runs = runFinal
+            runFinal = []
+            for dep in runs:
+                if dep.name not in (x.name for x in runFinal):
+                    runFinal.append(dep)
 
         # fix source dependency to qx.core.Variant
-        if len(variants) and buildType == "source" :
-            #depsUnOpt = self.getDeps(fileId, {})  # get unopt deps
-            depsUnOpt, cached= classObj.dependencies({})  # get unopt deps
+        if len(variants) and buildType == "source" and classObj.id != "qx.core.Variant":
+            depsUnOpt, _ = classObj.dependencies({})  # get unopt deps
             # this might incur extra generation if unoptimized deps
             # haven't computed before for this fileId
             for depItem in depsUnOpt["load"]:
@@ -243,10 +276,10 @@ class DependencyLoader(object):
 
         # add config dependencies
         if self._require.has_key(fileId):
-            loadFinal.extend(DependencyItem(x, -1) for x in self._require[fileId])
+            loadFinal.extend(DependencyItem(x, '', "|config|") for x in self._require[fileId])
 
         if self._use.has_key(fileId):
-            runFinal.extend(DependencyItem(x,-1) for x in self._use[fileId])
+            runFinal.extend(DependencyItem(x, '', "|config|") for x in self._use[fileId])
 
         # result dict
         deps = {
@@ -254,7 +287,7 @@ class DependencyLoader(object):
             "run"    : runFinal,
             "ignore" : static['ignore'],
         }
-
+        
         return deps, cached
 
 
@@ -300,18 +333,16 @@ class DependencyLoader(object):
 
             # process loadtime requirements
             for dep in deps["load"]:
-                item = dep.name
-                if item in available and not item in result:
-                    if item in path:
-                        other, _ = self.getCombinedDeps(item, variants)
-                        self._console.warn("Detected circular dependency between: %s and %s" % (classId, item))
+                dep_name = dep.name
+                if dep_name in available and not dep_name in result:
+                    if dep_name in path:
+                        self._console.warn("Detected circular dependency between: %s and %s" % (classId, dep_name))
                         self._console.indent()
-                        self._console.debug("%s depends on: %s" % (classId, ", ".join(map(str, deps["load"]))))
-                        self._console.debug("%s depends on: %s" % (item, ", ".join(map(str, other["load"]))))
+                        self._console.debug("currently explored dependency path: %r" % path)
                         self._console.outdent()
                         raise RuntimeError("Circular class dependencies")
                     else:
-                        sortClassesRecurser(item, available, variants, result, path)
+                        sortClassesRecurser(dep_name, available, variants, result, path)
 
             if not classId in result:
                 # remove element from path
@@ -356,3 +387,30 @@ class DependencyLoader(object):
         classList = gr.topological_sorting()
 
         return classList
+
+    
+    def registerDependeeFeatures(self, classList, variants, buildType=""):
+        featureMap = {}
+
+        for clazz in classList:
+            # make sure every class is at least listed
+            if clazz.id not in featureMap:
+                featureMap[clazz.id] = {}
+            deps, _ = self.getCombinedDeps(clazz.id, variants, buildType, stripSelfReferences=False, projectClassNames=False)
+            ignored_names = map(attrgetter("name"), deps['ignore'])
+            for dep in deps['load'] + deps['run']:
+                if dep.name in ignored_names:
+                    continue
+                #if clazz.id == "qx.core.Property":
+                #    print dep
+                if dep.name not in featureMap:
+                    featureMap[dep.name] = {}
+                featureMap[dep.name][dep.attribute] = ("r",)  # use 'r' for all currently
+        
+        self._console.indent()
+        for clazz in featureMap:
+            self._console.debug("'%s': used features: %r" % (clazz, featureMap[clazz].keys()))
+        self._console.outdent()
+
+        return featureMap
+

@@ -148,6 +148,14 @@ qx.Class.define("qx.ui.embed.HtmlArea",
 
     /**
      * This event is dispatched when the editor gets a right click.
+     *
+     * Fires a data event with the following data:
+     *
+     * * x - absolute x coordinate
+     * * y - absolute y coordinate
+     * * relX - relative x coordinate
+     * * relY - relative y coordinate
+     * * target - DOM element target
      */
     "contextmenu"      : "qx.event.type.Data",
 
@@ -178,8 +186,13 @@ qx.Class.define("qx.ui.embed.HtmlArea",
      * @param node {Node} Node
      * @return {Boolean} whether it is a block node
      */
-    isBlockNode : function(node) {
-      return qx.bom.htmlarea.HtmlArea.isBlockNode(node);
+    isBlockNode : function(node)
+    {
+      var deprecatedFunction = qx.ui.embed.HtmlArea.isBlockNode;
+      var deprecationMessage = "Please use the method 'qx.dom.Node.isBlockNode' instead.";
+      qx.log.Logger.deprecatedMethodWarning(deprecatedFunction, deprecationMessage);  
+      
+      return qx.dom.Node.isBlockNode(node);
     },
 
 

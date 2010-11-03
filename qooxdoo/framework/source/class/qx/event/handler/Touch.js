@@ -15,6 +15,7 @@
    Authors:
      * Martin Wittemann (martinwittemann)
      * Tino butz (tbtz)
+     * Christian Hagendorn (chris_schmidt)
 
 ************************************************************************ */
 
@@ -164,6 +165,25 @@ qx.Class.define("qx.event.handler.Touch",
       HELPER
     ---------------------------------------------------------------------------
     */
+
+    /**
+     * Return the target of the event.
+     * 
+     * @param domEvent {Event} DOM event
+     * @return {Element} Event target
+     */
+    __getTarget : function(domEvent)
+    {
+      var target = qx.bom.Event.getTarget(domEvent);
+      // Text node. Fix Safari Bug, see http://www.quirksmode.org/js/events_properties.html
+      if (qx.core.Variant.isSet("qx.client", "gecko|webkit"))
+      {
+        if (target && target.nodeType == 3) {
+          target = target.parentNode;
+        }
+      }
+      return target;
+    },
 
 
     /**
@@ -319,17 +339,6 @@ qx.Class.define("qx.event.handler.Touch",
         };
       }
       return swipe;
-    },
-
-
-    /**
-     * Return the target of the event.
-     * 
-     * @param domEvent {Event} DOM event
-     * @return {Element} Event target
-     */
-    __getTarget : function(domEvent) {
-      return domEvent.target || domEvent.srcElement;
     },
 
 

@@ -1,28 +1,33 @@
 .. _pages/property_features#property_features:
 
-Property Features
-*****************
+Property features summarized
+****************************
+
+.. note::
+
+    The chapter gives you an compact but extensive overview of the features offered by qooxdoo's property system.
+    Please refer to :doc:`defining_properties` for an explanation of how to define and use properties.
 
 .. _pages/property_features#value_checks:
 
 Value checks
 ============
-
-  * Runtime checks in the development version only
-  * built-in types for most common things
-  * instance checks by simply define the classname of the class to check for (always use an instanceof operation - a real classname is not available anymore)
-  * custom check method by simply attaching a function to the declaration
-  * custom check defined by a string which will be compiled into the resulting setters (faster than the above variant)
-  * define multiple possible (primitive) values using an array
+  
+  * Built-in types for most common things
+  * Runtime checks (development version only)
+  * Instance checks by simply define the classname of the class to check for (always use an instanceof operation - a real classname is not available anymore)
+  * Custom check method by simply attaching a function to the declaration
+  * Custom check defined by a string which will be compiled into the resulting setters (faster than the above variant)
+  * Define multiple possible (primitive) values using an array
 
 .. _pages/property_features#validation:
 
 Validation
 ==========
 
-  * Validation in both, ``development`` and ``build`` version
+  * Validation in both development and build version
   * Predefined validators for default validation
-  * Throws a special ``validation error``
+  * Throws a special validation error
 
 .. _pages/property_features#advanced_value_handling:
 
@@ -30,10 +35,10 @@ Advanced value handling
 =======================
 
   * Multi value support. Support to store different values for init, inheritance, style and user including a automatic fallback mechanism between them.
-  * Inheritance support. Inhertitance of properties defined by a parent widget e.g. inherit enabled from a groupbox to all form elements. Used the inheritance if the computed value would be ``undefined`` or explicitly set to ``inherit``. The getter simply returns ``inherit`` for inheritable properties which are otherwise unset.
+  * Inheritance support. Inheritance of properties defined by a parent widget e.g. inherit enabled from a groupbox to all form elements. Uses the inheritance if the computed value would be ``undefined`` or explicitly set to ``"inherit"``. The getter simply returns ``"inherit"`` for inheritable properties which are otherwise unset.
   * Blocks unintentionally ``undefined`` values in all setters with an exception. To reset a value one must use the ``reset`` or ``unstyle`` method which are available too.
-  * Overriding of a value by setting a property explicitely to ``null``
-  * Properties must be explicitely configured as ``nullable`` (like in .Net). The default is ``false`` which means that incoming ``null`` values will result in an exception.
+  * Overriding of a value by setting a property explicitly to ``null``
+  * Properties must be explicitly configured as ``"nullable"`` (like in .Net). The default is ``false`` which means that incoming ``null`` values will result in an exception.
   * Accessing nullable properties with ``undefined`` values will result in a normalization to ``null``.
 
 .. _pages/property_features#convenience:

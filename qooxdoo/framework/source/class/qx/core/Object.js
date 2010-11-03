@@ -269,7 +269,7 @@ qx.Class.define("qx.core.Object",
      * @param listener {Function} event callback function
      * @param self {Object ? null} reference to the 'this' variable inside the callback
      * @param capture {Boolean ? false} Whether to attach the event to the
-     *         capturing phase of the bubbling phase of the event. The default is
+     *         capturing phase or the bubbling phase of the event. The default is
      *         to attach the event handler to the bubbling phase.
      * @return {String} An opaque id, which can be used to remove the event listener
      *         using the {@link #removeListenerById} method.
@@ -293,7 +293,7 @@ qx.Class.define("qx.core.Object",
      * @param listener {Function} event callback function
      * @param self {Object ? window} reference to the 'this' variable inside the callback
      * @param capture {Boolean ? false} Whether to attach the event to the
-     *         capturing phase of the bubbling phase of the event. The default is
+     *         capturing phase or the bubbling phase of the event. The default is
      *         to attach the event handler to the bubbling phase.
      * @return {String} An opaque id, which can be used to remove the event listener
      *         using the {@link #removeListenerById} method.
@@ -302,8 +302,8 @@ qx.Class.define("qx.core.Object",
     {
       var callback = function(e)
       {
-        listener.call(self||this, e);
         this.removeListener(type, callback, this, capture);
+        listener.call(self||this, e);
       };
 
       return this.addListener(type, callback, this, capture);
@@ -318,7 +318,7 @@ qx.Class.define("qx.core.Object",
      * @param self {Object ? null} reference to the 'this' variable inside the callback
      * @param capture {Boolean} Whether to remove the event listener of
      *   the bubbling or of the capturing phase.
-     * @return {Boolean} Whether the event was removed successfully (was existend)
+     * @return {Boolean} Whether the event was removed successfully (has existed)
      */
     removeListener : function(type, listener, self, capture)
     {
@@ -335,7 +335,7 @@ qx.Class.define("qx.core.Object",
      * {@link #addListener}
      *
      * @param id {String} The id returned by {@link #addListener}
-     * @return {Boolean} Whether the event was removed successfully (was existend)
+     * @return {Boolean} Whether the event was removed successfully (has existed)
      */
     removeListenerById : function(id)
     {
@@ -364,7 +364,7 @@ qx.Class.define("qx.core.Object",
      * Dispatch an event on this object
      *
      * @param evt {qx.event.type.Event} event to dispatch
-     * @return {Boolean} whether the event default was prevented or not.
+     * @return {Boolean} Whether the event default was prevented or not.
      *     Returns true, when the event was NOT prevented.
      */
     dispatchEvent : function(evt)
@@ -384,7 +384,7 @@ qx.Class.define("qx.core.Object",
      * @param clazz {Class?qx.event.type.Event} The event class
      * @param args {Array?null} Arguments, which will be passed to
      *       the event's init method.
-     * @return {Boolean} whether the event default was prevented or not.
+     * @return {Boolean} Whether the event default was prevented or not.
      *     Returns true, when the event was NOT prevented.
      */
     fireEvent : function(type, clazz, args)
@@ -406,7 +406,7 @@ qx.Class.define("qx.core.Object",
      * @param clazz {Class?qx.event.type.Event} The event class
      * @param args {Array?null} Arguments, which will be passed to
      *       the event's init method.
-     * @return {Boolean} whether the event default was prevented or not.
+     * @return {Boolean} Whether the event default was prevented or not.
      *     Returns true, when the event was NOT prevented.
      */
     fireNonBubblingEvent : function(type, clazz, args)
@@ -431,7 +431,7 @@ qx.Class.define("qx.core.Object",
      *     right click) or the default action of a qooxdoo class (e.g. close
      *     the window widget). The default action can be prevented by calling
      *     {@link qx.event.type.Event#preventDefault}
-     * @return {Boolean} whether the event default was prevented or not.
+     * @return {Boolean} Whether the event default was prevented or not.
      *     Returns true, when the event was NOT prevented.
      * @break {qx.event.type.Data}
      */
@@ -587,7 +587,7 @@ qx.Class.define("qx.core.Object",
     /**
      * Returns true if the object is disposed.
      *
-     * @return {Boolean} whether the object has been disposed
+     * @return {Boolean} Whether the object has been disposed
      */
     isDisposed : function() {
       return this.$$disposed || false;

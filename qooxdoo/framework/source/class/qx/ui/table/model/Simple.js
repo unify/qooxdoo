@@ -349,7 +349,7 @@ qx.Class.define("qx.ui.table.model.Simple",
      * particular column.
      *
      * @param columnIndex {Integer}
-     *   The index of the column or which the sort methods are being
+     *   The index of the column for which the sort methods are being
      *   provided.
      *
      * @param compare {Function|Map}
@@ -401,7 +401,7 @@ qx.Class.define("qx.ui.table.model.Simple",
     /**
      * Returns the sortMethod(s) for a table column.
      *
-     * @param columnIndex {Integer} The index of the column or which the sort
+     * @param columnIndex {Integer} The index of the column for which the sort
      *   methods are being  provided.
      *
      * @return {Map} a map with the two properties "ascending"
@@ -433,9 +433,37 @@ qx.Class.define("qx.ui.table.model.Simple",
       return this.__sortColumnIndex;
     },
 
+    /**
+     * Set the sort column index
+     *
+     * WARNING: This should be called only by subclasses with intimate
+     *          knowledge of what they are doing!
+     * 
+     * @param columnIndex {Integer} index of the column
+     */
+    _setSortColumnIndex : function(columnIndex)
+    {
+      this.__sortColumnIndex = columnIndex;
+    },
+
     // overridden
     isSortAscending : function() {
       return this.__sortAscending;
+    },
+
+    /**
+     * Set whether to sort in ascending order or not.
+     *
+     * WARNING: This should be called only by subclasses with intimate
+     *          knowledge of what they are doing!
+     * 
+     * @param ascending {Boolean}
+     *   <i>true</i> for an ascending sort;
+     *   <i> false</i> for a descending sort.
+     */
+    _setSortAscending : function(ascending)
+    {
+      this.__sortAscending = ascending;
     },
 
     // overridden

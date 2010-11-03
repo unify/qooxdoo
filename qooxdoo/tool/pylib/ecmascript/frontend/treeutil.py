@@ -32,7 +32,7 @@ from ecmascript.frontend import tree, tokenizer, treegenerator
 
 def findQxDefine(rootNode):
     for node in nodeIterator(rootNode, ["variable"]):
-        if isQxDefine(node):
+        if isQxDefine(node)[0]:
             return node.parent.parent
         
     return None
@@ -43,26 +43,70 @@ def findQxDefine(rootNode):
 
 def findQxDefineR(rootNode):
     for node in nodeIterator(rootNode, ["variable"]):
-        if isQxDefine(node):
+        if isQxDefine(node)[0]:
             yield node.parent.parent
         
 
 ##
 # Checks if the given node is a qx.*.define function invocation
 
+DefiningClasses = "qx.Bootstrap qx.Class qx.Interface qx.Mixin qx.List qx.Theme".split()
+
 def isQxDefine(node):
     if node.type == "variable":
         try:
             variableName = (assembleVariable(node))[0]
         except tree.NodeAccessException:
-            return False
+            return False, None, ""
 
-        if variableName in ["qx.Bootstrap.define", "qx.Class.define", "qx.Interface.define", "qx.Mixin.define", "qx.List.define", "qx.Theme.define"]:
+        if variableName in [x+".define" for x in DefiningClasses]:
             if node.hasParentContext("call/operand"):
-                return True
+                className = selectNode(node, "../../params/1")
+                if className and className.type == "constant":
+                    className = className.get("value", None)
+                return True, className, variableName
 
-    return False
-        
+    return False, None, ""
+
+
+##
+# Alternative isQxDefine predicate that works directly on the 'call' node (so
+# the node is immediately usable for getClassMap()), and, on success, returns
+# more information (class name being defined (string), and function being used,
+# like 'qx.Class.define').
+def isQxDefineParent(node):
+    if node.type == "call":
+        funcname = selectNode(node, "operand/variable")
+        if funcname is None: # it's not a named function call
+            return False, None, ""
+
+        try:
+            variableName = assembleVariable(funcname)[0]
+        except tree.NodeAccessException:
+            return False, None, ""
+
+        if variableName in [x+".define" for x in DefiningClasses]:
+            className = selectNode(node, "params/1")
+            if className and className.type == "constant":
+                className = className.get("value", None)
+            return True, className, variableName
+
+    return False, None, ""
+
+##
+# Copies tree.hasChildRecursive, but returns node
+def findChild(node, type):
+    if isinstance(type, types.StringTypes):
+        if node.type == type:
+            return node
+    elif isinstance(type, type.ListType):
+        if node.type in type:
+            return node
+
+    if node.hasChildren():
+        for child in node.children:
+            return findChild(child, type)
+    return None
         
 ##
 # Some nice short description of foo(); this can contain html and
@@ -81,7 +125,7 @@ def selectNode(node, path):
     Selects a node using a XPath like path expression.
     This function returns None if no matching node was found.
 
-    Warning: This function usys a depth first search without backtracking!!
+    Warning: This function uses a depth first search without backtracking!!
 
     ".."          navigates to the parent node
     "nodeName"    navigates to the first child node of type nodeName
@@ -581,7 +625,7 @@ def getClassMap(classNode):
        ):
         pass  # ok
     else:
-        raise tree.NodeAccessException("Expected qx define node (as from findQxDefine())")
+        raise tree.NodeAccessException("Expected qx define node (as from findQxDefine())", classNode)
 
     # get top-level class map
     mapNode = selectNode(classNode, "params/map")
