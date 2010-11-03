@@ -127,6 +127,7 @@ qx.Class.define("qx.bom.element.BoxSizing",
     /**
      * Returns the box sizing for the given element.
      *
+     * @break {qx.bom.element.Style}
      * @signature function(element)
      * @param element {Element} The element to query
      * @return {String} Box sizing value of the given element.

@@ -26,6 +26,11 @@
  * registered widgets.
  *
  * The zIndex order is also managed by this class.
+ *
+ * @break {qx.ui.menu.Menu}
+ * @break {qx.ui.menubar.Button}
+ * @break {qx.ui.menu.AbstractButton}
+ * @break {qx.ui.menu.Button}
  */
 qx.Class.define("qx.ui.menu.Manager",
 {
@@ -621,9 +626,6 @@ qx.Class.define("qx.ui.menu.Manager",
      *
      * @param menu {qx.ui.menu.Menu} The active menu
      * @return {void}
-     *
-     * @break {qx.ui.menubar.Button}
-     * @break {qx.ui.menu.AbstractButton}
      */
     _onKeyPressLeft : function(menu)
     {

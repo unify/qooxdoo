@@ -485,6 +485,8 @@ qx.Class.define("qx.ui.toolbar.ToolBar",
      * Returns all nested buttons which contains a menu to show. This is mainly
      * used for keyboard support.
      *
+     * @break {qx.ui.menubar.Button}
+     * @break {qx.ui.toolbar.Part}
      * @return {Array} List of all menu buttons
      */
     getMenuButtons : function()

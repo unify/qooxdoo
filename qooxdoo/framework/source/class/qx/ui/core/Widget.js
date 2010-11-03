@@ -3451,7 +3451,11 @@ qx.Class.define("qx.ui.core.Widget",
         value = false;
       }
 
-      // Force cursor creation
+      /**
+       * Force cursor creation
+       *
+       * @break {qx.ui.core.DragDropCursor}
+       */
       qx.ui.core.DragDropCursor.getInstance();
 
       // Process listeners

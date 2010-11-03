@@ -32,6 +32,8 @@
  *
  * @require {qx.event.handler.Object}
  * @require {qx.event.dispatch.Direct}
+ * @break {qx.event.handler.Object}
+ * @break {qx.event.dispatch.Direct}
  */
 qx.Class.define("qx.core.Object",
 {

@@ -23,6 +23,15 @@
 
 /**
  * Shows the class details.
+ *
+ * @break {apiviewer.ui.panels.MethodPanel}
+ * @break {apiviewer.ui.panels.EventPanel}
+ * @break {apiviewer.ui.panels.PropertyPanel}
+ * @break {apiviewer.ui.panels.MethodPanel}
+ * @break {apiviewer.ui.panels.ConstantPanel}
+ * @break {apiviewer.ui.panels.AppearancePanel}
+ * @break {apiviewer.ui.panels.ChildControlsPanel}
+ * @break {apiviewer.ui.panels.InfoPanel}
  */
 qx.Class.define("apiviewer.ui.ClassViewer",
 {
