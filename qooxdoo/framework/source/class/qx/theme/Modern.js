@@ -21,7 +21,7 @@
 /**
  * Default qooxdoo theme
  */
-qx.Theme.define("qx.theme.Default",
+qx.Theme.define("qx.theme.Modern",
 {
   meta :
   {
