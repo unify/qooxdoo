@@ -35,9 +35,6 @@ qx.Class.define("qx.util.ResourceManager",
 
   statics :
   {
-    /** {Map} the shared image registry */
-    __registry : qx.$$resources || {},
-
     /** {Map} prefix per library used in HTTPS mode for IE */
     __urlPrefix : {}
   },
@@ -50,7 +47,37 @@ qx.Class.define("qx.util.ResourceManager",
 
   members :
   {
-
+    __cache : {},
+    
+    /**
+     * Get information about an resource.
+     *
+     * @param id {String} The resource to get the information for
+     * @return {Array} Registered data or <code>null</code>
+     */
+    getData : function(id) 
+    {
+      var cache = this.__cache;
+      var file = cache[id];
+      if (file != null) {
+        return file;
+      }
+      
+      var files = $$resources.files;
+      var lastSlash = id.lastIndexOf("/");
+      var dirName = id.substring(0, lastSlash);
+      var dir = files[dirName];
+      if (dir)
+      {
+        var fileName = id.substring(lastSlash+1);
+        var file = dir[fileName];
+        if (file) {
+          return cache[id] = file;
+        }
+      }
+    },
+    
+    
     /**
      * Whether the registry has information about the given resource.
      *
@@ -58,18 +85,7 @@ qx.Class.define("qx.util.ResourceManager",
      * @return {Boolean} <code>true</code> when the resource is known.
      */
     has : function(id) {
-      return !!this.self(arguments).__registry[id];
-    },
-
-
-    /**
-     * Get information about an resource.
-     *
-     * @param id {String} The resource to get the information for
-     * @return {Array} Registered data or <code>null</code>
-     */
-    getData : function(id) {
-      return this.self(arguments).__registry[id] || null;
+      return this.getData(id) != null;
     },
 
 
@@ -83,8 +99,8 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getImageWidth : function(id)
     {
-      var entry = this.self(arguments).__registry[id];
-      return entry ? entry[0] : null;
+      var data = this.getData(id);
+      return data && data[1];
     },
 
 
@@ -98,23 +114,8 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getImageHeight : function(id)
     {
-      var entry = this.self(arguments).__registry[id];
-      return entry ? entry[1] : null;
-    },
-
-
-    /**
-     * Returns the format of the given resource ID,
-     * when it is not a known image <code>null</code>
-     * is returned.
-     *
-     * @param id {String} Resource identifier
-     * @return {String} File format of the image
-     */
-    getImageFormat : function(id)
-    {
-      var entry = this.self(arguments).__registry[id];
-      return entry ? entry[2] : null;
+      var data = this.getData(id);
+      return data && data[2];
     },
 
 
@@ -127,8 +128,8 @@ qx.Class.define("qx.util.ResourceManager",
      */
     isClippedImage : function(id)
     {
-      var entry = this.self(arguments).__registry[id];
-      return entry && entry.length > 4;
+      // TODO
+      return false;
     },
 
 
@@ -144,32 +145,18 @@ qx.Class.define("qx.util.ResourceManager",
         return id;
       }
 
-      var entry = this.self(arguments).__registry[id];
-      if (!entry) {
+      var data = this.getData(id);
+      if (data == null) {
         return id;
       }
 
-      if (typeof entry === "string") {
-        var lib = entry;
-      }
-      else
-      {
-        var lib = entry[3];
-
-        // no lib reference
-        // may mean that the image has been registered dynamically
-        if (!lib) {
-          return id;
-        }
+      var root = $$resources.roots[data.join ? data[0] : data];
+      var url = root + "/" + id;
+      if (qx.core.Variant.isSet("qx.client", "mshtml") && qx.bom.client.Feature.SSL) {
+        url = this.self(arguments).__urlPrefix[lib] + url;
       }
 
-      var urlPrefix = "";
-      if (qx.core.Variant.isSet("qx.client", "mshtml") &&
-          qx.bom.client.Feature.SSL) {
-        urlPrefix = this.self(arguments).__urlPrefix[lib];
-      }
-
-      return urlPrefix + qx.$$libraries[lib].resourceUri + "/" + id;
+      return url;
     }
   },
 
