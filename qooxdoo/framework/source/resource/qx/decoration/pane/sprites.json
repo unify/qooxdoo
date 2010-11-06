@@ -1,0 +1,38 @@
+{
+  "pane-lr-combined.png": {
+    "pane-l.png": [
+      0, 
+      0
+    ], 
+    "pane-r.png": [
+      6, 
+      0
+    ]
+  }, 
+  "pane-tb-combined.png": {
+    "pane-b.png": [
+      0, 
+      30
+    ], 
+    "pane-bl.png": [
+      0, 
+      18
+    ], 
+    "pane-br.png": [
+      0, 
+      12
+    ], 
+    "pane-t.png": [
+      0, 
+      0
+    ], 
+    "pane-tl.png": [
+      0, 
+      24
+    ], 
+    "pane-tr.png": [
+      0, 
+      6
+    ]
+  }
+}
