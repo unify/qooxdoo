@@ -1,12 +1,1 @@
-{
-  "colorselector-combined.gif": {
-    "brightness-handle.gif": [
-      0, 
-      0
-    ], 
-    "huesaturation-handle.gif": [
-      35, 
-      0
-    ]
-  }
-}
+{"colorselector-combined.gif": {"brightness-handle.gif": [0, 0], "huesaturation-handle.gif": [35, 0]}}
