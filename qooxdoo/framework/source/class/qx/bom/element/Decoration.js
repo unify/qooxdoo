@@ -35,12 +35,6 @@ qx.Class.define("qx.bom.element.Decoration",
 
   statics :
   {
-    /** {Boolean} Whether clipping hints should be logged */
-    DEBUG : false,
-
-    /** {Map} Collect warnings for potential clipped images */
-    __warnings : {},
-
     /** {Map} Mapping between background repeat and the tag to create */
     __repeatToTagname :
     {
@@ -91,15 +85,6 @@ qx.Class.define("qx.bom.element.Decoration",
       // Apply new styles
       var Style = qx.bom.element.Style;
       Style.setStyles(element, ret.style);
-
-      // we need to apply the filter to prevent black rendering artifacts
-      // http://blog.hackedbrain.com/archive/2007/05/21/6110.aspx
-      if (this.__enableAlphaFix)
-      {
-        try {
-          element.filters["DXImageTransform.Microsoft.AlphaImageLoader"].apply();
-        } catch(e) {}
-      }
     },
 
 
@@ -220,10 +205,8 @@ qx.Class.define("qx.bom.element.Decoration",
      */
     __getDimension : function(source)
     {
-      var width = qx.util.ResourceManager.getInstance().getImageWidth(source) ||
-                  qx.io.ImageLoader.getWidth(source);
-      var height = qx.util.ResourceManager.getInstance().getImageHeight(source) ||
-                   qx.io.ImageLoader.getHeight(source);
+      var width = qx.util.ResourceManager.getInstance().getImageWidth(source) || qx.io.ImageLoader.getWidth(source);
+      var height = qx.util.ResourceManager.getInstance().getImageHeight(source) || qx.io.ImageLoader.getHeight(source);
 
       return {
         width: width,
@@ -291,10 +274,6 @@ qx.Class.define("qx.bom.element.Decoration",
       // No clipped image available
       else
       {
-        if (qx.core.Variant.isSet("qx.debug", "on")) {
-          this.__checkForPotentialClippedImage(source);
-        }
-
         if (repeat == "scale-x")
         {
           style.height = dimension.height == null ? null : dimension.height + "px";
@@ -414,13 +393,6 @@ qx.Class.define("qx.bom.element.Decoration",
       }
       else
       {
-        if (qx.core.Variant.isSet("qx.debug", "on"))
-        {
-          if (repeat !== "repeat") {
-            this.__checkForPotentialClippedImage(source);
-          }
-        }
-
         style = this.__normalizeWidthHeight(style, dimension.width, dimension.height);
         style = this.__getStylesForSingleRepeat(style, source, repeat);
 
@@ -475,24 +447,6 @@ qx.Class.define("qx.bom.element.Decoration",
       }
 
       return style;
-    },
-
-
-    /**
-     * Output a warning if the image can be clipped.
-     *
-     * @param source {String} image source
-     */
-    __checkForPotentialClippedImage : function(source)
-    {
-      if (this.DEBUG && qx.util.ResourceManager.getInstance().has(source) && source.indexOf("qx/icon") == -1)
-      {
-        if (!this.__warnings[source])
-        {
-          qx.log.Logger.debug("Potential clipped image candidate: " + source);
-          this.__warnings[source] = true;
-        }
-      }
     }
   }
 });
