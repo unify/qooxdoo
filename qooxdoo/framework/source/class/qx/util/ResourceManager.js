@@ -128,8 +128,8 @@ qx.Class.define("qx.util.ResourceManager",
      */
     isClippedImage : function(id)
     {
-      // TODO
-      return false;
+      var data = this.getData(id);
+      return data.length > 3;
     },
 
 
