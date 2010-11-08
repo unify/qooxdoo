@@ -174,7 +174,16 @@ qx.Class.define("qx.bom.element.Decoration",
       } else  if (repeat === "scale-x" || repeat === "scale-y") {
         result = this.__processScaleXScaleY(style, repeat, source);
       } else {
-        result = this.__processRepeats(style, repeat, source);
+        var local = this.__processRepeats(source, repeat);
+        
+        for (var key in local) 
+        {
+          if (style[key] === undefined) {
+            style[key] = local[key];
+          }
+        }
+        result = {style:style};
+        console.debug("STYLE", style)
       }
 
       return result;
@@ -356,79 +365,29 @@ qx.Class.define("qx.bom.element.Decoration",
      *
      * * Supports image sprites (repeat-x and repeat-y only)
      *
-     * @param style {Map} style information
      * @param repeat {String} repeat mode
      * @param source {String} image source
      *
      * @return {Map} image URI and style infos
      */
-    __processRepeats : function(style, repeat, source)
+    __processRepeats : function(source, repeat)
     {
-      var clipped = qx.util.ResourceManager.getInstance().isClippedImage(source);
+      // Compute image dimensions
       var dimension = this.__getDimension(source);
 
       // Double axis repeats cannot use image sprites
-      if (clipped && repeat !== "repeat")
-      {
-        var data = qx.util.ResourceManager.getInstance().getData(source);
-        var bg = qx.bom.element.Background.getStyles(data[4], repeat, data[5], data[6]);
-        for (var key in bg) {
-          style[key] = bg[key];
-        }
-
-        if (dimension.width != null && style.width == null && (repeat == "repeat-y" || repeat === "no-repeat")) {
-          style.width = dimension.width + "px";
-        }
-
-        if (dimension.height != null && style.height == null && (repeat == "repeat-x" || repeat === "no-repeat")) {
-          style.height = dimension.height + "px";
-        }
-
-        return {
-          style : style
-        };
+      var ResourceManager = qx.util.ResourceManager.getInstance()
+      if (repeat !== "repeat") {
+        var clippedData = ResourceManager.getClippedData(source);
       }
-      else
-      {
-        if (dimension)
-        {
-          if (style.width == null) {
-            style.width = dimension.width + "px";
-          }
 
-          if (style.height == null) {
-            style.height = dimension.height + "px";
-          }
-        }
-
-        // retrieve the "backgroundPosition" style if available to prevent
-        // overwriting with default values
-        var top = null;
-        var left = null;
-        if (style.backgroundPosition)
-        {
-          var backgroundPosition = style.backgroundPosition.split(" ");
-
-          left = parseInt(backgroundPosition[0]);
-          if (isNaN(left)) {
-            left = backgroundPosition[0];
-          }
-
-          top = parseInt(backgroundPosition[1]);
-          if (isNaN(top)) {
-            top = backgroundPosition[1];
-          }
-        }
-
-        var bg = qx.bom.element.Background.getStyles(source, repeat, left, top);
-        for (var key in bg) {
-          style[key] = bg[key];
-        }
-        
-        return {
-          style : style
-        };
-      }
+      return {
+        width : dimension.width + "px",
+        height : dimension.height + "px",
+        backgroundImage : "url(" + (clippedData ? clippedData.uri : ResourceManager.toUri(source)) + ")",
+        backgroundRepeat : repeat,
+        backgroundPosition : clippedData ? (-clippedData.left) + "px " + (-clippedData.top + 0.01) + "px" : null
+      };      
     }
   }
 });
