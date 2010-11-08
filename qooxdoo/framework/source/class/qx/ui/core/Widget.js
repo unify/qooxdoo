@@ -3047,7 +3047,7 @@ qx.Class.define("qx.ui.core.Widget",
     // property apply
     _applyAppearance : function(value, old) 
     {
-      this.debug("Appearance changed: " + old + " => " + value);
+      // this.debug("Appearance changed: " + old + " => " + value);
       this.updateAppearance();
     },
 
