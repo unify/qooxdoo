@@ -61,7 +61,7 @@ qx.Class.define("qx.bom.element.Decoration",
      */
     update : function(element, source, repeat, style)
     {
-      var tag = this.getTagName(repeat, source);
+      var tag = this.__repeatToTagname[repeat];
       if (tag != element.tagName.toLowerCase()) {
         throw new Error("Image modification not possible because elements could not be replaced at runtime anymore!");
       }
@@ -99,9 +99,17 @@ qx.Class.define("qx.bom.element.Decoration",
      */
     create : function(source, repeat, style)
     {
-      var tag = this.getTagName(repeat, source);
-      var ret = this.getAttributes(source, repeat, style);
-      var css = qx.bom.element.Style.compile(ret.style);
+      try{
+        var tag = this.__repeatToTagname[repeat];
+        var ret = this.getAttributes(source, repeat, style);
+        var css = qx.bom.element.Style.compile(ret.style);
+        
+      } catch(ex) {
+        console.error("ERROR", ex);
+        return
+      }
+      
+      console.debug("Create: " + source + " (" + repeat + ")");
 
       if (tag === "img") {
         return '<img src="' + ret.src + '" style="' + css + '"/>';
@@ -166,32 +174,10 @@ qx.Class.define("qx.bom.element.Decoration",
       } else  if (repeat === "scale-x" || repeat === "scale-y") {
         result = this.__processScaleXScaleY(style, repeat, source);
       } else {
-        // Native repeats or "no-repeat"
         result = this.__processRepeats(style, repeat, source);
       }
 
       return result;
-    },
-
-
-    /**
-     * Normalize the given width and height values
-     *
-     * @param style {Map} style information
-     * @param width {Integer?null} width as number or null
-     * @param height {Integer?null} height as number or null
-     */
-    __normalizeWidthHeight : function(style, width, height)
-    {
-      if (style.width == null && width != null) {
-        style.width = width + "px";
-      }
-
-      if (style.height == null && height != null) {
-        style.height = height + "px";
-      }
-
-      return style;
     },
 
 
@@ -205,18 +191,16 @@ qx.Class.define("qx.bom.element.Decoration",
      */
     __getDimension : function(source)
     {
-      var width = qx.util.ResourceManager.getInstance().getImageWidth(source) || qx.io.ImageLoader.getWidth(source);
-      var height = qx.util.ResourceManager.getInstance().getImageHeight(source) || qx.io.ImageLoader.getHeight(source);
-
-      return {
-        width: width,
-        height: height
-      };
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+      return ResourceManager.getImageSize(source) || qx.io.ImageLoader.getSize(source);
     },
-
-
+    
+    
     /**
      * Process scaled images.
+     *
+     * * Automatically fills unspecified dimensions from image data
+     * * Does not support image sprites
      *
      * @param style {Map} style information
      * @param repeat {String} repeat mode
@@ -226,21 +210,32 @@ qx.Class.define("qx.bom.element.Decoration",
      */
     __processScale : function(style, repeat, source)
     {
-      var uri = qx.util.ResourceManager.getInstance().toUri(source);
+      // Automatically adds dimensions from image data if none are given
       var dimension = this.__getDimension(source);
+      if (dimension)
+      {
+        if (style.width == null) {
+          style.width = dimension.width + "px";
+        }
 
-      style = this.__normalizeWidthHeight(style, dimension.width, dimension.height);
+        if (style.height == null) {
+          style.height = dimension.height + "px";
+        }
+      }
 
+      // Return data for image tag
       return {
-        src : uri,
+        src : qx.util.ResourceManager.getInstance().toUri(source),
         style : style
       };
     },
 
 
     /**
-     * Process images which are either scaled horizontally or
-     * vertically.
+     * Process images which are either scaled horizontally or vertically.
+     *
+     * * Automatically fills unspecified dimensions from image data
+     * * Supports clipped images
      *
      * @param style {Map} style information
      * @param repeat {String} repeat mode
@@ -359,6 +354,8 @@ qx.Class.define("qx.bom.element.Decoration",
     /**
      * Process repeated images.
      *
+     * * Supports image sprites (repeat-x and repeat-y only)
+     *
      * @param style {Map} style information
      * @param repeat {String} repeat mode
      * @param source {String} image source
@@ -370,7 +367,7 @@ qx.Class.define("qx.bom.element.Decoration",
       var clipped = qx.util.ResourceManager.getInstance().isClippedImage(source);
       var dimension = this.__getDimension(source);
 
-      // Double axis repeats cannot be clipped
+      // Double axis repeats cannot use image sprites
       if (clipped && repeat !== "repeat")
       {
         var data = qx.util.ResourceManager.getInstance().getData(source);
@@ -393,60 +390,45 @@ qx.Class.define("qx.bom.element.Decoration",
       }
       else
       {
-        style = this.__normalizeWidthHeight(style, dimension.width, dimension.height);
-        style = this.__getStylesForSingleRepeat(style, source, repeat);
+        if (dimension)
+        {
+          if (style.width == null) {
+            style.width = dimension.width + "px";
+          }
 
+          if (style.height == null) {
+            style.height = dimension.height + "px";
+          }
+        }
+
+        // retrieve the "backgroundPosition" style if available to prevent
+        // overwriting with default values
+        var top = null;
+        var left = null;
+        if (style.backgroundPosition)
+        {
+          var backgroundPosition = style.backgroundPosition.split(" ");
+
+          left = parseInt(backgroundPosition[0]);
+          if (isNaN(left)) {
+            left = backgroundPosition[0];
+          }
+
+          top = parseInt(backgroundPosition[1]);
+          if (isNaN(top)) {
+            top = backgroundPosition[1];
+          }
+        }
+
+        var bg = qx.bom.element.Background.getStyles(source, repeat, left, top);
+        for (var key in bg) {
+          style[key] = bg[key];
+        }
+        
         return {
           style : style
         };
       }
-    },
-
-
-    /**
-     * Generate all style infos for single repeated images
-     *
-     * @param style {Map} style information
-     * @param repeat {String} repeat mode
-     * @param source {String} image source
-     *
-     * @return {Map} style infos
-     */
-    __getStylesForSingleRepeat : function(style, source, repeat)
-    {
-      // retrieve the "backgroundPosition" style if available to prevent
-      // overwriting with default values
-      var top = null;
-      var left = null;
-      if (style.backgroundPosition)
-      {
-        var backgroundPosition = style.backgroundPosition.split(" ");
-
-        left = parseInt(backgroundPosition[0]);
-        if (isNaN(left)) {
-          left = backgroundPosition[0];
-        }
-
-        top = parseInt(backgroundPosition[1]);
-        if (isNaN(top)) {
-          top = backgroundPosition[1];
-        }
-      }
-
-      var bg = qx.bom.element.Background.getStyles(source, repeat, left, top);
-      for (var key in bg) {
-        style[key] = bg[key];
-      }
-
-      // Reset the AlphaImageLoader filter if applied
-      // This prevents IE from setting BOTH CSS filter AND backgroundImage
-      // This is only a fallback if the image is not recognized as PNG
-      // If it's a Alpha-PNG file it *may* result in display problems
-      if (style.filter) {
-        style.filter = "";
-      }
-
-      return style;
     }
   }
 });
