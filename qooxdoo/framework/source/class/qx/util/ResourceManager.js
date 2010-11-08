@@ -117,6 +117,18 @@ qx.Class.define("qx.util.ResourceManager",
       var data = this.getData(id);
       return data && data[2];
     },
+    
+    
+    /**
+     * Returns the dimensions of the given image ID
+     */
+    getImageSize : function(id) 
+    {
+      var data = this.getData(id);
+      if (data) {
+        return { width: data[1], height: data[2] };
+      }
+    },
 
 
     /**
@@ -129,6 +141,7 @@ qx.Class.define("qx.util.ResourceManager",
     isClippedImage : function(id)
     {
       var data = this.getData(id);
+      return false;
       return data.length > 3;
     },
 
