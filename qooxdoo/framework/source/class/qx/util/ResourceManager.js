@@ -48,6 +48,8 @@ qx.Class.define("qx.util.ResourceManager",
   members :
   {
     __cache : {},
+    __sprites : {},
+    
     
     /**
      * Get information about an resource.
@@ -129,8 +131,44 @@ qx.Class.define("qx.util.ResourceManager",
         return { width: data[1], height: data[2] };
       }
     },
+    
+    
+    /**
+     * Returns clipping details for being used for the given image ID.
+     * Returns nothing when the given ID is not a clipped image.
+     *
+     * @param id {String} Resource identifier
+     * @return {Map} 
+     */
+    getClippedData : function(id)
+    {
+      var sprites = this.__sprites;
+      var result = sprites[id];
+      if (!result) 
+      {
+        var data = this.getData(id);
+        if (data.length > 3) 
+        {
+          var lastSlash = id.lastIndexOf("/");
+          var dirName = id.substring(0, lastSlash);
+          var spriteData = $$resources.sprites[dirName][data[3]];
+          var needsPosX = spriteData[4] == 1;
+          var needsPosY = spriteData[5] == 1;
 
-
+          sprites[id] = result = {
+            uri : $$resources.roots[spriteData[1]] + "/" + dirName + "/" + spriteData[0],
+            left : needsPosX ? data[4] : 0,
+            top : needsPosY ? needsPosX ? data[5] : data[4] : 0,
+            width : spriteData[2],
+            height : spriteData[3]
+          };
+        }
+      }
+      
+      return result;
+    },
+    
+    
     /**
      * Whether the given resource identifier is a image
      * with clipping information available.
