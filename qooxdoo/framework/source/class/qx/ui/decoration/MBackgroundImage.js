@@ -112,6 +112,9 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
      */
     _generateBackgroundMarkup: function(styles)
     {
+      var Style = qx.bom.element2.Style;
+      console.debug(styles)
+      
       var image = this.getBackgroundImage();
       var markup, stylesMarkup;
       if (image)
@@ -127,18 +130,18 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
             }
           }
           
-          stylesMarkup = qx.bom.element.Style.compile(styles);
+          stylesMarkup = Style.compile(styles);
           markup = "<img style='" + stylesMarkup + "' src='" + qx.util.ResourceManager.getInstance().toUri(image) + "'/>"
         }
         else
         { 
-          stylesMarkup = qx.bom.element.Style.compile(styles) + qx.bom.element.Style.compile(qx.bom.element.Decoration.getStyles(image, repeat));
+          stylesMarkup = Style.compile(styles) + Style.compile(qx.bom.element.Decoration.getStyles(image, repeat));
           markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'></div>";
         }
       }
       else
       {
-        stylesMarkup = qx.bom.element.Style.compile(styles);
+        stylesMarkup = Style.compile(styles);
         markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'></div>";
       }
 
