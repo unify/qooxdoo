@@ -378,11 +378,6 @@ qx.Class.define("qx.ui.decoration.GridDiv",
           style.bottom = bottom + "px";
         }
       }
-      
-      // Add a fix for small blocks where IE has a minHeight of the fontSize in quirks mode
-      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
-        style.fontSize = style.lineHeight = 0;
-      }
 
       return style;
     },
@@ -437,11 +432,6 @@ qx.Class.define("qx.ui.decoration.GridDiv",
         } else if (right != null) {
           style.right = right + "px";
         }        
-      }
-      
-      // Add a fix for small blocks where IE has a minHeight of the fontSize in quirks mode
-      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
-        style.fontSize = style.lineHeight = 0;
       }
 
       return style;
