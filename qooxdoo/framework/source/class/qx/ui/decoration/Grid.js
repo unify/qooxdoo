@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -204,41 +205,6 @@ qx.Class.define("qx.ui.decoration.Grid",
       } else {
         this.__setBorderImage(value);
       }
-    },
-
-
-    /**
-     * Configures the border image decorator
-     *
-     * @param baseImage {String} URL of the base image
-     */
-    __setBorderImage : function(baseImage)
-    {
-      this.__impl.setBorderImage(baseImage);
-
-      var base = baseImage;
-      var split = /(.*)(\.[a-z]+)$/.exec(base);
-      var prefix = split[1];
-      var ext = split[2];
-
-      var ResourceManager = qx.util.ResourceManager.getInstance();
-
-      var topSlice = ResourceManager.getImageHeight(prefix + "-t" + ext);
-      var leftSlice = ResourceManager.getImageWidth(prefix + "-l" + ext);
-
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        var assertMessageTop = "The value of the property 'topSlice' is null! " +
-          "Please verify the image '" + prefix + "-t" + ext + "' is present.";
-        
-        var assertMessageLeft = "The value of the property 'leftSlice' is null! " +
-          "Please verify the image '" + prefix + "-l" + ext + "' is present.";
-        
-        qx.core.Assert.assertNotNull(topSlice, assertMessageTop);
-        qx.core.Assert.assertNotNull(leftSlice, assertMessageLeft);
-      }
-
-      this.__impl.setSlice([topSlice, leftSlice]);
     }
   },
 
