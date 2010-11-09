@@ -33,10 +33,9 @@
  * The decoration uses clipped images to reduce the number of external
  * resources to load.
  */
-qx.Class.define("qx.ui.decoration.Grid",
+qx.Class.define("qx.ui.decoration.GridDiv",
 {
-  extend: qx.core.Object,
-  implement : [qx.ui.decoration.IDecorator],
+  extend : qx.ui.decoration.Abstract,
 
 
   /*
@@ -53,20 +52,13 @@ qx.Class.define("qx.ui.decoration.Grid",
   {
     this.base(arguments);
 
-    if (false && qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
-    {
-      this.__impl = new qx.ui.decoration.css3.BorderImage();
-      if (baseImage) {
-        this.__setBorderImage(baseImage);
-      }
-    }
-    else
-    {
-      this.__impl = new qx.ui.decoration.GridDiv(baseImage);
+    // Initialize properties
+    if (baseImage != null) {
+      this.setBaseImage(baseImage);
     }
 
     if (insets != null) {
-      this.__impl.setInsets(insets);
+      this.setInsets(insets);
     }
   },
 
@@ -83,9 +75,8 @@ qx.Class.define("qx.ui.decoration.Grid",
   properties :
   {
     /**
-     * Base image URL. There must be an image with this name and the sliced
-     * and the nine sliced images. The sliced images must be named according to
-     * the following scheme:
+     * Base image URL. All the different images needed are named by the default
+     * naming scheme:
      *
      * ${baseImageWithoutExtension}-${imageName}.${baseImageExtension}
      *
@@ -108,46 +99,6 @@ qx.Class.define("qx.ui.decoration.Grid",
       check : "String",
       nullable : true,
       apply : "_applyBaseImage"
-    },
-
-
-    /** Width of the left inset (keep this margin to the outer box) */
-    insetLeft :
-    {
-      check : "Number",
-      nullable: true,
-      apply : "_applyInsets"
-    },
-
-    /** Width of the right inset (keep this margin to the outer box) */
-    insetRight :
-    {
-      check : "Number",
-      nullable: true,
-      apply : "_applyInsets"
-    },
-
-    /** Width of the bottom inset (keep this margin to the outer box) */
-    insetBottom :
-    {
-      check : "Number",
-      nullable: true,
-      apply : "_applyInsets"
-    },
-
-    /** Width of the top inset (keep this margin to the outer box) */
-    insetTop :
-    {
-      check : "Number",
-      nullable: true,
-      apply : "_applyInsets"
-    },
-
-    /** Property group for insets */
-    insets :
-    {
-      group : [ "insetTop", "insetRight", "insetBottom", "insetLeft" ],
-      shorthand : true
     }
   },
 
@@ -162,49 +113,288 @@ qx.Class.define("qx.ui.decoration.Grid",
 
   members :
   {
-    __impl : null,
+    __markup : null,
+    __images : null,
+    __edges : null,
 
+
+    // overridden
+    _getDefaultInsets : function()
+    {
+      return {
+        top : 0,
+        right : 0,
+        bottom : 0,
+        left : 0
+      };
+    },
+
+
+    // overridden
+    _isInitialized: function() {
+      return !!this.__markup;
+    },
+
+
+    /*
+    ---------------------------------------------------------------------------
+      INTERFACE IMPLEMENTATION
+    ---------------------------------------------------------------------------
+    */
 
     // interface implementation
-    getMarkup : function() {
-      return this.__impl.getMarkup();
+    getMarkup : function()
+    {
+      if (this.__markup) {
+        return this.__markup;
+      }
+
+      var Decoration = qx.bom.element.Decoration;
+      var Style = qx.bom.element.Style;
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+
+      var images = this.__images;
+      var edges = this.__edges;
+
+      // Create edges and vertical sides
+      // Order: tl, t, tr, bl, b, bt, l, c, r
+      var html = [];
+
+      // Outer frame
+      // Note: overflow=hidden is needed for Safari 3.1 to omit scrolling through
+      // dragging when the cursor is in the text field in Spinners etc.
+      html.push('<div style="position:absolute;top:0;left:0;overflow:hidden;font-size:0;line-height:0;">');
+      
+      // Top: left, center, right
+      html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getStyles(images.tl, "no-repeat")), "'></div>");
+      html.push(this.__getScaleXMarkup(images.t, edges.left, false));
+      html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getStyles(images.tr, "no-repeat")), "'></div>");
+    
+      // Bottom: left, center, right
+      html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getStyles(images.bl, "no-repeat")), "'></div>");
+      html.push(this.__getScaleXMarkup(images.b, edges.right, true));
+      html.push("<div style='position:absolute;bottom:0;right:0;", Style.compile(Decoration.getStyles(images.br, "no-repeat")), "'></div>");
+    
+      // Middle: left, center, right
+      html.push(this.__getScaleYMarkup(images.l, edges.top, false));
+      html.push("<img src='" + ResourceManager.toUri(images.c) + "' style='position:absolute;top:", edges.top, "px;left:", edges.left, "px;'/>");
+      html.push(this.__getScaleYMarkup(images.r, edges.bottom, true));
+
+      // Outer frame
+      html.push('</div>');
+      
+      // Store
+      return this.__markup = html.join("");
     },
 
 
     // interface implementation
-    resize : function(element, width, height) {
-      this.__impl.resize(element, width, height);
+    resize : function(element, width, height)
+    {
+      // Compute inner sizes
+      var edges = this.__edges;
+      var innerWidth = width - edges.left - edges.right;
+      var innerHeight = height - edges.top - edges.bottom;
+
+      // Set the inner width or height to zero if negative
+      if (innerWidth < 0) {
+        innerWidth = 0;
+      }
+      
+      if (innerHeight < 0) {
+        innerHeight = 0;
+      }
+
+      // Update nodes
+      element.style.width = width + "px";
+      element.style.height = height + "px";
+      
+      element.childNodes[1].style.width = innerWidth + "px";
+      element.childNodes[4].style.width = innerWidth + "px";
+      element.childNodes[7].style.width = innerWidth + "px";
+
+      element.childNodes[6].style.height = innerHeight + "px";
+      element.childNodes[7].style.height = innerHeight + "px";
+      element.childNodes[8].style.height = innerHeight + "px";
+
+      if (qx.core.Variant.isSet("qx.client", "mshtml"))
+      {
+        // Internet Explorer as of version 6 or version 7 in quirks mode
+        // have rounding issues when working with odd dimensions:
+        // right and bottom positioned elements are rendered with a
+        // one pixel negative offset which results into some ugly
+        // render effects.
+        if (qx.bom.client.Engine.VERSION < 7 || (qx.bom.client.Feature.QUIRKS_MODE && qx.bom.client.Engine.VERSION < 8))
+        {
+          if (width%2==1)
+          {
+            element.childNodes[2].style.marginRight = "-1px";
+            element.childNodes[5].style.marginRight = "-1px";
+            element.childNodes[8].style.marginRight = "-1px";
+          }
+          else
+          {
+            element.childNodes[2].style.marginRight = "0px";
+            element.childNodes[5].style.marginRight = "0px";
+            element.childNodes[8].style.marginRight = "0px";
+          }
+
+          if (height%2==1)
+          {
+            element.childNodes[3].style.marginBottom = "-1px";
+            element.childNodes[4].style.marginBottom = "-1px";
+            element.childNodes[5].style.marginBottom = "-1px";
+          }
+          else
+          {
+            element.childNodes[3].style.marginBottom = "0px";
+            element.childNodes[4].style.marginBottom = "0px";
+            element.childNodes[5].style.marginBottom = "0px";
+          }
+        }
+      }
     },
 
 
     // interface implementation
     tint : function(element, bgcolor) {
-      // do nothing
+      // not implemented
     },
 
 
-    // interface implementation
-    getInsets : function() {
-      return this.__impl.getInsets();
-    },
 
-
-    // property apply
-    _applyInsets : function(value, old, name)
-    {
-      var setter = "set" + qx.lang.String.firstUp(name);
-      this.__impl[setter](value);
-    },
+    /*
+    ---------------------------------------------------------------------------
+      PROPERTY APPLY ROUTINES
+    ---------------------------------------------------------------------------
+    */
 
 
     // property apply
     _applyBaseImage : function(value, old)
     {
-      if (this.__impl instanceof qx.ui.decoration.GridDiv) {
-        this.__impl.setBaseImage(value);
-      } else {
-        this.__setBorderImage(value);
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (this.__markup) {
+          throw new Error("This decorator is already in-use. Modification is not possible anymore!");
+        }
       }
+
+      if (value)
+      {
+        var split = /(.*)(\.[a-z]+)$/.exec(value);
+        var prefix = split[1];
+        var ext = split[2];
+
+        // Store images
+        var images = this.__images =
+        {
+          tl : prefix + "-tl" + ext,
+          t : prefix + "-t" + ext,
+          tr : prefix + "-tr" + ext,
+
+          bl : prefix + "-bl" + ext,
+          b : prefix + "-b" + ext,
+          br : prefix + "-br" + ext,
+
+          l : prefix + "-l" + ext,
+          c : prefix + "-c" + ext,
+          r : prefix + "-r" + ext
+        };
+
+        // Store edges
+        this.__edges = this._computeEdgeSizes(images);
+      }
+    },
+    
+    
+    /**
+     * Get markup for images which are scaled on the horizontal axis.
+     *
+     * @param source {String} Image source
+     * @param left {Integer} Left position
+     * @param fromEnd {Boolean?false} Whether the Y-axis positioning happens from end aka bottom
+     * @return {Map} Style properties to apply
+     */    
+    __getScaleXMarkup : function(source, left, fromEnd)
+    {
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+      var imageWidth = ResourceManager.getImageWidth(source);
+      var imageHeight = ResourceManager.getImageHeight(source);
+      var clippedData = ResourceManager.getClippedData(source);
+
+      if (clippedData)
+      {
+        // Idea: Use a big image sprite where images are placed next to each other on the x-axis
+        // then clip the region of the image and move the image via the top coordinate to the top
+        // to show the clipped region.
+        var clip = qx.bom.element2.Clip.compile({top: clippedData.top, height: imageHeight});
+        var posY = fromEnd ? 
+          "bottom:" + (imageHeight - clippedData.height + clippedData.top) + "px" : 
+          "top:" + (-clippedData.top) + "px";
+        
+        return "<img src='" + clippedData.uri + "' style='position:absolute;left:" + left + "px;" + posY + ";width:" + imageWidth + "px;height:" + clippedData.height + "px;clip:" + clip + "'/>";
+      }
+      else
+      {
+        var posY = fromEnd ? "bottom:0" : "top:0";
+        return "<img src='" + source + "' style='position:absolute;left:" + left + "px;" + posY + ";width:" + imageWidth + "px;height:" + imageHeight + ";'/>";
+      }
+    },
+    
+    
+    /**
+     * Get markup for images which are scaled on the horizontal axis.
+     *
+     * @param source {String} Image source
+     * @param top {Integer} Top position
+     * @param fromEnd {Boolean?false} Whether the X-axis positioning happens from end aka right
+     * @return {Map} Style properties to apply
+     */    
+    __getScaleYMarkup : function(source, top, fromEnd)
+    {
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+      var imageWidth = ResourceManager.getImageWidth(source);
+      var imageHeight = ResourceManager.getImageHeight(source);
+      var clippedData = ResourceManager.getClippedData(source);
+
+      if (clippedData)
+      {
+        // Idea: Use a big image sprite where images are placed next to each other on the x-axis
+        // then clip the region of the image and move the image via the left coordinate to the left
+        // to show the clipped region.
+        var clip = qx.bom.element2.Clip.compile({left: clippedData.left, width: imageWidth});
+        var posX = fromEnd ? 
+          "right:" + (imageWidth - clippedData.width + clippedData.left) + "px" : 
+          "left:" + (-clippedData.left) + "px";
+        
+        return "<img src='" + clippedData.uri + "' style='position:absolute;top:" + top + "px;" + posX + ";height:" + imageHeight + "px;width:" + clippedData.width + "px;clip:" + clip + "'/>";
+      }
+      else
+      {
+        var posX = fromEnd ? "right:0" : "left:0";
+        return "<img src='" + source + "' style='position:absolute;top:" + top + "px;" + posX + ";height:" + imageHeight + "px;width:" + imageWidth + ";'/>";
+      }
+    },
+
+
+    /**
+     * Returns the sizes of the "top" and "bottom" heights and the "left" and
+     * "right" widths of the grid.
+     *
+     * @param images {Map} Map of image URLs
+     * @return {Map} the edge sizes
+     */
+    _computeEdgeSizes : function(images)
+    {
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+
+      return {
+        top : ResourceManager.getImageHeight(images.t),
+        bottom : ResourceManager.getImageHeight(images.b),
+        left : ResourceManager.getImageWidth(images.l),
+        right : ResourceManager.getImageWidth(images.r)
+      };
     }
   },
 
@@ -217,7 +407,6 @@ qx.Class.define("qx.ui.decoration.Grid",
   */
 
   destruct : function() {
-    this.__impl = null;
+    this.__markup = this.__images = this.__edges = null;
   }
-
 });
