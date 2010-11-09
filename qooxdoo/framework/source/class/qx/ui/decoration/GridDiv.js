@@ -150,6 +150,9 @@ qx.Class.define("qx.ui.decoration.GridDiv",
       }
 
       var Decoration = qx.bom.element.Decoration;
+      var Style = qx.bom.element.Style;
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+
       var images = this.__images;
       var edges = this.__edges;
 
@@ -162,43 +165,20 @@ qx.Class.define("qx.ui.decoration.GridDiv",
       // dragging when the cursor is in the text field in Spinners etc.
       html.push('<div style="position:absolute;top:0;left:0;overflow:hidden;font-size:0;line-height:0;">');
       
-      var Style = qx.bom.element.Style;
-      var ResourceManager = qx.util.ResourceManager.getInstance();
-      
-      // Pre-check whether clipped images are used
-      var clippedTop = ResourceManager.getClippedData(images.t);
-      var clippedBottom = ResourceManager.getClippedData(images.b);
-      var clippedLeft = ResourceManager.getClippedData(images.l);
-      var clippedRight = ResourceManager.getClippedData(images.r);
-      
-      // Switch to clipped URIs
-      var uriTop = clippedTop ? clippedTop.uri : images.t;
-      var uriBottom = clippedBottom ? clippedBottom.uri : images.b;
-      var uriLeft = clippedLeft ? clippedLeft.uri : images.l;
-      var uriRight = clippedRight ? clippedRight.uri : images.r;
-      
-      // Compute URIs for IMG tags
-      var uriTop = ResourceManager.toUri(uriTop);
-      var uriBottom = ResourceManager.toUri(uriBottom);
-      var uriLeft = ResourceManager.toUri(uriLeft);
-      var uriRight = ResourceManager.toUri(uriRight);
-      var uriCenter = ResourceManager.toUri(images.c);
-      
-      
       // Top: left, center, right
       html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getStyles(images.tl, "no-repeat")), "'></div>");
-      html.push("<img src='" + uriTop + "' style='left:", edges.left, "px;", Style.compile(this.__getScaleXStyles(images.t, 0)), "'/>");
+      html.push(this.__getScaleXMarkup(images.t, edges.left, false));
       html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getStyles(images.tr, "no-repeat")), "'></div>");
     
       // Bottom: left, center, right
       html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getStyles(images.bl, "no-repeat")), "'></div>");
-      html.push("<img src='" + uriBottom + "' style='left:", edges.left, "px;", Style.compile(this.__getScaleXStyles(images.b, null, 0)), "'/>");
+      html.push(this.__getScaleXMarkup(images.b, edges.right, true));
       html.push("<div style='position:absolute;bottom:0;right:0;", Style.compile(Decoration.getStyles(images.br, "no-repeat")), "'></div>");
     
       // Middle: left, center, right
-      html.push("<img src='" + uriLeft + "' style='top:", edges.top, "px;", Style.compile(this.__getScaleYStyles(images.l, 0)), "'/>");
-      html.push("<img src='" + uriCenter + "' style='position:absolute;top:", edges.top, "px;left:", edges.left, "px;'/>");
-      html.push("<img src='" + uriRight + "' style='top:", edges.top, "px;", Style.compile(this.__getScaleYStyles(images.r, null, 0)), "'/>");
+      html.push(this.__getScaleYMarkup(images.l, edges.top, false));
+      html.push("<img src='" + ResourceManager.toUri(images.c) + "' style='position:absolute;top:", edges.top, "px;left:", edges.left, "px;'/>");
+      html.push(this.__getScaleYMarkup(images.r, edges.bottom, true));
 
       // Outer frame
       html.push('</div>');
@@ -329,112 +309,72 @@ qx.Class.define("qx.ui.decoration.GridDiv",
     
     
     /**
-     * Get styles for images which are scaled on the horizontal axis.
-     *
-     * To make image sprites work one should give at least one of the positional
-     * arguments <code>top</code> or <code>bottom</code>. Top is preferred if both
-     * are defined. The system modifies the position accordingly to show the 
-     * wanted section of the image sprite.
-     *
-     * Clipping requires that the element is positioned absolutely inside the parent.
+     * Get markup for images which are scaled on the horizontal axis.
      *
      * @param source {String} Image source
-     * @param top {Integer?null} Top position
-     * @param bottom {Integer?null} Bottom position
-     *
+     * @param left {Integer} Left position
+     * @param fromEnd {Boolean?false} Whether the Y-axis positioning happens from end aka bottom
      * @return {Map} Style properties to apply
      */    
-    __getScaleXStyles : function(source, top, bottom)
+    __getScaleXMarkup : function(source, left, fromEnd)
     {
-      var style = {
-        position : "absolute"
-      };
-      
       var ResourceManager = qx.util.ResourceManager.getInstance();
-      var imageHeight = ResourceManager.getImageHeight(source) || qx.io.ImageLoader.getHeight(source);
+      var imageWidth = ResourceManager.getImageWidth(source);
+      var imageHeight = ResourceManager.getImageHeight(source);
       var clippedData = ResourceManager.getClippedData(source);
 
-      if (clippedData && (top != null || bottom != null))
+      if (clippedData)
       {
         // Idea: Use a big image sprite where images are placed next to each other on the x-axis
         // then clip the region of the image and move the image via the top coordinate to the top
         // to show the clipped region.
-        style.clip = qx.bom.element2.Clip.compile({top: clippedData.top, height: imageHeight});
-        style.height = clippedData.height + "px";
-
-        // Fix user given x-coordinate to include the combined image offset
-        if (top != null) {
-          style.top = (top - clippedData.top) + "px";
-        } else if (bottom != null) {
-          style.bottom = (bottom + imageHeight - clippedData.height + clippedData.top) + "px";
-        }
+        var clip = qx.bom.element2.Clip.compile({top: clippedData.top, height: imageHeight});
+        var posY = fromEnd ? 
+          "bottom:" + (imageHeight - clippedData.height + clippedData.top) + "px" : 
+          "top:" + (-clippedData.top) + "px";
+        
+        return "<img src='" + clippedData.uri + "' style='position:absolute;left:" + left + "px;" + posY + ";width:" + imageWidth + "px;height:" + clippedData.height + "px;clip:" + clip + "'/>";
       }
       else
       {
-        style.height = imageHeight + "px";
-        if (top != null) {
-          style.top = top + "px";
-        } else if (bottom != null) {
-          style.bottom = bottom + "px";
-        }
+        var posY = fromEnd ? "bottom:0" : "top:0";
+        return "<img src='" + source + "' style='position:absolute;left:" + left + "px;" + posY + ";width:" + imageWidth + "px;height:" + imageHeight + ";'/>";
       }
-
-      return style;
     },
     
     
     /**
-     * Get styles for images which are scaled on the vertical axis.
-     *
-     * To make image sprites work one should give at least one of the positional
-     * arguments <code>left</code> or <code>right</code>. Left is preferred if both
-     * are defined. The system modifies the position accordingly to show the 
-     * wanted section of the image sprite.
-     *
-     * Clipping requires that the element is positioned absolutely inside the parent.
+     * Get markup for images which are scaled on the horizontal axis.
      *
      * @param source {String} Image source
-     * @param left {Integer?null} Left position
-     * @param right {Integer?null} Right position
-     *
+     * @param top {Integer} Top position
+     * @param fromEnd {Boolean?false} Whether the X-axis positioning happens from end aka right
      * @return {Map} Style properties to apply
-     */
-    __getScaleYStyles : function(source, left, right)
+     */    
+    __getScaleYMarkup : function(source, top, fromEnd)
     {
-      var style = {
-        position : "absolute"
-      };
-      
       var ResourceManager = qx.util.ResourceManager.getInstance();
-      var imageWidth = ResourceManager.getImageWidth(source) || qx.io.ImageLoader.getWidth(source);
+      var imageWidth = ResourceManager.getImageWidth(source);
+      var imageHeight = ResourceManager.getImageHeight(source);
       var clippedData = ResourceManager.getClippedData(source);
 
-      if (clippedData && (left != null || right != null))
+      if (clippedData)
       {
         // Idea: Use a big image sprite where images are placed next to each other on the x-axis
         // then clip the region of the image and move the image via the left coordinate to the left
         // to show the clipped region.
-        style.clip = qx.bom.element2.Clip.compile({left: clippedData.left, width: imageWidth});
-        style.width = clippedData.width + "px";
-
-        // Fix user given x-coordinate to include the combined image offset
-        if (left != null) {
-          style.left = (left - clippedData.left) + "px";
-        } else if (right != null) {
-          style.right = (right + imageWidth - clippedData.width + clippedData.left) + "px";
-        }      
+        var clip = qx.bom.element2.Clip.compile({left: clippedData.left, width: imageWidth});
+        var posX = fromEnd ? 
+          "right:" + (imageWidth - clippedData.width + clippedData.left) + "px" : 
+          "left:" + (-clippedData.left) + "px";
+        
+        return "<img src='" + clippedData.uri + "' style='position:absolute;top:" + top + "px;" + posX + ";height:" + imageHeight + "px;width:" + clippedData.width + "px;clip:" + clip + "'/>";
       }
       else
       {
-        style.width = imageWidth + "px";
-        if (left != null) {
-          style.left = left + "px";
-        } else if (right != null) {
-          style.right = right + "px";
-        }        
+        var posX = fromEnd ? "right:0" : "left:0";
+        return "<img src='" + source + "' style='position:absolute;top:" + top + "px;" + posX + ";height:" + imageHeight + "px;width:" + imageWidth + ";'/>";
       }
-
-      return style;
     },
 
 
