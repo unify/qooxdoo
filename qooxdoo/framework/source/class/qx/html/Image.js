@@ -89,20 +89,7 @@ qx.Class.define("qx.html.Image",
       var scale = this._getProperty("scale");
       var repeat = scale ? "scale" : "no-repeat";
 
-      if (qx.core.Variant.isSet("qx.client", "mshtml"))
-      {
-        var source = this._getProperty("source");
-
-        if (this.tagNameHint != null) {
-          this.setNodeName(this.tagNameHint);
-        } else {
-          this.setNodeName(qx.bom.element.Decoration.getTagName(repeat, source));
-        }
-      }
-      else
-      {
-        this.setNodeName(qx.bom.element.Decoration.getTagName(repeat));
-      }
+      this.setNodeName(qx.bom.element.Decoration.getTagName(repeat));
 
       return this.base(arguments);
     },
