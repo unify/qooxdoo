@@ -263,15 +263,7 @@ qx.Class.define("qx.ui.basic.Image",
     {
       if (this.__mode == null)
       {
-        var source = this.getSource();
-        var isPng = false;
-        if (source != null) {
-          isPng = qx.lang.String.endsWith(source, ".png");
-        }
-
-        if (this.getScale() && isPng && qx.bom.element.Decoration.isAlphaImageLoaderEnabled()) {
-          this.__mode = "alphaScaled";
-        } else if (this.getScale()) {
+        if (this.getScale()) {
           this.__mode = "scaled";
         } else {
           this.__mode = "nonScaled";
@@ -354,12 +346,6 @@ qx.Class.define("qx.ui.basic.Image",
 
       this.__checkForContentElementSwitch(source);
 
-      if (qx.core.Variant.isSet("qx.client", "mshtml"))
-      {
-        var repeat = this.getScale() ? "scale" : "no-repeat";
-        this.getContentElement().tagNameHint = qx.bom.element.Decoration.getTagName(repeat, source);
-      }
-
       // Detect if the image registry knows this image
       if (qx.util.ResourceManager.getInstance().has(source)) {
         this.__setManagedImage(this.getContentElement(), source);
@@ -378,44 +364,16 @@ qx.Class.define("qx.ui.basic.Image",
      * @param source {String} source of the image
      * @return {void}
      */
-    __checkForContentElementSwitch : qx.core.Variant.select("qx.client",
+    __checkForContentElementSwitch : function(source)
     {
-      "mshtml" : function(source)
-      {
-        var alphaImageLoader = qx.bom.element.Decoration.isAlphaImageLoaderEnabled();
-        var isPng = qx.lang.String.endsWith(source, ".png");
-
-        if (alphaImageLoader && isPng)
-        {
-          if (this.getScale() && this.__getMode() != "alphaScaled") {
-            this.__setMode("alphaScaled");
-          } else if (!this.getScale() && this.__getMode() != "nonScaled") {
-            this.__setMode("nonScaled");
-          }
-        }
-        else
-        {
-          if (this.getScale() && this.__getMode() != "scaled") {
-            this.__setMode("scaled");
-          } else if (!this.getScale() && this.__getMode() != "nonScaled") {
-            this.__setMode("nonScaled");
-          }
-        }
-
-        this.__checkForContentElementReplacement(this.__getSuitableContentElement());
-      },
-
-      "default" : function(source)
-      {
-        if (this.getScale() && this.__getMode() != "scaled") {
-          this.__setMode("scaled");
-        } else if (!this.getScale() && this.__getMode("nonScaled")) {
-          this.__setMode("nonScaled");
-        }
-
-        this.__checkForContentElementReplacement(this.__getSuitableContentElement());
+      if (this.getScale() && this.__getMode() != "scaled") {
+        this.__setMode("scaled");
+      } else if (!this.getScale() && this.__getMode("nonScaled")) {
+        this.__setMode("nonScaled");
       }
-    }),
+
+      this.__checkForContentElementReplacement(this.__getSuitableContentElement());
+    },
 
 
     /**
