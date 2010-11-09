@@ -20,6 +20,8 @@
 
 /**
  * This class provides capture event support at DOM level.
+ *
+ * @require {qx.event.dispatch.MouseCapture}
  */
 qx.Class.define("qx.event.handler.Capture",
 {
