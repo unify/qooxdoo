@@ -52,6 +52,8 @@
  * * Express install support
  * * Transformation of standard conformance markup to cross browser support
  * * Support for alternative content (alt text)
+ *
+ * @require {qx.event.handler.Window}
  */
 qx.Class.define("qx.bom.Flash",
 {

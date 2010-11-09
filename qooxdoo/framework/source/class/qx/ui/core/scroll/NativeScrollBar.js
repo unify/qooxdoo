@@ -42,6 +42,8 @@
  *
  * <a href='http://manual.qooxdoo.org/1.2/pages/widget/scrollbar.html' target='_blank'>
  * Documentation of this widget in the qooxdoo wiki.</a>
+ *
+ * @require {qx.event.handler.Element}
  */
 qx.Class.define("qx.ui.core.scroll.NativeScrollBar",
 {

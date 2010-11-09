@@ -23,6 +23,8 @@
  *
  * This class is used internally by {@link qx.event.Manager} to do mouse event
  * capturing.
+ *
+ * @require {qx.event.handler.Window}
  */
 qx.Class.define("qx.event.dispatch.MouseCapture",
 {
