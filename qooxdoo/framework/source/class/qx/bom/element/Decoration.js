@@ -54,7 +54,7 @@ qx.Class.define("qx.bom.element.Decoration",
 
       // Double axis repeats cannot use image sprites
       if (repeat != "repeat") {
-        var clippedData = ResourceManager.getClippedData(source);
+        var sprite = ResourceManager.getImageSprite(source);
       }
       
       // The magic "- 0.01" is to fix issues in older Firefoxs. It is faster to apply everywhere 
@@ -63,9 +63,9 @@ qx.Class.define("qx.bom.element.Decoration",
       {
         width : dimension.width + "px",
         height : dimension.height + "px",
-        backgroundImage : "url(" + (clippedData ? clippedData.uri : ResourceManager.toUri(source)) + ")",
+        backgroundImage : "url(" + (sprite ? sprite.uri : ResourceManager.toUri(source)) + ")",
         backgroundRepeat : repeat,
-        backgroundPosition : clippedData ? (-clippedData.left) + "px " + (-clippedData.top - 0.01) + "px" : null
+        backgroundPosition : sprite ? (-sprite.left) + "px " + (-sprite.top - 0.01) + "px" : null
       };
       
       return style;

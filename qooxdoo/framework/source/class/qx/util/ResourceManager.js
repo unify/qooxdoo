@@ -134,13 +134,14 @@ qx.Class.define("qx.util.ResourceManager",
     
     
     /**
-     * Returns clipping details for being used for the given image ID.
-     * Returns nothing when the given ID is not a clipped image.
+     * Returns sprite details for being used for the given image ID.
+     *
+     * Nothing is returned when the given ID is not available as part of an image sprite.
      *
      * @param id {String} Resource identifier
      * @return {Map} 
      */
-    getClippedData : function(id)
+    getImageSprite : function(id)
     {
       var sprites = this.__sprites;
       var result = sprites[id];

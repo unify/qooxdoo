@@ -321,19 +321,19 @@ qx.Class.define("qx.ui.decoration.GridDiv",
       var ResourceManager = qx.util.ResourceManager.getInstance();
       var imageWidth = ResourceManager.getImageWidth(source);
       var imageHeight = ResourceManager.getImageHeight(source);
-      var clippedData = ResourceManager.getClippedData(source);
+      var imageSprite = ResourceManager.getImageSprite(source);
 
-      if (clippedData)
+      if (imageSprite)
       {
         // Idea: Use a big image sprite where images are placed next to each other on the x-axis
         // then clip the region of the image and move the image via the top coordinate to the top
         // to show the clipped region.
-        var clip = qx.bom.element2.Clip.compile({top: clippedData.top, height: imageHeight});
+        var clip = qx.bom.element2.Clip.compile({top: imageSprite.top, height: imageHeight});
         var posY = fromEnd ? 
-          "bottom:" + (imageHeight - clippedData.height + clippedData.top) + "px" : 
-          "top:" + (-clippedData.top) + "px";
+          "bottom:" + (imageHeight - imageSprite.height + imageSprite.top) + "px" : 
+          "top:" + (-imageSprite.top) + "px";
         
-        return "<img src='" + clippedData.uri + "' style='position:absolute;left:" + left + "px;" + posY + ";width:" + imageWidth + "px;height:" + clippedData.height + "px;clip:" + clip + "'/>";
+        return "<img src='" + imageSprite.uri + "' style='position:absolute;left:" + left + "px;" + posY + ";width:" + imageWidth + "px;height:" + imageSprite.height + "px;clip:" + clip + "'/>";
       }
       else
       {
@@ -356,19 +356,19 @@ qx.Class.define("qx.ui.decoration.GridDiv",
       var ResourceManager = qx.util.ResourceManager.getInstance();
       var imageWidth = ResourceManager.getImageWidth(source);
       var imageHeight = ResourceManager.getImageHeight(source);
-      var clippedData = ResourceManager.getClippedData(source);
+      var imageSprite = ResourceManager.getImageSprite(source);
 
-      if (clippedData)
+      if (imageSprite)
       {
         // Idea: Use a big image sprite where images are placed next to each other on the x-axis
         // then clip the region of the image and move the image via the left coordinate to the left
         // to show the clipped region.
-        var clip = qx.bom.element2.Clip.compile({left: clippedData.left, width: imageWidth});
+        var clip = qx.bom.element2.Clip.compile({left: imageSprite.left, width: imageWidth});
         var posX = fromEnd ? 
-          "right:" + (imageWidth - clippedData.width + clippedData.left) + "px" : 
-          "left:" + (-clippedData.left) + "px";
+          "right:" + (imageWidth - imageSprite.width + imageSprite.left) + "px" : 
+          "left:" + (-imageSprite.left) + "px";
         
-        return "<img src='" + clippedData.uri + "' style='position:absolute;top:" + top + "px;" + posX + ";height:" + imageHeight + "px;width:" + clippedData.width + "px;clip:" + clip + "'/>";
+        return "<img src='" + imageSprite.uri + "' style='position:absolute;top:" + top + "px;" + posX + ";height:" + imageHeight + "px;width:" + imageSprite.width + "px;clip:" + clip + "'/>";
       }
       else
       {
