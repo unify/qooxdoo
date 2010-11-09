@@ -156,35 +156,13 @@ qx.Class.define("qx.ui.virtual.cell.AbstractImage",
         return "";
       }
 
-      var content = "";
       var imageData = this.__createImage(this._identifyImage(value));
-      var isOldFireFox = qx.bom.client.Engine.GECKO && qx.bom.client.Engine.VERSION < 1.9;
-      var tooltip = imageData.tooltip ? 'title="' + imageData.tooltip + '"' : "";
+      var tooltip = imageData.tooltip || "";
+      var display = qx.bom.client.Engine.GECKO && qx.bom.client.Engine.VERSION < 1.9 ? "-moz-inline-box" : "inline-block";
 
-      var styles = {
-        width: imageData.width + "px",
-        height: imageData.height + "px",
-        display: isOldFireFox ? "-moz-inline-box" : "inline-block",
-        verticalAlign: "top",
-        position: "static"
-      };
-
-      var tag = qx.bom.element.Decoration.getTagName("no-repeat", imageData.url);
-      var ret = qx.bom.element.Decoration.getAttributes(imageData.url, "no-repeat", styles);
-      var css = qx.bom.element.Style.compile(ret.style);
-
-      if (tag === "img")
-      {
-        content = '<img src="' + ret.src + '" style="' + css + '" ';
-        content += tooltip + '/>';
-      }
-      else
-      {
-        content = '<div style="' + css + '" ';
-        content += tooltip + '></div>';
-      }
-      return content;
+      return '<div style="width:' + imageData.width + 'px;height:' + imageData.height + 'px;display:' + 
+        display + ';vertical-align:top;background-image:url(' + imageData.url + ');background-repeat: no-repeat;" title="' + 
+        tooltip + '"></div>';
     }
-
   }
 });

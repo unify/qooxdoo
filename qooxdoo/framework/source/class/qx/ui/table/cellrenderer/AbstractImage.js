@@ -182,14 +182,13 @@ qx.Class.define("qx.ui.table.cellrenderer.AbstractImage",
       var content = "<div></div>";
 
       // set image
-      if (this.__imageData.url) {
-        content = qx.bom.element.Decoration.create(this.__imageData.url, "no-repeat", {
-          width: this.__imageData.width + "px",
-          height: this.__imageData.height + "px",
-          display: qx.bom.client.Engine.GECKO && qx.bom.client.Engine.VERSION < 1.9 ? "-moz-inline-box" : "inline-block",
-          verticalAlign: "top",
-          position: "static"
-        });
+      var imageData = this.__imageData;
+      if (imageData.url) 
+      {
+        var display = qx.bom.client.Engine.GECKO && qx.bom.client.Engine.VERSION < 1.9 ? "-moz-inline-box" : "inline-block";
+
+        return '<div style="width:' + imageData.width + 'px;height:' + imageData.height + 'px;display:' + 
+          display + ';vertical-align:top;background-image:url(' + imageData.url + ');background-repeat: no-repeat;"></div>';        
       };
 
       return content;
