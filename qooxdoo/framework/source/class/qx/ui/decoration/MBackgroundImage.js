@@ -113,7 +113,6 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     _generateBackgroundMarkup: function(styles)
     {
       var Style = qx.bom.element2.Style;
-      console.debug(styles)
       
       var image = this.getBackgroundImage();
       var markup, stylesMarkup;
