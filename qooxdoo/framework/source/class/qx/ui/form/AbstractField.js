@@ -26,6 +26,8 @@
  * On every keystroke the value is synchronized with the
  * value of the textfield. Value changes can be monitored by listening to the
  * {@link #input} or {@link #changeValue} events, respectively.
+ *
+ * @require {qx.event.handler.Input}
  */
 qx.Class.define("qx.ui.form.AbstractField",
 {
