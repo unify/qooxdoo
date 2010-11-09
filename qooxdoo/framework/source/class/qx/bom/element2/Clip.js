@@ -1,8 +1,27 @@
+/* ************************************************************************
+
+   qooxdoo - the new era of web development
+
+   http://qooxdoo.org
+
+   Copyright:
+     2009-2010 Deutsche Telekom AG, Germany, http://www.telekom.com
+
+   License:
+     LGPL: http://www.gnu.org/licenses/lgpl.html
+     EPL: http://www.eclipse.org/org/documents/epl-v10.php
+     See the LICENSE file in the project's top-level directory for details.
+
+   Authors:
+     * Sebastian Werner (wpbasti)
+
+************************************************************************ */
+
 qx.Class.define("qx.bom.element2.Clip",
 {
   statics :
   {
-    compile : function(map)
+    compileValue : function(map)
     {
       if (!map) {
         return "rect(auto,auto,auto,auto)";

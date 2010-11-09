@@ -328,7 +328,7 @@ qx.Class.define("qx.ui.decoration.Grid",
         // Idea: Use a big image sprite where images are placed next to each other on the x-axis
         // then clip the region of the image and move the image via the top coordinate to the top
         // to show the clipped region.
-        var clip = qx.bom.element2.Clip.compile({top: imageSprite.top, height: imageHeight});
+        var clip = qx.bom.element2.Clip.compileValue({top: imageSprite.top, height: imageHeight});
         var posY = fromEnd ? 
           "bottom:" + (imageHeight - imageSprite.height + imageSprite.top) + "px" : 
           "top:" + (-imageSprite.top) + "px";
