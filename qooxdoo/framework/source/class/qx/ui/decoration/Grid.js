@@ -363,7 +363,7 @@ qx.Class.define("qx.ui.decoration.Grid",
         // Idea: Use a big image sprite where images are placed next to each other on the x-axis
         // then clip the region of the image and move the image via the left coordinate to the left
         // to show the clipped region.
-        var clip = qx.bom.element2.Clip.compile({left: imageSprite.left, width: imageWidth});
+        var clip = qx.bom.element2.Clip.compileValue({left: imageSprite.left, width: imageWidth});
         var posX = fromEnd ? 
           "right:" + (imageWidth - imageSprite.width + imageSprite.left) + "px" : 
           "left:" + (-imageSprite.left) + "px";
