@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -13,21 +14,19 @@
      See the LICENSE file in the project's top-level directory for details.
 
    Authors:
-     * Jonathan Weiß (jonathan_rass)
+     * Sebastian Werner (wpbasti)
+     * Fabian Jakobs (fjakobs)
 
 ************************************************************************ */
 
 /**
- * Abstract base class for the HBox and VBox decorators.
- * This decorator uses three images, which are positioned in a
- * vertical/horizontal line. The first and last image always keep their
- * original size. The center image is stretched.
+ * This decorator uses three images, which are positioned in a vertical/horizontal
+ * line. The first and last image always keep their original size. The center
+ * image is repeated on the axis of the configured orientation.
  */
-
-qx.Class.define("qx.ui.decoration.AbstractBox",
+qx.Class.define("qx.ui.decoration.BoxDiv",
 {
-  extend: qx.ui.decoration.Abstract,
-  implement : [qx.ui.decoration.IDecorator],
+  extend : qx.ui.decoration.Abstract,
 
 
   /*
@@ -44,23 +43,18 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
   construct : function(baseImage, insets, orientation)
   {
     this.base(arguments);
-    this._setOrientation(orientation);
 
-    if (false && qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
-    {
-      this.__impl = new qx.ui.decoration.css3.BorderImage();
-      if (baseImage) {
-        this.__setBorderImage(baseImage, orientation);
-      }
-
-      // Initialize properties
-      if (insets != null) {
-        this.__impl.setInsets(insets);
-      }
+    // Initialize properties
+    if (baseImage != null) {
+      this.setBaseImage(baseImage);
     }
-    else
-    {
-      this.__impl = new qx.ui.decoration.BoxDiv(baseImage, insets, orientation);
+
+    if (insets != null) {
+      this.setInsets(insets);
+    }
+    
+    if (orientation != null) {
+      this.setOrientation(orientation);
     }
   },
 
@@ -97,6 +91,13 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
       check : "String",
       nullable : true,
       apply : "_applyBaseImage"
+    },
+    
+    /** Orientation of the box decorator */
+    orientation : 
+    {
+      check : ["horizontal", "vertical"],
+      init : "horizontal"
     }
   },
 
@@ -111,90 +112,166 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
 
   members :
   {
-    __impl : null,
-    _isHorizontal : null,
+    __markup : null,
+    __images : null,
+    __edges : null,
 
 
-    /**
-     * Helper to set the orientation.
-     *
-     * @param orientation {String} horizontal or vertical
-     */
-    _setOrientation : function(orientation) {
-      this._isHorizontal = orientation == "horizontal";
+    // overridden
+    _getDefaultInsets : function()
+    {
+      return {
+        top : 0,
+        right : 0,
+        bottom : 0,
+        left : 0
+      };
+    },
+
+
+    // overridden
+    _isInitialized: function() {
+      return !!this.__markup;
+    },
+    
+
+
+    /*
+    ---------------------------------------------------------------------------
+      INTERFACE IMPLEMENTATION
+    ---------------------------------------------------------------------------
+    */
+
+    // interface implementation
+    getMarkup : function()
+    {
+      if (this.__markup) {
+        return this.__markup;
+      }
+
+      var Decoration = qx.bom.element.Decoration;
+      var images = this.__images;
+      var edges = this.__edges;
+
+      var html = [];
+
+      // Outer frame
+      // Note: overflow=hidden is needed for Safari 3.1 to omit scrolling through
+      // dragging when the cursor is in the text field in Spinners etc.
+      html.push('<div style="position:absolute;top:0;left:0;overflow:hidden;font-size:0;line-height:0;">');
+
+      var Style = qx.bom.element.Style;
+      if (this._isHorizontal)
+      {
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getStyles(images.l, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:0;left:", edges.left, "px;", Style.compile(Decoration.getStyles(images.c, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getStyles(images.r, "no-repeat")), "'></div>");
+      }
+      else
+      {
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getStyles(images.t, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:", edges.top, "px;left:0;", Style.compile(Decoration.getStyles(images.c, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getStyles(images.b, "no-repeat")), "'></div>");        
+      }
+
+      // Outer frame
+      html.push('</div>');
+
+      // Store
+      return this.__markup = html.join("");
     },
 
 
     // interface implementation
-    getMarkup : function() {
-      return this.__impl.getMarkup();
-    },
+    resize : function(element, width, height)
+    {
+      element.style.width = width + "px";
+      element.style.height = height + "px";
 
+      // Compute inner sizes
+      var edges = this.__edges;
 
-    // interface implementation
-    resize : function(element, width, height) {
-      this.__impl.resize(element, width, height);
+      if (this._isHorizontal)
+      {
+        var innerWidth = width - edges.left - edges.right;
+        element.childNodes[1].style.width = innerWidth + "px";
+      }
+      else
+      {
+        var innerHeight = height - edges.top - edges.bottom;
+        element.childNodes[1].style.height = innerHeight + "px";
+      }
+
+      if (qx.core.Variant.isSet("qx.client", "mshtml"))
+      {
+        // Internet Explorer as of version 6 or version 7 in quirks mode
+        // have rounding issues when working with odd dimensions:
+        // right and bottom positioned elements are rendered with a
+        // one pixel negative offset which results into some ugly
+        // render effects.
+        if (qx.bom.client.Engine.VERSION < 7 || (qx.bom.client.Feature.QUIRKS_MODE && qx.bom.client.Engine.VERSION < 8)) 
+        {
+          if (this._isHorizontal) {
+            element.childNodes[2].style.marginRight = (width%2 == 1) ? "-1px" : "0";
+          } else {
+            element.childNodes[2].style.marginBottom = (height%2 == 1) ? "-1px" : "0";
+          }
+        }
+      }
     },
 
 
     // interface implementation
     tint : function(element, bgcolor) {
-      // do nothing
+      // not implemented
     },
 
 
-    // interface implementation
-    getInsets : function() {
-      return this.__impl.getInsets();
-    },
-
-
-    // property apply
-    _applyInsets : function(value, old, name)
-    {
-      var setter = "set" + qx.lang.String.firstUp(name);
-      this.__impl[setter](value);
-    },
+    /*
+    ---------------------------------------------------------------------------
+      PROPERTY APPLY ROUTINES
+    ---------------------------------------------------------------------------
+    */
 
 
     // property apply
     _applyBaseImage : function(value, old)
     {
-      if (this.__impl instanceof qx.ui.decoration.BoxDiv) {
-        this.__impl.setBaseImage(value);
-      } else {
-        this.__setBorderImage(value);
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (this.__markup) {
+          throw new Error("This decorator is already in-use. Modification is not possible anymore!");
+        }
       }
-    },
-
-
-    /**
-     * Configures the border image decorator
-     *
-     * @param baseImage {String} URL of the base image
-     */
-    __setBorderImage : function(baseImage)
-    {
-      this.__impl.setBorderImage(baseImage);
-
-      var base = baseImage;
-      var split = /(.*)(\.[a-z]+)$/.exec(base);
-      var prefix = split[1];
-      var ext = split[2];
 
       var ResourceManager = qx.util.ResourceManager.getInstance();
+      if (value)
+      {
+        var base = value;
+        var split = /(.*)(\.[a-z]+)$/.exec(base);
+        var prefix = split[1];
+        var ext = split[2];
 
-      if (this._isHorizontal)
-      {
-        var leftSlice = ResourceManager.getImageWidth(prefix + "-l" + ext);
-        var rightSlice = ResourceManager.getImageWidth(prefix + "-r" + ext);
-        this.__impl.setSlice([0, rightSlice, 0, leftSlice]);
-      }
-      else
-      {
-        var bottomSlice = ResourceManager.getImageHeight(prefix + "-b" + ext);
-        var topSlice = ResourceManager.getImageHeight(prefix + "-t" + ext);
-        this.__impl.setSlice([topSlice, 0, bottomSlice, 0]);
+        // Store images
+        var images = this.__images =
+        {
+          t : prefix + "-t" + ext,
+          b : prefix + "-b" + ext,
+
+          c : prefix + "-c" + ext,
+
+          l : prefix + "-l" + ext,
+          r : prefix + "-r" + ext
+        };
+
+        // Store edges
+        this.__edges =
+        {
+          top : ResourceManager.getImageHeight(images.t),
+          bottom : ResourceManager.getImageHeight(images.b),
+          left : ResourceManager.getImageWidth(images.l),
+          right : ResourceManager.getImageWidth(images.r)
+        };
       }
     }
   },
