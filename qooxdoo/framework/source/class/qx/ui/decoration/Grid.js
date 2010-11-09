@@ -150,7 +150,7 @@ qx.Class.define("qx.ui.decoration.Grid",
       }
 
       var Decoration = qx.bom.element.Decoration;
-      var Style = qx.bom.element.Style;
+      var Style = qx.bom.element2.Style;
       var ResourceManager = qx.util.ResourceManager.getInstance();
 
       var images = this.__images;

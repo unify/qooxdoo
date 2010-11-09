@@ -167,6 +167,37 @@ qx.Class.define("qx.bom.element2.Style",
       if (qx.core.Variant.isSet("qx.debug", "on")) {
         qx.log.Logger.warn('Style property "' + name + '" is not supported by the client!');
       }
+    },
+    
+    
+    /**
+     * Compiles the given styles into a string which might be used in conjunction with
+     * <code>innerHTML</code> to build markup.
+     *
+     * @param styles {Map} Map of styles
+     * @return {String} Result string
+     */
+    compile : function(styles)
+    {
+      var result = [];
+      var style = this.__helperElem.style;
+      var names = this.__nameCache;
+      
+      for (var prop in styles)
+      {
+        var value = styles[prop];
+
+        var domName = name in style && name || names[name] || this.property(name);
+        var markupName = domName;
+        
+        if (markupName.indexOf("-") != -1) {
+          markupName = qx.lang.String.camelCase(markupName);
+        }
+        
+        result.push(markupName + ":" + value);
+      }
+      
+      return result.join(";");
     }
   },
 

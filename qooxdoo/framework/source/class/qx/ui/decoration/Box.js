@@ -160,7 +160,7 @@ qx.Class.define("qx.ui.decoration.Box",
       // dragging when the cursor is in the text field in Spinners etc.
       html.push('<div style="position:absolute;top:0;left:0;overflow:hidden;font-size:0;line-height:0;">');
 
-      var Style = qx.bom.element.Style;
+      var Style = qx.bom.element2.Style;
       if (this._isHorizontal)
       {
         html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getStyles(images.l, "no-repeat")), "'></div>");
