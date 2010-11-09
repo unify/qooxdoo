@@ -33,7 +33,7 @@
  * The decoration uses clipped images to reduce the number of external
  * resources to load.
  */
-qx.Class.define("qx.ui.decoration.GridDiv",
+qx.Class.define("qx.ui.decoration.Grid",
 {
   extend : qx.ui.decoration.Abstract,
 

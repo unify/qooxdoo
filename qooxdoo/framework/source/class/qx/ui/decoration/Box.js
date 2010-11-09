@@ -24,7 +24,7 @@
  * line. The first and last image always keep their original size. The center
  * image is repeated on the axis of the configured orientation.
  */
-qx.Class.define("qx.ui.decoration.BoxDiv",
+qx.Class.define("qx.ui.decoration.Box",
 {
   extend : qx.ui.decoration.Abstract,
 
