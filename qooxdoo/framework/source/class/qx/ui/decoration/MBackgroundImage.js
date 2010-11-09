@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2009 1&1 Internet AG, Germany, http://www.1und1.de
+     2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -21,6 +22,12 @@
  */
 qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
 {
+  /*
+  *****************************************************************************
+     PROPERTIES
+  *****************************************************************************
+  */
+    
   properties :
   {
     /** The URL of the background image */
@@ -48,6 +55,8 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
      * If the value is an integer it is interpreted as a pixel value, otherwise
      * the value is taken to be a CSS value. For CSS, the values are "center",
      * "left" and "right".
+     *
+     * Only supported for repeat modes, "scale" does not support this.
      */
     backgroundPositionX :
     {
@@ -63,6 +72,8 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
      * If the value is an integer it is interpreted as a pixel value, otherwise
      * the value is taken to be a CSS value. For CSS, the values are "top",
      * "middle" and "bottom".
+     *
+     * Only supported for repeat modes, "scale" does not support this.
      */
     backgroundPositionY :
     {
@@ -73,14 +84,22 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
 
     /**
      * Property group to define the background position
+     *
+     * Only supported for repeat modes, "scale" does not support this.
      */
-    backgroundPosition :
-    {
+    backgroundPosition : {
       group : ["backgroundPositionY", "backgroundPositionX"]
     }
   },
 
 
+
+  /*
+  *****************************************************************************
+     MEMBERS
+  *****************************************************************************
+  */
+  
   members :
   {
     /**
@@ -94,6 +113,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     _generateBackgroundMarkup: function(styles)
     {
       var image = this.getBackgroundImage();
+      var markup, stylesMarkup;
       if (image)
       {
         var Decoration = qx.bom.element.Decoration;
@@ -107,31 +127,19 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
             }
           }
           
-          var stylesMarkup = qx.bom.element.Style.compile(styles) + qx.bom.element.Style.compile(qx.bom.element.Decoration.getScaleStyles(image));
-          var markup = "<img style='" + stylesMarkup + "' src='" + qx.util.ResourceManager.getInstance().toUri(image) + "'/>"
+          stylesMarkup = qx.bom.element.Style.compile(styles);
+          markup = "<img style='" + stylesMarkup + "' src='" + qx.util.ResourceManager.getInstance().toUri(image) + "'/>"
         }
         else
         { 
-          // Supports background position
-          var stylesMarkup = qx.bom.element.Style.compile(styles) + qx.bom.element.Style.compile(qx.bom.element.Decoration.getRepeatStyles(image, repeat));
-          var markup = "<div style='" + stylesMarkup + "'></div>";
+          stylesMarkup = qx.bom.element.Style.compile(styles) + qx.bom.element.Style.compile(qx.bom.element.Decoration.getStyles(image, repeat));
+          markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'></div>";
         }
       }
       else
       {
-        if (qx.core.Variant.isSet("qx.client", "mshtml"))
-        {
-          // Internet Explorer as of version 6 for quirks and standards mode,
-          // or version 7 in quirks mode adds an empty string to the "div"
-          // node. This behavior causes rendering problems, because the node
-          // would then have a minimum size determined by the font size.
-          if (qx.bom.client.Engine.VERSION < 7 || qx.bom.client.Feature.QUIRKS_MODE) {
-            styles.fontSize = styles.lineHeight = 0;
-          }
-        }
-
-        var stylesMarkup = qx.bom.element.Style.compile(styles);
-        var markup = '<div style="' + stylesMarkup + '"></div>';
+        stylesMarkup = qx.bom.element.Style.compile(styles);
+        markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'></div>";
       }
 
       return markup;

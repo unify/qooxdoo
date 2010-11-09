@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2010 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -35,14 +36,6 @@ qx.Class.define("qx.html.Image",
 
   members :
   {
-    // this member variable is only used for IE browsers to be able
-    // to the tag name which will be set. This is heavily connected to the runtime
-    // change of decorators and the use of external (=unmanaged images). It is
-    // necessary to be able to determine what tag will be used e.g. before the
-    // ImageLoader has finished its loading of an external image.
-    // See Bug #3894 for more details
-    tagNameHint : null,
-
     /*
     ---------------------------------------------------------------------------
       ELEMENT API
@@ -66,7 +59,7 @@ qx.Class.define("qx.html.Image",
           if (this._getProperty("scale")) {
             elem.src = qx.util.ResourceManager.getInstance().toUri(source);
           } else {
-            qx.bom.element2.Style.set(elem, qx.bom.element.Decoration.getRepeatStyles(source, "no-repeat"));
+            qx.bom.element2.Style.set(elem, qx.bom.element.Decoration.getStyles(source, "no-repeat"));
           }
         }
       }
@@ -90,7 +83,6 @@ qx.Class.define("qx.html.Image",
     _copyData : function(fromMarkup) {
       return this.base(arguments, true);
     },
-
 
 
 

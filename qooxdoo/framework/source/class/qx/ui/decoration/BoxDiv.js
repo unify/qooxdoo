@@ -156,22 +156,22 @@ qx.Class.define("qx.ui.decoration.BoxDiv",
       var html = [];
 
       // Outer frame
-      // Note: Overflow=hidden is needed for Safari 3.1 to omit scrolling through
+      // Note: overflow=hidden is needed for Safari 3.1 to omit scrolling through
       // dragging when the cursor is in the text field in Spinners etc.
       html.push('<div style="position:absolute;top:0;left:0;overflow:hidden;font-size:0;line-height:0;">');
 
       var Style = qx.bom.element.Style;
       if (this._isHorizontal)
       {
-        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.l, "no-repeat")), "'></div>");
-        html.push("<div style='position:absolute;top:0;left:", edges.left, "px;", Style.compile(Decoration.getRepeatStyles(images.c, "repeat-x")), "'></div>");
-        html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getRepeatStyles(images.r, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getStyles(images.l, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:0;left:", edges.left, "px;", Style.compile(Decoration.getStyles(images.c, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getStyles(images.r, "no-repeat")), "'></div>");
       }
       else
       {
-        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.t, "no-repeat")), "'></div>");
-        html.push("<div style='position:absolute;top:", edges.top, "px;left:0;", Style.compile(Decoration.getRepeatStyles(images.c, "repeat-x")), "'></div>");
-        html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.b, "no-repeat")), "'></div>");        
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getStyles(images.t, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:", edges.top, "px;left:0;", Style.compile(Decoration.getStyles(images.c, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getStyles(images.b, "no-repeat")), "'></div>");        
       }
 
       // Outer frame
