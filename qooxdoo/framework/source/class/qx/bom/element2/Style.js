@@ -43,6 +43,9 @@ qx.Class.define("qx.bom.element2.Style",
 
     /** {Map} Maps standard names to vendor names for faster access */
     __nameCache : {},
+    
+    /** {Map} Like a second-level cache working on top of __nameCache to also cache translated markup names. */
+    __markupNameCache : {},
 
     /** {String} Vendor prefix (depends on client) */
     __vendorPrefix : qx.core.Variant.select("qx.client",
@@ -182,19 +185,18 @@ qx.Class.define("qx.bom.element2.Style",
       var result = [];
       var style = this.__helperElem.style;
       var names = this.__nameCache;
+      var markupNames = this.__markupNameCache;
       
       for (var prop in styles)
       {
         var value = styles[prop];
-
-        var domName = name in style && name || names[name] || this.property(name);
-        var markupName = domName;
+        var name = markupNames[prop] 
         
-        if (markupName.indexOf("-") != -1) {
-          markupName = qx.lang.String.camelCase(markupName);
+        if (name == null) {
+          name = markupNames[prop] = qx.lang.String.hyphenate(name in style && name || names[prop] || this.property(prop));
         }
         
-        result.push(markupName + ":" + value);
+        result.push(name + ":" + value);
       }
       
       return result.join(";");
