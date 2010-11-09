@@ -56,28 +56,18 @@ qx.Class.define("qx.html.Image",
 
       if (name === "source")
       {
-        var elem = this.getDomElement();
-
-        // To prevent any wrong background-position or -repeat it is necessary
-        // to reset those styles whenever a background-image is updated.
-        // This is only necessary if any backgroundImage was set already.
-        // See Bug #3376 for details
-        var styles = this.getAllStyles();
-
-        if (this.getNodeName() == "div" && this.getStyle("backgroundImage"))
-        {
-          styles.backgroundPosition = null;
-          styles.backgroundRepeat = null;
-        }
-
-        var source = this._getProperty("source");
-        var scale = this._getProperty("scale");
-        var repeat = scale ? "scale" : "no-repeat";
-
         // Source can be null in certain circumstances.
         // See bug #3701 for details.
-        if (source != null) {
-          qx.bom.element.Decoration.update(elem, source, repeat, styles);
+        var source = this._getProperty("source");
+        if (source != null) 
+        {
+          var elem = this.getDomElement();
+
+          if (this._getProperty("scale")) {
+            elem.src = qx.util.ResourceManager.getInstance().toUri(source);
+          } else {
+            qx.bom.element2.Style.set(elem, qx.bom.element.Decoration.getRepeatStyles(source, "no-repeat"));
+          }
         }
       }
     },
@@ -86,10 +76,10 @@ qx.Class.define("qx.html.Image",
     // overridden
     _createDomElement : function()
     {
-      var scale = this._getProperty("scale");
-      var repeat = scale ? "scale" : "no-repeat";
-
-      this.setNodeName(qx.bom.element.Decoration.getTagName(repeat));
+      // When scaling is needed, we could only use a image tag, but when
+      // scaling should be avoided the easiest is to use a background image
+      // inside a DIV.
+      this.setNodeName(this._getProperty("scale") ? "img" : "div");
 
       return this.base(arguments);
     },

@@ -62,8 +62,12 @@ qx.Class.define("qx.bom.element.Decoration",
     update : function(element, source, repeat, style)
     {
       var tag = this.__repeatToTagname[repeat];
-      if (tag != element.tagName.toLowerCase()) {
-        throw new Error("Image modification not possible because elements could not be replaced at runtime anymore!");
+      
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (tag != element.tagName.toLowerCase()) {
+          throw new Error("Image modification not possible. Elements could not be replaced at runtime!");
+        }
       }
 
       var ret = this.getAttributes(source, repeat, style);
@@ -73,18 +77,17 @@ qx.Class.define("qx.bom.element.Decoration",
       }
 
       // Fix for old background position
-      if (element.style.backgroundPosition != "" && ret.style.backgroundPosition === undefined) {
+      if (ret.style.backgroundPosition === undefined) {
         ret.style.backgroundPosition = null;
       }
 
       // Fix for old clip
-      if (element.style.clip != "" && ret.style.clip === undefined) {
+      if (ret.style.clip === undefined) {
         ret.style.clip = null;
       }
 
       // Apply new styles
-      var Style = qx.bom.element.Style;
-      Style.setStyles(element, ret.style);
+      qx.bom.element.Style.setStyles(element, ret.style);
     },
 
 
@@ -99,230 +102,157 @@ qx.Class.define("qx.bom.element.Decoration",
      */
     create : function(source, repeat, style)
     {
-      try{
-        var tag = this.__repeatToTagname[repeat];
-        var ret = this.getAttributes(source, repeat, style);
-        var css = qx.bom.element.Style.compile(ret.style);
-        
-      } catch(ex) {
-        console.error("ERROR", ex);
-        return
-      }
-      
-      console.debug("Create: " + source + " (" + repeat + ")");
+      var styles = this.__addStyles(source, repeat, style);
+      var css = qx.bom.element.Style.compile(ret.style);
 
-      if (tag === "img") {
-        return '<img src="' + ret.src + '" style="' + css + '"/>';
-      } else {
+      if (this.__repeatToTagname[repeat] === "img") 
+      {
+        var uri = qx.util.ResourceManager.getInstance().toUri(source || "qx/static/blank.gif");
+        return '<img src="' + uri + '" style="' + css + '"/>';
+      }
+      else
+      {
         return '<div style="' + css + '"></div>';
       }
     },
-
-
+    
+    
     /**
-     * Translates the given repeat option to a tag name. Useful
-     * for systems which depends on early information of the tag
-     * name to prepare element like {@link qx.html.Image}.
-     *
-     * @param repeat {String} One of <code>scale-x</code>, <code>scale-y</code>,
-     *   <code>scale</code>, <code>repeat</code>, <code>repeat-x</code>,
-     *   <code>repeat-y</code>, <code>repeat</code>
-     * @param source {String?null} Source used to identify the image format
-     * @return {String} The tag name: <code>div</code> or <code>img</code>
+     * Returns styles for scaled images. In this case a IMG tag needs to used.
+     * The function basically only adds the default image dimensions to the styles.
      */
-    getTagName : function(repeat, source) {
-      return this.__repeatToTagname[repeat];
+    getScaleStyles : function(source)
+    {
+      var dimension = qx.util.ResourceManager.getInstance().getImageSize(source) || qx.io.ImageLoader.getSize(source);      
+      var style = {
+        width : dimension.width + "px",
+        height : dimension.height + "px"
+      };
+      
+      
+      // Add a fix for small blocks where IE has a minHeight of the fontSize in quirks mode
+      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
+        style.fontSize = style.lineHeight = 0;
+      }
+
+      return style;      
     },
-
-
+    
+    
     /**
-     * This method is used to collect all needed attributes for
-     * the tag name detected by {@link #getTagName}.
+     * Get styles for images which are scaled on the horizontal axis.
+     *
+     * To make image sprites work one should give at least one of the positional
+     * arguments <code>top</code> or <code>bottom</code>. Top is preferred if both
+     * are defined. The system modifies the position accordingly to show the 
+     * wanted section of the image sprite.
+     *
+     * Clipping requires that the element is positioned absolutely inside the parent.
      *
      * @param source {String} Image source
-     * @param repeat {String} Repeat mode of the image
-     * @param style {Map} Additional styles to apply
-     * @return {String} Markup for image
-     */
-    getAttributes : function(source, repeat, style)
+     * @param top {Integer?null} Top position
+     * @param bottom {Integer?null} Bottom position
+     *
+     * @return {Map} Style properties to apply
+     */    
+    getScaleXStyles : function(source, top, bottom)
     {
-      if (!style) {
-        style = {};
-      }
-
-      if (!style.position) {
-        style.position = "absolute";
-      }
-
-      if (qx.core.Variant.isSet("qx.client", "mshtml"))
-      {
-        // Add a fix for small blocks where IE has a minHeight
-        // of the fontSize in quirks mode
-        style.fontSize = 0;
-        style.lineHeight = 0;
-      }
-      else if (qx.core.Variant.isSet("qx.client", "webkit"))
-      {
-        // This stops images from being dragable in webkit
-        style.WebkitUserDrag = "none";
-      }
-
-      var result;
-
-      if (repeat === "scale") {
-        result = this.__processScale(style, repeat, source);
-      } else  if (repeat === "scale-x" || repeat === "scale-y") {
-        result = this.__processScaleXScaleY(style, repeat, source);
-      } else {
-        var local = this.__processRepeats(source, repeat);
-        
-        for (var key in local) 
-        {
-          if (style[key] === undefined) {
-            style[key] = local[key];
-          }
-        }
-        result = {style:style};
-        console.debug("STYLE", style)
-      }
-
-      return result;
-    },
-
-
-    /**
-     * Returns the dimension of the image by calling
-     * {@link qx.util.ResourceManager} or {@link qx.io.ImageLoader}
-     * depending on if the image is a managed one.
-     *
-     * @param source {String} image source
-     * @return {Map} dimension of image
-     */
-    __getDimension : function(source)
-    {
-      var ResourceManager = qx.util.ResourceManager.getInstance();
-      return ResourceManager.getImageSize(source) || qx.io.ImageLoader.getSize(source);
-    },
-    
-    
-    /**
-     * Process scaled images.
-     *
-     * * Automatically fills unspecified dimensions from image data
-     * * Does not support image sprites
-     *
-     * @param style {Map} style information
-     * @param repeat {String} repeat mode
-     * @param source {String} image source
-     *
-     * @return {Map} image URI and style infos
-     */
-    __processScale : function(style, repeat, source)
-    {
-      // Automatically adds dimensions from image data if none are given
-      var dimension = this.__getDimension(source);
-      if (dimension)
-      {
-        if (style.width == null) {
-          style.width = dimension.width + "px";
-        }
-
-        if (style.height == null) {
-          style.height = dimension.height + "px";
-        }
-      }
-
-      // Return data for image tag
-      return {
-        src : qx.util.ResourceManager.getInstance().toUri(source),
-        style : style
+      var style = {
+        position : "absolute"
       };
-    },
-
-
-    /**
-     * Process images which are either scaled horizontally or vertically.
-     *
-     * * Automatically fills unspecified dimensions from image data
-     * * Supports clipped images
-     *
-     * @param style {Map} style information
-     * @param repeat {String} repeat mode
-     * @param source {String} image source
-     *
-     * @return {Map} image URI and style infos
-     */
-    __processScaleXScaleY : function(style, repeat, source)
-    {
+      
       var ResourceManager = qx.util.ResourceManager.getInstance();
-      var clipped = ResourceManager.isClippedImage(source);
-      var dimension = this.__getDimension(source);
+      var imageHeight = ResourceManager.getImageHeight(source) || qx.io.ImageLoader.getHeight(source);
+      var clippedData = ResourceManager.getClippedData(source);
 
-      if (clipped)
+      if (clippedData && (top != null || bottom != null))
       {
-        var data = ResourceManager.getData(source);
-        var uri = ResourceManager.toUri(data[4]);
+        // Idea: Use a big image sprite where images are placed next to each other on the x-axis
+        // then clip the region of the image and move the image via the top coordinate to the top
+        // to show the clipped region.
+        style.clip = qx.bom.element2.Clip.compile({top: clippedData.top, height: imageHeight});
+        style.height = clippedData.height + "px";
 
-        if (repeat === "scale-x") {
-          style = this.__getStylesForClippedScaleX(style, data, dimension.height);
-        } else {
-          style = this.__getStylesForClippedScaleY(style, data, dimension.width);
+        // Fix user given x-coordinate to include the combined image offset
+        if (top != null) {
+          style.top = (top - clippedData.top) + "px";
+        } else if (bottom != null) {
+          style.bottom = (bottom + imageHeight - clippedData.height + clippedData.top) + "px";
         }
-
-        return {
-          src : uri,
-          style : style
-        };
       }
-
-      // No clipped image available
       else
       {
-        if (repeat == "scale-x")
-        {
-          style.height = dimension.height == null ? null : dimension.height + "px";
-          // note: width is given by the user
+        style.height = imageHeight + "px";
+        if (top != null) {
+          style.top = top + "px";
+        } else if (bottom != null) {
+          style.bottom = bottom + "px";
         }
-        else if (repeat == "scale-y")
-        {
-          style.width = dimension.width == null ? null : dimension.width + "px";
-          // note: height is given by the user
-        }
-
-        var uri = ResourceManager.toUri(source);
-        return {
-          src : uri,
-          style : style
-        };
       }
+      
+      // Add a fix for small blocks where IE has a minHeight of the fontSize in quirks mode
+      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
+        style.fontSize = style.lineHeight = 0;
+      }
+
+      return style;
     },
-
-
+    
+    
     /**
-     * Generates the style infos for horizontally scaled clipped images.
+     * Get styles for images which are scaled on the vertical axis.
      *
-     * @param style {Map} style infos
-     * @param data {Array} image data retrieved from the {@link qx.util.ResourceManager}
-     * @param height {Integer} image height
+     * To make image sprites work one should give at least one of the positional
+     * arguments <code>left</code> or <code>right</code>. Left is preferred if both
+     * are defined. The system modifies the position accordingly to show the 
+     * wanted section of the image sprite.
      *
-     * @return {Map} style infos and image URI
+     * Clipping requires that the element is positioned absolutely inside the parent.
+     *
+     * @param source {String} Image source
+     * @param left {Integer?null} Left position
+     * @param right {Integer?null} Right position
+     *
+     * @return {Map} Style properties to apply
      */
-    __getStylesForClippedScaleX : function(style, data, height)
+    getScaleYStyles : function(source, left, right)
     {
-      // Use clipped image (multi-images on x-axis)
-      var imageHeight = qx.util.ResourceManager.getInstance().getImageHeight(data[4]);
+      var style = {
+        position : "absolute"
+      };
+      
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+      var imageWidth = ResourceManager.getImageWidth(source) || qx.io.ImageLoader.getWidth(source);
+      var clippedData = ResourceManager.getClippedData(source);
 
-      // Add size and clipping
-      style.clip = {top: -data[6], height: height};
-      style.height = imageHeight + "px";
+      if (clippedData && (left != null || right != null))
+      {
+        // Idea: Use a big image sprite where images are placed next to each other on the x-axis
+        // then clip the region of the image and move the image via the left coordinate to the left
+        // to show the clipped region.
+        style.clip = qx.bom.element2.Clip.compile({left: clippedData.left, width: imageWidth});
+        style.width = clippedData.width + "px";
 
-      // note: width is given by the user
-
-      // Fix user given y-coordinate to include the combined image offset
-      if (style.top != null) {
-        style.top = (parseInt(style.top, 10) + data[6]) + "px";
-      } else if (style.bottom != null) {
-        style.bottom = (parseInt(style.bottom, 10) + height - imageHeight - data[6]) + "px";
+        // Fix user given x-coordinate to include the combined image offset
+        if (left != null) {
+          style.left = (left - clippedData.left) + "px";
+        } else if (right != null) {
+          style.right = (right + imageWidth - clippedData.width + clippedData.left) + "px";
+        }      
+      }
+      else
+      {
+        style.width = imageWidth + "px";
+        if (left != null) {
+          style.left = left + "px";
+        } else if (right != null) {
+          style.right = right + "px";
+        }        
+      }
+      
+      // Add a fix for small blocks where IE has a minHeight of the fontSize in quirks mode
+      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
+        style.fontSize = style.lineHeight = 0;
       }
 
       return style;
@@ -330,64 +260,41 @@ qx.Class.define("qx.bom.element.Decoration",
 
 
     /**
-     * Generates the style infos for vertically scaled clipped images.
+     * Get styles for repeated images.
      *
-     * @param style {Map} style infos
-     * @param data {Array} image data retrieved from the {@link qx.util.ResourceManager}
-     * @param width {Integer} image width
+     * @param source {String} Image source
+     * @param repeat {String} Repeat mode
      *
-     * @return {Map} style infos and image URI
+     * @return {Map} Style properties to apply
      */
-    __getStylesForClippedScaleY : function(style, data, width)
-    {
-      // Use clipped image (multi-images on x-axis)
-      var imageWidth = qx.util.ResourceManager.getInstance().getImageWidth(data[4]);
-
-      // Add size and clipping
-      style.clip = {left: -data[5], width: width};
-      style.width = imageWidth + "px";
-
-      // note: height is given by the user
-
-      // Fix user given x-coordinate to include the combined image offset
-      if (style.left != null) {
-        style.left = (parseInt(style.left, 10) + data[5]) + "px";
-      } else if (style.right != null) {
-        style.right = (parseInt(style.right, 10) + width - imageWidth - data[5]) + "px";
-      }
-
-      return style;
-    },
-
-
-    /**
-     * Process repeated images.
-     *
-     * * Supports image sprites (repeat-x and repeat-y only)
-     *
-     * @param repeat {String} repeat mode
-     * @param source {String} image source
-     *
-     * @return {Map} image URI and style infos
-     */
-    __processRepeats : function(source, repeat)
+    getRepeatStyles : function(source, repeat)
     {
       // Compute image dimensions
-      var dimension = this.__getDimension(source);
+      var dimension = qx.util.ResourceManager.getInstance().getImageSize(source) || qx.io.ImageLoader.getSize(source);
 
       // Double axis repeats cannot use image sprites
-      var ResourceManager = qx.util.ResourceManager.getInstance()
+      var ResourceManager = qx.util.ResourceManager.getInstance();
       if (repeat !== "repeat") {
         var clippedData = ResourceManager.getClippedData(source);
       }
-
-      return {
+      
+      // The magic "+ 0.01" is to fix issues in older Firefoxs. It is faster to apply everywhere 
+      // (which has no known side-effects) then doing a complete version specific check.
+      var style = 
+      {
         width : dimension.width + "px",
         height : dimension.height + "px",
         backgroundImage : "url(" + (clippedData ? clippedData.uri : ResourceManager.toUri(source)) + ")",
         backgroundRepeat : repeat,
         backgroundPosition : clippedData ? (-clippedData.left) + "px " + (-clippedData.top + 0.01) + "px" : null
-      };      
+      };
+      
+      // Add a fix for small blocks where IE has a minHeight of the fontSize in quirks mode
+      if (qx.core.Variant.isSet("qx.client", "mshtml")) {
+        style.fontSize = style.lineHeight = 0;
+      }
+      
+      return style;
     }
   }
 });

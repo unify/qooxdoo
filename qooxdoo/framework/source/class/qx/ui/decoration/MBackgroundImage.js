@@ -93,56 +93,50 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
      */
     _generateBackgroundMarkup: function(styles)
     {
-      var markup = "";
-
       var image = this.getBackgroundImage();
-      var repeat = this.getBackgroundRepeat();
-
-      var top = this.getBackgroundPositionY();
-      if (top == null) {
-        top = 0;
-      }
-
-      var left = this.getBackgroundPositionX();
-      if (left == null) {
-        left = 0;
-      }
-
-      styles.backgroundPosition = left + " " + top;
-
-      // Support for images
       if (image)
       {
-        markup = qx.bom.element.Decoration.create(image, repeat, styles);
+        var Decoration = qx.bom.element.Decoration;
+        var repeat = this.getBackgroundRepeat();
+        if (repeat == "scale")
+        {
+          if (qx.core.Variant.isSet("qx.debug", "on"))
+          {
+            if (this.getBackgroundPositionX() != null || this.getBackgroundPositionY() != null) {
+              throw new Error("Does not support background position on scaled backgroud images.")
+            }
+          }
+          
+          var stylesMarkup = qx.bom.element.Style.compile(styles) + qx.bom.element.Style.compile(qx.bom.element.Decoration.getScaleStyles(image));
+          var markup = "<img style='" + stylesMarkup + "' src='" + qx.util.ResourceManager.getInstance().toUri(image) + "'/>"
+        }
+        else
+        { 
+          // Supports background position
+          var stylesMarkup = qx.bom.element.Style.compile(styles) + qx.bom.element.Style.compile(qx.bom.element.Decoration.getRepeatStyles(image, repeat));
+          var markup = "<div style='" + stylesMarkup + "'></div>";
+        }
       }
       else
       {
-        if (styles)
+        if (qx.core.Variant.isSet("qx.client", "mshtml"))
         {
-          if (qx.core.Variant.isSet("qx.client", "mshtml"))
-          {
-            /*
-             * Internet Explorer as of version 6 for quirks and standards mode,
-             * or version 7 in quirks mode adds an empty string to the "div"
-             * node. This behavior causes rendering problems, because the node
-             * would then have a minimum size determined by the font size.
-             * To be able to set the "div" node height to a certain (small)
-             * value independent of the minimum font size, an "overflow:hidden"
-             * style is added.
-             * */
-            if (qx.bom.client.Engine.VERSION < 7 || qx.bom.client.Feature.QUIRKS_MODE)
-            {
-              // Add additionally style
-              styles.overflow = "hidden";
-            }
+          // Internet Explorer as of version 6 for quirks and standards mode,
+          // or version 7 in quirks mode adds an empty string to the "div"
+          // node. This behavior causes rendering problems, because the node
+          // would then have a minimum size determined by the font size.
+          if (qx.bom.client.Engine.VERSION < 7 || qx.bom.client.Feature.QUIRKS_MODE) {
+            styles.fontSize = styles.lineHeight = 0;
           }
-
-          markup = '<div style="' + qx.bom.element.Style.compile(styles) + '"></div>';
         }
+
+        var stylesMarkup = qx.bom.element.Style.compile(styles);
+        var markup = '<div style="' + stylesMarkup + '"></div>';
       }
 
       return markup;
     },
+    
 
 
     /*

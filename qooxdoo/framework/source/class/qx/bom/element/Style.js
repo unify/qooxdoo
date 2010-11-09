@@ -148,7 +148,7 @@ qx.Class.define("qx.bom.element.Style",
     // Whether a special class is available for the processing of this style.
     __special :
     {
-      clip : qx.bom.element.Clip,
+      //clip : qx.bom.element.Clip,
       cursor : qx.bom.element.Cursor,
       opacity : qx.bom.element.Opacity,
       boxSizing : qx.bom.element.BoxSizing,

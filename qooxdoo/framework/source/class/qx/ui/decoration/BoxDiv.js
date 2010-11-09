@@ -160,17 +160,18 @@ qx.Class.define("qx.ui.decoration.BoxDiv",
       // dragging when the cursor is in the text field in Spinners etc.
       html.push('<div style="position:absolute;top:0;left:0;overflow:hidden;font-size:0;line-height:0;">');
 
+      var Style = qx.bom.element.Style;
       if (this._isHorizontal)
       {
-        html.push(Decoration.create(images.l, "no-repeat", { top: 0, left: 0 }));
-        html.push(Decoration.create(images.c, "repeat-x", { top: 0, left: edges.left + "px" }));
-        html.push(Decoration.create(images.r, "no-repeat", { top: 0, right : 0 }));
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.l, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:0;left:", edges.left, "px;", Style.compile(Decoration.getRepeatStyles(images.c, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getRepeatStyles(images.r, "no-repeat")), "'></div>");
       }
       else
       {
-        html.push(Decoration.create(images.t, "no-repeat", { top: 0, left: 0 }));
-        html.push(Decoration.create(images.c, "repeat-y", { top: edges.top + "px", left: edges.left + "px" }));
-        html.push(Decoration.create(images.b, "no-repeat", { bottom: 0, left:0 }));
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.t, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:", edges.top, "px;left:0;", Style.compile(Decoration.getRepeatStyles(images.c, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.b, "no-repeat")), "'></div>");        
       }
 
       // Outer frame
@@ -208,10 +209,8 @@ qx.Class.define("qx.ui.decoration.BoxDiv",
         // right and bottom positioned elements are rendered with a
         // one pixel negative offset which results into some ugly
         // render effects.
-        if (
-          qx.bom.client.Engine.VERSION < 7 ||
-          (qx.bom.client.Feature.QUIRKS_MODE && qx.bom.client.Engine.VERSION < 8)
-        ) {
+        if (qx.bom.client.Engine.VERSION < 7 || (qx.bom.client.Feature.QUIRKS_MODE && qx.bom.client.Engine.VERSION < 8)) 
+        {
           if (this._isHorizontal) {
             element.childNodes[2].style.marginRight = (width%2 == 1) ? "-1px" : "0";
           } else {

@@ -98,6 +98,18 @@ qx.Class.define("qx.ui.decoration.GridDiv",
       check : "String",
       nullable : true,
       apply : "_applyBaseImage"
+    },
+    
+    
+    /**
+     * Whether the inner images should be scaled instead of repeated.
+     *
+     * This is especially useful for inner gradients.
+     */
+    scale : 
+    {
+      check : "Boolean",
+      init : true
     }
   },
 
@@ -160,25 +172,67 @@ qx.Class.define("qx.ui.decoration.GridDiv",
       // Note: Overflow=hidden is needed for Safari 3.1 to omit scrolling through
       // dragging when the cursor is in the text field in Spinners etc.
       html.push('<div style="position:absolute;top:0;left:0;overflow:hidden;font-size:0;line-height:0;">');
+      
+      var Style = qx.bom.element.Style;
+      if (this.getScale())
+      {
+        var ResourceManager = qx.util.ResourceManager.getInstance();
+        
+        // Pre-check whether clipped images are used
+        var clippedTop = ResourceManager.getClippedData(images.t);
+        var clippedBottom = ResourceManager.getClippedData(images.b);
+        var clippedLeft = ResourceManager.getClippedData(images.l);
+        var clippedRight = ResourceManager.getClippedData(images.r);
+        
+        // Switch to clipped URIs
+        var uriTop = clippedTop ? clippedTop.uri : images.t;
+        var uriBottom = clippedBottom ? clippedBottom.uri : images.b;
+        var uriLeft = clippedLeft ? clippedLeft.uri : images.l;
+        var uriRight = clippedRight ? clippedRight.uri : images.r;
+        
+        // Compute URIs for IMG tags
+        var uriTop = ResourceManager.toUri(uriTop);
+        var uriBottom = ResourceManager.toUri(uriBottom);
+        var uriLeft = ResourceManager.toUri(uriLeft);
+        var uriRight = ResourceManager.toUri(uriRight);
+        var uriCenter = ResourceManager.toUri(images.c);
+        
+        // Top: left, center, right
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.tl, "no-repeat")), "'></div>");
+        html.push("<img src='" + uriTop + "' style='left:", edges.left, "px;", Style.compile(Decoration.getScaleXStyles(images.t, 0)), "'/>");
+        html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getRepeatStyles(images.tr, "no-repeat")), "'></div>");
+      
+        // Bottom: left, center, right
+        html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.bl, "no-repeat")), "'></div>");
+        html.push("<img src='" + uriBottom + "' style='left:", edges.left, "px;", Style.compile(Decoration.getScaleXStyles(images.b, null, 0)), "'/>");
+        html.push("<div style='position:absolute;bottom:0;right:0;", Style.compile(Decoration.getRepeatStyles(images.br, "no-repeat")), "'></div>");
+      
+        // Middle: left, center, right
+        html.push("<img src='" + uriLeft + "' style='top:", edges.top, "px;", Style.compile(Decoration.getScaleYStyles(images.l, 0)), "'/>");
+        html.push("<img src='" + uriCenter + "' style='position:absolute;top:", edges.top, "px;left:", edges.left, "px;", Style.compile(Decoration.getScaleStyles(images.c)), "'/>");
+        html.push("<img src='" + uriRight + "' style='top:", edges.top, "px;", Style.compile(Decoration.getScaleYStyles(images.r, null, 0)), "'/>");
+      }
+      else
+      {
+        // Top: left, center, right
+        html.push("<div style='position:absolute;top:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.tl, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:0;left:", edges.left, "px;", Style.compile(Decoration.getRepeatStyles(images.t, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;top:0;right:0;", Style.compile(Decoration.getRepeatStyles(images.tr, "no-repeat")), "'></div>");
 
-      // Top: left, center, right
-      html.push(Decoration.create(images.tl, "no-repeat", { top: 0, left: 0 }));
-      html.push(Decoration.create(images.t, "scale-x", { top: 0, left: edges.left + "px" }));
-      html.push(Decoration.create(images.tr, "no-repeat", { top: 0, right : 0 }));
+        // Bottom: left, center, right
+        html.push("<div style='position:absolute;bottom:0;left:0;", Style.compile(Decoration.getRepeatStyles(images.bl, "no-repeat")), "'></div>");
+        html.push("<div style='position:absolute;bottom:0;left:", edges.left, "px;", Style.compile(Decoration.getRepeatStyles(images.b, "repeat-x")), "'></div>");
+        html.push("<div style='position:absolute;bottom:0;right:0;", Style.compile(Decoration.getRepeatStyles(images.br, "no-repeat")), "'></div>");
 
-      // Bottom: left, center, right
-      html.push(Decoration.create(images.bl, "no-repeat", { bottom: 0, left:0 }));
-      html.push(Decoration.create(images.b, "scale-x", { bottom: 0, left: edges.left + "px" }));
-      html.push(Decoration.create(images.br, "no-repeat", { bottom: 0, right: 0 }));
-
-      // Middle: left, center, right
-      html.push(Decoration.create(images.l, "scale-y", { top: edges.top + "px", left: 0 }));
-      html.push(Decoration.create(images.c, "scale", { top: edges.top + "px", left: edges.left + "px" }));
-      html.push(Decoration.create(images.r, "scale-y", { top: edges.top + "px", right: 0 }));
+        // Middle: left, center, right
+        html.push("<div style='position:absolute;top:", edges.top, "px;left:0;", Style.compile(Decoration.getRepeatStyles(images.l, "repeat-y")), "'></div>");
+        html.push("<div style='position:absolute;top:", edges.top, "px;left:", edges.left, "px;", Style.compile(Decoration.getRepeatStyles(images.c, "repeat")), "'></div>");
+        html.push("<div style='position:absolute;top:", edges.top, "px;right:0;", Style.compile(Decoration.getRepeatStyles(images.r, "repeat-y")), "'></div>");
+      }
 
       // Outer frame
       html.push('</div>');
-
+      
       // Store
       return this.__markup = html.join("");
     },
@@ -193,13 +247,18 @@ qx.Class.define("qx.ui.decoration.GridDiv",
       var innerHeight = height - edges.top - edges.bottom;
 
       // Set the inner width or height to zero if negative
-      if (innerWidth < 0) {innerWidth = 0;}
-      if (innerHeight < 0) {innerHeight = 0;}
+      if (innerWidth < 0) {
+        innerWidth = 0;
+      }
+      
+      if (innerHeight < 0) {
+        innerHeight = 0;
+      }
 
       // Update nodes
       element.style.width = width + "px";
       element.style.height = height + "px";
-
+      
       element.childNodes[1].style.width = innerWidth + "px";
       element.childNodes[4].style.width = innerWidth + "px";
       element.childNodes[7].style.width = innerWidth + "px";
@@ -215,10 +274,7 @@ qx.Class.define("qx.ui.decoration.GridDiv",
         // right and bottom positioned elements are rendered with a
         // one pixel negative offset which results into some ugly
         // render effects.
-        if (
-          qx.bom.client.Engine.VERSION < 7 ||
-          (qx.bom.client.Feature.QUIRKS_MODE && qx.bom.client.Engine.VERSION < 8)
-        )
+        if (qx.bom.client.Engine.VERSION < 7 || (qx.bom.client.Feature.QUIRKS_MODE && qx.bom.client.Engine.VERSION < 8))
         {
           if (width%2==1)
           {
