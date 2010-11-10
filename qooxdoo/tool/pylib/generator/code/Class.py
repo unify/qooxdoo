@@ -36,6 +36,8 @@ from ecmascript.transform.optimizer import variantoptimizer, variableoptimizer, 
 from generator.resource.AssetHint   import AssetHint
 from generator.resource.Resource    import Resource
 
+cnt = 0
+
 DefaultIgnoredNamesDynamic = None
 
 QXGLOBALS = [
@@ -45,7 +47,7 @@ QXGLOBALS = [
     r"qx\.\$\$",    # qx.$$domReady, qx.$$libraries, ...
     ]
 
-_memo1_ = [None, None]  # for memoizing getScript()
+_memo = [None, None]  # for memoizing getScript()
 
 GlobalSymbolsCombinedPatt = re.compile('|'.join(r'^%s\b' % x for x in lang.GLOBALS + QXGLOBALS))
 
@@ -66,10 +68,11 @@ class Class(Resource):
         self.source     = u''  # source text of this class
         #self.ast        = None # ecmascript.frontend.tree instance
         #self.type      = "" # PROPERTY
-        self.scopes     = None # an ecmascript.frontend.Script instance
+        #self.scopes     = None # an ecmascript.frontend.Script instance
         self.translations = {} # map of translatable strings in this class
         self.resources  = set() # set of resource objects needed by the class
         self._assetRegex= None  # regex from #asset hints, for resource matching
+        self.cacheId    = "class-%s" % self.path  # cache object for class-specific infos (outside tree, compile)
 
         console = context["console"]
         cache   = context["cache"]
@@ -94,13 +97,24 @@ class Class(Resource):
 
     type = property(_getType)
 
+    def _getClassCache(self):
+        cache = self.context["cache"]
+        classInfo, modTime = cache.read(self.cacheId, self.path)
+        if classInfo:
+            return classInfo, modTime
+        else:
+            return {}, None
+
+    def _writeClassCache(self, data):
+        cache = self.context["cache"]
+        cache.write(self.cacheId, data)
+
 
     # --------------------------------------------------------------------------
     #   Tree Interface
     # --------------------------------------------------------------------------
 
-    def _getSourceTree(self, cacheId):
-        tradeSpaceForSpeed = False
+    def _getSourceTree(self, cacheId, tradeSpaceForSpeed):
 
         # Lookup for unoptimized tree
         tree, _ = cache.read(cacheId, self.path, memory=tradeSpaceForSpeed)
@@ -120,6 +134,7 @@ class Class(Resource):
 
             # store unoptimized tree
             #print "Caching %s" % cacheId
+            tree.cacheId = cacheId
             cache.write(cacheId, tree, memory=tradeSpaceForSpeed, writeToFile=True)
 
             console.outdent()
@@ -128,17 +143,18 @@ class Class(Resource):
 
     def tree(self, variantSet={}):
         context = self.context
-        tradeSpaceForSpeed = False  # Caution: setting this to True seems to make builds slower, at least on some platforms!?
+        tradeSpaceForSpeed = False  # Caution: setting this to True seems to return trees which have been optimized, as unoptimized
 
         # Construct the right cache id
         unoptCacheId     = "tree-%s-%s" % (self.path, util.toString({}))
 
         classVariants    = []
         tree             = None
-        classVariants    = getClassVariants(self.id, self.path, None, context["cache"], context["console"], generate=False) # just check the cache
+        #classVariants    = getClassVariants(self.id, self.path, None, context["cache"], context["console"], generate=False) # just check the cache
+        classVariants    = self.classVariants(generate=False) # just check the cache
         if classVariants == None:
-            tree = self._getSourceTree(unoptCacheId)
-            classVariants= getClassVariantsFromTree(tree, context["console"])
+            tree = self._getSourceTree(unoptCacheId, tradeSpaceForSpeed)
+            classVariants= self._variantsFromTree(tree)
 
         relevantVariants = projectClassVariantsToCurrent(classVariants, variantSet)
         cacheId          = "tree-%s-%s" % (self.path, util.toString(relevantVariants))
@@ -153,7 +169,7 @@ class Class(Resource):
             if tree:
                 opttree = tree
             else:
-                opttree = self._getSourceTree(unoptCacheId)
+                opttree = self._getSourceTree(unoptCacheId, tradeSpaceForSpeed)
             # do we have to optimze?
             if cacheId == unoptCacheId:
                 return opttree
@@ -164,6 +180,7 @@ class Class(Resource):
                 context["console"].outdent()
                 # store optimized tree
                 #print "Caching %s" % cacheId
+                opttree.cacheId = cacheId
                 cache.write(cacheId, opttree, memory=tradeSpaceForSpeed, writeToFile=True)
 
         return opttree
@@ -174,28 +191,52 @@ class Class(Resource):
     # --------------------------------------------------------------------------
 
     ##
-    # look for places where qx.core.Variant.select|isSet|.. are called
+    # Look for places where qx.core.Variant.select|isSet|.. are called
     # and return the list of first params (the variant name)
-    # @cache
+    # 
+    # Is used internally, but should also be usable as public interface.
 
     def classVariants(self, generate=True):
 
-        cache     = self.context["cache"]
-        cacheId   = "class-%s" % (self.path,)
-        classinfo, _ = cache.readmulti(cacheId, self.path)
+        classinfo, _ = self._getClassCache()
         classvariants = None
-        if classinfo == None or 'svariants' not in classinfo:  # 'svariants' = supported variants
+        if 'svariants' not in classinfo:  # 'svariants' = supported variants
             if generate:
                 tree = self.tree({})  # get complete tree
-                classvariants = getClassVariantsFromTree(tree, self.context["console"])       # get variants used in qx.core.Variant...(<variant>,...)
+                classvariants = self._variantsFromTree(tree)       # get variants used in qx.core.Variant...(<variant>,...)
                 if classinfo == None:
                     classinfo = {}
                 classinfo['svariants'] = classvariants
-                cache.writemulti(cacheId, classinfo)
+                self._writeClassCache (classinfo)
         else:
             classvariants = classinfo['svariants']
 
         return classvariants
+
+
+    ##
+    # helper that operates on ecmascript.frontend.tree
+    #
+    # This helper is used by both, tree() and classVariants(), to resolve mutual
+    # recursion where tree() calls classVariants(), and classVariants() calls tree().
+    #
+    def _variantsFromTree(self, node):
+        classvariants = set([])
+        # mostly taken from ecmascript.transform.optimizer.variantoptimizer
+        variants = treeutil.findVariablePrefix(node, "qx.core.Variant")
+        for variant in variants:
+            if not variant.hasParentContext("call/operand"):
+                continue
+            variantMethod = treeutil.selectNode(variant, "identifier[4]/@name")
+            if variantMethod not in ["select", "isSet", "compilerIsSet"]:
+                continue
+            firstParam = treeutil.selectNode(variant, "../../params/1")
+            if firstParam and treeutil.isStringLiteral(firstParam):
+                classvariants.add(firstParam.get("value"))
+            else:
+                console.warn("! qx.core.Variant call without literal argument")
+        return classvariants
+
 
 
     # --------------------------------------------------------------------------
@@ -292,11 +333,12 @@ class Class(Resource):
     def dependencies(self, variantSet):
 
         ##
-        # get deps from meta info and class code
+        # Get deps from meta info and class code, and sort them into
+        # load/run/ignore deps.
         #
-        # Notes:
-        # load time = before class = require
-        # run time  = after class  = use
+        # Note:
+        #   load time = before class = require
+        #   run time  = after class  = use
         def buildShallowDeps():
 
             load   = []
@@ -313,10 +355,13 @@ class Class(Resource):
             metaOptional = meta.get("optionalDeps", [])
             metaIgnore   = meta.get("ignoreDeps"  , [])
 
-            # Process meta data
-            load.extend(DependencyItem(x, '', self.id, "|hints|") for x in metaLoad)
-            run.extend(DependencyItem(x, '', self.id, "|hints|") for x in metaRun)
-            ignore.extend(DependencyItem(x, '', self.id, "|hints|") for x in metaIgnore)
+            # Parse all meta keys for '#'
+            for container,provider in ((load,metaLoad), (run,metaRun), (ignore,metaIgnore)):
+                for key in provider:
+                    sig = key.split('#',1)
+                    className = sig[0]
+                    attrName  = sig[1] if len(sig)>1 else ''
+                    container.append(DependencyItem(className, attrName, self.id, "|hints|"))
 
             # Read source tree data
             treeDeps  = []  # will be filled by _analyzeClassDepsNode
@@ -332,10 +377,8 @@ class Class(Resource):
                         elif item in metaLoad:
                             console.warn("%s: #require(%s) is auto-detected" % (self.id, item))
                         else:
-                            # force uniqueness on the class name
-                            #if item not in (x.name for x in load):
-                            if True or item not in (x.name for x in load):
-                                load.append(dep)
+                            # adding all items to list (the second might have needsRecursion)
+                            load.append(dep)
 
                 else: # runDep
                     if not "auto-use" in metaIgnore:
@@ -347,10 +390,8 @@ class Class(Resource):
                         elif item in metaRun:
                             console.warn("%s: #use(%s) is auto-detected" % (self.id, item))
                         else:
-                            # force uniqueness on the class name
-                            #if item not in (x.name for x in run):
-                            if True or item not in (x.name for x in run):
-                                run.append(dep)
+                            # adding all items to list (to comply with the 'load' deps)
+                            run.append(dep)
 
             console.outdent()
 
@@ -399,14 +440,18 @@ class Class(Resource):
         cacheId          = "deps-%s-%s" % (self.path, util.toString(relevantVariants))
         cached           = True
 
-        deps, cacheModTime = cache.readmulti(cacheId, self.path)
+        #deps, cacheModTime = cache.readmulti(cacheId, self.path)
+        classInfo, cacheModTime = self._getClassCache()
+        deps =  classInfo[cacheId] if cacheId in classInfo else None
 
         if (deps == None
           or not transitiveDepsAreFresh(deps, cacheModTime)):
             cached = False
             deps = buildShallowDeps()
             deps = buildTransitiveDeps(deps)
-            cache.writemulti(cacheId, deps)
+            #cache.writemulti(cacheId, deps)
+            classInfo[cacheId] = deps
+            self._writeClassCache(classInfo)
         
         return deps, cached
 
@@ -442,22 +487,11 @@ class Class(Resource):
 
         return False
         
-    def addDep(self, depsItem, inFunction, runtime, loadtime):
-        if inFunction:
-            target = runtime
-        else:
-            target = loadtime
-
-        if not depsItem in target:
-            target.append(depsItem)
-
-        return
-
 
     def followCallDeps(self, node, fileId, depClassName, inDefer):
         if (depClassName
             and depClassName in self._classesObj  # we have a class id
-            #and depClassName != fileId
+            #and depClassName != fileId   # ! i need self references for statics pruning
             #and self.context['jobconf'].get("dependencies/follow-static-initializers", True)
             and (
                 node.hasParentContext("keyvalue/value/call/operand")  # it's a method call as map value
@@ -487,10 +521,6 @@ class Class(Resource):
         if node.type == "variable":
             assembled = (treeutil.assembleVariable(node))[0]
 
-            #if self.id == "qx.event.Registration" and "__handlers" in assembled:
-            #    print assembled
-            #    import pydb; pydb.debugger()
-
             # treat dependencies in defer as requires
             deferNode = self.checkDeferNode(assembled, node)
             if deferNode != None:
@@ -516,22 +546,12 @@ class Class(Resource):
                 if node.hasParentContext("call/operand"): # it's a function call
                     depsItem.isCall = True  # interesting when following transitive deps
 
-                #self.addDep(depsItem, inFunction, runtime, loadtime)
-                if depsItem not in depsList:
-                    depsList.append(depsItem)
+                # Adding all items to list; let caller sort things out
+                depsList.append(depsItem)
 
-                # an attempt to fix static initializers (bug#1455)
+                # Mark items that need recursive analysis of their dependencies (bug#1455)
                 if not inFunction and self.followCallDeps(node, self.id, className, inDefer):
                     depsItem.needsRecursion = True
-                    #if recurse:
-                    #    console.debug("Looking for rundeps in call to '%s' of '%s'(%d)" % (assembled, self.id, depsItem.line))
-                    #    console.indent()
-                    #    # getTransitiveDeps is mutual recursive calling into the current
-                    #    # function, but only does so with inFunction=True, so this
-                    #    # branch is never hit through the recursive call
-                    #    ldeps = self.getTransitiveDeps(depsItem, variants)
-                    #    loadtime.extend([x for x in ldeps if x not in loadtime]) # add uniquely
-                    #    console.outdent()
 
         elif node.type == "body" and node.parent.type == "function":
             inFunction = True
@@ -685,18 +705,30 @@ class Class(Resource):
                 rnode = rnode.parent
             return rnode
 
-        def getScript(node, fileId, ):
-            # TODO: checking the root nodes is a fix, as they sometimes differ (prob. caching)
+        def getScript(node, fileId):
+            # TODO: checking the root nodes is a fix, as they sometimes differ (because of caching)
+            # -- looking up nodes in a Script() uses object identity for comparison; sometimes, the
+            #    tree _analyzeClassDepsNode works on and the tree Script is built from are not the
+            #    same in memory, e.g. when the tree is re-read from disk; then those comparisons
+            #    fail (although the nodes are semantically the same); hence we have to
+            #    re-calculate the Script (which is expensive!) when the root node object changes;
+            #    using __memo allows at least to re-use the existing script when a class is worked
+            #    on and this method is called successively for the same tree.
             rootNode = findRoot(node)
-            #if _memo1_[0] == fileId: # replace with '_memo1_[0] == rootNode', to make it more robust, but slightly less performant
-            if _memo1_[0] == rootNode:
+            if _memo[0] == rootNode:
                 #print "-- re-using scopes for: %s" % fileId
-                script = _memo1_[1]
+                script = _memo[1]
             else:
                 #print "-- re-calculating scopes for: %s" % fileId
                 script = Script(rootNode, fileId)
-                _memo1_[0], _memo1_[1] = rootNode, script
+                _memo[0] = rootNode
+                _memo[1] = script
             return script
+            
+            #if not self.scopes:
+            #    rootNode = findRoot(node)
+            #    self.scopes = Script(rootNode, fileId)
+            #return self.scopes
 
         def getLeadingId(idStr):
             leadingId = idStr
@@ -704,6 +736,8 @@ class Class(Resource):
             if dotIdx > -1:
                 leadingId = idStr[:dotIdx]
             return leadingId
+
+        # --------------------------------------------------------------------------
 
         # check composite id a.b.c, check only first part
         idString = getLeadingId(idStr)
@@ -714,7 +748,7 @@ class Class(Resource):
             fcnScope = script.getGlobalScope()
         else:
             fcnScope  = script.getScope(scopeNode)
-        #assert fcnScope != None, "idString: '%s', idStr: '%s', fileId: '%s'" % (idString, idStr, fileId)
+        assert fcnScope != None, "idString: '%s', idStr: '%s', fileId: '%s'" % (idString, idStr, fileId)
         varDef = script.getVariableDefinition(idString, fcnScope)
         if varDef:
             return True
@@ -746,7 +780,7 @@ class Class(Resource):
             clazzId = "qx.Class"
         elif featureId in ('call', 'apply'):  # this might get overridden, oh well...
             clazzId = "Function"
-        # TODO: getter/setter are also not statically available!
+        # TODO: getter/setter are also not lexically available!
         # handle .call() ?!
         if clazzId not in self._classesObj: # can't further process non-qooxdoo classes
             # TODO: maybe this should better use something like isInterestingIdentifier()
@@ -856,7 +890,7 @@ class Class(Resource):
     #
     # currently only a thin wrapper around its recursive sibling, getTransitiveDepsR
 
-    def getTransitiveDeps(self, depsItem, variants):
+    def getTransitiveDeps(self, depsItem, variants, checkSet=None):
 
         ##
         # find dependencies of a method <methodId> that has been referenced from
@@ -864,7 +898,7 @@ class Class(Resource):
         #
         # @param deps accumulator variable set((c1,m1), (c2,m2),...)
         
-        def getTransitiveDepsR(dependencyItem, variants, totalDeps):
+        def getTransitiveDepsR1(dependencyItem, variants, totalDeps):
 
             # We don't add the in-param to the global result
             classId  = dependencyItem.name
@@ -947,9 +981,105 @@ class Class(Resource):
             return localDeps
 
 
+        def getTransitiveDepsR(dependencyItem, variants, totalDeps):
+
+            # We don't add the in-param to the global result
+            classId  = dependencyItem.name
+            methodId = dependencyItem.attribute
+            function_pruned = False
+
+            # Check known class
+            if classId not in self._classesObj:
+                console.debug("Skipping unknown class of dependency: %s#%s (%s:%d)" % (classId, methodId,
+                              dependencyItem.requestor, dependencyItem.line))
+                return set()
+
+            # Check other class
+            elif classId != self.id:
+                classObj = self._classesObj[classId]
+                otherdeps = classObj.getTransitiveDeps(dependencyItem, variants, totalDeps)
+                return otherdeps
+
+            # Check own hierarchy
+            defClassId, attribNode = self.findClassForFeature(methodId, variants)
+
+            # lookup error
+            if not defClassId or defClassId not in self._classesObj:
+                console.debug("Skipping unknown definition of dependency: %s#%s (%s:%d)" % (classId, 
+                              methodId, dependencyItem.requestor, dependencyItem.line))
+                return set()
+            
+            defDepsItem = DependencyItem(defClassId, methodId, classId)
+            localDeps   = set()
+
+            # inherited feature
+            if defClassId != classId:
+                self.resultAdd(defDepsItem, localDeps)
+                defClass = self._classesObj[defClassId]
+                otherdeps = defClass.getTransitiveDeps(defDepsItem, variants, totalDeps)
+                localDeps.update(otherdeps)
+                return localDeps
+
+            # Process own deps
+            console.debug("%s#%s dependencies:" % (classId, methodId))
+            console.indent()
+
+            # Check cache
+            cacheId = "methoddeps-%r-%r-%r" % (classId, methodId, util.toString(variants))
+            cachedDeps, _ = cache.read(cacheId, memory=True)  # no use to put this into a file, due to transitive dependencies to other files
+            if cachedDeps != None:
+                console.debug("using cached result")
+                console.outdent()
+                return cachedDeps
+
+            # Calculate deps
+
+            # skip non-function attributes -- not here!
+            #elif attribNode and isinstance(attribNode, Node) and not treeutil.selectNode(attribNode, "function"):
+            #    pass
+
+            else:
+                if isinstance(attribNode, Node):
+
+                    #print defDepsItem
+                    #if str(defDepsItem) == "qx.bom.element.Style#__special":
+                    #    #import pydb; pydb.debugger()
+                    #    pass
+
+                    if (attribNode.getChild("function", False)       # is it a function(){..} value?
+                        and not dependencyItem.isCall                # and the reference was no call
+                       ):
+                        function_pruned = True
+                        pass                                         # don't lift those deps
+                    else:
+                        # Get the method's immediate deps
+                        # TODO: is this the right API?!
+                        depslist = []
+                        self._analyzeClassDepsNode(attribNode, depslist, True, variants)
+                        console.debug( "shallow dependencies: %r" % (depslist,))
+
+                        for depsItem in depslist:
+                            if depsItem in totalDeps:
+                                continue
+                            if self.resultAdd(depsItem, localDeps):
+                                # Recurse dependencies
+                                downstreamDeps = getTransitiveDepsR(depsItem, variants, totalDeps.union(localDeps))
+                                localDeps.update(downstreamDeps)
+
+            # Cache update
+            # ---   i cannot cache currently, if the deps of a function are pruned
+            #       when the function is passed as a ref, rather than called (s. above
+            #       around 'attribNode.getChild("function",...)')
+            if not function_pruned:
+                cache.write(cacheId, localDeps, memory=True, writeToFile=False)
+             
+            console.outdent()
+            return localDeps
+
+
         # -- Main --------------------------------------------------------------
 
-        checkset = set()
+        checkset = checkSet or set()
         deps = getTransitiveDepsR(depsItem, variants, checkset) # checkset is currently not used, leaving it for now
 
         return deps
@@ -1164,10 +1294,10 @@ class Class(Resource):
     # --------------------------------------------------------------------------
 
     HEAD = {
-        "require"  : re.compile(r"^\s* \#require  \(\s* (%s+)     \s*\)" % lang.IDENTIFIER_CHARS, re.M|re.X),
-        "use"      : re.compile(r"^\s* \#use      \(\s* (%s+)     \s*\)" % lang.IDENTIFIER_CHARS, re.M|re.X),
-        "optional" : re.compile(r"^\s* \#optional \(\s* (%s+)     \s*\)" % lang.IDENTIFIER_CHARS, re.M|re.X),
-        "ignore"   : re.compile(r"^\s* \#ignore   \(\s* (%s+)     \s*\)" % lang.IDENTIFIER_CHARS, re.M|re.X),
+        "require"  : re.compile(r"^\s* \#require  \(\s* (%s+)     \s*\)" % (lang.IDENTIFIER_CHARS[:-1]+'#]',), re.M|re.X),
+        "use"      : re.compile(r"^\s* \#use      \(\s* (%s+)     \s*\)" % (lang.IDENTIFIER_CHARS[:-1]+'#]',), re.M|re.X),
+        "optional" : re.compile(r"^\s* \#optional \(\s* (%s+)     \s*\)" % (lang.IDENTIFIER_CHARS[:-1]+'#]',), re.M|re.X),
+        "ignore"   : re.compile(r"^\s* \#ignore   \(\s* (%s+)     \s*\)" % (lang.IDENTIFIER_CHARS[:-1]+'#]',), re.M|re.X),
         "asset"    : re.compile(r"^\s* \#asset    \(\s* ([^)]+?)  \s*\)"                        , re.M|re.X),
         "cldr"     : re.compile(r"^\s*(\#cldr) (?:\(\s* ([^)]+?)  \s*\))?"                      , re.M|re.X),
     }
@@ -1408,47 +1538,4 @@ def projectClassVariantsToCurrent(classVariants, variantSet):
             res[key] = variantSet[key]
     return res
 
-
-##
-# helper that operates on ecmascript.frontend.tree
-def getClassVariantsFromTree(node, console):
-    classvariants = set([])
-    # mostly taken from ecmascript.transform.optimizer.variantoptimizer
-    variants = treeutil.findVariablePrefix(node, "qx.core.Variant")
-    for variant in variants:
-        if not variant.hasParentContext("call/operand"):
-            continue
-        variantMethod = treeutil.selectNode(variant, "identifier[4]/@name")
-        if variantMethod not in ["select", "isSet", "compilerIsSet"]:
-            continue
-        firstParam = treeutil.selectNode(variant, "../../params/1")
-        if firstParam and treeutil.isStringLiteral(firstParam):
-            classvariants.add(firstParam.get("value"))
-        else:
-            console.warn("! qx.core.Variant call without literal argument")
-
-    return classvariants
-
-##
-# look for places where qx.core.Variant.select|isSet|.. are called
-# and return the list of first params (the variant name)
-# @cache
-
-def getClassVariants(fileId, filePath, treeLoader, cache, console, generate=True):
-
-    cacheId   = "class-%s" % (filePath,)
-    classinfo, _ = cache.readmulti(cacheId, filePath)
-    classvariants = None
-    if classinfo == None or 'svariants' not in classinfo:  # 'svariants' = supported variants
-        if generate:
-            tree = treeLoader.getTree(fileId, {})  # get complete tree
-            classvariants = getClassVariantsFromTree(tree, console)       # get variants used in qx.core.Variant...(<variant>,...)
-            if classinfo == None:
-                classinfo = {}
-            classinfo['svariants'] = classvariants
-            cache.writemulti(cacheId, classinfo)
-    else:
-        classvariants = classinfo['svariants']
-
-    return classvariants
 

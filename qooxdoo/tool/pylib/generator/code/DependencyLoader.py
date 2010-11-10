@@ -186,6 +186,7 @@ class DependencyLoader(object):
         result = []
         warn_deps = []
 
+        # No dependency calculation
         if len(includeWithDeps) == 0:
             self._console.info("Including all known classes")
             result = self._classesObj.keys()
@@ -195,10 +196,12 @@ class DependencyLoader(object):
             for classId in excludeWithDeps:
                 result.remove(classId)
 
+        # Calculate dependencies
         else:
             self._console.info(" ", feed=False)
 
             for item in includeWithDeps:
+                # calculate dependencies and add required classes
                 classlistFromClassRecursive(item, excludeWithDeps, variants, result, warn_deps)
 
             if self._console.getLevel() is "info":
@@ -237,9 +240,6 @@ class DependencyLoader(object):
 
         static, cached   = classObj.dependencies (variants)
 
-        #if classObj.id == "qx.core.Property":
-        #    print static
-
         loadFinal.extend(static["load"])
         runFinal.extend(static["run"])
 
@@ -248,6 +248,7 @@ class DependencyLoader(object):
             loadFinal = [x for x in loadFinal if x.name != fileId]
             runFinal  = [x for x in runFinal  if x.name != fileId]
 
+        # collapse multiple occurrences of the same class
         if projectClassNames:
             loads = loadFinal
             loadFinal = []
@@ -287,7 +288,12 @@ class DependencyLoader(object):
             "run"    : runFinal,
             "ignore" : static['ignore'],
         }
-        
+
+        #if fileId == "demobrowser.demo.data.model.Node":
+        #    import pprint
+        #    pprint.pprint(deps)
+        #    #import pydb; pydb.debugger()
+
         return deps, cached
 
 
@@ -389,6 +395,9 @@ class DependencyLoader(object):
         return classList
 
     
+    ##
+    # Returns featureMap =
+    # { 'qx.core.Object' : {'myFeature': ('r',)} }  -- ('r',) is currently a way to say 'True'
     def registerDependeeFeatures(self, classList, variants, buildType=""):
         featureMap = {}
 
@@ -401,8 +410,6 @@ class DependencyLoader(object):
             for dep in deps['load'] + deps['run']:
                 if dep.name in ignored_names:
                     continue
-                #if clazz.id == "qx.core.Property":
-                #    print dep
                 if dep.name not in featureMap:
                     featureMap[dep.name] = {}
                 featureMap[dep.name][dep.attribute] = ("r",)  # use 'r' for all currently
