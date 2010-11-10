@@ -78,7 +78,12 @@ qx.Class.define("qx.ui.table.cellrenderer.AbstractImage",
      *          See {@link qx.ui.table.cellrenderer.Abstract#createDataCellHtml}.
      * @return {Map} A map having the following attributes:
      *           <ul>
-     *           <li>"url": (type string) must be the URL of the image to show.</li>
+     *           <li>
+     *             "url": (type string) must be the URL of the image to show. 
+     *             The url given must either be managed by the {@link qx.util.ResourceManager} 
+     *             or pre-loaded with {@link qx.io.ImageLoader}. This is to make sure that 
+     *             the renderer knows the dimensions and the format of the image.
+     *           </li>
      *           <li>"imageWidth": (type int) the width of the image in pixels.</li>
      *           <li>"imageHeight": (type int) the height of the image in pixels.</li>
      *           <li>"tooltip": (type string) must be the image tooltip text.</li>
@@ -105,8 +110,10 @@ qx.Class.define("qx.ui.table.cellrenderer.AbstractImage",
       // Query the subclass about image and tooltip
       var imageData = this._identifyImage(cellInfo);
 
-      // If subclass refuses to give map, construct it
-      if (imageData == null || typeof cellInfo == "string")
+      // If subclass refuses to give map, construct it with required properties
+      // If no map is given, but instead a string, assume that this string is
+      // the URL of the image [BUG #4289]
+      if (imageData == null || typeof imageData == "string")
       {
         imageData =
         {
@@ -115,14 +122,21 @@ qx.Class.define("qx.ui.table.cellrenderer.AbstractImage",
         };
       }
 
-      var sizes = null;
-      if (cellInfo.width && cellInfo.height) {
-        sizes = {width : cellInfo.imageWidth, height : cellInfo.imageHeight};
-      } else {
-        sizes = this.__getImageSize(imageData.url);
+      // If sizes are not included in map given by subclass,
+      // fall-back to calculated image size
+      if (!imageData.imageWidth || !imageData.imageHeight)
+      {
+        var sizes = this.__getImageSize(imageData.url);
+
+        imageData.imageWidth = sizes.width;
+        imageData.imageHeight = sizes.height;
       }
-      imageData.width = sizes.width;
-      imageData.height = sizes.height;
+
+      // Add width and height keys to map [BUG #4289]
+      // - [width|height] is read by _getContentHtml()
+      // - [imageWidth|imageHeight] is possibly read in legacy applications
+      imageData.width = imageData.imageWidth;
+      imageData.height = imageData.imageHeight;
 
       return imageData;
     },
