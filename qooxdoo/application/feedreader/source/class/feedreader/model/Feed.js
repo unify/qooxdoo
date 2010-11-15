@@ -25,6 +25,7 @@
 qx.Class.define("feedreader.model.Feed",
 {
   extend : qx.core.Object,
+  include : qx.data.MBinding,
 
 
 
