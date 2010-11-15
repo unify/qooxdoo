@@ -59,7 +59,7 @@
 qx.Class.define("qx.data.controller.List",
 {
   extend : qx.core.Object,
-  include: qx.data.controller.MSelection,
+  include: [qx.data.controller.MSelection, qx.data.MBinding],
 
 
   /*

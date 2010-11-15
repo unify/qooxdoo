@@ -46,6 +46,7 @@
 qx.Class.define("qx.data.controller.Form",
 {
   extend : qx.core.Object,
+  include : qx.data.MBinding,
 
   /**
    * @param model {qx.core.Object | null} The model to bind the target to. The
