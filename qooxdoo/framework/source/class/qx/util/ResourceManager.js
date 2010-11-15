@@ -67,13 +67,15 @@ qx.Class.define("qx.util.ResourceManager",
       }
       
       var files = $$resources.files;
+      var images = $$resources.images;
+      
       var lastSlash = id.lastIndexOf("/");
       var dirName = id.substring(0, lastSlash);
-      var dir = files[dirName];
+      var dir = files[dirName] || images[dirName];
       if (dir)
       {
         var fileName = id.substring(lastSlash+1);
-        var file = dir[fileName];
+        var file = dir[fileName] || images[dirName][fileName];
         if (file) {
           return cache[id] = file;
         }
