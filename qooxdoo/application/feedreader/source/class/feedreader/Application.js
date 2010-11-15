@@ -19,16 +19,12 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#asset(feedreader/*)
-#asset(qx/icon/Tango/22/apps/internet-feed-reader.png)
-#asset(qx/icon/Tango/22/actions/process-stop.png)
-
-************************************************************************ */
-
 /**
  * The feed reader's main application class.
+ *
+ * @asset {feedreader/*}
+ * @asset {qx/icon/Tango/22/apps/internet-feed-reader.png}
+ * @asset {qx/icon/Tango/22/actions/process-stop.png}
  */
 qx.Class.define("feedreader.Application",
 {

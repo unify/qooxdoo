@@ -19,15 +19,11 @@
 
 ************************************************************************ */
 
-/* ************************************************************************
-
-#asset(qx/icon/Tango/16/actions/document-new.png)
-#asset(qx/icon/Tango/16/actions/dialog-apply.png)
-
-************************************************************************ */
-
 /**
  * Add new feed window
+ *
+ * @asset {qx/icon/Tango/16/actions/document-new.png}
+ * @asset {qx/icon/Tango/16/actions/dialog-apply.png}
  */
 qx.Class.define("feedreader.view.AddFeedWindow",
 {
