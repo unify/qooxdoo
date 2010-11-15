@@ -72,7 +72,7 @@ qx.Class.define("apiviewer.Application",
       this.base(arguments);
 
       // Finally load the data
-      this.controller.load("../data/api.json");
+      this.controller.load("data/api.json");
     }
   },
 

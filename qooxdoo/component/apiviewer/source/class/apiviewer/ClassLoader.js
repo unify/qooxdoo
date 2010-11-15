@@ -24,18 +24,11 @@ qx.Class.define("apiviewer.ClassLoader",
 {
   extend : qx.core.Object,
 
-  construct : function(baseUri)
-  {
-    this.base(arguments);
-
-    this._baseUri = baseUri;
-  },
-
   members :
   {
     load : function(className, async, callback, self)
     {
-      var url = this._baseUri + "/" + className + ".json";
+      var url = "data/classes/" + className + ".json";
       var req = new qx.io.remote.Request(url);
 
       var cls = null;
