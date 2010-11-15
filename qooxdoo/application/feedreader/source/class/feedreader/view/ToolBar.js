@@ -22,12 +22,12 @@
 /**
  * The main tool bar widget
  *
- * @asset {qx/icon/Tango/22/actions/dialog-ok.png}
- * @asset {qx/icon/Tango/22/actions/dialog-cancel.png}
- * @asset {qx/icon/Tango/22/actions/view-refresh.png}
- * @asset {qx/icon/Tango/22/apps/preferences-theme.png}
- * @asset {qx/icon/Tango/22/actions/help-about.png}
- * @asset {qx/icon/Tango/22/actions/media-seek-forward.png} 
+ * @asset {qx/icon/22/actions/dialog-ok.png}
+ * @asset {qx/icon/22/actions/dialog-cancel.png}
+ * @asset {qx/icon/22/actions/view-refresh.png}
+ * @asset {qx/icon/22/apps/preferences-theme.png}
+ * @asset {qx/icon/22/actions/help-about.png}
+ * @asset {qx/icon/22/actions/media-seek-forward.png} 
  */
 qx.Class.define("feedreader.view.ToolBar",
 {
@@ -51,11 +51,11 @@ qx.Class.define("feedreader.view.ToolBar",
     this.__menuItemStore = {};
 
     // Add/Remove buttons
-    this.__addBtn = new qx.ui.toolbar.Button(this.tr("Add feed"), "icon/22/actions/dialog-ok.png");
+    this.__addBtn = new qx.ui.toolbar.Button(this.tr("Add feed"), "qx/icon/22/actions/dialog-ok.png");
     this.__addBtn.setCommand(controller.getCommand("addFeed"));
     this.add(this.__addBtn);
 
-    this.__removeBtn = new qx.ui.toolbar.Button(this.tr("Remove feed"), "icon/22/actions/dialog-cancel.png");
+    this.__removeBtn = new qx.ui.toolbar.Button(this.tr("Remove feed"), "qx/icon/22/actions/dialog-cancel.png");
     this.__removeBtn.setCommand(controller.getCommand("removeFeed"));
     this.__removeBtn.setEnabled(false);
     this.add(this.__removeBtn);
@@ -66,7 +66,7 @@ qx.Class.define("feedreader.view.ToolBar",
 
 
     // Reload button
-    var reloadBtn = new qx.ui.toolbar.Button(this.tr("Reload"), "icon/22/actions/view-refresh.png");
+    var reloadBtn = new qx.ui.toolbar.Button(this.tr("Reload"), "qx/icon/22/actions/view-refresh.png");
     var reloadCmd = controller.getCommand("reload");
     reloadBtn.setCommand(reloadCmd);
     reloadBtn.setToolTipText(this.tr("Reload the feeds. (%1)", reloadCmd.toString()));
@@ -78,7 +78,7 @@ qx.Class.define("feedreader.view.ToolBar",
 
 
     // Preferences button
-    this.__prefBtn = new qx.ui.toolbar.Button(this.tr("Preferences"), "icon/22/apps/preferences-theme.png");
+    this.__prefBtn = new qx.ui.toolbar.Button(this.tr("Preferences"), "qx/icon/22/apps/preferences-theme.png");
     this.__prefBtn.setCommand(controller.getCommand("preferences"));
     this.__prefBtn.setToolTipText(this.tr("Open preferences window."));
     this.add(this.__prefBtn);
@@ -89,7 +89,7 @@ qx.Class.define("feedreader.view.ToolBar",
 
 
     // About button
-    var aboutBtn = new qx.ui.toolbar.Button(this.tr("Help"), "icon/22/actions/help-about.png");
+    var aboutBtn = new qx.ui.toolbar.Button(this.tr("Help"), "qx/icon/22/actions/help-about.png");
     var aboutCmd = controller.getCommand("about");
     aboutBtn.setCommand(aboutCmd);
     aboutBtn.setToolTipText("(" + aboutCmd.toString() + ")");
@@ -99,7 +99,7 @@ qx.Class.define("feedreader.view.ToolBar",
     this.setOverflowHandling(true);
     
     // add a button for overflow handling
-    var chevron = new qx.ui.toolbar.MenuButton(null, "icon/22/actions/media-seek-forward.png");
+    var chevron = new qx.ui.toolbar.MenuButton(null, "qx/icon/22/actions/media-seek-forward.png");
     chevron.setAppearance("toolbar-button");  // hide the down arrow icon
     this.add(chevron);
     this.setOverflowIndicator(chevron);

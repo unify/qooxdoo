@@ -22,8 +22,8 @@
 /**
  * Add new feed window
  *
- * @asset {qx/icon/Tango/16/actions/document-new.png}
- * @asset {qx/icon/Tango/16/actions/dialog-apply.png}
+ * @asset {qx/icon/16/actions/document-new.png}
+ * @asset {qx/icon/16/actions/dialog-apply.png}
  */
 qx.Class.define("feedreader.view.AddFeedWindow",
 {
@@ -42,7 +42,7 @@ qx.Class.define("feedreader.view.AddFeedWindow",
    */
   construct : function(controller)
   {
-    this.base(arguments, this.tr("Add a feed"), "icon/16/actions/document-new.png");
+    this.base(arguments, this.tr("Add a feed"), "qx/icon/16/actions/document-new.png");
 
     // Establish controller link
     this.__controller = controller;
@@ -101,7 +101,7 @@ qx.Class.define("feedreader.view.AddFeedWindow",
       this.__form.add(this.__urlTextfield, this.tr("URL"), qx.util.Validate.checkUrl);
 
       // add the button
-      var addButton = new qx.ui.form.Button(this.tr("Add"), "icon/16/actions/dialog-apply.png");
+      var addButton = new qx.ui.form.Button(this.tr("Add"), "qx/icon/16/actions/dialog-apply.png");
       addButton.set({
         alignX     : "right",
         allowGrowX : false

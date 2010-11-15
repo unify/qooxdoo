@@ -23,8 +23,8 @@
  * The feed reader's main application class.
  *
  * @asset {feedreader/*}
- * @asset {qx/icon/Tango/22/apps/internet-feed-reader.png}
- * @asset {qx/icon/Tango/22/actions/process-stop.png}
+ * @asset {qx/icon/22/apps/internet-feed-reader.png}
+ * @asset {qx/icon/22/actions/process-stop.png}
  */
 qx.Class.define("feedreader.Application",
 {
@@ -269,11 +269,11 @@ qx.Class.define("feedreader.Application",
         return "feedreader/images/loading22.gif";
       }
       else if (value == "loaded") {
-        return "icon/22/apps/internet-feed-reader.png";
+        return "qx/icon/22/apps/internet-feed-reader.png";
       } else if (value == "error") {
-        return "icon/22/actions/process-stop.png";
+        return "qx/icon/22/actions/process-stop.png";
       }
-      return "icon/22/places/folder.png";
+      return "qx/icon/22/places/folder.png";
     },
 
 

@@ -22,10 +22,10 @@
 /**
  * The feed reader preference window
  *
- * @asset {qx/icon/Tango/16/actions/dialog-ok.png}
- * @asset {qx/icon/Tango/16/actions/dialog-cancel.png}
- * @asset {qx/icon/Tango/16/apps/preferences-theme.png}
- * @asset {qx/icon/Tango/16/apps/preferences-locale.png}
+ * @asset {qx/icon/16/actions/dialog-ok.png}
+ * @asset {qx/icon/16/actions/dialog-cancel.png}
+ * @asset {qx/icon/16/apps/preferences-theme.png}
+ * @asset {qx/icon/16/apps/preferences-locale.png}
  */
 qx.Class.define("feedreader.view.PreferenceWindow",
 {
@@ -41,7 +41,7 @@ qx.Class.define("feedreader.view.PreferenceWindow",
 
   construct : function()
   {
-    this.base(arguments, this.tr("Preferences"), "icon/16/apps/preferences-theme.png");
+    this.base(arguments, this.tr("Preferences"), "qx/icon/16/apps/preferences-theme.png");
 
     // set the properties of the window
     this.set(
@@ -78,7 +78,7 @@ qx.Class.define("feedreader.view.PreferenceWindow",
       this.setMinWidth(350);
 
       // Create and add a groupbox
-      var groupBox = new qx.ui.groupbox.GroupBox(this.tr("Language"), "icon/16/apps/preferences-locale.png");
+      var groupBox = new qx.ui.groupbox.GroupBox(this.tr("Language"), "qx/icon/16/apps/preferences-locale.png");
       groupBox.setMinWidth(150);
       groupBox.setLayout(new qx.ui.layout.VBox());
       this.add(groupBox);
@@ -117,13 +117,13 @@ qx.Class.define("feedreader.view.PreferenceWindow",
       var buttonBarLayout = new qx.ui.layout.HBox(10, "right");
       var buttonBar = new qx.ui.container.Composite(buttonBarLayout);
 
-      var cancelButton = new qx.ui.form.Button(this.tr("Cancel"), "icon/16/actions/dialog-cancel.png");
+      var cancelButton = new qx.ui.form.Button(this.tr("Cancel"), "qx/icon/16/actions/dialog-cancel.png");
       cancelButton.addListener("execute", this.close, this);
 
-      var okButton = new qx.ui.form.Button(this.tr("OK"), "icon/16/actions/dialog-ok.png");
+      var okButton = new qx.ui.form.Button(this.tr("OK"), "qx/icon/16/actions/dialog-ok.png");
       okButton.addListener("execute", function(e){
         var selectedLanguage = radioManager.getSelection()[0].getUserData("language");
-        this.debug("Not implemented!");
+        this.debug("Language Selected: " + selectedLanguage);
         this.close();
       }, this);
 
