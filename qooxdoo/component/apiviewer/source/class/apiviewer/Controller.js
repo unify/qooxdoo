@@ -50,7 +50,7 @@ qx.Class.define("apiviewer.Controller",
     this._titlePrefix = "API Documentation";
     document.title = this._titlePrefix;
 
-    this._classLoader = new apiviewer.ClassLoader("./script");
+    this._classLoader = new apiviewer.ClassLoader("../data");
 
     this._detailLoader = this._widgetRegistry.getWidgetById("detail_loader");
     this._tabViewController = new apiviewer.TabViewController(this._widgetRegistry);
