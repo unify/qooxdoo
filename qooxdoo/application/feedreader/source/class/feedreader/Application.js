@@ -80,39 +80,7 @@ qx.Class.define("feedreader.Application",
         qx.log.appender.Native;
         qx.log.appender.Console;
       }
-
-      qx.io.PartLoader.getInstance().addListener("partLoaded", function(e) {
-        this.debug("part loaded: " + e.getData().getName());
-      }, this);
       
-      // Load current locale part
-      var currentLanguage = qx.locale.Manager.getInstance().getLanguage();
-      var knownParts = qx.Part.getInstance().getParts();
-      // if the locale is available as part
-      if (knownParts[currentLanguage]) {
-        // load this part
-        qx.io.PartLoader.require([currentLanguage], function() {
-          // forcing identical locale
-          qx.locale.Manager.getInstance().setLocale(currentLanguage);
-          // build the GUI after the initial locals has been loaded
-          this.buildUpGui();
-        }, this);
-      } else {
-        // if we cant find the default locale, print a warning and load the gui
-        this.warn(
-          "Cannot load locale part for current language " + 
-          currentLanguage + ", falling back to English."
-        );
-        this.buildUpGui();
-      }
-    },
-
-    
-    /**
-     * Main routine which builds the whole GUI.
-     */
-    buildUpGui : function() 
-    {
       // Initialize commands
       this._initializeCommands();
 
@@ -138,6 +106,7 @@ qx.Class.define("feedreader.Application",
       
       this.reload();
     },
+
 
 
     /*
@@ -524,24 +493,17 @@ qx.Class.define("feedreader.Application",
      */
     showPreferences : function()
     {
-      this.__toolBarView.singalLoading("settings", true);
-      qx.io.PartLoader.require(["settings"], function()
+      // if the window is not created
+      if (!this.__prefWindow)
       {
-        // if the window is not created
-        if (!this.__prefWindow)
-        {
-          // create it
-          this.__prefWindow = new feedreader.view.PreferenceWindow();
-          this.getRoot().add(this.__prefWindow);
-        }
+        // create it
+        this.__prefWindow = new feedreader.view.PreferenceWindow();
+        this.getRoot().add(this.__prefWindow);
+      }
 
-        // open the window
-        this.__prefWindow.center();
-        this.__prefWindow.open();
-        
-        // signal the end of the loading
-        this.__toolBarView.singalLoading("settings", false);        
-      }, this);
+      // open the window
+      this.__prefWindow.center();
+      this.__prefWindow.open();
     },
 
 
@@ -559,24 +521,17 @@ qx.Class.define("feedreader.Application",
      */
     showAddFeed : function()
     {
-      this.__toolBarView.singalLoading("addfeed", true);
-      qx.io.PartLoader.require(["addfeed"], function()
+      // if the window is not created
+      if (!this.__addFeedWindow)
       {
-        // if the window is not created
-        if (!this.__addFeedWindow)
-        {
-            // create it
-          this.__addFeedWindow = new feedreader.view.AddFeedWindow(this);
-          this.getRoot().add(this.__addFeedWindow);
-        }
+          // create it
+        this.__addFeedWindow = new feedreader.view.AddFeedWindow(this);
+        this.getRoot().add(this.__addFeedWindow);
+      }
 
-        // open the window
-        this.__addFeedWindow.center();
-        this.__addFeedWindow.open();
-        
-        // signal the end of the loading
-        this.__toolBarView.singalLoading("addfeed", false);
-      }, this);
+      // open the window
+      this.__addFeedWindow.center();
+      this.__addFeedWindow.open();
     }
   },
 

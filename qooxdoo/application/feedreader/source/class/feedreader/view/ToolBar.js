@@ -95,7 +95,7 @@ qx.Class.define("feedreader.view.ToolBar",
     aboutBtn.setToolTipText("(" + aboutCmd.toString() + ")");
     this.add(aboutBtn);
     
-    // enable doverflow handling
+    // enable overflow handling
     this.setOverflowHandling(true);
     
     // add a button for overflow handling
@@ -185,35 +185,6 @@ qx.Class.define("feedreader.view.ToolBar",
       }
       
       return cachedItem;
-    },
-    
-    
-    /**
-     * Signals the toolbar which part currently loading.
-     * 
-     * @param part {String} The name of the part currently loading.
-     * @param loading {Boolean} ture, if the part is currently loading.
-     */
-    singalLoading : function(part, loading) 
-    {
-      // get the right button
-      if (part == "addfeed") {
-        var button = this.__addBtn;
-      } else if (part == "settings") {
-        var button = this.__prefBtn;
-      } else {
-        // do nothing on the rest of the parts if given
-        return;
-      }
-      
-      // set / reset icon of the button
-      if (loading) {
-        button.setUserData("originalIcon", button.getIcon());
-        button.setIcon("feedreader/images/loading22.gif");
-      } else {
-        var icon = button.getUserData("originalIcon");
-        button.setIcon(icon);
-      }
     }
   },
 

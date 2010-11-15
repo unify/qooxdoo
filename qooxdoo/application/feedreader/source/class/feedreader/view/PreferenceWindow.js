@@ -97,21 +97,8 @@ qx.Class.define("feedreader.view.PreferenceWindow",
 
       var localeManager = qx.locale.Manager.getInstance();
 
-      // Check for a mismatch of available and used locales
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        var availableLocales = localeManager.getAvailableLocales().sort().join(", ");
-        var usedLocales = qx.lang.Object.getKeys(languages).sort().join(", ");
-
-        if(availableLocales !== usedLocales)
-        {
-          this.warn("Mismatch of locales: \navailable: " + availableLocales +
-            "\nused     : " + usedLocales);
-        }
-      }
-
       var radioButton;
-      for (var lang in languages )
+      for (var lang in languages)
       {
         radioButton = new qx.ui.form.RadioButton(languages[lang]);
         radioButton.setUserData("language", lang);
@@ -136,12 +123,7 @@ qx.Class.define("feedreader.view.PreferenceWindow",
       var okButton = new qx.ui.form.Button(this.tr("OK"), "icon/16/actions/dialog-ok.png");
       okButton.addListener("execute", function(e){
         var selectedLanguage = radioManager.getSelection()[0].getUserData("language");
-
-        qx.io.PartLoader.require([selectedLanguage], function ()
-        {
-          qx.locale.Manager.getInstance().setLocale(selectedLanguage);
-        }, this);
-
+        this.debug("Not implemented!");
         this.close();
       }, this);
 
