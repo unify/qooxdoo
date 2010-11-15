@@ -71,14 +71,11 @@ qx.Class.define("qx.util.ResourceManager",
       
       var lastSlash = id.lastIndexOf("/");
       var dirName = id.substring(0, lastSlash);
-      var dir = files[dirName] || images[dirName];
-      if (dir)
-      {
-        var fileName = id.substring(lastSlash+1);
-        var file = dir[fileName] || images[dirName][fileName];
-        if (file) {
-          return cache[id] = file;
-        }
+      var fileName = id.substring(lastSlash+1);
+      
+      var file = (files[dirName] && files[dirName][fileName]) || (images[dirName] && images[dirName][fileName]) || null;
+      if (file) {
+        return cache[id] = file;
       }
     },
     
