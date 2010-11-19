@@ -202,62 +202,6 @@ qx.Class.define("qx.locale.Manager",
 
 
     /**
-     * Add a translation to the translation manager.
-     *
-     * If <code>languageCode</code> already exists, its map will be updated with
-     * <code>translationMap</code> (new keys will be added, existing keys will be
-     * overwritten).
-     *
-     * @param languageCode {String} language code of the translation like <i>de, de_AT, en, en_GB, fr, ...</i>
-     * @param translationMap {Map} mapping of message identifiers to message strings in the target
-     *                             language, e.g. <i>{"greeting_short" : "Hello"}</i>. Plural forms
-     *                             are separate keys.
-     * @return {void}
-     */
-    addTranslation : function(languageCode, translationMap)
-    {
-      var catalog = this.__translations;
-      if (catalog[languageCode])
-      {
-        for (var key in translationMap) {
-          catalog[languageCode][key] = translationMap[key];
-        }
-      }
-      else
-      {
-        catalog[languageCode] = translationMap;
-      }
-    },
-
-
-    /**
-     * Add a localization to the localization manager.
-     *
-     * If <code>localeCode</code> already exists, its map will be updated with
-     * <code>localeMap</code> (new keys will be added, existing keys will be overwritten).
-     *
-     * @param localeCode {String} locale code of the translation like <i>de, de_AT, en, en_GB, fr, ...</i>
-     * @param localeMap {Map} mapping of locale keys to the target locale values, e.g.
-     *                        <i>{"cldr_date_format_short" : "M/d/yy"}</i>.
-     * @return {void}
-     */
-    addLocale : function(localeCode, localeMap)
-    {
-      var catalog = this.__locales;
-      if (catalog[localeCode])
-      {
-        for (var key in localeMap) {
-          catalog[localeCode][key] = localeMap[key];
-        }
-      }
-      else
-      {
-        catalog[localeCode] = localeMap;
-      }
-    },
-
-
-    /**
      * Translate a message using the current locale and apply format string to the arguments.
      *
      * Implements the lookup chain locale (e.g. en_US) -> language (e.g. en) ->
