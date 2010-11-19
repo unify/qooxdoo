@@ -1200,7 +1200,8 @@ qx.Theme.define("qx.theme.classic.Appearance",
       {
         return {
           padding : [2, 3, 2, 0],
-          icon : states.opened ? "icon/16/places/folder-open.png" : "icon/16/places/folder.png"
+          icon : states.opened ? "icon/16/places/folder-open.png" : "icon/16/places/folder.png",
+          iconOpened : "icon/16/places/folder-open.png"
         };
       }
     },
@@ -2535,6 +2536,31 @@ qx.Theme.define("qx.theme.classic.Appearance",
       {
         return {
           backgroundColor : "white"
+        }
+      }
+    },
+
+    /*
+    ---------------------------------------------------------------------------
+      PROGRESSBAR
+    ---------------------------------------------------------------------------
+    */
+    "progressbar": 
+    {
+      style: function(states) {
+        return {
+          decorator: "progressbar",
+          padding: [1],
+          backgroundColor: "white"
+        }
+      }
+    },
+    
+    "progressbar/progress": 
+    {
+      style: function(states) {
+        return {
+          backgroundColor: "background-selected"
         }
       }
     }

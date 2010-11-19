@@ -6,7 +6,6 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
-     2009-2010 Deutsche Telekom AG, Germany, http://www.telekom.com
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -15,10 +14,22 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
+     * Tino Butz (tbtz)
 
    ======================================================================
 
    This class contains code based on the following work:
+
+   * Unify Project
+
+     Homepage:
+       http://unify-project.org
+
+     Copyright:
+       2009-2010 Deutsche Telekom AG, Germany, http://telekom.com
+
+     License:
+       MIT: http://www.opensource.org/licenses/mit-license.php
 
    * Yahoo! UI Library
        http://developer.yahoo.com/yui
@@ -265,29 +276,35 @@ qx.Class.define("qx.bom.Viewport",
 
 
     /**
-     * Returns the screen rotation. This might be one of <code>0</code>,
-     * <code>90</code> and <code>-90</code>. The last one is not supported
-     * on all platforms.
+     * Returns the current orientation of the viewport in degree.
+     * 
+     * All possible values and their meaning:
+     * 
+     * * <code>0</code>: "Portrait"
+     * * <code>-90</code>: "Landscape (right, screen turned clockwise)"
+     * * <code>90</code>: "Landscape (left, screen turned counterclockwise)"
+     * * <code>180</code>: "Portrait (upside-down portrait)"
      *
-     * @param win {Window?window} The window to query
-     * @return {Integer} The screen rotation
+     * @return {Integer} The current orientation in degree
      */
     getOrientation : function(win)
     {
+      // See http://developer.apple.com/library/safari/#documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html%23//apple_ref/doc/uid/TP40006511-SW16
+      // for more information.
       var orientation = (win||window).orientation;
       if (orientation == null) {
         orientation = this.getWidth(win) > this.getHeight(win) ? 90 : 0;
       }
-
       return orientation;
     },
 
 
     /**
-     * Whether the screen is rotated to being in landscape mode.
+     * Whether the viewport orientation is currently in landscape mode.
      *
      * @param win {Window?window} The window to query
-     * @return {Boolean} <code>true</code> when the screen is rotated to landscape.
+     * @return {Boolean} <code>true</code> when the viewport orientation
+     *     is currently in landscape mode.
      */
     isLandscape : function(win) {
       return Math.abs(this.getOrientation(win)) == 90;
@@ -295,13 +312,16 @@ qx.Class.define("qx.bom.Viewport",
 
 
     /**
-     * Whether the screen is rotated to being in portrait mode.
+     * Whether the viewport orientation is currently in portrait mode.
      *
      * @param win {Window?window} The window to query
-     * @return {Boolean} <code>true</code> when the screen is rotated to portrait.
+     * @return {Boolean} <code>true</code> when the viewport orientation
+     *     is currently in portrait mode.
      */
-    isPortrait : function(win) {
-      return this.getOrientation(win) == 0;
+    isPortrait : function(win)
+    {
+      var orientation = this.getOrientation(win);
+      return (orientation == 0 || orientation == 180);
     }
   }
 });

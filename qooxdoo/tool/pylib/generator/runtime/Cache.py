@@ -29,7 +29,7 @@ from generator.action.ActionLib import ActionLib
 memcache  = {} # {key: {'content':content, 'time': (time.time()}}
 actionLib = None
 check_file     = u".cache_check_file"
-CACHE_REVISION = 23539   # Change this to the current qooxdoo svn revision when existing caches need clearing
+CACHE_REVISION = 23730   # Change this to the current qooxdoo svn revision when existing caches need clearing
 
 class Cache(object):
 
@@ -300,6 +300,16 @@ class Cache(object):
 
         if memory:
             memcache[cacheId] = {'time': time.time(), 'content':content}
+
+
+    def remove(self, cacheId, writeToFile=False):
+        if cacheId in memcache:
+           entry = memcache[cacheId]
+           del memcache[cacheId]
+           return entry['content'], entry['time']
+        else:
+            return None, None
+
 
 
 ##

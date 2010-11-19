@@ -148,6 +148,48 @@ qx.Class.define("qx.test.data.controller.Tree",
       this.__model = null;
       this.__tree.dispose();
     },
+    
+    
+    testRemoveBindingsRecursive: function(){
+      // reform the model tree
+      this.__model.getChildren().remove(this.__c);
+      this.__a.getChildren().push(this.__c);
+      
+      var cFolder = this.__tree.getRoot().getChildren()[0].getChildren()[0];
+      this.assertNotNull(cFolder, "Third node does not exist");
+      this.assertEquals("c", cFolder.getLabel());
+      
+      // remove the model node
+      this.__a.getChildren().remove(this.__c);
+      // check if its disposed and the bindings have been removed
+      this.__c.setName("affe");
+      this.assertEquals("c", cFolder.getLabel());
+
+      // destroy is async --> wait for it!
+      this.wait(100, function() {
+        this.assertTrue(cFolder.isDisposed());
+      }, this);
+    },
+    
+    
+    testModelChange: function(){
+      // set model to null
+      this.__controller.setModel(null);
+
+      // set the same model again (forces the tree to redraw)
+      this.__controller.setModel(this.__model);
+
+      var d  = new qx.test.TreeNode();
+      d.setName("d");
+
+      var model = this.__model;
+      // add the new model
+      this.wait(100, function() {
+        model.getChildren().push(d);        
+      });
+
+      // d will be disposed by the model
+    },
 
 
     testFolderCreation: function() {

@@ -377,6 +377,76 @@
 
       ,"let" :
       {
+        "PROVIDER_ROOT" : "./provider",
+        "PROVIDER_OPTIMIZE" : ["variables", "basecalls", "strings"] 
+      }
+      
+      ,"run" : [
+        "provider-classes",
+        "provider-deps"
+      ]
+      
+    },
+
+    "provider-deps":
+    {
+      // will only run when invoked from "provider"
+      "include" : [ "=${APPLICATION}.*" ]
+      ,"exclude" : [ "=${APPLICATION}.test.*" ]
+
+      ,"log" : 
+      { 
+        "dependencies" : 
+        { 
+          "type" : "using", 
+          "format" : "provider",
+          "json" : {"pretty" : true, "file" : "${PROVIDER_ROOT}/dependencies.json"}
+        }
+      }
+    },
+
+    "provider-classes" :
+    {
+      // will only run when invoked from "provider"
+      "compile-options" : 
+      {
+        "code" : 
+        {
+          "locales"  : "${LOCALES}",
+          "format"   : false,
+          "optimize" : "${PROVIDER_OPTIMIZE}"
+        }
+      }
+
+      ,"include" : [ "${APPLICATION}.*" ]
+      ,"exclude" : [ "${APPLICATION}.test.*" ]
+
+      ,"variants" :
+      {
+        "qx.debug" : ["off"]
+      }
+
+      ,"provider" : 
+      {
+        "app-root" : "${PROVIDER_ROOT}",
+        "include"  : ["${APPLICATION}.*"],
+        "exclude"  : ["${APPLICATION}.test.*"],
+        "compile"  : ["source", "build"]
+      }
+    },
+    /*
+    */
+
+
+    /*
+    "provider" :
+    {
+      "desc"   : "create a provider structure, with code, dependency info, etc.",
+
+      "extend" : ["cache", "libraries"]
+
+      ,"let" :
+      {
         "PROVIDER_ROOT" : "./provider"
       }
       
@@ -411,6 +481,7 @@
         }
       }
     },
+    */
 
 
     "translation" :
@@ -493,6 +564,10 @@
         "Deleting inspector folder" :
         [
           "${ROOT}/inspector"
+        ],
+        "Deleting simulator folder" :
+        [
+          "${ROOT}/simulator"
         ]
         /*
         ,"Deleting cache" :

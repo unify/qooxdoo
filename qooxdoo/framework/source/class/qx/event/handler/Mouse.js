@@ -23,7 +23,6 @@
 /* ************************************************************************
 
 #require(qx.event.handler.UserAction)
-#---require(qx.event.handler.Touch)
 
 ************************************************************************ */
 
@@ -374,7 +373,7 @@ qx.Class.define("qx.event.handler.Mouse",
       var target = qx.bom.Event.getTarget(domEvent);
 
       // Safari (and maybe gecko) takes text nodes as targets for events
-      // See: http://www.nczonline.net/archive/2008/2/556
+      // See: http://www.quirksmode.org/js/events_properties.html
       if (qx.core.Variant.isSet("qx.client", "gecko|webkit"))
       {
         if (target && target.nodeType == 3) {

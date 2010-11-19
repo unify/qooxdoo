@@ -22,14 +22,15 @@
   
   "jobs" :
   {
-    "build-script" :
+    // this one so that source, build-script and build-resources use common settings
+    "playground-compile" :
     {
-
       "include" :     
       [
         "${APPLICATION}.*",
         "qx.*"
       ],
+
       "exclude" :
       [
         "qx.test.*",
@@ -40,39 +41,34 @@
       "variants" :
       {
         "=qx.debug" : ["on"]
-      },
+      }
+    },
+
+    "build-script" :
+    {
+      "extend" : [ "playground-compile" ],
 
       "settings" :
       {
         "qx.nativeScrollBars" : true
       }
     },
+
+
+    "build-resources" :
+    {
+      "extend" : [ "playground-compile" ]
+    },
+
     
     "source" :
     {
-
-      "include" :     
-      [
-        "${APPLICATION}.*",
-        "qx.*"
-      ],
-      "exclude" :
-      [
-        "qx.test.*",
-        "qx.dev.unit.*",
-        "playground.test.*"
-      ],
+      "extend" : [ "playground-compile" ],
 
       "settings" :
       {
         "qx.nativeScrollBars" : true
-      },
-
-      "variants" :
-      {
-        "=qx.debug" : ["on"]
       }
     }    
-    
   }
 }

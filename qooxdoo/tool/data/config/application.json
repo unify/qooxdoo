@@ -18,8 +18,18 @@
     },
 
     {
+      "path" : "${QOOXDOO_PATH}/component/testrunner2/testrunner.json",
+      "as"   : "testrunner2"
+    },
+    
+    {
       "path" : "${QOOXDOO_PATH}/component/inspector/inspector.json",
       "as"   : "inspector"
+    },
+    
+    {
+      "path" : "${QOOXDOO_PATH}/component/simulator/simulator.json",
+      "as"   : "simulator"
     }
   ],
 
@@ -151,11 +161,12 @@
     {
       "desc"    : "create a test runner app for unit tests of the current library",
 
-      "extend"  : ["testrunner::build"],
+      "extend"  : ["${TESTRUNNER_TYPE}::build"],
 
       "let" :
       {
-        "TESTRUNNER_ROOT" : "${QOOXDOO_PATH}/component/testrunner",
+        "TESTRUNNER_TYPE" : "testrunner",
+        "TESTRUNNER_ROOT" : "${QOOXDOO_PATH}/component/${TESTRUNNER_TYPE}",
         "TEST_INCLUDE"    : "${APPLICATION}.test.*",
         "QXTHEME"         : "qx.theme.Modern",
         "BUILD_PATH"      : "${ROOT}/test"
@@ -172,7 +183,7 @@
         "TESTS_SCRIPT" : "tests-inline.js"
       },
       
-      "include" : ["testrunner.TestLoaderInline"]
+      "include" : ["${TESTRUNNER_TYPE}.TestLoaderInline"]
     },
 
 
@@ -185,7 +196,7 @@
         "TESTS_SCRIPT" : "tests-native.js"
       },
       
-      "include" : ["testrunner.TestLoaderNative"]
+      "include" : ["${TESTRUNNER_TYPE}.TestLoaderNative"]
     },
 
 
@@ -193,14 +204,27 @@
     {
       "desc"    : "create a test runner app for unit tests (source version) of the current library",
 
-      "extend" : ["testrunner::build-with-tests-source"],
+      "extend" : ["${TESTRUNNER_TYPE}::build-with-tests-source"],
 
       "let" :
       {
-        "TESTRUNNER_ROOT" : "${QOOXDOO_PATH}/component/testrunner",
+        "TESTRUNNER_TYPE" : "testrunner",
+        "TESTRUNNER_ROOT" : "${QOOXDOO_PATH}/component/${TESTRUNNER_TYPE}",
         "TEST_INCLUDE"    : "${APPLICATION}.test.*",
         "QXTHEME"         : "qx.theme.Modern",
         "BUILD_PATH"      : "${ROOT}/test"
+      }
+    },
+    
+    "simulation" :
+    {
+      "extend" : ["simulator::simulation"],
+      
+      "let" :
+      {
+        "SIMULATOR_ROOT" : "${QOOXDOO_PATH}/component/simulator",
+        "SIMULATION_INCLUDE" : "${APPLICATION}.simulation.*",
+        "BUILD_PATH"      : "${ROOT}/simulator"
       }
     }
   }
