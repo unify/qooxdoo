@@ -447,6 +447,8 @@ qx.Class.define("qx.data.controller.Tree",
       if (oldRoot != null) {
         this.getTarget().resetRoot();
         oldRoot.destroy();
+        // get rid of the references [BUG #4293]
+        this.__childrenRef = {};
       }
 
       // only build up a new tree if a model is given
@@ -614,6 +616,8 @@ qx.Class.define("qx.data.controller.Tree",
         var oldRef = this.__childrenRef[children.toHashCode()];
         children.removeListenerById(oldRef.changeListenerId);
         model.removeListenerById(oldRef.changeChildernListenerId);
+        // also remove all its children [BUG #4296]
+        this.__removeAllFolders(treeFolder);
 
         // delete the model reference
         delete this.__childrenRef[children.toHashCode()];

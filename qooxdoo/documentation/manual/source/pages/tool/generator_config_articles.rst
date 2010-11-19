@@ -89,7 +89,7 @@ The build system allows you to tailor where those resources are stored, so you c
     - without dedicated I18N parts: class data is allocated in each individual package, corresponding to the contained class code that needs it
     - with dedicated I18N parts: class data is in dedicated I18N packages
 
-The term *"dedicated I18N parts"* refers to the possibility to split translated strings and CLDR data out in separate parts, one for each language (see :ref:`packages/i18n-with-boot <pages/tool/generator_config_ref#packages>`). Like with other parts, those parts have to be actively loaded by the application (using `qx.io.PartLoader.require <http://demo.qooxdoo.org/1.2.x/apiviewer/#qx.io.PartLoader>`_).
+The term *"dedicated I18N parts"* refers to the possibility to split translated strings and CLDR data out in separate parts, one for each language (see :ref:`packages/i18n-with-boot <pages/tool/generator_config_ref#packages>`). Like with other parts, those parts have to be actively loaded by the application (using `qx.io.PartLoader.require <http://demo.qooxdoo.org/%{version}/apiviewer/#qx.io.PartLoader>`_).
 
 In the build version without dedicated I18N parts (case 2.1), those class data is stored as is needed by the code of the package. This may mean that the same data is stored in multiple packages, as e.g. two packages might use the same image or translated string. This is to ensure optimal independence of packages among each other so they can be loaded independently, and is resolved at the browser (ie. resource data is stored uniquely in memory).
 
@@ -103,13 +103,12 @@ In the build version without dedicated I18N parts (case 2.1), those class data i
 Compile cache
 -------------
 
-The main payload of the ``:ref:`cache <pages/tool/generator_config_ref#cache_key>``` key is to point to the directory for the compile cache. It is very recommendable to have a system-wide compile cache directory so cache contents can be shared among different projects and libraries. Otherwise, the cache has to be rebuilt in each enviornment anew, costing extra time and space.
+The main payload of the :ref:`cache <pages/tool/generator_config_ref#cache>` key is to point to the directory for the compile cache. It is very recommendable to have a system-wide compile cache directory so cache contents can be shared among different projects and libraries. Otherwise, the cache has to be rebuilt in each enviornment anew, costing extra time and space.
 
-The default for the cache directory is beneath the system TMP directory. To find out where this is either run a build job with the ``-v`` command line flag and look for the *cache* key in the expanded job definition, or use this :ref:`snippet <pages/snippets#finding_your_system-wide_tmp_directory>`.
+The default for the cache directory is beneath the system TMP directory. To find out where this actually is either run ``generate.py info``, or run a build job with the ``-v`` command line flag and look for the *cache* key in the expanded job definition, or use this :ref:`snippet <pages/snippets#finding_your_system-wide_tmp_directory>`.
 
 The compile cache directory can become very large in terms of contained files, and a count of a couple of thousand files is not unusual. You should take care that your file system is equipped to comply with these demands. Additionally, disk I/O is regularly high on this directory so a fast, local disk is recommendable. Don't use a network drive :-) .
 
-A word of advice is also in place for the time being: Cache management is not optimal currently. If you experience strange results or error messages during development, deleting the cache directory is sometimes the necessary and sufficient cure. We hope to improve this in the future.
 
 .. _pages/tool/generator_config_articles#let_key:
 
@@ -154,7 +153,7 @@ With imported jobs top-level definitions will take precedence over any definitio
 "log" Key
 =========
 
-Logging is an important part of any reasonably complex application. The Generator does a fair bit of logging to the console by default, listing the jobs it performs, adding details of important processing steps and reporting on errors and potential inconsistencies. The ``:ref:`log <pages/tool/generator_config_ref#log>``` key lets you specify further options and tailor the Generator console output to your needs. You can e.g. add logging of unused classes in a  particular library/name space.
+Logging is an important part of any reasonably complex application. The Generator does a fair bit of logging to the console by default, listing the jobs it performs, adding details of important processing steps and reporting on errors and potential inconsistencies. The :ref:`log <pages/tool/generator_config_ref#log>` key lets you specify further options and tailor the Generator console output to your needs. You can e.g. add logging of unused classes in a  particular library/name space.
 
 .. _pages/tool/generator_config_articles#extend_key:
 
@@ -166,7 +165,7 @@ Logging is an important part of any reasonably complex application. The Generato
 Job resolution
 --------------
 
-``extend`` and ``run`` keywords are currently the only keywords that reference other jobs. These references have to be resolved, by looking them up (or "evaluating" the names) in some context. One thing to note here is that job names are evaluated **in the context of the current job map**. As you will see (see section on :ref:`top-level "include"s <pages/tool/generator_config_articles#include_key_top-level_-_adding_features>`), a single configuration might eventually contain jobs from multiple config files, the local job definitions, and zero to many imported job maps (from other config files), which again might contain imported configs. From within any map, only those jobs are referenceable that are **contained** somewhere in this map. Unqualified names (like "myjob") are taken to refer to jobs on the same level as the current job, path-like names (containing "/") are taken to signify a job in some nested name space down from the current level. Particularly, this means you can never reference a job in a map which is "parallel" to the current job map. It's only jobs on the same level or deeper.
+``extend`` and ``run`` keywords are currently the only keywords that reference other jobs. These references have to be resolved, by looking them up (or "evaluating" the names) in some context. One thing to note here is that job names are evaluated **in the context of the current configuration**. As you will see (see section on :ref:`top-level "include"s <pages/tool/generator_config_articles#include_key_top-level_-_adding_features>`), a single configuration might eventually contain jobs from multiple config files, the local job definitions, and zero to many imported job maps (from other config files), which again might contain imported configs. From within any map, only those jobs are referenceable that are **contained** somewhere in this map. Unqualified names (like "myjob") are taken to refer to jobs on the same level as the current job, path-like names (containing "/") are taken to signify a job in some nested name space down from the current level. Particularly, this means you can never reference a job in a map which is "parallel" to the current job map. It's only jobs on the same level or deeper.
 
 This is particularly important for imported configs (imported with a top-level "include" keyword, see further :ref:`down <pages/tool/generator_config_articles#include_key_top-level_-_adding_features>`). Those configs get attached to the local "jobs" map under a dedicated key (their "name space" if you will). If in this imported map there is a "run" job (see the :ref:`next section <pages/tool/generator_config_articles#extending_jobs>`) using unqualified job names, these job names will be resolved using the imported map, not the top-level map. If the nested "run" job uses path-like job names, these jobs will be searched for **relative** to the nested map. You get it?!
 
@@ -268,7 +267,7 @@ The values of these macros are lists, and each reference will be expanded into a
 "library" Key and Manifest Files
 ================================
 
-The ``:ref:`pages/tool/generator_config_ref#library``` key of a configuration holds information about source locations that will be considered in a job (much like the CLASSPATH in Java). Each element specifies one such library. The term "library" is meant here in the broadest sense; everything that has a qooxdoo class structure with source code can be considered a library in this context. This includes applications like the Showcase or the Feedreader, add-ins like the Testrunner or the Apiviewer, contribs from the qooxdoo-contrib repository like the Inspector, or of course the qooxdoo framework library itself. The main purpose of any such library entry is to provide the path to its "Manifest" file.
+The :ref:`pages/tool/generator_config_ref#library` key of a configuration holds information about source locations that will be considered in a job (much like the CLASSPATH in Java). Each element specifies one such library. The term "library" is meant here in the broadest sense; everything that has a qooxdoo application structure with a *Manifest.json* file can be considered a library in this context. This includes applications like the Showcase or the Feedreader, add-ins like the Testrunner or the Apiviewer, contribs from the qooxdoo-contrib repository, or of course the qooxdoo framework library itself. The main purpose of any *library* entry in the configuration is to provide the path to the library's "Manifest" file.
 
 .. _pages/tool/generator_config_articles#manifest_files:
 
@@ -290,22 +289,52 @@ If the contribution resides on your local file system, there is actually no diff
 
     contrib://<ContributionName>/<Version>/<ManifestFile>
 
-The contribution source tree will then be downloaded from the repository, the generator will adjust to the local path, and the contribution is then used just like a local library. A consideration that comes into play here is the question where to put the files locally:
+The contribution source tree will then be downloaded from the repository, the generator will adjust to the local path, and the contribution is then used just like a local library. A consideration that comes into play here is where the files are placed locally. The default location is a subdirectory from your cache path named ``downloads``. You can modify this through the *downloads* attribute of the :ref:`pages/tool/generator_config_ref#cache` key in your config.
 
-  * The default location is a subdirectory from your project folder named ``cache-downloads``. This has to be reflected in the ``uri`` parameter of the library entry.
-
-So, for example an entry for the "trunk" version of the "HtmlArea" contribution with default download location would look like this:
+So, for example an entry for the "trunk" version of the "Dialog" contribution would look like this:
 
 ::
 
     {
-      "manifest" : "contrib://HtmlArea/trunk/Manifest.json",
-      "uri"          : "../cache-downloads/HtmlArea/trunk"
+      "manifest" : "contrib://Dialog/trunk/Manifest.json"
     }
 
-  * Mind that the ``uri`` parameter reflects the path from your application's ``index.html`` to the local root directory of the contribution (wherever that is in your particular case).
+You will rarely need to set the ``uri`` attribute of a library entry. This is only necessary if the relative path to the library (which is automatically calculated) does not represent a valid URL path when running the **source** version of the final app. (This can be the case if your try to run the source version from a web server that requires you to set up different document roots). It is not relevant for the *build* version of your app, as here all resources from the various libraries are collected under a common directory. For more on URI handling, see the next section.
 
-  * You can configure a different download directory using the ``:ref:`pages/tool/generator_config_ref#cache`/downloads`` key. If this key is specified the given path will be used as root directory for the downloaded contribs. Again, remember to reflect this path in the ``uri`` key of your contrib library entry.
+
+"contrib://" URIs and Internet Access
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As contrib libraries are downloaded from an online repository, you need Internet access to use them. Here are some tips on how to address offline usage and Internet proxies.
+
+
+Avoiding Online Access
+++++++++++++++++++++++
+
+If you need to work with a contrib offline, it is best to download it to your hard disk, and then use it like any local qooxdoo library. Sourceforge offers the "ViewVC" online repository browser, so you can browse the contrib online, e.g.
+
+::
+
+  http://qooxdoo-contrib.svn.sourceforge.net/viewvc/qooxdoo-contrib/trunk/qooxdoo-contrib/Dialog/
+
+Browse to the desired contrib version, like *trunk*, and hit the *"Download GNU tarball"* link. This will download an archive of this part of the repository tree. Unpack it to a local directory, and enter the relative path to it in the corresponding *manifest* config entry. Now you are using the contrib like a local library.
+
+The only thing you are missing this way is the automatic online check for updates, where a newer version of the contrib would be detected and downloaded. You need to do this by hand, re-checking the repository when you can, and re-downloading a newer version if you find one.
+
+
+Accessing Online from behind a Proxy
+++++++++++++++++++++++++++++++++++++
+
+If you are sitting behind a proxy, here is what you can do. The generator uses the *urllib* module of Python to access web-based resources. This module honors proxies:
+
+* It checks for a *http_proxy* environment variable in the shell running the generator. On Bash-like shells you can set it like this::
+
+    http_proxy="http://www.someproxy.com:3128"; export http_proxy
+
+* If there is no such shell setting on Windows, the registry is queried for the Internet Options.
+* On MacOS, the Internet Config is queried in this case.
+* See the `module documentation <http://docs.python.org/release/2.5.4/lib/module-urllib.html>`__ for more details.
+
 
 .. _pages/tool/generator_config_articles#uri_handling:
 
@@ -340,9 +369,9 @@ But not all of the above resource types are actually referenced through URIs in 
 * references to style sheet files
 
 The **build** version uses a different approach, since it strives to be a self-contained Web application that has no outgoing references. Therefore, all necessary resources are copied over to the build directory tree. Having said that, URIs are still used in the build version, yet these are only references confined to the build directory tree:
-  * JS class code is put into the (probably various) output files of the generator run (what you typically find under *build/script/*.js*). The bootstrap file references the others with relative URIs.
+  * JS class code is put into the (probably various) output files of the generator run (what you typically find under the *build/script* path). The bootstrap file references the others with relative URIs.
   * Graphics and other resources are referenced with relative URIs from the compiled scripts. Those resources are typically found under the *build/resource* path.
-  * Translation strings and CLDR information can be directly included in the bootstrap file (where they need not be referenced through URIs, the default), or be put in separate files (where they have to be referenced).
+  * Translation strings and CLDR information can be directly included in the generated files (where they need not be referenced through URIs), or be put in separate files (where they have to be referenced).
 
 So, in summary, in the *build* version some references might be resolved by directly including the specific information, while the remaining references are usually confined to the build directory tree. That is why you can just pack it up and copy it to your web server for deployment. The *source* version is normally used directly off of  the file system, and employs relative URIs to reference all necessary files. Only in cases where you e.g. need to include interaction with a backend you will want to run the source version from a web server environment. For those cases the following details will be especially interesting. Others might want to skip the remainder of this section for now.
 
@@ -357,68 +386,73 @@ So how does the generator create all of those URIs in the final application code
 
 ::
 
-    to_libraryroot  + library_internal_path + resource_path
-           [1]                [2]                 [3]
+    to_libraryroot [1]  + library_internal_path [2] + resource_path [3]
+
 
 So for example a graphics file in the qooxdoo framework might get referenced using the following components 
 
-* [1] *"../../qooxdoo-1.2-sdk/framework/"* 
+* [1] *"../../qooxdoo-%{version}-sdk/framework/"* 
 * [2] *"source/resource/qx/"*
-* [3] *"icon/Oxygen/16/actions/go-up.png"*
+* [3] *"static/blank.gif"*
 
-to produce the final URI *"../../qooxdoo-1.2-sdk/framework/source/resource/qx/icon/Oxygen/16/actions/go-up.png"*.
+to produce the final URI 
+*"../../qooxdoo-%{version}-sdk/framework/source/resource/qx/static/ blank.gif"*.
 
 These general parts have the following meaning:
 
 * **[1]** : URI path to the library root (as will be valid when running the app in the browser). If you specify the :ref:`uri <pages/tool/generator_config_ref#library>` parameter of the library's entry in your config, this is what gets used here.
 * **[2]** : Path segment within the specific library. This is taken from the library's :doc:`Manifest.json </pages/getting_started/manifest>`. The consumer of the library has no influence on it.
-* **[3]** : Path segment leading to the specific resource. This is the path of the resource as found under the library's resource root directory.
+* **[3]** : Path segment leading to the specific resource. This is the path of the resource as found under the library's resource directory.
 
 .. _pages/tool/generator_config_articles#library_base_uris_in_the_source_version:
 
 Library base URIs in the Source version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Part *[1]* is exactly what you specify with the *uri* subkey of an entry in the *library* key list. This should be fine for most applications. All *source* jobs of the generator using this library will then be using this URI prefix to reference resources of that library. (This is usually fine, as long as you don't have different autonomous parts in your application using the same library from different directories; see also further down).
+Part *[1]* is exactly what you specify with the *uri* subkey of an entry in the *library* key list. All *source* jobs of the generator using this library will be using this URI prefix to reference resources of that library. (This is usually fine, as long as you don't have different autonomous parts in your application using the same library from different directories; see also further down).
 
 If you don't specifying the *uri* key with your libraries (which is usually the case), the generator will calculate a value for *[1]*, using the following information:
 
 ::
 
-    applicationroot_to_configdir + configdir_to_libraryroot
-                [1.2]                      [1.2]
+    applicationroot_to_configdir [1.1] + configdir_to_libraryroot [1.2]
 
 The parts have the following meaning:
 
-* **[1.2]** : Path from the Web application's root to the configuration file's directory; this information is derived from the *paths/app-root* key of the :ref:`pages/tool/generator_config_ref#compile-options` config key.
+* **[1.1]** : Path from the Web application's root to the configuration file's directory; this information is derived from the *paths/app-root* key of the :ref:`pages/tool/generator_config_ref#compile-options` config key.
 * **[1.2]** : Path from the configuration file's directory to the root directory of the library (the one containing the *Manifest.json* file); this information is immediately available from the library's :ref:`manifest <pages/tool/generator_config_ref#library>` key.
 
 For the **build** version, dedicated keys :ref:`uris/script <pages/tool/generator_config_ref#compile-options>` and  :ref:`uris/resource <pages/tool/generator_config_ref#compile-options>` are available (as there is virtually only one "library"). The values of both keys cover the scope of components [1] + [2] in the first figure.
 
-Since *[1.2]* is always known (otherwise the whole library would not be found), only *[1.2]* has to be given in the config. The features of this approach, in contrast to specifying *[1]*, are:
+Since [1.2] is always known (otherwise the whole library would not be found), only [1.1] has to be given in the config. The properties of this approach, compared to specifying just [1], are:
 
-* **The application root can be specified individually for each compile job.** This means you could have more than one application root in your project, e.g. when your main application offers an iframe, into which another application from the same project is loaded; qooxdoo's `Demobrowser <http://demo.qooxdoo.org/1.2.x/demobrowser>`_ application takes advantage of exactly that.
-* **Relative file system paths have to match with relative URIs in the running application.** So this approach won't work if e.g the relative path from your config directory to the library makes no sense when the app is run from a web server.
+* *The application root can be specified individually for each compile job.* This means you could have more than one application root in your project, e.g. when your main application offers an iframe, into which another application from the same project is loaded; qooxdoo's `Demobrowser <http://demo.qooxdoo.org/%{version}/demobrowser>`_ application takes advantage of exactly this.
+
+* *Relative file system paths have to match with relative URIs in the running application.* So this approach won't work if e.g the relative path from your config directory to the library makes no sense when the app is run from a web server.
 
 From the above discussion, there is one important point to take away, in order to create working URIs in your application:
 
 .. note::
 
-    You have to either specify the library's *uri* parameter ([1]) or the URI-relevant keys in the compile jobs (*root*, *script*, *resource*)  in your config.
+    You have to either specify the library's *uri* parameter ([1]) or the URI-relevant keys in the compile jobs ([1.1])  in your config.
 
-While either are optional in their respective contexts, it is mandatory to *at least* specify one of them for the URI generation to work.
+While either are optional in their respective contexts, it is mandatory to at least specify *one* of them for the URI generation to work.
 
 .. _pages/tool/generator_config_articles#overriding_the_uri_settings_of_libraries:
 
 Overriding the 'uri' settings of libraries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Libraries you specify in your own config (with the :ref:`library <pages/tool/generator_config_ref#library>` key) are in your hand, and you can provide ``uri`` parameters as you see fit. If you want to tweak the "uri" setting of a library entry that is added by including another config file (e.g. the default *application.json*), you simply re-define the library entry of that particular library locally. The generator will realize that both entries refer to the same library, and your local settings will take precedence.
+Libraries you specify in your own config (with the :ref:`library <pages/tool/generator_config_ref#library>` key) are in your hand, and you can provide ``uri`` parameters as you see fit. If you want to tweak the *uri* setting of a library entry that is added by including another config file (e.g. the default *application.json*), you simply re-define the library entry of that particular library locally. The generator will realize that both entries refer to the same library, and your local settings will take precedence.
+
+
+Specifying a "library" key in your config.json
+------------------------------------------------
 
 You can specify ``library`` keys in your own config in these ways:
 
 * You either define a local job which either shaddows or "extends" an imported job, and provide this local job with a ``library`` key. Or,
-* You define a local ``"libraries"`` job and provide it with a "library" key. This job will be used automatically by most of the standard jobs (source, build, etc.), and thus your listed libraries will be used in multiple jobs (not just one as above).
+* You define a local ``"libraries"`` job and provide it with a ``library`` key. This job will be used automatically by most of the standard jobs (source, build, etc.), and thus your listed libraries will be used in multiple jobs (not just one as above).
 
 .. _pages/tool/generator_config_articles#packages_key:
 
@@ -468,7 +502,7 @@ Here are the details:
 * Setting *packages/i18n-with-boot: false* removes this data from the loader script.
 * Rather, data for *each individual locale* (en, en_US, de, de_DE, ...) will be collated in a dedicated *part*, the part name being that of the respective language code. As usual, each part is made up of packages. In the case of an I18N part, these are the corresponding data package plus fall-back packages for key lookup (e.g. ["C", "en", "en_US"] for the part "en_US"). Each package is a normal qooxdoo package with only the data section, and without the code section. (See :doc:`/pages/development/parts_overview` for more details).
 
-So far, so good. This is the point where the application developer has to take over. The application will not load the I18N parts by itself. You have to do it using the usual part loading API (e.g. ``qx.io.PartLoader.require(["en_US"])``). You might want to do that early in the application run cycle, e.g. during application start-up and before the first translateable string or localizable data is to be converted. After loading the part, the corresponding locale is ready to be used in the normal way in your application. The `Feedreader <http://demo.qooxdoo.org/1.2.x/feedreader>`_ application uses this technique to load a different I18N part when the language is changed in its *Preferences* dialog.
+So far, so good. This is the point where the application developer has to take over. The application will not load the I18N parts by itself. You have to do it using the usual part loading API (e.g. ``qx.io.PartLoader.require(["en_US"])``). You might want to do that early in the application run cycle, e.g. during application start-up and before the first translateable string or localizable data is to be converted. After loading the part, the corresponding locale is ready to be used in the normal way in your application. The `Feedreader <http://demo.qooxdoo.org/%{version}/feedreader>`_ application uses this technique to load a different I18N part when the language is changed in its *Preferences* dialog.
 
 .. _pages/tool/generator_config_articles#include_key_top-level_-_adding_features:
 
@@ -570,7 +604,7 @@ So in short, the ``ROOT``, ``BUILD_PATH``, ``API_INCLUDE`` and ``API_EXCLUDE`` m
 "optimize" Key
 ==============
 
-The *optimize* key is a subkey of the :ref:`compile-options key<pages/tool/generator_config_ref#compile>`. It allows you to tailor the forms of code optimization that is applied to the Javascript code when the *build* version is created. Currently, there are four categories which can be optimized.
+The *optimize* key is a subkey of the :ref:`compile-options key<pages/tool/generator_config_ref#compile>`. It allows you to tailor the forms of code optimization that is applied to the Javascript code when the *build* version is created. The best way to set this key is by setting the :doc:`OPTIMIZE macro </pages/tool/generator_config_macros>` in your config's global *let* section. Currently, there are four categories which can be optimized.
 
 .. _pages/tool/generator_config_articles#strings:
 

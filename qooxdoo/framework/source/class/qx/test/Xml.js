@@ -249,15 +249,28 @@ qx.Class.define("qx.test.Xml",
     {
       var doc = qx.xml.Document.create("http://www.w3.org/1999/xhtml", "html");
       var node = doc.createElement("a");
-      var namespaceURI = "http://www.w3.org/2000/xmlns/";
-      qx.xml.Element.setAttributeNS(doc, node, namespaceURI, "href", "foo");
+      var namespaceURI = "http://www.qooxdoo.org/";
+      qx.xml.Element.setAttributeNS(doc, node, namespaceURI, "qxid", "foo");
       
       if (node.getAttributeNS) {
-        this.assertEquals("foo", node.getAttributeNS(namespaceURI, "href"));
+        this.assertEquals("foo", node.getAttributeNS(namespaceURI, "qxid"));
       }
       else {
-        this.assertEquals(namespaceURI, node.getAttributeNode("href").namespaceURI);
+        this.assertEquals(namespaceURI, node.getAttributeNode("qxid").namespaceURI);
       }
+    },
+
+    testCreateSubElementNS : function()
+    {
+      var xmlStr = '<html><body>Juhu <em id="toll">Kinners</em>.</body></html>';
+      var doc = qx.xml.Document.fromString(xmlStr);
+      var parent = doc.getElementsByTagName("em")[0];
+      var namespaceUri = "http://qooxdoo.org";
+      var subElem = qx.xml.Element.createSubElementNS(doc, parent, "foo", namespaceUri);
+      
+      var createdNode = qx.xml.Element.getElementsByTagNameNS(doc.documentElement, namespaceUri, "foo")[0];
+      this.assertEquals(subElem, createdNode);
+      this.assertTrue(subElem.parentNode == parent);
     }
   }
 });

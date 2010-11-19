@@ -41,8 +41,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     if (qx.core.Variant.isSet("testrunner2.view", "console")) {
       this.view = new testrunner2.view.Console();
     } else {
-      var createFrame = qx.core.Variant.isSet("testrunner2.testOrigin", "iframe");
-      this.view = new testrunner2.view.Html(null, createFrame);
+      this.view = new testrunner2.view.Html();
     }
     
     // Connect view and controller
@@ -64,8 +63,14 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     
     // Load unit tests
     if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
-      this._loadIframeTests();
-    } else {
+      // Load the tests from a standalone AUT
+      this.__iframe = this.view.getIframe(this._onLoadIframe, this);
+      qx.event.Registration.addListener(this.__iframe, "load", this._onLoadIframe, this);
+      var src = qx.core.Setting.get("qx.testPageUri")
+      src += "?testclass=" + qx.core.Setting.get("qx.testNameSpace");
+      this.view.setAutUri(src);
+    } 
+    else {
       this._loadInlineTests();
     }
     
@@ -105,7 +110,8 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     /** Flat list of all tests in the current suite */
     initialTestList :
     {
-      init : [],
+      init : null,
+      nullable : true,
       check : "Array",
       event : "changeInitialTestList"
     },
@@ -113,6 +119,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     /** List of tests selected by the user */
     selectedTests :
     {
+      nullable : true,
       init : null,
       apply : "_applySelectedTests"
     }
@@ -135,6 +142,8 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     
     /**
      * Loads test classes that are a part of the TestRunner application.
+     * 
+     * @param nameSpace {String|Object} Test namespace to be loaded
      */
     _loadInlineTests : function(nameSpace)
     {
@@ -143,21 +152,6 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       this.loader = new qx.dev.unit.TestLoaderInline();
       this.loader.setTestNamespace(nameSpace);
       this.__getTestData();
-    },
-    
-    
-    /**
-     * Loads test classes from a standalone test application using an iframe.
-     */
-    _loadIframeTests : function()
-    {
-      this.setTestSuiteState("loading");
-      this.__iframe = this.view.getIframe();
-      qx.event.Registration.addListener(this.__iframe, "load", this._onLoadIframe, this);
-      var src = qx.core.Setting.get("qx.testPageUri");
-      src += "?testclass=" + qx.core.Setting.get("qx.testNameSpace");
-      qx.bom.Iframe.setSource(this.__iframe, src);
-      this.debug("Setting AUT URI: " + src);
     },
     
     
@@ -174,19 +168,16 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       testRep = qx.lang.Json.parse(testRep);
       
       this.testList = [];
-      var testCount = 0;
       
       for (var i=0,l=testRep.length; i<l; i++) {
         var testClassName = testRep[i].classname;
         for (var j=0,m=testRep[i].tests.length; j<m; j++) {
           this.testList.push(testClassName + ":" + testRep[i].tests[j]);
         }
-        testCount += testRep[i].tests.length;
       }
       this.testList.sort();
-      this.setTestSuiteState("ready");
-      this.setTestCount(testCount);
       this.setInitialTestList(this.testList);
+      this.setTestSuiteState("ready");
     },
     
     
@@ -221,7 +212,10 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       var functionName = currentTestFull.substr(currentTestFull.indexOf(":") + 1); 
       var testResult = this.__initTestResult();
       
-      this.loader.runTests(testResult, className, functionName);
+      var self = this;
+      window.setTimeout(function() {
+        self.loader.runTests(testResult, className, functionName);
+      }, 0);
     },
     
     
@@ -245,13 +239,20 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       }
       
       testResult.addListener("startTest", function(e) {
-        /* EXPERIMENTAL
+        var test = e.getData();
+        
+        /* EXPERIMENTAL: Check if the test polluted the DOM
         if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
+          if (this.frameWindow.qx.test && this.frameWindow.qx.test.ui &&
+              this.frameWindow.qx.test.ui.LayoutTestCase &&          
+              test.getTestClass() instanceof this.frameWindow.qx.test.ui.LayoutTestCase ) {
+            test.getTestClass().getRoot();
+            test.getTestClass().flush();
+          }
           this.__bodyLength = this.frameWindow.document.body.innerHTML.length;
         }
         */
         
-        var test = e.getData();
         this.currentTestData = new testrunner2.runner.TestResultData(test.getFullName());
         this.view.addTestResult(this.currentTestData);
       }, this);
@@ -289,19 +290,26 @@ qx.Class.define("testrunner2.runner.TestRunner", {
           this.currentTestData.setState("success");
         }
         
-        /* EXPERIMENTAL
+        /* EXPERIMENTAL: Check if the test polluted the DOM
+        var fWin = this.frameWindow;
+        
         if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
-          if (!this.frameWindow.qx.test || !this.frameWindow.qx.test.ui ||
-              !this.frameWindow.qx.test.ui.LayoutTestCase ||
-              !e.getData().getTestClass() instanceof this.frameWindow.qx.test.ui.LayoutTestCase ) {
-            this.frameWindow.qx.ui.core.queue.Dispose.flush();
-            this.frameWindow.qx.ui.core.queue.Manager.flush();
-            if (this.__bodyLength != this.frameWindow.document.body.innerHTML.length) {
-              var error = new Error("Incomplete tearDown: The DOM was not reverted to its initial state!");
-              this.currentTestData.setException(error);
-              this.currentTestData.setState("error");
-            }  
+          fWin.qx.ui.core.queue.Dispose.flush();
+          fWin.qx.ui.core.queue.Manager.flush();
           
+          if (fWin.qx.bom && fWin.qx.bom.Label) {
+            if (fWin.qx.bom.Label._htmlElement) {
+              fWin.document.body.removeChild(fWin.qx.bom.Label._htmlElement);
+            }
+            if (fWin.qx.bom.Label._textElement) {
+              fWin.document.body.removeChild(fWin.qx.bom.Label._textElement);
+            }
+          }
+          
+          if (this.__bodyLength != fWin.document.body.innerHTML.length) {
+            var error = new Error("Incomplete tearDown: The DOM was not reverted to its initial state!");
+            this.currentTestData.setException(error);
+            this.currentTestData.setState("error");
           }
         }
         */
@@ -320,6 +328,10 @@ qx.Class.define("testrunner2.runner.TestRunner", {
      */
     _onLoadIframe : function(ev)
     {
+      if (ev) {
+        this.setTestSuiteState("loading");
+      }
+      
       if (!this.__loadAttempts) {
         this.__loadAttempts = 0;
       }
@@ -358,10 +370,28 @@ qx.Class.define("testrunner2.runner.TestRunner", {
         return;
       }
       
-      // Check if any test parts are defined
-      try {
-        this.__testParts = this.__testParts.concat(this.frameWindow.qx.core.Setting.get("qx.testParts"));
-      } catch(ex) {}
+      /*
+       * Get the value of qx.testParts from the AUT frame. This setting won't 
+       * usually be defined so we need to wrap it in a try/catch block.
+       * In IE, try/catch won't catch errors from other frames so we have to use
+       * the frame's eval to execute the code in the right scope.
+       * If the setting is defined, eval returns an instance of the frame 
+       * window's Array, so we can't just concat it with an Array from the 
+       * runner frame. Instead, the items are copied individually.
+       */      
+      this.__testParts = [];
+      var closure = "(function()\
+      {\
+        try {\
+          return qx.core.Setting.get('qx.testParts');\
+        } catch(ex) {\
+          return [];\
+        }\
+      })();"
+      var frameParts = this.frameWindow.eval(closure);
+      for (var i = 0; i < frameParts.length; i++) {
+        this.__testParts.push(frameParts[i]);
+      }
       
       this.__getTestData();
     },
@@ -375,6 +405,9 @@ qx.Class.define("testrunner2.runner.TestRunner", {
      */
     _applySelectedTests : function(value, old)
     {
+      if (!value) {
+        return;
+      }
       this.testList = value;
       // Make sure the value is applied even if it didn't change so the view is
       // updated
@@ -384,6 +417,12 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       this.setTestCount(value.length);
     },
     
+    
+    /**
+     * Logs any errors caught by qooxdoo's global error handling.
+     * 
+     * @param ex{Error} Caught exception
+     */
     _handleGlobalError : function(ex)
     {
       this.error(ex);

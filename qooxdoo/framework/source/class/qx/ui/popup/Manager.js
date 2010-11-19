@@ -39,15 +39,15 @@ qx.Class.define("qx.ui.popup.Manager",
   {
     this.base(arguments);
 
-    // Create data structure
-    this.__objects = {};
+    // Create data structure, usa an array becasue order matters [BUG #4323]
+    this.__objects = [];
 
     // Register mousedown handler
     qx.event.Registration.addListener(document.documentElement, "mousedown",
                                       this.__onMouseDown, this, true);
 
     // Hide all popups on window blur
-    qx.event.Registration.addListener(window, "blur", this.hideAll, this);
+    qx.bom.Element.addListener(window, "blur", this.hideAll, this);
   },
 
 
@@ -78,7 +78,7 @@ qx.Class.define("qx.ui.popup.Manager",
         }
       }
 
-      this.__objects[obj.$$hash] = obj;
+      this.__objects.push(obj);
       this.__updateIndexes();
     },
 
@@ -97,10 +97,8 @@ qx.Class.define("qx.ui.popup.Manager",
         }
       }
 
-      var reg = this.__objects;
-      if (reg)
-      {
-        delete reg[obj.$$hash];
+      if (this.__objects) {
+        qx.lang.Array.remove(this.__objects, obj)
         this.__updateIndexes();
       }
     },
@@ -111,11 +109,9 @@ qx.Class.define("qx.ui.popup.Manager",
      */
     hideAll : function()
     {
-      var reg = this.__objects;
-      if (reg)
-      {
-        for (var hash in reg) {
-          reg[hash].exclude();
+      if (this.__objects) {
+        for (var i = 0; i < this.__objects.length; i++) {
+          this.__objects[i].exclude();
         }
       }
     },
@@ -138,9 +134,8 @@ qx.Class.define("qx.ui.popup.Manager",
     __updateIndexes : function()
     {
       var min = 1e7;
-      var reg = this.__objects;
-      for (var hash in reg) {
-        reg[hash].setZIndex(min++);
+      for (var i = 0; i < this.__objects.length; i++) {
+        this.__objects[i].setZIndex(min++);
       }
     },
 
@@ -168,9 +163,9 @@ qx.Class.define("qx.ui.popup.Manager",
       var target = qx.ui.core.Widget.getWidgetByElement(e.getTarget());
 
       var reg = this.__objects;
-      for (var hash in reg)
+      for (var i = 0; i < reg.length; i++)
       {
-        var obj = reg[hash];
+        var obj = reg[i];
 
         if (!obj.getAutoHide() || target == obj || qx.ui.core.Widget.contains(obj, target)) {
           continue;
@@ -191,13 +186,12 @@ qx.Class.define("qx.ui.popup.Manager",
 
   destruct : function()
   {
-    var Registration = qx.event.Registration;
-    Registration.removeListener(document.documentElement, "mousedown",
+    qx.event.Registration.removeListener(document.documentElement, "mousedown",
                                          this.__onMouseDown, this, true);
-
+                                         
     // Hide all popups on window blur
     Registration.removeListener(window, "blur", this.hideAll, this);
 
-    this._disposeMap("__objects");
+    this._disposeArray("__objects");
   }
 });

@@ -21,7 +21,7 @@
  * Adds support for verification of infrastructure requirements to unit test
  * classes.
  */
-qx.Mixin.define("testrunner2.unit.MRequirements", {
+qx.Mixin.define("qx.dev.unit.MRequirements", {
   
   /*
   *****************************************************************************
@@ -47,7 +47,7 @@ qx.Mixin.define("testrunner2.unit.MRequirements", {
         }
         
         if (!this[hasMethodName]()) {
-          throw new testrunner2.unit.RequirementError(feature);
+          throw new qx.dev.unit.RequirementError(feature);
         }
       }
     },

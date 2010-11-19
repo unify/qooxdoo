@@ -14,8 +14,15 @@
 
    Authors:
      * Martin Wittemann (martinwittemann)
-     * Tino butz (tbtz)
+     * Tino Butz (tbtz)
      * Christian Hagendorn (chris_schmidt)
+
+************************************************************************ */
+
+/* ************************************************************************
+
+#require(qx.event.handler.UserAction)
+#require(qx.event.handler.Orientation)
 
 ************************************************************************ */
 
@@ -102,14 +109,23 @@ qx.Class.define("qx.event.handler.Touch",
       y : ["up", "down"]
     },
 
-    /** {Integer} The minimum distance of a swipe. Only if the distance of the
-     *      performed swipe is greater as or equal the value of this constant, a
-     *      swipe event is fired. */
-    SWIPE_MIN_DISTANCE : 1,
+
+    /** {Integer} The maximum distance of a tap. Only if the x or y distance of
+     *      the performed tap is less or equal the value of this constant, a tap
+     *      event is fired.
+     */
+    TAP_MAX_DISTANCE : 10,
+
+    /** {Integer} The minimum distance of a swipe. Only if the x or y distance 
+     *      of the performed swipe is greater as or equal the value of this
+     *      constant, a swipe event is fired. 
+     */
+    SWIPE_MIN_DISTANCE : 11,
 
     /** {Integer} The minimum velocity of a swipe. Only if the velocity of the
      *      performed swipe is greater as or equal the value of this constant, a
-     *      swipe event is fired. */
+     *      swipe event is fired.
+     */
     SWIPE_MIN_VELOCITY : 0
   },
 
@@ -138,6 +154,8 @@ qx.Class.define("qx.event.handler.Touch",
 
     // Checks if the mouse movement is happening while simulating a touch event 
     __isInTouch : false,
+
+    __originalTarget : null,
 
     /*
     ---------------------------------------------------------------------------
@@ -176,7 +194,7 @@ qx.Class.define("qx.event.handler.Touch",
     {
       var target = qx.bom.Event.getTarget(domEvent);
       // Text node. Fix Safari Bug, see http://www.quirksmode.org/js/events_properties.html
-      if (qx.core.Variant.isSet("qx.client", "gecko|webkit"))
+      if (qx.core.Variant.isSet("qx.client", "webkit"))
       {
         if (target && target.nodeType == 3) {
           target = target.parentNode;
@@ -254,8 +272,8 @@ qx.Class.define("qx.event.handler.Touch",
     __gestureStart : function(domEvent, target)
     {
       var touch = domEvent.changedTouches[0];
-      this.__startPageX = touch.pageX;
-      this.__startPageY = touch.pageY;
+      this.__startPageX = touch.screenX;
+      this.__startPageY = touch.screenY;
       this.__startTime = new Date().getTime();
       this.__isSingleTouchGesture = domEvent.changedTouches.length === 1;
     },
@@ -289,11 +307,14 @@ qx.Class.define("qx.event.handler.Touch",
         var touch = domEvent.changedTouches[0];
 
         var deltaCoordinates = {
-            x : touch.pageX - this.__startPageX,
-            y : touch.pageY - this.__startPageY
+            x : touch.screenX - this.__startPageX,
+            y : touch.screenY - this.__startPageY
         };
 
-        if (deltaCoordinates.x === 0 && deltaCoordinates.y === 0) {
+        var clazz = qx.event.handler.Touch;
+        if (this.__originalTarget == target 
+            && Math.abs(deltaCoordinates.x) <= clazz.TAP_MAX_DISTANCE
+            && Math.abs(deltaCoordinates.y) <= clazz.TAP_MAX_DISTANCE) {
           this.__fireEvent(domEvent, "tap", target, qx.event.type.Tap);
         } 
         else
@@ -348,7 +369,7 @@ qx.Class.define("qx.event.handler.Touch",
      * @signature function(domEvent)
      * @param domEvent {Event} DOM event
      */
-    __normalizeMouseEvent : qx.core.Variant.select("qx.mobile",
+    __normalizeMouseEvent : qx.core.Variant.select("qx.mobile.emulatetouch",
     {
       "on" : function(domEvent)
       {
@@ -386,7 +407,7 @@ qx.Class.define("qx.event.handler.Touch",
      * @param domEvent {Event} DOM event
      * @return {Boolean} Whether the left mouse button is pressed
      */
-    __isLeftMouseButtonPressed : qx.core.Variant.select("qx.mobile",
+    __isLeftMouseButtonPressed : qx.core.Variant.select("qx.mobile.emulatetouch",
     {
       "on" : function(domEvent)
       {
@@ -411,7 +432,7 @@ qx.Class.define("qx.event.handler.Touch",
      * @param domEvent {Event} DOM event
      * @return {Object} The Touch mock object
      */
-    __createTouchObject : qx.core.Variant.select("qx.mobile",
+    __createTouchObject : qx.core.Variant.select("qx.mobile.emulatetouch",
     {
       "on" : function(domEvent)
       {
@@ -457,7 +478,7 @@ qx.Class.define("qx.event.handler.Touch",
     /**
      * Initializes the native mouse event listeners.
      */
-    _initMouseObserver : qx.core.Variant.select("qx.mobile",
+    _initMouseObserver : qx.core.Variant.select("qx.mobile.emulatetouch",
     {
       "on" : function()
       {
@@ -499,7 +520,7 @@ qx.Class.define("qx.event.handler.Touch",
     /**
      * Disconnects the native mouse event listeners.
      */
-    _stopMouseObserver : qx.core.Variant.select("qx.mobile",
+    _stopMouseObserver : qx.core.Variant.select("qx.mobile.emulatetouch",
     {
       "on" : function()
       {
@@ -540,7 +561,7 @@ qx.Class.define("qx.event.handler.Touch",
      * @signature function(domEvent)
      * @param domEvent {Event} The mouse event from the browser.
      */
-    _onMouseEvent : qx.core.Variant.select("qx.mobile",
+    _onMouseEvent : qx.core.Variant.select("qx.mobile.emulatetouch",
     {
       "on" : qx.event.GlobalError.observeMethod(function(domEvent)
       {
@@ -566,6 +587,10 @@ qx.Class.define("qx.event.handler.Touch",
      */
     _commonTouchEventHandler : function(domEvent, type)
     {
+      var type = type || domEvent.type;
+      if (type == "touchstart") {
+        this.__originalTarget = this.__getTarget(domEvent);
+      }
       this.__fireEvent(domEvent, type);
       this.__checkAndFireGesture(domEvent, type);
     }
@@ -583,7 +608,7 @@ qx.Class.define("qx.event.handler.Touch",
     this._stopTouchObserver();
     this._stopMouseObserver();
 
-    this.__manager = this.__window = this.__root = null;
+    this.__manager = this.__window = this.__root = this.__originalTarget = null;
   },
 
 
@@ -600,10 +625,13 @@ qx.Class.define("qx.event.handler.Touch",
     // TODO: Seems like Android does not prevent scrolling on touchmove
     //       Perhaps we should use "touchstart" here?
     if (qx.bom.client.Feature.TOUCH) {
-      document.addEventListener("touchmove", function(e) {
-        e.preventDefault();
-      });
-      
+      if (qx.core.Variant.isSet("qx.mobile.nativescroll", "off"))
+      {
+        document.addEventListener("touchmove", function(e) {
+          e.preventDefault();
+        });
+      }
+
       // get the handler to asure that the instance is created
       qx.event.Registration.getManager(document).getHandler(statics);
     }

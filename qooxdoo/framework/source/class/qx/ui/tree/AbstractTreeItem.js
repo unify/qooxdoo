@@ -112,12 +112,24 @@ qx.Class.define("qx.ui.tree.AbstractTreeItem",
 
 
     /**
-     * Any URI String supported by qx.ui.basic.Image to display a icon
+     * URI of "closed" icon. Can be any URI String supported by qx.ui.basic.Image.
      **/
     icon :
     {
       check : "String",
       apply : "_applyIcon",
+      nullable : true,
+      themeable : true
+    },
+
+
+    /**
+     * URI of "opened" icon. Can be any URI String supported by qx.ui.basic.Image.
+     **/
+    iconOpened :
+    {
+      check : "String",
+      apply : "_applyIconOpened",
       nullable : true,
       themeable : true
     },
@@ -151,6 +163,7 @@ qx.Class.define("qx.ui.tree.AbstractTreeItem",
     __labelAdded : null,
     __iconAdded : null,
     __spacer : null,
+    __closedIcon : null,
 
 
     /**
@@ -370,10 +383,36 @@ qx.Class.define("qx.ui.tree.AbstractTreeItem",
     // property apply
     _applyIcon : function(value, old)
     {
-      var icon = this.getChildControl("icon", true);
-      if (icon) {
-        icon.setSource(value);
+      // Set "closed" icon - even when "opened" - if no "opened" icon was
+      // user-defined
+      if (!this.__getUserValueIconOpened()) {
+        this.__setIconSource(value);
+      } 
+      
+      else if (!this.isOpen()) {
+        this.__setIconSource(value);
       }
+
+    },
+
+
+    // property apply
+    _applyIconOpened : function(value, old)
+    {
+      
+      if (this.isOpen()) {
+
+        // ... both "closed" and "opened" icon were user-defined
+        if (this.__getUserValueIcon() && this.__getUserValueIconOpened()) {
+          this.__setIconSource(value);
+        }
+
+        // .. only "opened" icon was user-defined
+        else if (!this.__getUserValueIcon() && this.__getUserValueIconOpened()) {
+          this.__setIconSource(value);
+        }
+      }
+
     },
 
 
@@ -386,10 +425,10 @@ qx.Class.define("qx.ui.tree.AbstractTreeItem",
       }
     },
 
-
     // property apply
     _applyOpen : function(value, old)
     {
+
       if (this.hasChildren()) {
         this.getChildrenContainer().setVisibility(value ? "visible" : "excluded");
       }
@@ -399,7 +438,59 @@ qx.Class.define("qx.ui.tree.AbstractTreeItem",
         open.setOpen(value);
       }
 
+      //
+      // Determine source of icon for "opened" or "closed" state
+      //
+      var source;
+
+      // Opened
+      if (value) {
+        // Never overwrite user-defined icon with themed "opened" icon
+        source = this.__getUserValueIconOpened() ? this.getIconOpened() : null;
+      }
+
+      // Closed
+      else {
+        source = this.getIcon();
+      }
+
+      if (source) {
+        this.__setIconSource(source);
+      }
+
       value ? this.addState("opened") : this.removeState("opened");
+
+    },
+
+    /**
+    * Get user-defined value of "icon" property
+    * 
+    * @return {var} The user value of the property "icon"
+    */
+    __getUserValueIcon : function() {
+      return qx.util.PropertyUtil.getUserValue(this, "icon");
+    },
+
+    /**
+    * Get user-defined value of "iconOpened" property
+    * 
+    * @return {var} The user value of the property "iconOpened"
+    */
+    __getUserValueIconOpened : function() {
+      return qx.util.PropertyUtil.getUserValue(this, "iconOpened");
+    },
+
+    /**
+    * Set source of icon child control
+    * 
+    * @param url {String} The URL of the icon
+    * @return {void}
+    */
+    __setIconSource : function(url) {
+      var icon = this.getChildControl("icon", true);
+      if (icon) {
+        icon.setSource(url);
+      }
     },
 
 

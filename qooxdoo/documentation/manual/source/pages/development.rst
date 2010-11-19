@@ -44,7 +44,7 @@ Further Resources
 -----------------
 
 * :ref:`Generator Configuration <pages/tool/generator_config_ref#packages>`
-* `qooxdoo API <http://demo.qooxdoo.org/1.2.x/apiviewer/index.html#qx.io.PartLoader>`_
+* `qooxdoo API <http://demo.qooxdoo.org/%{version}/apiviewer/index.html#qx.io.PartLoader>`_
 
 
 .. _index#other:
@@ -54,11 +54,6 @@ Miscellaneous
 
 .. toctree::
    :maxdepth: 2
-
-   snippets
-   development/enterprise_application_development
-   development/antipatterns
-   development/development_tools
 
    development/variants
    Internationalization, Localization <development/internationalization>

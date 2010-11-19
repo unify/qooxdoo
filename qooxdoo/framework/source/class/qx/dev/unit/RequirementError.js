@@ -22,7 +22,7 @@
  * is not met. The unit testing framework should skip the test and visually mark
  * the test as not having been executed.
  */
-qx.Class.define("testrunner2.unit.RequirementError", {
+qx.Class.define("qx.dev.unit.RequirementError", {
 
   extend : Error,
   
