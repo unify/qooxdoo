@@ -26,7 +26,6 @@
 qx.Class.define("qx.ui.table.columnmodel.Resize",
 {
   extend : qx.ui.table.columnmodel.Basic,
-  include : qx.locale.MTranslation,
 
 
 
@@ -196,7 +195,7 @@ qx.Class.define("qx.ui.table.columnmodel.Resize",
       // Add a button to reset the column widths
       o = columnButton.factory("user-button",
                                {
-                                 text : this.tr("Reset column widths")
+                                 text : i18n.tr("Reset column widths")
                                });
       menu.add(o);
       o.addListener("execute", this._onappear, this);
