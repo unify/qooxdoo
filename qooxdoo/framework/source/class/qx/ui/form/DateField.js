@@ -122,7 +122,7 @@ qx.Class.define("qx.ui.form.DateField",
         this.__formatter.dispose();
       }
 
-      this.__formatter = new qx.util.format.DateFormat(format, qx.locale.Manager.getInstance().getLocale());
+      this.__formatter = new qx.util.format.DateFormat(format);
       this.__dateFormat = format;
 
       return this.__formatter;
