@@ -47,7 +47,7 @@ qx.Class.define("qx.ui.popup.Manager",
                                       this.__onMouseDown, this, true);
 
     // Hide all popups on window blur
-    qx.bom.Element.addListener(window, "blur", this.hideAll, this);
+    qx.event.Registration.addListener(window, "blur", this.hideAll, this);
   },
 
 
@@ -190,7 +190,7 @@ qx.Class.define("qx.ui.popup.Manager",
                                          this.__onMouseDown, this, true);
                                          
     // Hide all popups on window blur
-    Registration.removeListener(window, "blur", this.hideAll, this);
+    qx.event.Registration.removeListener(window, "blur", this.hideAll, this);
 
     this._disposeArray("__objects");
   }
