@@ -70,69 +70,6 @@ qx.Class.define("qx.locale.Manager",
   statics :
   {
     /**
-     * Translate a message
-     *
-     * @param messageId {String} message id (may contain format strings)
-     * @param varargs {Object} variable number of arguments applied to the format string
-     * @return {String | LocalizedString} The translated message or localized string
-     * @see qx.lang.String.format
-     */
-    tr : function(messageId, varargs)
-    {
-      var args = qx.lang.Array.fromArguments(arguments);
-      args.splice(0, 1);
-
-      return qx.locale.Manager.getInstance().translate(messageId, args);
-    },
-
-
-    /**
-     * Translate a plural message
-     *
-     * Depending on the third argument the plural or the singular form is chosen.
-     *
-     * @param singularMessageId {String} message id of the singular form (may contain format strings)
-     * @param pluralMessageId {String} message id of the plural form (may contain format strings)
-     * @param count {Integer} singular form if equals 1, otherwise plural
-     * @param varargs {Object} variable number of arguments applied to the format string
-     * @return {String | LocalizedString} The translated message or localized string
-     * @see qx.lang.String.format
-     */
-    trn : function(singularMessageId, pluralMessageId, count, varargs)
-    {
-      var args = qx.lang.Array.fromArguments(arguments);
-      args.splice(0, 3);
-
-      // assumes "Two forms, singular used for one only" (seems to be the most common form)
-      // (http://www.gnu.org/software/gettext/manual/html_node/gettext_150.html#Plural-forms)
-      // closely related with bug #745
-      if (count != 1) {
-        return qx.locale.Manager.getInstance().translate(pluralMessageId, args);
-      } else {
-        return qx.locale.Manager.getInstance().translate(singularMessageId, args);
-      }
-    },
-
-
-    /**
-     * Translate a message with translation hint
-     *
-     * @param hint {String} hint for the translator of the message. Will be included in the .po file.
-     * @param messageId {String} message id (may contain format strings)
-     * @param varargs {Object} variable number of arguments applied to the format string
-     * @return {String | LocalizedString} The translated message or localized string
-     * @see qx.lang.String.format
-     */
-    trc : function(hint, messageId, varargs)
-    {
-      var args = qx.lang.Array.fromArguments(arguments);
-      args.splice(0, 2);
-
-      return qx.locale.Manager.getInstance().translate(messageId, args);
-    },
-
-
-    /**
      * Mark the message for translation but return the original message.
      *
      * @param messageId {String} the message ID

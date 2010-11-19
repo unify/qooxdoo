@@ -30,7 +30,6 @@ qx.Class.define("qx.test.lang.Type",
       this.assertTrue(Type.isString(""));
       this.assertTrue(Type.isString("Juhu"));
       this.assertTrue(Type.isString(new String("Juhu")));
-      this.assertTrue(Type.isString(new qx.locale.LocalizedString("Juhu")));
       this.assertTrue(Type.isString(new qx.type.BaseString("juhu")));
 
       this.assertFalse(Type.isString());
