@@ -125,7 +125,7 @@ qx.Class.define("feedreader.Application",
 
       // Add static feeds
       this.__staticFeedFolder =
-        new feedreader.model.FeedFolder(this.tr("Static Feeds"));
+        new feedreader.model.FeedFolder(i18n.tr("Static Feeds"));
       this.__feedFolder.getFeeds().push(this.__staticFeedFolder);
       this.__staticFeedFolder.getFeeds().push(
         new feedreader.model.Feed(
@@ -155,7 +155,7 @@ qx.Class.define("feedreader.Application",
 
       // Add user feeds
       this.__userFeedFolder =
-        new feedreader.model.FeedFolder(this.tr("User Feeds"));
+        new feedreader.model.FeedFolder(i18n.tr("User Feeds"));
       this.__feedFolder.getFeeds().push(this.__userFeedFolder);
       this.__userFeedFolder.getFeeds().push(
         new feedreader.model.Feed(
@@ -512,7 +512,7 @@ qx.Class.define("feedreader.Application",
      * @lint ignoreDeprecated(alert)
      */
     showAbout : function() {
-      alert(this.tr("FeedReader (qooxdoo powered)"));
+      alert(i18n.tr("FeedReader (qooxdoo powered)"));
     },
 
 

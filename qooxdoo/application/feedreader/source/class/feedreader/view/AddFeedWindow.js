@@ -42,7 +42,7 @@ qx.Class.define("feedreader.view.AddFeedWindow",
    */
   construct : function(controller)
   {
-    this.base(arguments, this.tr("Add a feed"), "qx/icon/16/actions/document-new.png");
+    this.base(arguments, i18n.tr("Add a feed"), "qx/icon/16/actions/document-new.png");
 
     // Establish controller link
     this.__controller = controller;
@@ -87,21 +87,21 @@ qx.Class.define("feedreader.view.AddFeedWindow",
       // create a form
       this.__form = new qx.ui.form.Form();
       // set the headline of the form
-      this.__form.addGroupHeader(this.tr("Feed Information"));
+      this.__form.addGroupHeader(i18n.tr("Feed Information"));
 
       // add the title textfield
       this.__titleTextfield = new qx.ui.form.TextField().set({
         required: true,
         width: 250
       });
-      this.__form.add(this.__titleTextfield, this.tr("Title"));
+      this.__form.add(this.__titleTextfield, i18n.tr("Title"));
 
       // add the url textfield
       this.__urlTextfield = new qx.ui.form.TextField().set({required: true});
-      this.__form.add(this.__urlTextfield, this.tr("URL"), qx.util.Validate.checkUrl);
+      this.__form.add(this.__urlTextfield, i18n.tr("URL"), qx.util.Validate.checkUrl);
 
       // add the button
-      var addButton = new qx.ui.form.Button(this.tr("Add"), "qx/icon/16/actions/dialog-apply.png");
+      var addButton = new qx.ui.form.Button(i18n.tr("Add"), "qx/icon/16/actions/dialog-apply.png");
       addButton.set({
         alignX     : "right",
         allowGrowX : false
