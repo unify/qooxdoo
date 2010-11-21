@@ -403,6 +403,7 @@ qx.Class.define("qx.bom.Shortcut",
       var key = this.__key;
 
       var str = [];
+      var names = locale.keys.short;
 
       for (var modifier in this.__modifier) {
         // this.__modifier holds a map with shortcut combination keys
@@ -410,12 +411,12 @@ qx.Class.define("qx.bom.Shortcut",
         // Boolean values
         if (this.__modifier[modifier])
         {
-          str.push(locale.keys.short[modifier]);
+          str.push(names[modifier]);
         }
       }
 
       if (key) {
-        str.push(locale.keys.short[key]);
+        str.push(names[key]||key);
       }
 
       return str.join("+");
