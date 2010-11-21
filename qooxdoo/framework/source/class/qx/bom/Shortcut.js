@@ -410,12 +410,12 @@ qx.Class.define("qx.bom.Shortcut",
         // Boolean values
         if (this.__modifier[modifier])
         {
-          str.push(qx.locale.Key.getKeyName("short", modifier));
+          str.push(locale.keys.short[modifier]);
         }
       }
 
       if (key) {
-        str.push(qx.locale.Key.getKeyName("short", key));
+        str.push(locale.keys.short[key]);
       }
 
       return str.join("+");

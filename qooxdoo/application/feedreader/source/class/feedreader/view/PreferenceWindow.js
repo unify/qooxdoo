@@ -95,8 +95,6 @@ qx.Class.define("feedreader.view.PreferenceWindow",
                         "nl" : "Nederlands",
                         "sv" : "Svenska" };
 
-      var localeManager = qx.locale.Manager.getInstance();
-
       var radioButton;
       for (var lang in languages)
       {
@@ -108,7 +106,7 @@ qx.Class.define("feedreader.view.PreferenceWindow",
         groupBox.add(radioButton);
 
         // Select entry containing current language
-        if (localeManager.getLanguage() == lang) {
+        if (locale.info.language == lang) {
           radioManager.setSelection([radioButton]);
         }
       }
