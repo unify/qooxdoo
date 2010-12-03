@@ -495,6 +495,13 @@ qx.Bootstrap.define("qx.Bootstrap",
     firstUp : function(str) 
     {
       var cache = qx.Bootstrap.$$firstUp;
+      
+      if (qx.core.Variant.isSet("qx.debug", "on"))
+      {
+        if (typeof str != "string") {
+          throw new Error("Invalid type for firstUp(): " + str);
+        }
+      }
 
       var value = cache[str];
       if (value != null) {
