@@ -146,10 +146,11 @@ qx.Class.define("qx.ui.core.selection.Abstract",
     __anchorItem : null,
     __mouseDownOnSelected : null,
 
-    // A flag that signals a user interaction, which means the selection change 
+    // A flag that signals a user interaction, which means the selection change
     // was triggered by mouse or keyboard [BUG #3344]
     _userInteraction : false,
 
+    __oldScrollTop : null,
 
     /*
     ---------------------------------------------------------------------------
@@ -550,12 +551,16 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      * Finds the selectable instance from a mouse event
      *
      * @param event {qx.event.type.Mouse} The mouse event
-     * @return {Object} The resulting selectable
+     * @return {Object|null} The resulting selectable
      */
     _getSelectableFromMouseEvent : function(event)
     {
       var target = event.getTarget();
-      return this._isSelectable(target) ? target : null;
+      // check for target (may be null when leaving the viewport) [BUG #4378]
+      if (target && this._isSelectable(target)) {
+        return target;
+      }
+      return null;
     },
 
 
@@ -833,6 +838,16 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      */
     handleMouseOver : function(event)
     {
+      // All browsers (except Opera) fire a native "mouseover" event when a scroll appears
+      // by keyboard interaction. We have to ignore the event to avoid a selection for
+      // "mouseover" (quick selection). For more details see [BUG #4225]
+      if(this.__oldScrollTop != null &&
+         this.__oldScrollTop != this._getScroll().top)
+      {
+        this.__oldScrollTop = null;
+        return;
+      }
+
       // this is a method invoked by a user interaction, so be careful to
       // set / clear the mark this._userInteraction [BUG #3344]
       this._userInteraction = true;
@@ -1515,6 +1530,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
               break;
           }
 
+          this.__oldScrollTop = this._getScroll().top;
           this._scrollItemIntoView(next);
         }
       }

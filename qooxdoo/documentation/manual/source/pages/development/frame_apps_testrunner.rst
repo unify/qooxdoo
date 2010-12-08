@@ -34,7 +34,7 @@ This section assumes that your qooxdoo application bears on the structure of the
 Writing Test Classes
 --------------------
 
-* You have to code test classes that perform the indiviudal tests. These test classes have to comply to the following constraints:
+* You have to code test classes that perform the individual tests. These test classes have to comply to the following constraints:
 
   * They have to be within the name space of your application.
   * They have to be derived from ``qx.dev.unit.TestCase``.
@@ -45,7 +45,20 @@ Writing Test Classes
 
     * ``assert``, ``assertFalse``, ``assertEquals``, ``assertNumber``, ... - These functions take values which are compared (either among each other or to some predefined value) and a message string, and raise an exception if the comparison fails.
     * A similar list of methods of the form ``assert*DebugOn`` is available, which are only evaluated if the debug variant ``qx.debug`` is on (see :doc:`Variants <variants>`). 
-    * See the documentation for the ```qx.dev.unit.TestCase <http://demo.qooxdoo.org/%{version}/apiviewer/#qx.dev.unit.TestCase>`_`` class for more information on the available assertions.
+    * See the documentation for the `qx.dev.unit.TestCase <http://demo.qooxdoo.org/%{version}/apiviewer/#qx.dev.unit.TestCase>`_ class for more information on the available assertions.
+
+.. _pages/frame_apps_testrunner#generic_setup_teardown:
+
+Generic setUp and tearDown
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Test classes can optionally define a ``setUp`` method. This is used to initialize common objects needed by some or all of the tests in the class. Since ``setUp`` is executed before each test, it helps to ensure that each test function runs in a "clean" environment.
+Similarly, a method named ``tearDown`` will be executed after each test, e.g. to dispose any objects created by ``setUp`` or the test itself.
+
+.. _pages/frame_apps_testrunner#specific_teardown:
+
+Specific tearDown
+^^^^^^^^^^^^^^^^^
+For cases where the generic class-wide ``tearDown`` isn't enough, methods using the naming convention ``tearDown<TestFunctionName>`` can be defined. A method named e.g. ``tearDownTestFoo`` would be called after ``testFoo`` and the generic ``tearDown`` of the class were executed.
 
 .. _pages/frame_apps_testrunner#asynchronous_tests:
 
@@ -88,3 +101,40 @@ Create the Test Application
   After that, you just reload the backend application by hitting the reload button to the right to see and test your changes in the TestRunner.
 * If you're working on an application based on qx.application.Native or qx.application.Inline (e.g. by starting with an Inline skeleton), you can run ``generate.py test-native`` or ``generate.py test-inline`` to create a test application of the same type as your actual application. The TestRunner's index file will be called ``index-native.html`` or ``index-inline.html``, respectively.
 
+Test Runner 2 (Experimental)
+****************************
+
+As an alternative to the "regular" Test Runner GUI, test applications can be run in the new "testrunner2" component. This is a modular unit testing GUI that makes use of framework features such as data binding that were introduced after the original Test Runner was created.
+Its main advantage is separation of logic and UI so that specialized views for different use cases can be created, such as a lightweight HTML GUI for use on mobile devices, or a "headless" UI for server-side tests running in Rhino or node.js. 
+
+Test Runner 2 is designed to be fully backwards compatible with existing unit test suites. At any time, developers can switch between the old an new runners using the ``TESTRUNNER_TYPE`` configuration macro. This can be defined in an application's config.json file or on the command line: 
+
+::
+
+    generate.py test -m TESTRUNNER_TYPE:testrunner2
+
+The generated files and directories use the same names as the original Test Runner.
+
+Defining Test Requirements
+==========================
+
+Test Requirements are a new feature only supported by Test Runner 2. Basically, they are conditions that must be met before a test can be run. For example, a test might rely on the application having been loaded over HTTPS and would give false results otherwise.
+Requirements are defined for individual tests; if one or more aren't satisfied, the test code won't be executed and the test will be marked as "skipped" in Test Runner 2's results list.
+
+Using Requirements
+---------------------
+
+The make use of the requirements feature, test classes must include the `MRequirements mixin <http://demo.qooxdoo.org/%{version}/apiviewer/#qx.dev.unit.MRequirements>`_.
+The mixin defines a method ``require`` that takes an array of strings: The requirement IDs. This method is called from a test function **before** the actual logic of the test, e.g.:
+
+::
+
+    testSslRequest : function()
+    {
+      this.require(["ssl"]);
+      // test code goes here
+    }
+    
+``require`` then searches the current test instance for a method that verifies the listed requirements: The naming convention is "has" + the requirement ID with the first letter capitalized, e.g. ``hasSsl``. This method is the called with the requirement ID as the only parameter. If it returns ``true``, the test code will be executed. Otherwise a `RequirementError <http://demo.qooxdoo.org/%{version}/apiviewer/#qx.dev.unit.RequirementError>`_ is thrown. Test Runner 2 will catch these and mark the test as "skipped" in the results list. Any test code after the ``require`` call will not be executed.
+
+In addition to the verification methods in MRequirements, test developers can define their own right in the test class.

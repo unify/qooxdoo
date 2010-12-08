@@ -180,7 +180,7 @@ qx.Class.define("qx.ui.tabview.TabButton",
 
 
     // overridden
-    _createChildControlImpl : function(id)
+    _createChildControlImpl : function(id, hash)
     {
       var control;
 

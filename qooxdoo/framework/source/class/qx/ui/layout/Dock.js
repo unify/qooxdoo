@@ -85,7 +85,7 @@
  *
  * *External Documentation*
  *
- * <a href='http://manual.qooxdoo.org/1.2/pages/layout/dock.html'>
+ * <a href='http://manual.qooxdoo.org/1.3/pages/layout/dock.html'>
  * Extended documentation</a> and links to demos of this layout in the qooxdoo wiki.
  */
 qx.Class.define("qx.ui.layout.Dock",
@@ -527,7 +527,7 @@ qx.Class.define("qx.ui.layout.Dock",
       // Process height for flex stretching/shrinking
       if (allocatedHeight != availHeight)
       {
-        flexibles = [];
+        flexibles = {};
         grow = allocatedHeight < availHeight;
 
         for (var i=0; i<length; i++)

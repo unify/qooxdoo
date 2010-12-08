@@ -52,11 +52,16 @@ qx.Class.define("qx.data.controller.Form",
    *   given object will be set as {@link #model} property.
    * @param target {qx.ui.form.Form | null} The form which contains the form
    *   items. The given form will be set as {@link #target} property.
+   * @param selfUpdate {Boolean?false} If set to true, you need to call the
+   *   {@link #updateModel} method to get the data in the form to the model.
+   *   Otherwise, the data will be synced automatically on every chagne of
+   *   the form.
    */
-  construct : function(model, target)
+  construct : function(model, target, selfUpdate)
   {
     this.base(arguments);
 
+    this._selfUpdate = !!selfUpdate;
     this.__bindingOptions = {};
 
     if (model != null) {
@@ -77,7 +82,8 @@ qx.Class.define("qx.data.controller.Form",
       check: "qx.core.Object",
       apply: "_applyModel",
       event: "changeModel",
-      nullable: true
+      nullable: true,
+      dereference: true
     },
 
 
@@ -88,7 +94,8 @@ qx.Class.define("qx.data.controller.Form",
       apply: "_applyTarget",
       event: "changeTarget",
       nullable: true,
-      init: null
+      init: null,
+      dereference: true
     }
   },
 
@@ -132,7 +139,7 @@ qx.Class.define("qx.data.controller.Form",
       this.__objectController.removeTarget(item, targetProperty, name);
       // set up the new binding with the options
       this.__objectController.addTarget(
-        item, targetProperty, name, true, model2target, target2model
+        item, targetProperty, name, !this._selfUpdate, model2target, target2model
       );
     },
 
@@ -165,13 +172,19 @@ qx.Class.define("qx.data.controller.Form",
           if (i + 1 == names.length) {
             // check if the target is a selection
             var clazz = items[name].constructor;
+            var itemValue = null;
             if (qx.Class.hasInterface(clazz, qx.ui.core.ISingleSelection)) {
               // use the first element of the selection because passed to the
               // marshaler (and its single selection anyway) [BUG #3541]
-              currentData[names[i]] = items[name].getModelSelection().getItem(0) || null;
+              itemValue = items[name].getModelSelection().getItem(0) || null;
             } else {
-              currentData[names[i]] = items[name].getValue();
+              itemValue = items[name].getValue();
             }
+            // call the converter if available [BUG #4382]
+            if (this.__bindingOptions[name] && this.__bindingOptions[name][1]) {
+              itemValue = this.__bindingOptions[name][1].converter(itemValue);
+            }
+            currentData[names[i]] = itemValue;
           } else {
             // if its not the last element, check if the object exists
             if (!currentData[names[i]]) {
@@ -186,6 +199,35 @@ qx.Class.define("qx.data.controller.Form",
       this.setModel(model);
 
       return model;
+    },
+
+
+    /**
+     * Responsible for synching the data from entered in the form to the model.
+     * Please keep in mind that this method only works if you create the form
+     * with <code>selfUpdate</code> set to true. Otherwise, this method will
+     * do nothing because updates will be synched automatically on every
+     * change.
+     */
+    updateModel: function(){
+      // only do stuff if self update is enabled and a model or target is set
+      if (!this._selfUpdate || !this.getModel() || !this.getTarget()) {
+        return;
+      }
+
+      var items = this.getTarget().getItems();
+      for (var name in items) {
+        var item = items[name];
+        var sourceProperty =
+          this.__isModelSelectable(item) ? "modelSelection[0]" : "value";
+
+        var options = this.__bindingOptions[name];
+        options = options && this.__bindingOptions[name][1];
+
+        qx.data.SingleValueBinding.updateTarget(
+          item, sourceProperty, this.getModel(), name, options
+        );
+      }
     },
 
 
@@ -262,10 +304,10 @@ qx.Class.define("qx.data.controller.Form",
         // try to bind all given items in the form
         try {
           if (options == null) {
-            this.__objectController.addTarget(item, targetProperty, name, true);
+            this.__objectController.addTarget(item, targetProperty, name, !this._selfUpdate);
           } else {
             this.__objectController.addTarget(
-              item, targetProperty, name, true, options[0], options[1]
+              item, targetProperty, name, !this._selfUpdate, options[0], options[1]
             );
           }
         // ignore not working items

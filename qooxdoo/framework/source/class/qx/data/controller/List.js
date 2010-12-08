@@ -118,7 +118,8 @@ qx.Class.define("qx.data.controller.List",
       check: "qx.data.IListData",
       apply: "_applyModel",
       event: "changeModel",
-      nullable: true
+      nullable: true,
+      dereference: true
     },
 
 
@@ -128,7 +129,8 @@ qx.Class.define("qx.data.controller.List",
       apply: "_applyTarget",
       event: "changeTarget",
       nullable: true,
-      init: null
+      init: null,
+      dereference: true
     },
 
 
@@ -613,11 +615,11 @@ qx.Class.define("qx.data.controller.List",
       this.bindProperty(
         this.getLabelPath(), "label", this.getLabelOptions(), item, index
       );
-      
+
       // model
       this.bindProperty(
         "", "model", null, item, index
-      );      
+      );
 
       // if the iconPath is set
       if (this.getIconPath() != null) {
@@ -994,7 +996,7 @@ qx.Class.define("qx.data.controller.List",
    destruct : function() {
      this.__lookupTable = this.__onUpdate = this.__boundProperties = null;
      this.__boundPropertiesReverse = null;
-     
+
      // remove yourself from the widget queue
      qx.ui.core.queue.Widget.remove(this);
    }

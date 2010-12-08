@@ -32,10 +32,10 @@ qx.Class.define("qx.data.store.Jsonp",
    * @param url {String?} URL of the web service.
    * @param delegate {Object?null} The delegate containing one of the methods
    *   specified in {@link qx.data.store.IStoreDelegate}.
-   * @param callbackParam {String} The name of the callback param for JSON-P. 
-   *   This is *not* the name of a static function. It is the name of the URL 
-   *   parameter where the server expects the name of the statif cuntion used 
-   *   in JSON-P. Its something given by the service you use. In this examle: 
+   * @param callbackParam {String} The name of the callback param for JSON-P.
+   *   This is *not* the name of a static function. It is the name of the URL
+   *   parameter where the server expects the name of the statif cuntion used
+   *   in JSON-P. Its something given by the service you use. In this examle:
    *   <code>http://twitter.com/statuses/friends_timeline.json?callback=methodName</code>
    *   the parameter should be <code>callback</code>.
    */
@@ -79,7 +79,7 @@ qx.Class.define("qx.data.store.Jsonp",
 
       var prefix = url.indexOf("?") == -1 ? "?" : "&";
       url += prefix + this.getCallbackParam() + "=";
-      var id = parseInt(this.toHashCode());
+      var id = parseInt(this.toHashCode(), 10);
 
       qx.data.store.Jsonp[id] = this;
       url += 'qx.data.store.Jsonp[' + id + '].callback';

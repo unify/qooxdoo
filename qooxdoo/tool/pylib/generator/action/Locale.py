@@ -21,6 +21,7 @@
 
 import os, sys, re
 import time, datetime
+import cPickle as pickle
 
 from polib import polib
 from ecmascript.frontend import treeutil, tree
@@ -216,7 +217,7 @@ class Locale(object):
 
     def getTranslationData(self, classList, variants, targetLocales, addUntranslatedEntries=False):
 
-        def extractTranslations(pot,po):
+        def extractTranslations(pot, po):
             po.getIdIndex()
             for potentry in pot:
                 #otherentry = po.find(potentry.msgid)   # this is slower on average than my own functions (bec. 'getattr')
@@ -228,6 +229,8 @@ class Locale(object):
                         for pos in otherentry.msgstr_plural:
                             potentry.msgstr_plural[pos] = otherentry.msgstr_plural[pos]
             return
+
+        # -------------------------------------------------------------------------
 
         # Find all influenced namespaces
         libnames = {}
@@ -248,12 +251,15 @@ class Locale(object):
 
         # Load po files and process their content
         blocks = {}
+        mainpot = self.getPotFile(classList, variants)  # pot file for this package
+        mainpotS = pickle.dumps(mainpot)
         # loop through locales
         for locale in PoFiles:
             # ----------------------------------------------------------------------
             # Generate POT file to filter PO files
             self._console.debug("Compiling filter...")
-            pot = self.getPotFile(classList, variants)  # pot file for this package
+            # need a fresh pot, as it will be modified
+            pot = pickle.loads(mainpotS)  # copy.deepcopy(mainpot) chokes on overridden Array.append
 
             if len(pot) == 0:
                 return {}
@@ -266,8 +272,13 @@ class Locale(object):
             for path in PoFiles[locale]:
                 self._console.debug("Reading file: %s" % path)
 
-                po = polib.pofile(path)
-                extractTranslations(pot,po)
+                # .po files are only read-accessed
+                cacheId = "pofile-%s" % path
+                po, _ = self._cache.read(cacheId, path, memory=True)
+                if po == None:
+                    po = polib.pofile(path)
+                    self._cache.write(cacheId, po, memory=True)
+                extractTranslations(pot, po)
 
             poentries = pot.translated_entries()
             if addUntranslatedEntries:
@@ -348,8 +359,12 @@ class Locale(object):
         self._console.indent()
         
         result = {}
-        for classId in content:
-            translation = self.getTranslation(classId, variants) # should be a method on clazz
+        numClass = len(content)
+        for num,classId in enumerate(content):
+            #translation, cached = self.getTranslation(classId, variants) # should be a method on clazz
+            translation, cached = self._classesObj[classId].messageStrings(variants)
+            #self._console.dot('.' if cached else '*')
+            self._console.progress(num+1, numClass)
 
             for source in translation:
                 #msgid = self.parseAsUnicodeString(source["id"])  # parse raw data as string, to translate \escapes
@@ -377,142 +392,4 @@ class Locale(object):
 
         self._console.debug("Package contains %s unique translation strings" % len(result))
         self._console.outdent()
-        return result
-
-
-
-    ##
-    # returns translation = [[{'id':, 'plural':, 'hint':, 'method':, 'line':, 'column':}, ...]
-    def getTranslation(self, fileId, variants):
-        fileEntry = self._classes[fileId]
-        filePath = fileEntry["path"]
-
-        classVariants     = self._classesObj[fileId].classVariants()
-        relevantVariants  = Class.projectClassVariantsToCurrent(classVariants, variants)
-        variantsId        = util.toString(relevantVariants)
-
-        cacheId = "translation-%s-%s" % (filePath, variantsId)
-
-        translation, _ = self._cache.readmulti(cacheId, filePath)
-        if translation != None:
-            return translation
-
-        self._console.debug("Looking for translation strings: %s..." % fileId)
-        self._console.indent()
-
-        #tree = self._treeLoader.getTree(fileId, variants)
-        tree = self._classesObj[fileId].tree(variants)
-
-        try:
-            translation = self._findTranslationBlocks(tree, [])
-        except NameError, detail:
-            raise RuntimeError("Could not extract translation from %s!\n%s" % (fileId, detail))
-
-        if len(translation) > 0:
-            self._console.debug("Found %s translation strings" % len(translation))
-
-        self._console.outdent()
-        self._cache.writemulti(cacheId, translation)
-
-        return translation
-
-
-
-    def _findTranslationBlocks(self, node, translation):
-        if node.type == "call":
-            oper = node.getChild("operand", False)
-            if oper:
-                var = oper.getChild("variable", False)
-                if var:
-                    varname = (treeutil.assembleVariable(var))[0]
-                    for entry in [ ".tr", ".trn", ".trc", ".marktr" ]:
-                        if varname.endswith(entry):
-                            self._addTranslationBlock(entry[1:], translation, node, var)
-                            break
-
-        if node.hasChildren():
-            for child in node.children:
-                self._findTranslationBlocks(child, translation)
-
-        return translation
-
-
-
-    def _addTranslationBlock(self, method, data, node, var):
-        entry = {
-            "method" : method,
-            "line"   : node.get("line"),
-            "column" : node.get("column")
-        }
-
-        # tr(msgid, args)
-        # trn(msgid, msgid_plural, count, args)
-        # trc(hint, msgid, args)
-        # marktr(msgid)
-
-        if method == "trn" or method == "trc": minArgc=2
-        else: minArgc=1
-
-        params = node.getChild("params", False)
-        if not params or not params.hasChildren():
-            raise NameError("Invalid param data for localizable string method at line %s!" % node.get("line"))
-
-        if len(params.children) < minArgc:
-            raise NameError("Invalid number of parameters %s at line %s" % (len(params.children), node.get("line")))
-
-        strings = []
-        for child in params.children:
-            if child.type == "commentsBefore":
-                continue
-
-            elif child.type == "constant" and child.get("constantType") == "string":
-                strings.append(child.get("value"))
-
-            elif child.type == "operation":
-                strings.append(self._concatOperation(child))
-
-            elif len(strings) < minArgc:
-                self._console.warn("Unknown expression as argument to translation method at line %s" % (child.get("line"),))
-
-            # Ignore remaining (run time) arguments
-            if len(strings) == minArgc:
-                break
-
-        lenStrings = len(strings)
-        if lenStrings > 0:
-            if method == "trc":
-                entry["hint"] = strings[0]
-                if lenStrings > 1 and strings[1]:  # msgid must not be ""
-                    entry["id"]   = strings[1]
-            else:
-                if strings[0]:
-                    entry["id"] = strings[0]
-
-            if method == "trn" and lenStrings > 1:
-                entry["plural"] = strings[1]
-
-        # register the entry only if we have a proper key
-        if "id" in entry:
-            data.append(entry)
-
-        return
-
-
-
-    def _concatOperation(self, node):
-        result = ""
-
-        try:
-            first = node.getChild("first").getChildByTypeAndAttribute("constant", "constantType", "string")
-            result += first.get("value")
-
-            second = node.getChild("second").getFirstChild(True, True)
-            if second.type == "operation":
-                result += self._concatOperation(second)
-            else:
-                result += second.get("value")
-
-        except tree.NodeAccessException:
-            self._console.warn("Unknown expression as argument to translation method at line %s" % (node.get("line"),))
-
         return result

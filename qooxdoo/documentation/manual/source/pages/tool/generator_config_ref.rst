@@ -5,7 +5,7 @@ Reference Listing of Config Keys
 
 This page contains the complete list of configuration keys and their sub-structures.
 
-Mandatory keys in a context are marked *'(required)'*, all other keys can be considered optional (most have default values). Special note boxes starting with *'peer-keys'* indicate interactions of the current key with other  configuration keys that should to be present in the job for the current key to function properly. E.g. the key :ref:`pages/tool/generator_config_ref#compile` will use the peer-key :ref:`pages/tool/generator_config_ref#cache` in the job definition for its workings. Again, in many cases fall-back defaults will be in place, but relying on them might lead to sub-optimal results.
+Mandatory keys in a context are marked *'(required)'*, all other keys can be considered optional (most have default values). Special note boxes starting with *'peer-keys'* indicate interactions of the current key with other  configuration keys that should be present in the job for the current key to function properly. E.g. the key :ref:`pages/tool/generator_config_ref#compile` will use the peer-key :ref:`pages/tool/generator_config_ref#cache` in the job definition for its workings. Again, in many cases fall-back defaults will be in place, but relying on them might lead to sub-optimal results.
 
 .. _pages/tool/generator_config_ref#add-script:
 
@@ -320,6 +320,21 @@ Possible keys are
 
 Unlike :ref:`pages/tool/generator_config_ref#copy-files`, ``copy-resources`` does not take either a "source" key, nor a "files" key. Rather, a bit of implicit knowledge is applied. Resources will be copied from the involved libraries' ``source/resource`` directories (this obviates a "source" key). The list of needed resources is derived from the class files (e.g. from ``#asset`` hints - this obviates the "files" key), and then the libraries are searched for in order. From the first library that provides a certain resource, this resource is copied to the target folder. This way you can use most resources from a standard library (like the qooxdoo framework library), but still "shadow" a few of them by resources of the same path from a different library, just by tweaking the order in which these libraries are listed in the :ref:`pages/tool/generator_config_ref#library` key.
 
+
+.. _pages/tool/generator_config_ref#default-job:
+
+default-job
+============
+
+Default job to be run. Takes a string.
+
+::
+
+  "default-job" : "source"
+
+If this key is present in a configuration file, the named job will be run by default when no job argument is passed to the generator on the command line.
+
+
 .. _pages/tool/generator_config_ref#dependencies:
 
 dependencies
@@ -356,13 +371,15 @@ The descriptive string provided here will be used when listing jobs on the comma
 exclude
 =======
 
-Exclude classes to be processed in the job. Takes an array of class specifiers.
+Exclude classes from processing in the job. Takes an array of class specifiers.
 
 ::
 
   "exclude" : ["qx.util.*"]
 
-The class specifiers can include simple wildcards like 'qx.util.*' denoting a whole set of classes. A leading '=' in front of a class specifier means 'without dependencies' (like '=qx.util.*'). These classes are e.g. excluded from the generated Javascript.
+Classes specified through the *exclude* key are excluded from the job processing, e.g. from the generated build output. The class specifiers can include simple wildcards like "qx.util.*" denoting class id's matching this pattern, including sub-name spaces. 
+
+A leading '=' in front of a class specifier (like "=qx.util.*") means 'without dependencies'. That means the classes themselves are exempted, but their dependencies added in. Be aware that this requires that *all* dependencies have to be calculated upfront, including for those classes specified in this key, resulting in increased compile time and generator logging. It also means that the final class list might contain classes that are not used by any of the remaining classes. Usually, specifying classes without '=' is what you want.
 
 .. _pages/tool/generator_config_ref#export:
 
@@ -898,7 +915,7 @@ Triggers the execution of external commands. Takes a map.
 
 Possible keys are 
 
-* **command** : command string or list of command strings to execute by shell 
+* **command** : command string or list of command strings to execute by shell
 
 *Note*: Generally, the command string is passed to the executing shell "as is", with one exception: Relative paths are absolutized, so you can run those jobs from remote directories. In order to achieve this, all strings of the command are searched for path separators (e.g. '/' on Posix systems, '\\' on Windows - be sure to encode this as '\\\\' on Windows as '\\' is the Json escape character). Those strings are regarded as paths and - unless they are already absolute - are absolutized, relative to the path of the current config. So e.g. instead of writing ::
 
@@ -909,6 +926,30 @@ you should write ::
     "cp ./file1 ./file2"
 
 and it will work from everywhere.
+
+.. _pages/tool/generator_config_ref#simulate:
+
+simulate
+========
+
+Runs a suite of GUI tests (simulated interaction). Takes a map.
+
+::
+
+  "simulate" :
+  {
+    "java-classpath" : ["../rhino/js.jar", "../selenium/selenium-java-client-driver.jar"],
+    "qxselenium-path" : "${SIMULATOR_ROOT}/tool",
+    "rhino-class" : "org.mozilla.javascript.tools.shell.Main",
+    "simulator-script" : "${BUILD_PATH}/script/simulator.js"
+  }
+  
+Possible keys are 
+
+* **java-classpath** *(required)*: Java classpath argument for Rhino application. Takes an Array. Must point to the Selenium client driver and Rhino JARs. (default: *${SIMULATOR_CLASSPATH}*)
+* **qxselenium-path** *(required)*: Location of the QxSelenium Java class. (default: *${SIMULATOR_ROOT}/tool*)
+* **rhino-class** *(required)*: Full name of the Mozilla Rhino class that should be used to run the simulation. Set to *org.mozilla.javascript.tools.debugger.Main* to run the test application in Rhino's visual debugger. (default: *org.mozilla.javascript.tools.shell.Main*)
+* **simulator-script** *(required)*: Path of the compiled Simulator application to be run. (default: *${ROOT}/simulator/script/simulator.js*)
 
 .. _pages/tool/generator_config_ref#slice-images:
 

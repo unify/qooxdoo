@@ -23,6 +23,15 @@ qx.Class.define("qx.test.ui.list.core.SingleSelection",
 
   members :
   {
+    createModelData : function()
+    {
+      this._model = new qx.data.Array();
+
+      for (var i = 0; i < 100; i++) {
+        this._model.push("item " + (i + 1));
+      }
+    },
+
     testSelection : function()
     {
       var selection = this._list.getSelection();
@@ -31,7 +40,7 @@ qx.Class.define("qx.test.ui.list.core.SingleSelection",
 
       // check selection from list
       this.assertEquals(1, this._list.getSelection().getLength(), "On List");
-      this.assertTrue(selection.equals(new qx.data.Array([this._model.getItem(1)])), "On List");
+      this.assertDataArrayEquals(selection, new qx.data.Array([this._model.getItem(1)]), "On List");
 
       // check selection from manager
       var item = this._list._manager.getSelectedItem();
@@ -49,7 +58,7 @@ qx.Class.define("qx.test.ui.list.core.SingleSelection",
 
       // check selection from list
       this.assertEquals(1, this._list.getSelection().getLength(), "On List");
-      this.assertTrue(selection.equals(new qx.data.Array([this._model.getItem(2)])), "On List");
+      this.assertDataArrayEquals(selection, new qx.data.Array([this._model.getItem(2)]), "On List");
 
       // check selection from manager
       var selection = this._list._manager.getSelection();
@@ -88,6 +97,17 @@ qx.Class.define("qx.test.ui.list.core.SingleSelection",
           self.assertEquals(2, self._list._manager.getSelectedItem());
         }
       );
+    },
+
+    testSelectionWithSorter : function()
+    {
+      this._list.setDelegate({
+        sorter : function(a, b) {
+          return a < b ? 1 : a > b ? -1 : 0;
+        }
+      });
+
+      this.testSelection();
     }
   }
 });

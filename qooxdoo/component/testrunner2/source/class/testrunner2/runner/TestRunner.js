@@ -46,7 +46,6 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     
     // Connect view and controller
     this.view.addListener("runTests", function() {
-      this.setTestSuiteState("running");
       this.runTests();
     }, this);
     
@@ -64,7 +63,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     // Load unit tests
     if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
       // Load the tests from a standalone AUT
-      this.__iframe = this.view.getIframe(this._onLoadIframe, this);
+      this.__iframe = this.view.getIframe();
       qx.event.Registration.addListener(this.__iframe, "load", this._onLoadIframe, this);
       var src = qx.core.Setting.get("qx.testPageUri")
       src += "?testclass=" + qx.core.Setting.get("qx.testNameSpace");
@@ -151,6 +150,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       this.setTestSuiteState("loading");
       this.loader = new qx.dev.unit.TestLoaderInline();
       this.loader.setTestNamespace(nameSpace);
+      this.__wrapAssertions();
       this.__getTestData();
     },
     
@@ -182,12 +182,64 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     
     
     /**
+     * Wraps all assert* methods included in qx.dev.unit.TestCase in try/catch
+     * blocks. Caught exceptions are stored in an Array and attached to the test
+     * function. The idea here is that exceptions shouldn't abort the test 
+     * execution (this has caused some extremely hard to debug problems in the
+     * qooxdoo framework unit tests in the past).
+     * 
+     * Doing this in the Testrunner application is a temporary solution: It 
+     * really should be done in qx.dev.unit.TestCase, but that would break 
+     * backwards compatibility with the existing testrunner component. Once 
+     * testrunner2 has fully replaced testrunner, this code should be moved.
+     * 
+     * @param autWindow {DOMWindow?} The test application's window. Default: The
+     * Testrunner's window.
+     */
+    __wrapAssertions : function(autWindow)
+    {
+      var win = autWindow || window;
+      var tCase = win.qx.dev.unit.TestCase.prototype;
+      for (var prop in tCase) {
+        if (prop.indexOf("assert") == 0 && typeof tCase[prop] == "function") {
+          // store original assertion func
+          var originalName = "__" + prop;
+          tCase[originalName] = tCase[prop];
+          // create wrapped assertion func
+          tCase[prop] = function() {
+            var argumentsArray = win.qx.lang.Array.fromArguments(arguments);
+            try {
+              this[arguments.callee.originalName].apply(self, argumentsArray);
+            } catch(ex) {
+              var testFunction = arguments.callee.caller;
+              // attach any exceptions to the test function that called the
+              // assertion
+              if (!testFunction._exceptions) {
+                testFunction._exceptions = [];
+              }
+              testFunction._exceptions.push(ex);
+            }
+          };
+          tCase[prop].originalName = originalName;
+        }
+      }
+    },
+    
+    
+    /**
      * Runs all tests in the list.
      */
     runTests : function()
     {
-      if (this.getTestSuiteState() == "aborted") {
-        return;
+      var suiteState = this.getTestSuiteState();
+      switch (suiteState) {
+        case "ready":
+        case "finished":
+          this.setTestSuiteState("running");
+          break;
+        case "aborted":
+        case "error":
+          return;
       }
       
       if (this.testList.length == 0) {
@@ -258,33 +310,25 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       }, this);
       
       testResult.addListener("wait", function(e) {
-        //var test = e.getData();
         this.currentTestData.setState("wait");
       }, this);
       
       testResult.addListener("failure", function(e) {
-        var ex = e.getData().exception;
-        this.currentTestData.setException(ex);
+        this.currentTestData.setExceptions(e.getData());
         this.currentTestData.setState("failure");
-        //var test = e.getData().test;
       }, this);
       
       testResult.addListener("error", function(e) {
-        //var test = e.getData();
-        var ex = e.getData().exception;
-        this.currentTestData.setException(ex);
+        this.currentTestData.setExceptions(e.getData());
         this.currentTestData.setState("error");
       }, this);
       
       testResult.addListener("skip", function(e) {
-        //var test = e.getData();
-        var ex = e.getData().exception;
-        this.currentTestData.setException(ex);
+        this.currentTestData.setExceptions(e.getData());
         this.currentTestData.setState("skip");
       }, this);
       
       testResult.addListener("endTest", function(e) {
-        //var test = e.getData();
         var state = this.currentTestData.getState();
         if (state == "start") {
           this.currentTestData.setState("success");
@@ -308,7 +352,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
           
           if (this.__bodyLength != fWin.document.body.innerHTML.length) {
             var error = new Error("Incomplete tearDown: The DOM was not reverted to its initial state!");
-            this.currentTestData.setException(error);
+            this.currentTestData.setExceptions([error]);
             this.currentTestData.setState("error");
           }
         }
@@ -328,7 +372,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
      */
     _onLoadIframe : function(ev)
     {
-      if (ev) {
+      if (ev && ev.getType() == "load") {
         this.setTestSuiteState("loading");
       }
       
@@ -393,6 +437,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
         this.__testParts.push(frameParts[i]);
       }
       
+      this.__wrapAssertions(this.frameWindow);
       this.__getTestData();
     },
     
@@ -408,7 +453,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       if (!value) {
         return;
       }
-      this.testList = value;
+      this.testList = qx.lang.Array.clone(value);
       // Make sure the value is applied even if it didn't change so the view is
       // updated
       if (value.length == this.getTestCount()) {

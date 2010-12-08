@@ -59,7 +59,7 @@ qx.Class.define("qx.bom.element.Decoration",
      * this DOM structure to only use DIV elements which do not have a negative
      * performance impact. See Bug #2185 for details.
      */
-    __enableAlphaFix : qx.core.Variant.isSet("qx.client", "mshtml"),
+    __enableAlphaFix : qx.core.Variant.isSet("qx.client", "mshtml") && qx.bom.client.Engine.VERSION < 9,
 
 
     /** {Map} List of repeat modes which supports the IE AlphaImageLoader */
@@ -539,12 +539,12 @@ qx.Class.define("qx.bom.element.Decoration",
       {
         var backgroundPosition = style.backgroundPosition.split(" ");
 
-        left = parseInt(backgroundPosition[0]);
+        left = parseInt(backgroundPosition[0], 10);
         if (isNaN(left)) {
           left = backgroundPosition[0];
         }
 
-        top = parseInt(backgroundPosition[1]);
+        top = parseInt(backgroundPosition[1], 10);
         if (isNaN(top)) {
           top = backgroundPosition[1];
         }

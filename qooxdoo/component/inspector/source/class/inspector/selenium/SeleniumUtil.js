@@ -35,10 +35,13 @@ qx.Class.define("inspector.selenium.SeleniumUtil",
      *
      * @param widget {qx.ui.core.Widget} The widget to locate
      * @param appRoot {qx.ui.root.Abstract} The application root widget
+     * @param autWin {DOMWindow} The Window object of the widget's parebt app. 
+     * Default: The current window
      * @return {String} The complete locator
      */
-    getQxhLocator : function(widget, appRoot)
+    getQxhLocator : function(widget, appRoot, autWin)
     {
+      var autWindow = autWin || window;
       if (!appRoot) {
         var appRoot = qx.core.Init.getApplication().getRoot();
       }
@@ -48,7 +51,7 @@ qx.Class.define("inspector.selenium.SeleniumUtil",
           break;
         }
 
-        var step = inspector.selenium.SeleniumUtil.getQxhLocatorStep(widget);
+        var step = inspector.selenium.SeleniumUtil.getQxhLocatorStep(widget, autWindow);
         loc.push(step);
         widget = widget.getLayoutParent();
       }
@@ -66,10 +69,13 @@ qx.Class.define("inspector.selenium.SeleniumUtil",
      * Determines a qxh locator step for a given widget
      *
      * @param widget {qx.ui.core.Widget} The widget to find a step for
+     * @param autWin {DOMWindow} The Window object of the widget's parebt app. 
+     * Default: The current window
      * @return {String} Locator step
      */
-    getQxhLocatorStep : function(widget)
+    getQxhLocatorStep : function(widget, autWin)
     {
+      var autWindow = autWin || window;
       var classname = widget.classname;
       var step = '[@classname="' + classname + '"]';
       if (classname.indexOf("qx.") == 0) {
@@ -78,23 +84,40 @@ qx.Class.define("inspector.selenium.SeleniumUtil",
 
       var parent = widget.getLayoutParent();
       var twin = false;
-      var childIndex = 0;
+      var childIndex = null;
       var children = [];
-      try {
+      
+      if (parent.getChildren) {
         children = children.concat(parent.getChildren());
-      } catch(ex) {
-        // no getChildren
       }
-      try {
-        children = children.concat(parent._getChildren());
-      } catch(ex) {
-        // no _getChildren
+      if (parent._getChildren) {
+        var internalChildren = parent._getChildren();
+        for (var x=0,y=internalChildren.length; x<y; x++) {
+          if (!qx.lang.Array.contains(children, internalChildren[x])) {
+            children.push(internalChildren[x]);
+          }
+        }
       }
 
+      // Decide what kind of step to use: If the parent widget has multiple 
+      // children of the same class as the target widget, we can't use the
+      // classname step type.
       for (var i=0,l=children.length; i<l; i++) {
-        if (children[i] == widget) {
+        // found match, remember its position in the children list
+        if (children[i] == widget && childIndex === null) {
           childIndex = i;
         }
+        // target is of the same class as child, can't use classname locator
+        else if (autWindow.qx.Class.getByName(children[i].classname) && 
+                 widget instanceof autWindow.qx.Class.getByName(children[i].classname)) {
+          twin = true;
+        }
+        // ditto if the child is of the same class as the target
+        else if (autWindow.qx.Class.getByName(widget.classname) &&
+                 children[i] instanceof autWindow.qx.Class.getByName(widget.classname)) {
+          twin = true;
+        }
+        // finally check the class names just in case the instanceof checks fail
         else if (children[i].classname == widget.classname) {
           twin = true;
         }

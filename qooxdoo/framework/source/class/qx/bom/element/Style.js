@@ -139,8 +139,12 @@ qx.Class.define("qx.bom.element.Style",
     },
 
 
-    // Mshtml has proprietary pixel* properties for locations and dimensions
-    // which return the pixel value. Used by getComputed() in mshtml variant.
+    /**
+     * Mshtml has proprietary pixel* properties for locations and dimensions
+     * which return the pixel value. Used by getComputed() in mshtml variant.
+     *
+     * @internal
+     */
     __mshtmlPixel :
     {
       width : "pixelWidth",
@@ -151,7 +155,11 @@ qx.Class.define("qx.bom.element.Style",
       bottom : "pixelBottom"
     },
 
-    // Whether a special class is available for the processing of this style.
+    /**
+     * Whether a special class is available for the processing of this style.
+     *
+     * @internal
+     */
     __special :
     {
       clip : qx.bom.element.Clip,

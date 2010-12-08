@@ -67,6 +67,7 @@ qx.Class.define("qx.ui.form.ToggleButton",
 
     // register execute event
     this.addListener("execute", this._onExecute, this);
+
   },
 
 
@@ -100,7 +101,7 @@ qx.Class.define("qx.ui.form.ToggleButton",
       nullable : true,
       event : "changeValue",
       apply : "_applyValue",
-      init: false
+      init : false
     },
 
     /** The assigned qx.ui.form.RadioGroup which handles the switching between registered buttons. */
@@ -109,6 +110,22 @@ qx.Class.define("qx.ui.form.ToggleButton",
       check  : "qx.ui.form.RadioGroup",
       nullable : true,
       apply : "_applyGroup"
+    },
+
+    /**
+    * Whether the button has a third state. Use this for tri-state checkboxes.
+    *
+    * When enabled, the value null of the property value stands for "undetermined",
+    * while true is mapped to "enabled" and false to "disabled" as usual. Note
+    * that the value property is set to false initially.
+    *
+    */
+    triState :
+    {
+      check : "Boolean",
+      apply : "_applyTriState",
+      nullable : true,
+      init : null
     }
   },
 
@@ -144,6 +161,24 @@ qx.Class.define("qx.ui.form.ToggleButton",
      */
     _applyValue : function(value, old) {
       value ? this.addState("checked") : this.removeState("checked");
+
+      if (this.isTriState()) {
+        if (value === null) {
+          this.addState("undetermined");
+        } else if (old === null) {
+          this.removeState("undetermined");
+        }
+      }
+    },
+
+    /**
+    * Apply value property when triState property is modified.
+    *
+    * @param value {Boolean} Current value
+    * @param old {Boolean} Previous value
+    */
+    _applyTriState : function(value, old) {
+      this._applyValue(this.getValue());
     },
 
 

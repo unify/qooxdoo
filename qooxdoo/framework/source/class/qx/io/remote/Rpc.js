@@ -76,7 +76,7 @@
  * (qx.io.remote.Rpc.callAsyncListeners).
  * <p>
  * You may also find the server writer's guide helpful:
- *   http://qooxdoo.org/documentation/Rpc_server_writer_guide
+ *   http://manual.qooxdoo.org/1.3/pages/communication/rpc_server_writer_guide.html
  */
 
  /**
@@ -564,7 +564,7 @@ qx.Class.define("qx.io.remote.Rpc",
         this.debug("TIMEOUT OCCURRED");
         ex = makeException(qx.io.remote.Rpc.origin.local,
                            qx.io.remote.Rpc.localError.timeout,
-                           "Local time-out expired");
+                           "Local time-out expired for "+ whichMethod);
         id = this.getSequenceNumber();
         handleRequestFinished("timeout", eventTarget);
       });
@@ -573,7 +573,7 @@ qx.Class.define("qx.io.remote.Rpc",
       {
         ex = makeException(qx.io.remote.Rpc.origin.local,
                            qx.io.remote.Rpc.localError.abort,
-                           "Aborted");
+                           "Aborted " + whichMethod);
         id = this.getSequenceNumber();
         handleRequestFinished("aborted", eventTarget);
       });

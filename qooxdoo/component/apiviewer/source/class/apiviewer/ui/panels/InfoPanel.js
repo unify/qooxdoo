@@ -205,7 +205,7 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
                 if (parenPos != -1) {
                   cleanItemName = qx.lang.String.trim(cleanItemName.substring(0, parenPos));
                 }
-                itemNode = classNode.getItem(cleanItemName);
+                itemNode = this.__getItemFromClassHierarchy(cleanItemName,classNode);
               }
               else
               {
@@ -215,6 +215,9 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
 
               if (itemNode)
               {
+                if(itemNode.getNodeType()!=='package') {
+                  className = itemNode.getClass().getFullName();
+                }
                 var iconUrl = apiviewer.TreeUtil.getIconUrl(itemNode);
                 var iconCode = apiviewer.ui.ClassViewer.createImageHtml(iconUrl);
 
@@ -282,10 +285,10 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
 
         for (var i=0; i<see.length; i++)
         {
-           if (seeAlsoLinks.length != 0) {
-             seeAlsoLinks.add(", ");
-           }
-           seeAlsoLinks.add(this.createItemLinkHtml(see[i], node.getClass()));
+          if (seeAlsoLinks.length != 0) {
+            seeAlsoLinks.add(", ");
+          }
+          seeAlsoLinks.add(this.createItemLinkHtml(see[i], node.getClass()));
         }
 
         if (!seeAlsoLinks.isEmpty())
@@ -295,7 +298,7 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
           seeAlsoHtml.add(
             '<div class="item-detail-headline">', "See also:", '</div>',
             '<div class="item-detail-text">', seeAlsoLinks, '</div>'
-          )
+          );
           return seeAlsoHtml.get()
         }
       }
@@ -314,23 +317,23 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
      */
     createInheritedFromHtml : function(node, currentClassDocNode)
     {
-     if (
-       node.getClass().getType() != "mixin" &&
-       node.getClass() != currentClassDocNode
-       )
-     {
-       var html = new qx.util.StringBuilder(
-         '<div class="item-detail-headline">', "Inherited from:", '</div>',
-         '<div class="item-detail-text">',
-         apiviewer.ui.panels.InfoPanel.createItemLinkHtml(node.getClass().getFullName()+"#"+node.getName()),
-         '</div>'
-       );
-       return html.get();
-     }
-     else
-     {
-       return "";
-     }
+      if (
+        node.getClass().getType() != "mixin" &&
+        node.getClass() != currentClassDocNode
+      )
+      {
+        var html = new qx.util.StringBuilder(
+          '<div class="item-detail-headline">', "Inherited from:", '</div>',
+          '<div class="item-detail-text">',
+          apiviewer.ui.panels.InfoPanel.createItemLinkHtml(node.getClass().getFullName()+"#"+node.getName()),
+          '</div>'
+        );
+        return html.get();
+      }
+      else
+      {
+        return "";
+      }
     },
 
 
@@ -385,6 +388,37 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
         return "";
       }
     },
+    
+    /**
+     * Gets a class item from baseClassNode. if it is not found there, the class' hierarchy is searched until the item is found.
+     * 
+     * @param itemName {String} the name of the item.
+     * @param baseClassNode {apiviewer.dao.Class} class doc node
+     * @return {apiviewer.dao.ClassItem} the classItem
+     * 
+     */
+    __getItemFromClassHierarchy : function(itemName,baseClassNode)
+    {
+      var itemNode = baseClassNode.getItem(itemName);
+      if(itemNode)
+      {
+        return itemNode;
+      }
+      else
+      {
+        var classNodes = baseClassNode.getClassHierarchy();
+        for (var i=0,l=classNodes.length; i<l; i++)
+        {
+          var currClassNode = classNodes[i];
+          itemNode = currClassNode.getItem(itemName);
+          if (itemNode) {
+            break;
+          }
+        }
+        return itemNode;
+      }
+    },
+
 
     /**
      * Creates the HTML showing the description of an item.
@@ -785,8 +819,8 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
       var html = new qx.util.StringBuilder();
 
       var inherited =
-        (parentNode != currentDocNode) &&
-        parentNode.getType() == "class";
+      (parentNode != currentDocNode) &&
+      parentNode.getType() == "class";
       var iconUrl = apiviewer.TreeUtil.getIconUrl(node, inherited);
 
       // Create the title row
@@ -919,9 +953,9 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
           listName == "events" ||
           listName == "properties" ||
           listName == "methods"
+          )
         )
-      )
-      {
+        {
         if (currentClassDocNode.getType() == "interface") {
           var classNodes = currentClassDocNode.getInterfaceHierarchy();
         } else {
@@ -940,7 +974,7 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
           listName == "events" ||
           listName == "properties" ||
           listName == "methods"
-        ) {
+          ) {
           qx.lang.Array.append(currNodeArr, currClassNode.getNodesOfTypeFromMixins(this.getListName()));
         }
         // Add the nodes from this class
@@ -1048,8 +1082,7 @@ qx.Class.define("apiviewer.ui.panels.InfoPanel", {
           '<table cellspacing="0" cellpadding="0" class="info" width="100%">'
         );
 
-        for (var i=0; i<nodes.length; i++)
-        {
+        for (var i=0; i<nodes.length; i++) {
           html.add(this.getItemHtml(nodes[i], currentClassDocNode, false));
         }
 

@@ -81,7 +81,16 @@ qx.Class.define("qx.ui.table.columnmodel.Basic",
      *   <li>toOverXPos: The new overall x position of the column.</li>
      * </ul>
      */
-    "orderChanged" : "qx.event.type.Data"
+    "orderChanged" : "qx.event.type.Data",
+
+    /**
+     * Fired when the cell renderer of a column has changed.
+     * The data property of the event is a map having the following attributes:
+     * <ul>
+     *   <li>col: The model index of the column that was moved.</li>
+     * </ul>
+     */
+    "headerCellRendererChanged" : "qx.event.type.Data"
   },
 
 
@@ -159,15 +168,15 @@ qx.Class.define("qx.ui.table.columnmodel.Basic",
       // subclasses may not provide the 'table' argument, so we treat them
       // traditionally with no initially hidden columns.
       var initiallyHiddenColumns;
-      
+
       // Was a table provided to us?
-      if (table) 
+      if (table)
       {
         // Yup. Get its list of initially hidden columns, if the user provided
         // such a list.
         initiallyHiddenColumns = table.getInitiallyHiddenColumns();
       }
-      
+
       // If no table was specified, or if the user didn't provide a list of
       // initially hidden columns, use an empty list.
       initiallyHiddenColumns = initiallyHiddenColumns || [];
@@ -186,7 +195,7 @@ qx.Class.define("qx.ui.table.columnmodel.Basic",
         this.__overallColumnArr[col] = col;
         this.__visibleColumnArr[col] = col;
       }
-      
+
       this.__colToXPosMap = null;
 
       // If any columns are initialy hidden, hide them now. Make it an
@@ -225,12 +234,12 @@ qx.Class.define("qx.ui.table.columnmodel.Basic",
     /**
      * Sets the width of a column.
      *
-     * @param col {Integer} 
+     * @param col {Integer}
      *   The model index of the column.
      *
      * @param width {Integer}
      *   The new width the column should get in pixels.
-     * 
+     *
      * @param isMouseAction {Boolean}
      *   <i>true</i> if the column width is being changed as a result of a
      *   mouse drag in the header; false or undefined otherwise.
@@ -305,6 +314,7 @@ qx.Class.define("qx.ui.table.columnmodel.Basic",
       }
 
       this.__columnDataArr[col].headerRenderer = renderer;
+      this.fireDataEvent("headerCellRendererChanged", {col:col});
     },
 
 
@@ -330,10 +340,10 @@ qx.Class.define("qx.ui.table.columnmodel.Basic",
      * Sets the data renderer of a column.
      *
      * @param col {Integer} the model index of the column.
-     * @param renderer {qx.ui.table.ICellRenderer} the new data renderer 
+     * @param renderer {qx.ui.table.ICellRenderer} the new data renderer
      *   the column should get.
-     * @return {qx.ui.table.ICellRenderer?null} If an old rendere was set and 
-     *   it was not the default rendere, the old rendere is returnd for 
+     * @return {qx.ui.table.ICellRenderer?null} If an old rendere was set and
+     *   it was not the default rendere, the old rendere is returnd for
      *   pooling or dipsosing.
      */
     setDataCellRenderer : function(col, renderer)

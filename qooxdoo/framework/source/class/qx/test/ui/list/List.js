@@ -29,6 +29,16 @@ qx.Class.define("qx.test.ui.list.List",
 
   members :
   {
+    createModelData : function()
+    {
+      this._model = new qx.data.Array();
+
+      for (var i = 0; i < 100; i++) {
+        this._model.push("item " + (i + 1));
+      }
+    },
+
+
     testCreation : function()
     {
       this._list.setWidth(300);
@@ -42,6 +52,7 @@ qx.Class.define("qx.test.ui.list.List",
       this.assertEquals(this._model, this._list.getModel());
       this.assertEquals(0, this._list.getSelection().getLength());
     },
+
 
     testChangeModelSize : function()
     {
@@ -58,6 +69,7 @@ qx.Class.define("qx.test.ui.list.List",
       this.assertEquals(this._model.getLength(), this._list.getPane().getRowConfig().getItemCount());
     },
 
+
     testChangeModelContent : function()
     {
       this._model.setItem(0, "new item");
@@ -68,6 +80,7 @@ qx.Class.define("qx.test.ui.list.List",
       this.assertEquals(this._model.getLength(), this._list.getPane().getRowConfig().getItemCount());
       this.assertEquals("new item", this._list._layer.getRenderedCellWidget(0,0).getLabel());
     },
+
 
     testResetModel : function()
     {
@@ -88,11 +101,12 @@ qx.Class.define("qx.test.ui.list.List",
       this.assertEquals(this._list.getModel().getLength(), this._list.getPane().getRowConfig().getItemCount(), "b");
     },
 
+
     testComplexModel : function()
     {
       var rawData = [];
       for (var i = 0; i < 10; i++) {
-        rawData[i] = {label: "Item " + i, icon: "qx/icon/16/places/folder.png"};
+        rawData[i] = {label: "Item " + i, icon: "icon/16/places/folder.png"};
       }
       var model = qx.data.marshal.Json.createModel(rawData);
 
@@ -105,36 +119,118 @@ qx.Class.define("qx.test.ui.list.List",
       this.assertModelEqualsRowData(model, this._list);
       this.assertEquals(model.getLength(), this._list.getPane().getRowConfig().getItemCount());
       this.assertEquals("Item 5", this._list._layer.getRenderedCellWidget(5,0).getLabel());
-      this.assertEquals("qx/icon/16/places/folder.png", this._list._layer.getRenderedCellWidget(0,0).getIcon());
+      this.assertEquals("icon/16/places/folder.png", this._list._layer.getRenderedCellWidget(0,0).getIcon());
     },
+
+
+    testReverseBinding : function()
+    {
+      var delegate = {
+        bindItem : function(controller, item, id) {
+          controller.bindDefaultProperties(item, id);
+          controller.bindPropertyReverse(null, "label", null, item, id);
+        }
+      };
+      this._list.setDelegate(delegate);
+
+      this.flush();
+
+      var widget = this._list._layer.getRenderedCellWidget(0,0);
+      widget.setLabel("abcde");
+
+      this.flush();
+
+      this.assertEquals(this._model.getLength(), this._list.getPane().getRowConfig().getItemCount(), "Model size <-> pane size");
+      this.assertEquals("abcde", this._list._layer.getRenderedCellWidget(0,0).getLabel(), "Widget value");
+      this.assertEquals("abcde", this._list.getModel().getItem(0), "Model value");
+    },
+
 
     testFilter : function()
     {
       var filteredModel = new qx.data.Array();
-      for (var i = 0; i < 100; i++) {
+      for (var i = 0; i < this._model.getLength(); i++) {
         if (i % 2 == 0) {
           filteredModel.push("item " + (i + 1));
         }
       }
-      
+
       var delegate = {
         filter : function(data) {
-          return ((parseInt(data.slice(5, data.length)) - 1) % 2 == 0);
-        } 
+          return ((parseInt(data.slice(5, data.length), 10) - 1) % 2 == 0);
+        }
       }
       this._list.setDelegate(delegate);
       this.flush();
-      
+
       this.assertModelEqualsRowData(filteredModel, this._list);
       this.assertEquals(filteredModel.getLength(), this._list.getPane().getRowConfig().getItemCount(), "two");
     },
-    
+
+
+    testSorter : function()
+    {
+      var sortedModel = new qx.data.Array();
+      var sorter = function(a, b) {
+        return a < b ? 1 : a > b ? -1 : 0;
+      };
+
+      for (var i = 0; i < this._model.getLength(); i++) {
+        sortedModel.push(this._model.getItem(i));
+      }
+      sortedModel.sort(sorter);
+
+      var delegate = {
+        sorter : sorter
+      }
+      this._list.setDelegate(delegate);
+      this.flush();
+
+      this.assertModelEqualsRowData(sortedModel, this._list);
+      this.assertEquals(sortedModel.getLength(), this._list.getPane().getRowConfig().getItemCount(), "two");
+    },
+
+
+    testSorterWithFilter : function()
+    {
+      var filteredModel = new qx.data.Array();
+      for (var i = 0; i < this._model.getLength(); i++) {
+        if (i % 2 == 0) {
+          filteredModel.push("item " + (i + 1));
+        }
+      }
+
+      var sortedModel = new qx.data.Array();
+      var sorter = function(a, b) {
+        return a < b ? 1 : a > b ? -1 : 0;
+      };
+
+      for (var i = 0; i < filteredModel.getLength(); i++) {
+        sortedModel.push(filteredModel.getItem(i));
+      }
+      sortedModel.sort(sorter);
+
+      var delegate = {
+        sorter : sorter,
+
+        filter : function(data) {
+          return ((parseInt(data.slice(5, data.length)) - 1) % 2 == 0);
+        }
+      }
+      this._list.setDelegate(delegate);
+      this.flush();
+
+      this.assertModelEqualsRowData(sortedModel, this._list);
+      this.assertEquals(sortedModel.getLength(), this._list.getPane().getRowConfig().getItemCount(), "two");
+    },
+
+
     testDisabledElements : function()
     {
       var disabledItem = 3;
       var rawData = [];
       for (var i = 0; i < 10; i++) {
-        rawData[i] = {label: "Item " + i, icon: "qx/icon/16/places/folder.png", enabled: (i != disabledItem)};
+        rawData[i] = {label: "Item " + i, icon: "icon/16/places/folder.png", enabled: (i != disabledItem)};
       }
       var model = qx.data.marshal.Json.createModel(rawData);
 
@@ -153,12 +249,12 @@ qx.Class.define("qx.test.ui.list.List",
 
       for (var i = 0; i < 10; i++) {
         var widget = this._list._layer.getRenderedCellWidget(i,0);
-        
+
         if (widget == null) {
           // row is not rendered
           continue;
         }
-        
+
         if (i != disabledItem) {
           this.assertTrue(widget.isEnabled());
         } else {

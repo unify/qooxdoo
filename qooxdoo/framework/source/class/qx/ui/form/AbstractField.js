@@ -309,9 +309,9 @@ qx.Class.define("qx.ui.form.AbstractField",
      * Called after the contentElement has a width and a innerWidth.
      *
      * Note: This was introduced to fix BUG#1585
-     * 
-     * @param innerHeight {Integer} Height of element
-     * @param element {qx.html.Element} HTML element object
+     *
+     * @param innerHeight {Integer} The inner height of the element.
+     * @param element {Element} The element.
      */
     _renderContentElement : function(innerHeight, element) {
       //use it in child classes
@@ -790,10 +790,12 @@ qx.Class.define("qx.ui.form.AbstractField",
       if (this.__placeholder == null) {
         // create the placeholder
         this.__placeholder = new qx.html.Label();
+        var colorManager = qx.theme.manager.Color.getInstance();
         this.__placeholder.setStyles({
           "visibility" : "hidden",
           "zIndex" : 6,
-          "position" : "absolute"
+          "position" : "absolute",
+          "color" : colorManager.resolve("text-placeholder")
         });
         this.getContainerElement().add(this.__placeholder);
       }
@@ -828,7 +830,7 @@ qx.Class.define("qx.ui.form.AbstractField",
     */
 
     // property apply
-    _applyPlaceholder : function(value, old) 
+    _applyPlaceholder : function(value, old)
     {
       if (this.__useQxPlaceholder) {
         this.__getPlaceholderElement().setValue(value);
