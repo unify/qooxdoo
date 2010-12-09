@@ -240,7 +240,13 @@ qx.Class.define("inspector.selenium.View", {
       this._recordButton = new qx.ui.toolbar.CheckBox(null,
           "icon/22/actions/media-record.png");
       part2.add(this._recordButton);
-      this._recordButton.setToolTipText("Automatically add a new command for each inspected widget");
+      var recOpts = {
+        converter : function(data) {
+          return data ? "Stop adding commands for inspected widgets" : 
+          "Automatically add a new command for each inspected widget";
+        }
+      };
+      this._recordButton.bind("value", this._recordButton, "toolTipText", recOpts);
 
       this._exportButton = new qx.ui.toolbar.CheckBox(null, "icon/22/actions/window-new.png");
       part2.add(this._exportButton);
@@ -317,6 +323,15 @@ qx.Class.define("inspector.selenium.View", {
         var row = selectedRows[i];
         tableModel.removeRows(row - i, 1);
       }
+    },
+    
+    /**
+     * Clears the table model data.
+     */
+    __clearTableData : function()
+    {
+      var tableModel = this._table.getTableModel();
+      tableModel.setData([]);
     },
 
     /**
@@ -543,6 +558,20 @@ qx.Class.define("inspector.selenium.View", {
       this.__seleneseTestCase.addListener("changeSeleneseCommands", this.__importCommands, this);
       
       this.__seleneseTestCase.open();
+    },
+    
+    /**
+     * Deletes all commands after asking for confirmation. 
+     */
+    clearTable : function()
+    {
+      if (this._table.getTableModel().getRowCount() > 0) {
+        var clear = confirm("Delete current test command list?");
+        if (clear) {
+          this.__clearTableData();
+        }
+      }
+            
     },
 
     /**
