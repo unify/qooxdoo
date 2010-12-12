@@ -18,9 +18,47 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL!
+ * The <code>qx.ui.list.List</code> is based on the virtual infrastructure and
+ * supports filtering, sorting, grouping, single selection, multi selection,
+ * data binding and custom rendering.
  *
- * Virtual list widget for virtual widget rendering.
+ * Using the virtual infrastructure has considerable advantages when there is a
+ * huge amount of model items to render because the virtual infrastructure only
+ * creates widgets for visible items and reuses them. This saves both creation
+ * time and memory.
+ *
+ * With the {@link qx.ui.list.core.IListDelegate} interface it is possible
+ * to configure the list's behavior (item and group renderer configuration,
+ * filtering, sorting, grouping, etc.).
+ *
+ * Here's an example of how to use the widget:
+ * <pre class="javascript">
+ * //create the model data
+ * var rawData = [];
+ * for (var i = 0; i < 2500; i++) {
+ *  rawData[i] = "Item No " + i;
+ * }
+ * var model = qx.data.marshal.Json.createModel(rawData);
+ *
+ * //create the list
+ * var list = new qx.ui.list.List(model);
+ *
+ * //configure the lists's behavior
+ * var delegate = {
+ *   sorter : function(a, b) {
+ *     return a > b ? 1 : a < b ? -1 : 0;
+ *   }
+ * };
+ * list.setDelegate(delegate);
+ *
+ * //Pre-Select "Item No 20"
+ * list.getSelection().push(model.getItem(20));
+ *
+ * //log selection changes
+ * list.getSelection().addListener("change", function(e) {
+ *   this.debug("Selection: " + list.getSelection().getItem(0));
+ * }, this);
+ * </pre>
  *
  * @childControl row-layer {qx.ui.virtual.Row} layer for all rows
  */
@@ -29,8 +67,9 @@ qx.Class.define("qx.ui.list.List",
   extend : qx.ui.virtual.core.Scroller,
   include : [qx.ui.list.core.MSelectionHandling],
 
+
   /**
-   * Creates the <code>List</code> with the passed model.
+   * Creates the <code>qx.ui.list.List</code> with the passed model.
    *
    * @param model {qx.data.Array|null} model for the list.
    */
@@ -49,6 +88,7 @@ qx.Class.define("qx.ui.list.List",
     this.initItemHeight();
   },
 
+
   properties :
   {
     // overridden
@@ -58,12 +98,14 @@ qx.Class.define("qx.ui.list.List",
       init : "virtual-list"
     },
 
+
     // overridden
     focusable :
     {
       refine : true,
       init : true
     },
+
 
     // overridden
     width :
@@ -72,12 +114,14 @@ qx.Class.define("qx.ui.list.List",
       init : 100
     },
 
+
     // overridden
     height :
     {
       refine : true,
       init : 200
     },
+
 
     /** Data array containing the data which should be shown in the list. */
     model :
@@ -89,6 +133,7 @@ qx.Class.define("qx.ui.list.List",
       deferredInit : true
     },
 
+
     /** Default item height */
     itemHeight :
     {
@@ -98,9 +143,11 @@ qx.Class.define("qx.ui.list.List",
       themeable : true
     },
 
+
     /**
      * The path to the property which holds the information that should be
-     * shown as a label. This is only needed if objects are stored in the model.
+     * displayed as a label. This is only needed if objects are stored in the
+     * model.
      */
     labelPath :
     {
@@ -109,10 +156,11 @@ qx.Class.define("qx.ui.list.List",
       nullable: true
     },
 
+
     /**
      * The path to the property which holds the information that should be
-     * shown as a icon. This is only needed if objects are stored in the model
-     * and if the icon should be shown.
+     * displayed as an icon. This is only needed if objects are stored in the
+     * model and icons should be displayed.
      */
     iconPath :
     {
@@ -120,6 +168,7 @@ qx.Class.define("qx.ui.list.List",
       apply: "_applyIconPath",
       nullable: true
     },
+
 
     /**
      * A map containing the options for the label binding. The possible keys
@@ -131,6 +180,7 @@ qx.Class.define("qx.ui.list.List",
       nullable: true
     },
 
+
     /**
      * A map containing the options for the icon binding. The possible keys
      * can be found in the {@link qx.data.SingleValueBinding} documentation.
@@ -141,9 +191,10 @@ qx.Class.define("qx.ui.list.List",
       nullable: true
     },
 
+
     /**
-     * Delegation object, which can have one or more functions defined by the
-     * {@link qx.ui.list.core.IControllerDelegate} interface.
+     * Delegation object which can have one or more functions defined by the
+     * {@link qx.ui.list.core.IListDelegate} interface.
      */
     delegate :
     {
@@ -154,21 +205,48 @@ qx.Class.define("qx.ui.list.List",
     }
   },
 
+
   members :
   {
     /** {qx.ui.virtual.layer.Row} background renderer */
     _background : null,
 
-    /** {qx.ui.list.core.WidgetCellProvider} provider for widget cell rendering */
-    _widgetCellProvider : null,
 
-    /** {qx.ui.virtual.layer.WidgetCell} widget cell renderer. */
+    /** {qx.ui.list.provider.IListProvider} provider for cell rendering */
+    _provider : null,
+
+
+    /** {qx.ui.virtual.layer.Abstract} layer which contains the items. */
     _layer : null,
-    
+
+
+    /**
+     * {Array} lookup table to get the model index from a row. To get the
+     * correct value after applying filter, sorter, group.
+     *
+     * Note the value <code>-1</code> indicates that the value is a group item.
+     */
     __lookupTable : null,
 
+
+    /** {qx.data.Array} contains all group names */
+    _groups : null,
+
+
+    /** {Array} lookup table for getting the group index from the row */
+    __lookupTableForGroup : null,
+
+
+    /**
+     * {Map} contains all groups with the items as children. The key is
+     * the group name and the value is an <code>Array</code> containing each
+     * item's model index.
+     */
+    __groupHashMap : null,
+
+
     // overridden
-    _createChildControlImpl : function(id)
+    _createChildControlImpl : function(id, hash)
     {
       var control;
 
@@ -181,14 +259,67 @@ qx.Class.define("qx.ui.list.List",
       return control || this.base(arguments, id);
     },
 
+
     /**
-     * Returns the model data from the passed row.
+     * Initializes the virtual list.
+     */
+    _init : function()
+    {
+      this._provider = new qx.ui.list.provider.WidgetProvider(this);
+
+      this.__lookupTable = [];
+      this.__lookupTableForGroup = [];
+      this.__groupHashMap = {};
+      this._groups = new qx.data.Array();
+
+      this.getPane().addListener("resize", this._onResize, this);
+
+      this._initBackground();
+      this._initLayer();
+    },
+
+
+    /**
+     * Initializes the background renderer.
+     */
+    _initBackground : function()
+    {
+      this._background = this.getChildControl("row-layer");
+      this.getPane().addLayer(this._background);
+    },
+
+
+    /**
+     * Initializes the layer for rendering.
+     */
+    _initLayer : function()
+    {
+      this._layer = this._provider.createLayer();
+      this.getPane().addLayer(this._layer);
+    },
+
+
+    /*
+    ---------------------------------------------------------------------------
+      INTERNAL API
+    ---------------------------------------------------------------------------
+    */
+
+
+    /**
+     * Returns the model data for the given row.
      *
-     * @param row {Integer} row to get data.
-     * @return {var|null} the model data from the row.
+     * @param row {Integer} row to get data for.
+     * @return {var|null} the row's model data.
      */
     _getDataFromRow : function(row) {
-      var data = this.getModel().getItem(this._lookup(row));
+      var data = null;
+
+      if (this._isGroup(row)) {
+        data = this._groups.getItem(this._lookupGroup(row));
+      } else {
+        data = this.getModel().getItem(this._lookup(row));
+      }
 
       if (data != null) {
         return data;
@@ -197,37 +328,61 @@ qx.Class.define("qx.ui.list.List",
       }
     },
 
-    /**
-     * Initialized the virtual list.
-     */
-    _init : function()
-    {
-      this.__lookupTable = [];
-      
-      this.getPane().addListener("resize", this._onResize, this);
-
-      this._initBackground();
-      this._initLayer();
-    },
 
     /**
-     * Initialized the background renderer.
+     * Performs a lookup from row to model index.
+     *
+     * @param row {Number} The row to look at.
+     * @return {Number} The model index or
+     *   <code>-1</code> if the row is a group item.
      */
-    _initBackground : function()
-    {
-      this._background = this.getChildControl("row-layer");
-      this.getPane().addLayer(this._background);
+    _lookup : function(row) {
+      return this.__lookupTable[row];
     },
 
+
     /**
-     * Initialized the widget cell renderer.
+     * Performs a lookup from row to group index.
+     *
+     * @param row {Number} The row to look at.
+     * @return {Number} The group index or
+     *   <code>-1</code> if the row is a not a group item.
      */
-    _initLayer : function()
-    {
-      this._widgetCellProvider = new qx.ui.list.core.WidgetCellProvider(this);
-      this._layer = new qx.ui.virtual.layer.WidgetCell(this._widgetCellProvider);
-      this.getPane().addLayer(this._layer);
+    _lookupGroup : function(row) {
+      return this.__lookupTableForGroup.indexOf(row);
     },
+
+
+    /**
+     * Performs a lookup from model index to row.
+     *
+     * @param index {Number} The index to look at.
+     * @return {Number} The row or <code>-1</code>
+     *  if the index is not a model index.
+     */
+    _reverseLookup : function(index) {
+      return this.__lookupTable.indexOf(index);
+    },
+
+
+    /**
+     * Checks if the passed row is a group or an item.
+     *
+     * @param row {Integer} row to check.
+     * @return {Boolean} <code>true</code> if the row is a group element,
+     *  <code>false</code> if the row is an item element.
+     */
+    _isGroup : function(row) {
+      return this._lookup(row) == -1;
+    },
+
+
+    /*
+    ---------------------------------------------------------------------------
+      APPLY ROUTINES
+    ---------------------------------------------------------------------------
+    */
+
 
     // apply method
     _applyModel : function(value, old)
@@ -238,40 +393,54 @@ qx.Class.define("qx.ui.list.List",
         old.removeListener("change", this._onModelChange, this);
       }
 
-      this._widgetCellProvider.removeBindings();
+      this._provider.removeBindings();
       this.__buildUpLookupTable();
     },
+
 
     // apply method
     _applyRowHeight : function(value, old) {
       this.getPane().getRowConfig().setDefaultItemSize(value);
     },
 
+
     // apply method
     _applyLabelPath : function(value, old) {
-      this._widgetCellProvider.setLabelPath(value);
+      this._provider.setLabelPath(value);
     },
+
 
     // apply method
     _applyIconPath : function(value, old) {
-      this._widgetCellProvider.setIconPath(value);
+      this._provider.setIconPath(value);
     },
+
 
     // apply method
     _applyLabelOptions : function(value, old) {
-      this._widgetCellProvider.setLabelOptions(value);
+      this._provider.setLabelOptions(value);
     },
+
 
     // apply method
     _applyIconOptions : function(value, old) {
-      this._widgetCellProvider.setIconOptions(value);
+      this._provider.setIconOptions(value);
     },
+
 
     // apply method
     _applyDelegate : function(value, old) {
-      this._widgetCellProvider.setDelegate(value);
+      this._provider.setDelegate(value);
       this.__buildUpLookupTable();
     },
+
+
+    /*
+    ---------------------------------------------------------------------------
+      EVENT HANDLERS
+    ---------------------------------------------------------------------------
+    */
+
 
     /**
      * Event handler for the resize event.
@@ -282,6 +451,7 @@ qx.Class.define("qx.ui.list.List",
       this.getPane().getColumnConfig().setItemSize(0, e.getData().width);
     },
 
+
     /**
      * Event handler for the model change event.
      *
@@ -291,6 +461,14 @@ qx.Class.define("qx.ui.list.List",
       this.__buildUpLookupTable();
     },
 
+
+    /*
+    ---------------------------------------------------------------------------
+      HELPER ROUTINES
+    ---------------------------------------------------------------------------
+    */
+
+
     /**
      * Helper method to update the row count.
      */
@@ -299,32 +477,39 @@ qx.Class.define("qx.ui.list.List",
       this.getPane().getRowConfig().setItemCount(this.__lookupTable.length);
       this.getPane().fullUpdate();
     },
-    
+
+
     /**
      * Internal method for building the lookup table.
      */
     __buildUpLookupTable : function()
     {
       this.__lookupTable = [];
-      
+      this.__lookupTableForGroup = [];
+      this.__groupHashMap = {};
+      this._groups.removeAll();
+
       var model = this.getModel();
 
       if (model == null) {
         return;
       }
-      
+
       this._runDelegateFilter(model);
+      this._runDelegateSorter(model);
+      this._runDelegateGroup(model);
       this.__updateRowCount();
     },
-    
+
+
     /**
-     * Invokes a filtering using the filter given in the delegate.
+     * Invokes filtering using the filter given in the delegate.
      *
      * @param model {qx.data.IListData} The model.
      */
     _runDelegateFilter : function (model)
     {
-      var filter = this._getDelegate("filter");
+      var filter = qx.util.Delegate.getMethod(this.getDelegate(), "filter");
 
       for (var i = 0,l = model.length; i < l; ++i)
       {
@@ -333,74 +518,109 @@ qx.Class.define("qx.ui.list.List",
         }
       }
     },
-    
-    /**
-     * Returns the delegate method given my its name.
-     *
-     * @param method {String} The name of the delegate method.
-     * @return {Function|null} The requested method or null, if no method is set.
-     */
-    _getDelegate : function (method)
-    {
-      var delegate = this.getDelegate();
 
-      if (this._containsDelegateMethod(delegate, method))
-      {
-        return delegate[method];
+
+    /**
+     * Invokes sorting using the sorter given in the delegate.
+     *
+     * @param model {qx.data.IListData} The model.
+     */
+    _runDelegateSorter : function (model)
+    {
+      if (this.__lookupTable.length == 0) {
+        return;
       }
 
-      return null;
-    },
-    
-    /**
-     * Checks, if the given delegate is valid or if a specific method is given.
-     *
-     * @param delegate {Object} The delegate object.
-     * @param specificMethod {String} The name of the method to search for.
-     * @return {Boolean} True, if everything was ok.
-     */
-    _containsDelegateMethod : function (delegate, specificMethod)
-    {
-      var Type = qx.lang.Type;
+      var sorter = qx.util.Delegate.getMethod(this.getDelegate(), "sorter");
 
-      if (Type.isObject(delegate))
+      if (sorter != null)
       {
-        if (Type.isString(specificMethod))
+        this.__lookupTable.sort(function(a, b)
         {
-          return Type.isFunction(delegate[specificMethod]);
-        }
-        else
+          return sorter(model.getItem(a), model.getItem(b));
+        });
+      }
+    },
+
+
+    /**
+     * Invokes grouping using the group result given in the delegate.
+     *
+     * @param model {qx.data.IListData} The model.
+     */
+    _runDelegateGroup : function (model)
+    {
+      var groupMethod = qx.util.Delegate.getMethod(this.getDelegate(), "group");
+
+      if (groupMethod != null)
+      {
+        for (var i = 0,l = this.__lookupTable.length; i < l; ++i)
         {
-          for (var methodName in this._validDelegates)
-          {
-            if (Type.isFunction(delegate[methodName]))
-            {
-              return true;
-            }
-          }
+          var index = this.__lookupTable[i];
+          var item = this.getModel().getItem(index);
+          var group = groupMethod(item);
+
+          this.__addGroup(group, index);
         }
+        this.__lookupTable = this.__createLookupFromGroup();
+      }
+    },
+
+
+    /**
+     * Adds a model index the the group.
+     *
+     * @param name {String} the group name.
+     * @param index {Integer} model index to add.
+     */
+    __addGroup : function(name, index)
+    {
+      if (name == null) {
+        name = "???";
       }
 
-      return false;
+      if (this.__groupHashMap[name] == null) {
+        this.__groupHashMap[name] = [];
+      }
+      this.__groupHashMap[name].push(index);
     },
-    
+
+
     /**
-     * Performs a lookup.
+     * Creates a lookup table form the internal group hash map.
      *
-     * @param index {Number} The index to look at.
+     * @return {Array} the lookup table based on the internal group hash map.
      */
-    _lookup : function(index) {
-      return this.__lookupTable[index];
+    __createLookupFromGroup : function()
+    {
+      var result = [];
+      var row = 0;
+      for (var group in this.__groupHashMap)
+      {
+        // indicate that the value is a group
+        result.push(-1);
+        this.__lookupTableForGroup.push(row);
+        this._groups.push(group);
+        row++;
+
+        var groupMembers = this.__groupHashMap[group];
+        for (var i = 0,l = groupMembers.length; i < l; i++) {
+          result.push(groupMembers[i]);
+          row++;
+        }
+      }
+      return result;
     }
   },
+
 
   destruct : function()
   {
     this._background.dispose();
-    this._widgetCellProvider.dispose();
+    this._provider.dispose();
     this._layer.dispose();
-    this._background = null;
-    this._widgetCellProvider = null;
-    this._layer = null;
+    this._groups.dispose();
+    this._background = this._provider = this._layer = this._groups =
+      this.__lookupTable = this.__lookupTableForGroup = this.__groupHashMap = null;
   }
 });

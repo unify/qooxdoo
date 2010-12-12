@@ -952,14 +952,31 @@ qx.Theme.define("qx.theme.Decoration",
     ---------------------------------------------------------------------------
     */
 
-    "progressbar" : 
+    "progressbar" :
     {
       decorator: qx.ui.decoration.Single,
-      
-      style: 
+
+      style:
       {
         width: 1,
         color: "border-input"
+      }
+    },
+
+    /*
+    ---------------------------------------------------------------------------
+      VIRTUAL WIDGETS
+    ---------------------------------------------------------------------------
+    */
+
+    "group-item" :
+    {
+      decorator : qx.ui.decoration.Background,
+
+      style :
+      {
+        backgroundImage  : "decoration/group-item.png",
+        backgroundRepeat : "scale"
       }
     }
   }

@@ -522,7 +522,7 @@ qx.Class.define("qx.event.Manager",
         targetCheck = clazz.TARGET_CHECK;
         if (targetCheck)
         {
-          // use bitwise & to compare for the bitmask!          
+          // use bitwise & to compare for the bitmask!
           var found = false;
           if (isDomNode && ((targetCheck & IEventHandler.TARGET_DOMNODE) != 0)) {
             found = true;
@@ -533,7 +533,7 @@ qx.Class.define("qx.event.Manager",
           } else if (isDocument && ((targetCheck & IEventHandler.TARGET_DOCUMENT) != 0)) {
             found = true;
           }
-          
+
           if (!found) {
             continue;
           }

@@ -1051,31 +1051,35 @@ class Class(Resource):
         classVariants     = self.classVariants()
         relevantVariants  = projectClassVariantsToCurrent(classVariants, variants)
         variantsId        = util.toString(relevantVariants)
+        cacheId           = "messages-%s" % (variantsId,)
+        cached            = True
 
-        cacheId = "messages-%s-%s" % (self.path, variantsId)
-
-        messages, _ = cache.readmulti(cacheId, self.path)
+        #messages, _ = cache.readmulti(cacheId, self.path)
+        classInfo, cacheModTime = self._getClassCache()
+        messages = classInfo[cacheId] if cacheId in classInfo else None
         if messages != None:
-            return messages
+            return messages, cached
 
         console.debug("Looking for message strings: %s..." % self.id)
         console.indent()
+        cached = False
 
         tree = self.tree(variants)
 
-        #try:
-        if True:
+        try:
             messages = self._findTranslationBlocks(tree, [])
-        #except NameError, detail:
-        #    raise RuntimeError("Could not extract message strings from %s!\n%s" % (self.id, detail))
+        except NameError, detail:
+            raise RuntimeError("Could not extract message strings from %s!\n%s" % (self.id, detail))
 
         if len(messages) > 0:
             console.debug("Found %s message strings" % len(messages))
 
         console.outdent()
-        cache.writemulti(cacheId, messages)
+        #cache.writemulti(cacheId, messages)
+        classInfo[cacheId] = messages
+        self._writeClassCache(classInfo)
 
-        return messages
+        return messages, cached
 
 
     def _findTranslationBlocks(self, node, messages):
@@ -1157,6 +1161,23 @@ class Class(Resource):
         return
 
 
+    def _concatOperation(self, node):
+        result = ""
+
+        try:
+            first = node.getChild("first").getChildByTypeAndAttribute("constant", "constantType", "string")
+            result += first.get("value")
+
+            second = node.getChild("second").getFirstChild(True, True)
+            if second.type == "operation":
+                result += self._concatOperation(second)
+            else:
+                result += second.get("value")
+
+        except tree.NodeAccessException:
+            self._console.warn("Unknown expression as argument to translation method at line %s" % (node.get("line"),))
+
+        return result
 
 
 

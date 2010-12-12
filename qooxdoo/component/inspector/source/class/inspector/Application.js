@@ -21,7 +21,7 @@
 
 #asset(inspector/*)
 #asset(qx/icon/Tango/16/actions/view-refresh.png)
-#ignore(qxinspector.local)
+#ignore(qxinspector)
 
 ************************************************************************ */
 
@@ -51,6 +51,7 @@ qx.Class.define("inspector.Application",
   members :
   {
     __checkCount : null,
+    __frameUnsafeAttempt : null,
 
     /*
      * Toolbar
@@ -194,7 +195,7 @@ qx.Class.define("inspector.Application",
 
         // also break if its undefined
         if (this.__checkCount > 30) {
-          throw new Error("qooxdoo not found!");
+          throw new Error("No qooxdoo application root found!");
         }
         try {
           // try to get the root element of the application
@@ -203,7 +204,27 @@ qx.Class.define("inspector.Application",
           return true;
         } catch (ex) {
           qx.event.Timer.once(this.__initInspector, this, 500);
-          throw new Error("qooxdoo isn't ready at the moment!");
+
+          // check if inspect fails because of security restrictions
+          try {
+            // check if we can access the iframe
+            this._loadedWindow.document;
+
+            // if we get here, there are no security restrictions - try again
+            return false;
+
+          } catch(ex) {
+            if (window.location.protocol == "file:" && !this.__frameUnsafeAttempt) {
+              alert("Failed to inspect application loaded from the file system.\n\n" +
+                    "The security settings of your browser may prohibit to access " +
+                    "frames loaded using the file protocol. Please try the http " +
+                    "protocol instead.");
+
+              // prohibit the alert from being shown again
+              this.__frameUnsafeAttempt = true;
+            }
+          }
+
         }
       } catch (ex) {
         // signal that the inspector is not working

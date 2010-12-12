@@ -165,7 +165,8 @@ class Generator(object):
 
             "provider" :
             {
-              "type" : "JCompileJob",
+              #"type" : "JCompileJob",
+              "type" : "JClassDepJob",
             },
 
             "shell" :
@@ -359,7 +360,7 @@ class Generator(object):
             self._console.debug("Excluding %s items smart, %s items explicit" % (len(excludeWithDeps), len(excludeNoDeps)))
 
             if len(excludeCfg) > 0:
-                self._console.warn("Excludes may break code!")
+                self._console.warn("Excludes may break code (%r)" % excludeCfg)
 
             self._console.outdent()
 
@@ -372,7 +373,7 @@ class Generator(object):
                     expanded = self._expandRegExp(entry)
                     nexcludeWithDeps.extend(expanded)
                 except RuntimeError:
-                    self._console.warn("! Skipping unresolvable exclude entry: \"%s\"" % entry)
+                    self._console.warn("Skipping unresolvable exclude entry: \"%s\"" % entry)
             excludeWithDeps = nexcludeWithDeps
 
             nexcludeNoDeps = []
@@ -381,7 +382,7 @@ class Generator(object):
                     expanded = self._expandRegExp(entry)
                     nexcludeNoDeps.extend(expanded)
                 except RuntimeError:
-                    self._console.warn("! Skipping unresolvable exclude entry: \"%s\"" % entry)
+                    self._console.warn("Skipping unresolvable exclude entry: \"%s\"" % entry)
             excludeNoDeps = nexcludeNoDeps
 
             self._console.outdent()
@@ -539,8 +540,7 @@ class Generator(object):
         #self._treeLoader     = TreeLoader(self._classes, self._cache, self._console)
         self._locale         = Locale(self._context, self._classes, self._classesObj, self._translations, self._cache, self._console, )
         self._depLoader      = DependencyLoader(self._classesObj, self._cache, self._console, require, use, self._context)
-        self._resourceHandler= ResourceHandler(self, self._libraries)
-        self._codeGenerator  = CodeGenerator(self._cache, self._console, self._config, self._job, self._settings, self._locale, self._resourceHandler, self._classes)
+        self._codeGenerator  = CodeGenerator(self._cache, self._console, self._config, self._job, self._settings, self._locale, self._classes)
 
         # Preprocess include/exclude lists
         includeWithDeps, includeNoDeps = getIncludes(self._job.get("include", []))
@@ -567,6 +567,16 @@ class Generator(object):
                     self.runUpdateTranslation()
                 elif trigger == "pretty-print":
                     self._codeGenerator.runPrettyPrinting(self._classes, self._classesObj)
+                elif trigger == "provider":
+                    script = Script()
+                    script.classesObj = self._classesObj.values()
+                    variantData = getVariants()
+                    variantSets = util.computeCombinations(variantData)
+                    script.variants = variantSets[0] 
+                    script.libraries = self._libraries
+                    script.namespace = self.getAppName()
+                    script.locales = config.get("compile-options/code/locales", [])
+                    CodeProvider.runProvider(script, self)
                 else:
                     pass
 
@@ -631,9 +641,9 @@ class Generator(object):
             if "compile" in jobTriggers:
                 self._codeGenerator.runCompiled(script, self._treeCompiler)
 
-            if "provider" in jobTriggers:
-                script.locales = config.get("compile-options/code/locales", [])
-                CodeProvider.runProvider(script, self)
+            #if "provider" in jobTriggers:
+            #    script.locales = config.get("compile-options/code/locales", [])
+            #    CodeProvider.runProvider(script, self)
 
             # debug tasks
             self.runLogDependencies(script)
@@ -901,7 +911,6 @@ class Generator(object):
             exclregexps = self._job.get("provider/exclude", [])
             inclregexps = map(textutil.toRegExp, inclregexps)
             exclregexps = map(textutil.toRegExp, exclregexps)
-            rh          = self._resourceHandler
 
             data = {}
             # Class deps
@@ -931,7 +940,7 @@ class Generator(object):
             # class list
             classObjs = [x for x in script.classesObj if x.id in data.keys()]
             # map resources to class.resources
-            classObjs = rh.mapResourcesToClasses(script.libraries, classObjs)
+            classObjs = ResourceHandler.mapResourcesToClasses(script.libraries, classObjs, self._job.get("asset-let", {}))
 
             for clazz in classObjs:
                 reskeys = ["/resource/resources#"+x.id for x in clazz.resources]
@@ -939,8 +948,10 @@ class Generator(object):
 
             # Message key deps
             for classId in data:
-                classKeys = self._locale.getTranslation(classId, {})
-                transIds  = set(x['id'] for x in classKeys) # strip duplicates
+                #classKeys, _ = self._locale.getTranslation(classId, {})
+                classKeys, _ = self._classesObj[classId].messageStrings({})
+                transIds  = set(x['id'] for x in classKeys) # get the msgid's, uniquely
+                transIds.update(x['plural'] for x in classKeys if 'plural' in x) # add plural keys
                 transKeys = ["/translation/i18n-${lang}#" + x for x in transIds]
                 data[classId]["run"].extend(transKeys)
 
@@ -1316,10 +1327,9 @@ class Generator(object):
         resTargetRoot = self._job.get("copy-resources/target", "build")
         resTargetRoot = self._config.absPath(resTargetRoot)
         self.approot  = resTargetRoot  # this is a hack, because resource copying generates uri's
-        rh            = self._resourceHandler
 
         # map resources to class.resources
-        classList = rh.mapResourcesToClasses(script.libraries, classList)
+        classList = ResourceHandler.mapResourcesToClasses(script.libraries, classList, self._job.get("asset-let", {}))
 
         self._console.indent()
         # make resources to copy unique
@@ -1500,7 +1510,9 @@ class Generator(object):
 
         def extractFromPrefixSpec(prefixSpec):
             prefix = altprefix = ""
-            if len(prefixSpec) == 2 :  # prefixSpec = [ prefix, altprefix ]
+            if not prefixSpec or not isinstance(prefixSpec, types.ListType):
+                self._console.warn("Missing or incorrect prefix spec, might lead to incorrect resource id's.")
+            elif len(prefixSpec) == 2 :  # prefixSpec = [ prefix, altprefix ]
                 prefix, altprefix = prefixSpec
             elif len(prefixSpec) == 1:
                 prefix            = prefixSpec[0]
@@ -1523,7 +1535,7 @@ class Generator(object):
             imgDict = {}
             inputStruct = imageSpec['input']
             for group in inputStruct:
-                prefixSpec = group.get('prefix')
+                prefixSpec = group.get('prefix', [])
                 prefix, altprefix = extractFromPrefixSpec(prefixSpec)
                 if prefix:
                     prefix = self._config.absPath(prefix)
@@ -1552,10 +1564,10 @@ class Generator(object):
 
         images = self._job.get("combine-images/images", {})
         for image, imgspec in images.iteritems():
-            imageId= getImageId(image, imgspec.get('prefix', None))
-            image  = self._config.absPath(image)  # abs output path
             self._console.info("Creating image %s" % image)
             self._console.indent()
+            imageId= getImageId(image, imgspec.get('prefix', []))
+            image  = self._config.absPath(image)  # abs output path
             config = {}
 
             # create a dict of clipped image objects - for later look-up
@@ -1647,7 +1659,7 @@ class Generator(object):
             else:
                 excRegex = re.compile("^$")  # catch-none
 
-            classesFiltered = (c for c in classes if not excRegex.search(c))
+            classesFiltered = (c for c in classes if incRegex.search(c) and not excRegex.search(c))
             return classesFiltered
 
         if not self._job.get('lint-check', False):
@@ -1672,7 +1684,7 @@ class Generator(object):
         lint_opts = "".join(map(lambda x: " -g"+x, allowedGlobals))
         classesToCheck = getFilteredClassList(classes, includePatt, excludePatt)
         for pos, classId in enumerate(classesToCheck):
-            #self._shellCmd.execute('python "%s" %s "%s"' % (lintCommand, lint_opts, self._classes[classId]['path']))
+            self._console.debug("Checking %s" % classId)
             self._shellCmd.execute('python "%s" %s "%s"' % (lintCommand, lint_opts, self._classesObj[classId].path))
 
         self._console.outdent()
@@ -1706,15 +1718,15 @@ class Generator(object):
         for lib in libs:
             libPaths.append(os.path.join(lib['path'], lib['class']))
 
-        mig_opts = ""
+        mig_opts = []
         if migSettings.get('from-version', False):
-            mig_opts += "--from-version %s" % migSettings.get('from-version')
+            mig_opts.extend(["--from-version", migSettings.get('from-version')])
         if migSettings.get('migrate-html'):
-            mig_opts += " --migrate-html"
-        mig_opts += " --class-path %s" % ",".join(libPaths)
+            mig_opts.append("--migrate-html")
+        mig_opts.extend(["--class-path", ",".join(libPaths)])
 
-        shcmd = "python %s %s" % (migratorCmd, mig_opts)
-        self._console.debug("Invoking migrator as: \"%s\"" % shcmd)
+        shcmd = " ".join(textutil.quoteCommandArgs([sys.executable, migratorCmd] + mig_opts))
+        self._console.debug("Invoking migrator as: '%s'" % shcmd)
         self._shellCmd.execute(shcmd)
 
         self._console.outdent()
@@ -1783,15 +1795,27 @@ class Generator(object):
     def runSimulation(self):
         self._console.info("Running Simulation...")
         
-        javaClassPath = self._job.get("simulate/java-classpath", False)
-        if javaClassPath:
-            javaClassPath = "-cp %s" %javaClassPath
-            
-        rhinoClass = self._job.get("simulate/rhino-class", False)
+        argv    = []
+        javaBin = "java"
+        javaClassPath = "-cp"
+        argv.extend((javaBin, javaClassPath))
+
+        configClassPath = self._job.get("simulate/java-classpath", [])
+        qxSeleniumPath = self._job.get("simulate/qxselenium-path", False)
+        if qxSeleniumPath:
+            configClassPath.append(qxSeleniumPath)
         
+        classPathSeparator = ":"
+        if util.getPlatformInfo()[0] == "Windows":
+            classPathSeparator = ";"
+        
+        argv.append(classPathSeparator.join(configClassPath))
+        
+        rhinoClass = self._job.get("simulate/rhino-class", "org.mozilla.javascript.tools.shell.Main")
         runnerScript = self._job.get("simulate/simulator-script")
+        argv.extend((rhinoClass, runnerScript))
         
-        cmd = "java %s %s %s" %(javaClassPath, rhinoClass, runnerScript)        
+        cmd = " ".join(textutil.quoteCommandArgs(argv))
         
         self._console.debug("Selenium start command: " + cmd)
         shell = ShellCmd()

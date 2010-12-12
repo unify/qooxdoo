@@ -18,11 +18,11 @@ echo ">>> Sleeping for 30 seconds"
 sleep 30
 
 echo ">>> Preparing release..."
-mkdir ../qts-release/qooxdoo-$version || exit 1
+mkdir -p ../qts-release/qooxdoo-$version || exit 1
 cd ../qts-release/qooxdoo-$version || exit 1
 
 echo ">>> Downloading archive qooxdoo-$version.zip..."
-wget -O qooxdoo-$version.zip http://github.com/unify/qooxdoo/zipball/$version || exit 1
+wget --no-check-certificate -O qooxdoo-$version.zip https://github.com/unify/qooxdoo/zipball/$version || exit 1
 
 echo ">>> Tagging qooxdoo $version in SVN..."
 cd .. || exit 1

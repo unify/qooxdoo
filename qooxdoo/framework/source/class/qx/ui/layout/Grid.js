@@ -71,7 +71,7 @@
  *
  * *External Documentation*
  *
- * <a href='http://manual.qooxdoo.org/1.2/pages/layout/grid.html'>
+ * <a href='http://manual.qooxdoo.org/1.3/pages/layout/grid.html'>
  * Extended documentation</a> and links to demos of this layout in the qooxdoo wiki.
  */
 qx.Class.define("qx.ui.layout.Grid",
@@ -901,7 +901,7 @@ qx.Class.define("qx.ui.layout.Grid",
           var rowIncrements = qx.ui.layout.Util.computeFlexOffsets(
             rowFlexes, hint.minHeight, minSpanHeight
           );
-          
+
           for (var j=0; j<widgetProps.rowSpan; j++)
           {
             var offset = rowIncrements[widgetRow+j] ? rowIncrements[widgetRow+j].offset : 0;

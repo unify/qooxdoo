@@ -92,7 +92,8 @@ qx.Class.define("qx.data.controller.Object",
       check: "qx.core.Object",
       event: "changeModel",
       apply: "_applyModel",
-      nullable: true
+      nullable: true,
+      dereference: true
     }
   },
 
@@ -140,8 +141,9 @@ qx.Class.define("qx.data.controller.Object",
             options, reverseOptions
           );
         } else {
-          // in shutdown situations, it may be that the target is already disposed
-          if (targetObject.isDisposed()) {
+          // in shutdown situations, it may be that something is already
+          // disposed [BUG #4343]
+          if (targetObject.isDisposed() || qx.core.ObjectRegistry.inShutDown) {
             continue;
           }
           // if the model is null, reset the current target
@@ -150,7 +152,7 @@ qx.Class.define("qx.data.controller.Object",
           } else {
             var open = targetProperty.indexOf("[");
             var index = parseInt(
-              targetProperty.substring(open + 1, targetProperty.length - 1)
+              targetProperty.substring(open + 1, targetProperty.length - 1), 10
             );
             targetProperty = targetProperty.substring(0, open);
             var targetArray = targetObject["get" + qx.lang.String.firstUp(targetProperty)]();

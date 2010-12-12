@@ -44,7 +44,7 @@
  *
  * *External Documentation*
  *
- * <a href='http://manual.qooxdoo.org/1.2/pages/widget/widget.html' target='_blank'>
+ * <a href='http://manual.qooxdoo.org/1.3/pages/widget/widget.html' target='_blank'>
  * Documentation of this widget in the qooxdoo wiki.</a>
  *
  * @state disabled set by {@link #enabled}
@@ -152,7 +152,7 @@ qx.Class.define("qx.ui.core.Widget",
         {@link qx.event.type.Mouse#getButton} for more details.*/
     click : "qx.event.type.Mouse",
 
-    /** Widget is double clicked using left or middle button. 
+    /** Widget is double clicked using left or middle button.
         {@link qx.event.type.Mouse#getButton} for more details.*/
     dblclick : "qx.event.type.Mouse",
 
@@ -167,13 +167,13 @@ qx.Class.define("qx.ui.core.Widget",
 
     /** Fired if a touch at the screen is started. */
     touchstart : "qx.event.type.Touch",
-    
-    /** Fired if a touch at the screen has ended. */    
+
+    /** Fired if a touch at the screen has ended. */
     touchend : "qx.event.type.Touch",
-    
+
     /** Fired during a touch at the screen. */
     touchmove : "qx.event.type.Touch",
-    
+
     /** Fired if a touch at the screen is cancled. */
     touchcancel : "qx.event.type.Touch",
 
@@ -455,7 +455,10 @@ qx.Class.define("qx.ui.core.Widget",
 
     /**
      * The decorator property points to an object, which is responsible
-     * for drawing the widget's decoration, e.g. border, background or shadow
+     * for drawing the widget's decoration, e.g. border, background or shadow.
+     *
+     * This can be a decorator object or a string pointing to a decorator
+     * defined in the decoration theme.
      */
     decorator :
     {
@@ -472,6 +475,9 @@ qx.Class.define("qx.ui.core.Widget",
      * The decorator used to render the widget's outline/shadow. The decorator's
      * insets are interpreted as the amount of pixels the shadow extends the
      * widget's size.
+     *
+     * This can be a decorator object or a string pointing to a decorator
+     * defined in the decoration theme.
      *
      * Note that shadows work only properly in top level widgets like menus, windows
      * or tooltips. If used in inner widgets the shadow may not be cut by the
@@ -533,8 +539,10 @@ qx.Class.define("qx.ui.core.Widget",
     /**
      * Mapping to native style property opacity.
      *
-     *  The uniform opacity setting to be applied across an entire object. Behaves like the new CSS-3 Property.
-     *  Any values outside the range 0.0 (fully transparent) to 1.0 (fully opaque) will be clamped to this range.
+     * The uniform opacity setting to be applied across an entire object.
+     * Behaves like the new CSS-3 Property.
+     * Any values outside the range 0.0 (fully transparent) to 1.0
+     * (fully opaque) will be clamped to this range.
      */
     opacity :
     {
@@ -726,8 +734,8 @@ qx.Class.define("qx.ui.core.Widget",
      * Whether the widget is focusable e.g. rendering a focus border and visualize
      * as active element.
      *
-     * See also {@link #isTabable} which allows runtime checks for 
-     * <code>isChecked</code> or other stuff to test whether the widget is 
+     * See also {@link #isTabable} which allows runtime checks for
+     * <code>isChecked</code> or other stuff to test whether the widget is
      * reachable via the TAB key.
      */
     focusable :
@@ -863,7 +871,7 @@ qx.Class.define("qx.ui.core.Widget",
      * Returns the widget, which contains the given DOM element.
      *
      * @param element {Element} The DOM element to search the widget for.
-     * @param considerAnonymousState {Boolean?false} If true, anonymous widget 
+     * @param considerAnonymousState {Boolean?false} If true, anonymous widget
      *   will not be returned.
      * @return {qx.ui.core.Widget} The widget containing the element.
      */
@@ -876,7 +884,7 @@ qx.Class.define("qx.ui.core.Widget",
         // dereference "weak" reference to the widget.
         if (widgetKey != null) {
           var widget = qx.core.ObjectRegistry.fromHashCode(widgetKey);
-          // check for ánonymous widgets
+          // check for anonymous widgets
           if (!considerAnonymousState || !widget.getAnonymous()) {
             return widget;
           }
@@ -1047,7 +1055,11 @@ qx.Class.define("qx.ui.core.Widget",
       var first = manager.resolve(a).getInsets();
       var second = manager.resolve(b).getInsets();
 
-      if (first.top != second.top || first.right != second.right || first.bottom != second.bottom || first.left != second.left) {
+      if (first.top != second.top ||
+          first.right != second.right ||
+          first.bottom != second.bottom ||
+          first.left != second.left
+      ) {
         return true;
       }
 
@@ -1156,7 +1168,9 @@ qx.Class.define("qx.ui.core.Widget",
         if (this.__layoutManager && this.hasLayoutChildren()) {
           this.__layoutManager.renderLayout(innerWidth, innerHeight);
         } else if (this.hasLayoutChildren()) {
-          throw new Error("At least one child in control " + this._findTopControl() + " requires a layout, but no one was defined!");
+          throw new Error("At least one child in control " +
+            this._findTopControl() +
+            " requires a layout, but no one was defined!");
         }
       }
 
@@ -2005,7 +2019,8 @@ qx.Class.define("qx.ui.core.Widget",
     _addBefore : function(child, before, options)
     {
       if (qx.core.Variant.isSet("qx.debug", "on")) {
-        this.assertInArray(before, this._getChildren(), "The 'before' widget is not a child of this widget!");
+        this.assertInArray(before, this._getChildren(),
+          "The 'before' widget is not a child of this widget!");
       }
 
       if (child == before) {
@@ -2031,14 +2046,16 @@ qx.Class.define("qx.ui.core.Widget",
      * Add a widget after another already inserted widget
      *
      * @param child {LayoutItem} widget to add
-     * @param after {LayoutItem} widget, after which the new widget will be inserted
+     * @param after {LayoutItem} widget, after which the new widget will
+     *   be inserted
      * @param options {Map?null} Optional layout data for widget.
      * @return {void}
      */
     _addAfter : function(child, after, options)
     {
       if (qx.core.Variant.isSet("qx.debug", "on")) {
-        this.assertInArray(after, this._getChildren(), "The 'after' widget is not a child of this widget!");
+        this.assertInArray(after, this._getChildren(),
+          "The 'after' widget is not a child of this widget!");
       }
 
       if (child == after) {
@@ -2354,7 +2371,9 @@ qx.Class.define("qx.ui.core.Widget",
       {
         if (value && typeof value === "object") {
           if (qx.ui.core.Widget.DEBUG) {
-            this.warn("Decorator instances may increase memory usage and processing time. Often it is better to lay them out to a theme file. Hash code of decorator object: " + value);
+            this.warn("Decorator instances may increase memory usage and " +
+              "processing time. Often it is better to lay them out to a " +
+              "theme file. Hash code of decorator object: " + value);
           }
         }
       }
@@ -3848,7 +3867,9 @@ qx.Class.define("qx.ui.core.Widget",
       if (pos == -1) {
         var control = this._createChildControlImpl(id);
       } else {
-        var control = this._createChildControlImpl(id.substring(0, pos));
+        var control = this._createChildControlImpl(
+          id.substring(0, pos), id.substring(pos + 1, id.length)
+        );
       }
 
       if (!control) {
@@ -3885,10 +3906,13 @@ qx.Class.define("qx.ui.core.Widget",
      * should be overwritten by classes which extends this one
      * to support new child control types.
      *
-     * @param id {String} ID of the child control
+     * @param id {String} ID of the child control. If a # is used, the id is
+     *   the part infront of the #.
+     * @param hash {String?undefined} If a child control name contains a #,
+     *   all text following the # will be the hash argument.
      * @return {qx.ui.core.Widget} The created control or <code>null</code>
      */
-    _createChildControlImpl : function(id) {
+    _createChildControlImpl : function(id, hash) {
       return null;
     },
 
@@ -3957,11 +3981,16 @@ qx.Class.define("qx.ui.core.Widget",
      *
      * Supported modes:
      *
-     * * <code>margin</code>: Calculate from the margin box of the element (bigger than the visual appearance: including margins of given element)
-     * * <code>box</code>: Calculates the offset box of the element (default, uses the same size as visible)
-     * * <code>border</code>: Calculate the border box (useful to align to border edges of two elements).
-     * * <code>scroll</code>: Calculate the scroll box (relevant for absolute positioned content).
-     * * <code>padding</code>: Calculate the padding box (relevant for static/relative positioned content).
+     * * <code>margin</code>: Calculate from the margin box of the element
+     *   (bigger than the visual appearance: including margins of given element)
+     * * <code>box</code>: Calculates the offset box of the element
+     *   (default, uses the same size as visible)
+     * * <code>border</code>: Calculate the border box
+     *   (useful to align to border edges of two elements).
+     * * <code>scroll</code>: Calculate the scroll box
+     *   (relevant for absolute positioned content).
+     * * <code>padding</code>: Calculate the padding box
+     *   (relevant for static/relative positioned content).
      *
      * @param mode {String} A supported option. See comment above.
      * @return {Map} Returns a map with <code>left</code>, <code>top</code>,
@@ -3976,15 +4005,21 @@ qx.Class.define("qx.ui.core.Widget",
 
 
     /**
-     * Computes the location of the content element in context of the document dimensions.
+     * Computes the location of the content element in context of the document
+     * dimensions.
      *
      * Supported modes:
      *
-     * * <code>margin</code>: Calculate from the margin box of the element (bigger than the visual appearance: including margins of given element)
-     * * <code>box</code>: Calculates the offset box of the element (default, uses the same size as visible)
-     * * <code>border</code>: Calculate the border box (useful to align to border edges of two elements).
-     * * <code>scroll</code>: Calculate the scroll box (relevant for absolute positioned content).
-     * * <code>padding</code>: Calculate the padding box (relevant for static/relative positioned content).
+     * * <code>margin</code>: Calculate from the margin box of the element
+     *   (bigger than the visual appearance: including margins of given element)
+     * * <code>box</code>: Calculates the offset box of the element (default,
+     *   uses the same size as visible)
+     * * <code>border</code>: Calculate the border box (useful to align to
+     *   border edges of two elements).
+     * * <code>scroll</code>: Calculate the scroll box (relevant for absolute
+     *   positioned content).
+     * * <code>padding</code>: Calculate the padding box (relevant for
+     *   static/relative positioned content).
      *
      * @param mode {String} A supported option. See comment above.
      * @return {Map} Returns a map with <code>left</code>, <code>top</code>,

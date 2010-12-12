@@ -625,7 +625,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
       var deprecatedFunction = qx.bom.htmlarea.HtmlArea.isBlockNode;
       var deprecationMessage = "Please use the method 'qx.dom.Node.isBlockNode' instead.";
       qx.log.Logger.deprecatedMethodWarning(deprecatedFunction, deprecationMessage);
-      
+
       return qx.dom.Node.isBlockNode(node);
     },
 
@@ -3343,7 +3343,7 @@ qx.Class.define("qx.bom.htmlarea.HtmlArea",
           }
           catch (exc)
           {
-            // @see Bug 3142
+            // [BUG #3142]
             // ignore this exception: NOT_FOUND_ERR: DOM Exception 8
           }
 

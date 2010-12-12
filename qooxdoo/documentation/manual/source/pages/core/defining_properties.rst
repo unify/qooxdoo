@@ -47,7 +47,7 @@ Defining an apply method
 
 To attach an apply method you must add a key ``apply`` to your configuration which points to a name of a function which needs to be available in your ``members`` section. As the apply method normally should not be called directly, it is always a good idea to make the method at least protected by prefixing the name with an underscore ``_``.
 
-The return value of the apply method is ignored.  The second parameter is optional and may be left out.
+The return value of the apply method is ignored. The first argument is the actual value, the second one is the former or old value. The last argument is the name of the property which can come very handy if you use one apply mehtod for more than one property. The second and third arguments are optional and may be left out.
 
 .. _pages/defining_properties#example_value:
 
@@ -62,12 +62,14 @@ Example
 
     members : 
     {
-      _applyWidth : function(value, old) {
+      _applyWidth : function(value, old, name) {
         // do something...
       }
     }
 
 The applying method is only called when the value has changed. 
+
+For a more technical description, take a look at the `API documentation of qx.core.Property <http://demo.qooxdoo.org/%{version}/apiviewer/#qx.core.Property>`__
 
 .. _pages/defining_properties#providing_an_event_interface:
 
@@ -363,6 +365,44 @@ As an alternative to the custom check *function*, you may also define a *string*
     }
 
 This is more efficient, particularly for checks involving rather small tests, as it omits the function call that would be needed in the variant above.
+
+.. _pages/defining_properties#transforming_incoming_values:
+
+Transforming incoming values
+============================
+
+You can transform incoming values before they are stored by using the transform key to the corresponding property definition.  The transform method occurs before the check and apply functions and can also throw an error if the value passed to it is invalid.  This  method is useful if you wish accept different formats or value types for a property.
+
+Example
+-------
+
+Here we define both a check and transform method for the width property. Though the check method requires that the property be a integer, we can use the transform method to accept a string and transform it into an integer. Note that we can still rely on the check method to catch any other incorrect values, such as if the user mistakenly assigned a Widget to the property.
+
+::
+
+    properties :
+    {
+       width : 
+       {
+          init : 0,
+          transform: "_transformWidth",
+          check: "Integer"
+       }
+    },
+    
+    members :
+    {
+       _transformWidth : function(value) 
+       {
+          if ( qx.lang.Type.isString(value) ) 
+          {
+              value = parseInt(value, 10);
+          }
+    
+          return value;
+       }
+    }
+
 
 .. _pages/defining_properties#validation_incoming_values:
 

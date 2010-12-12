@@ -53,7 +53,7 @@
  *
  * *External Documentation*
  *
- * <a href='http://manual.qooxdoo.org/1.2/pages/widget/label.html' target='_blank'>
+ * <a href='http://manual.qooxdoo.org/1.3/pages/widget/label.html' target='_blank'>
  * Documentation of this widget in the qooxdoo wiki.</a>
  */
 qx.Class.define("qx.ui.basic.Label",
@@ -261,7 +261,7 @@ qx.Class.define("qx.ui.basic.Label",
     _applySelectable : function(value)
     {
 
-      // This is needed for all browsers not having text-overflow:ellipsis 
+      // This is needed for all browsers not having text-overflow:ellipsis
       // but supporting XUL (firefox < 4)
       // https://bugzilla.mozilla.org/show_bug.cgi?id=312156
       if (!qx.bom.client.Feature.CSS_TEXT_OVERFLOW && qx.bom.client.Feature.XUL)

@@ -15,7 +15,7 @@ Core Widgets
 Content Widgets
 ===============
 
-:doc:`label`, :doc:`image`, :doc:`atom`, :doc:`tree`
+:doc:`label`, :doc:`image`, :doc:`atom`, :doc:`tree`, :doc:`table`
 
 .. _pages/widget#container_widgets:
 
@@ -57,11 +57,24 @@ Form Widgets
 
 :doc:`checkbox`, :doc:`list`, :doc:`slider`
 
-.. _pages/widget#indicators:
+.. _pages/widget#virtualwidgets:
+
+Virtual Widgets
+===============
+:doc:`virtuallist`
+
+.. _pages/widget#virtuallist:
 
 Indicators
 ==========
 :doc:`progressbar`
+
+.. Toctree for all widgets (important for inclusion in PDF)
+
+.. toctree::
+   :hidden:
+
+   toctree.rst
 
 
 .. .. _pages/widget#other:

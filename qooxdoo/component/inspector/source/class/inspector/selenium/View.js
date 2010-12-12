@@ -84,15 +84,17 @@ qx.Class.define("inspector.selenium.View", {
 
     var pane = new qx.ui.splitpane.Pane("vertical");
     this.add(pane, {flex: 1});
-    window.pane = pane;
 
     // Table
     this._table = this.__getTable();
     pane.add(this._table, 2);
 
     // Log
+    var logContainer = new qx.ui.container.Composite(new qx.ui.layout.VBox(2, "middle"));
+    logContainer.add(this.__getLogControls());
     this._logArea = this.__getLogArea();
-    pane.add(this._logArea, 1);
+    logContainer.add(this._logArea, {flex: 1});
+    pane.add(logContainer, 1);
   },
 
   properties : {
@@ -238,7 +240,13 @@ qx.Class.define("inspector.selenium.View", {
       this._recordButton = new qx.ui.toolbar.CheckBox(null,
           "icon/22/actions/media-record.png");
       part2.add(this._recordButton);
-      this._recordButton.setToolTipText("Automatically add a new command for each inspected widget");
+      var recOpts = {
+        converter : function(data) {
+          return data ? "Stop adding commands for inspected widgets" : 
+          "Automatically add a new command for each inspected widget";
+        }
+      };
+      this._recordButton.bind("value", this._recordButton, "toolTipText", recOpts);
 
       this._exportButton = new qx.ui.toolbar.CheckBox(null, "icon/22/actions/window-new.png");
       part2.add(this._exportButton);
@@ -292,7 +300,7 @@ qx.Class.define("inspector.selenium.View", {
             }
           }
         }
-        var locator = inspector.selenium.SeleniumUtil.getQxhLocator(this.__selectedWidget, root);
+        var locator = inspector.selenium.SeleniumUtil.getQxhLocator(this.__selectedWidget, root, iframeWindow);
         var command = "qxClick";
         rowArr = [command, locator, "", this.__availableCommands ];
       }
@@ -315,6 +323,15 @@ qx.Class.define("inspector.selenium.View", {
         var row = selectedRows[i];
         tableModel.removeRows(row - i, 1);
       }
+    },
+    
+    /**
+     * Clears the table model data.
+     */
+    __clearTableData : function()
+    {
+      var tableModel = this._table.getTableModel();
+      tableModel.setData([]);
     },
 
     /**
@@ -367,6 +384,41 @@ qx.Class.define("inspector.selenium.View", {
 
       return table;
     },
+    
+    
+    /**
+     * Creates the "clear log" button and Selenium log level select box
+     * 
+     * @return {qx.ui.container.Composite} Container with the log controls
+     */
+    __getLogControls : function()
+    {
+      var logLevels = ["debug", "info", "warn", "error"];
+      var logContainerInner = new qx.ui.container.Composite(new qx.ui.layout.HBox(10, "right"));
+      var logLevelSelect = new qx.ui.form.SelectBox();
+      for (var i=0; i<4; i++) {
+        var label = qx.lang.String.firstUp(logLevels[i]);
+        logLevelSelect.add(new qx.ui.form.ListItem(label, null, logLevels[i]));
+      }
+      // Selenium's default log level is "info".
+      logLevelSelect.setSelection([logLevelSelect.getChildren()[1]]);
+      logLevelSelect.addListener("changeSelection", function(ev) {
+        if (window.LOG) {
+          var level = ev.getData()[0].getModel();
+          window.LOG.setLogLevelThreshold(level);
+        }
+      }, this);
+      logContainerInner.add(logLevelSelect);
+      
+      var btnClear = new qx.ui.form.Button("Clear");
+      btnClear.addListener("execute", function(ev) {
+        this._logArea.setHtml("")
+      }, this);
+      logContainerInner.add(btnClear);
+      
+      return logContainerInner;
+    },
+    
 
     /**
      * Creates the log output widget 
@@ -381,7 +433,8 @@ qx.Class.define("inspector.selenium.View", {
         cssClass: "seleniumLog",
         overflowY: "auto",
         decorator: "main",
-        backgroundColor: "white"
+        backgroundColor: "white",
+        allowStretchY: true
       });
 
       // scroll to to the last entry if a message is added
@@ -505,6 +558,20 @@ qx.Class.define("inspector.selenium.View", {
       this.__seleneseTestCase.addListener("changeSeleneseCommands", this.__importCommands, this);
       
       this.__seleneseTestCase.open();
+    },
+    
+    /**
+     * Deletes all commands after asking for confirmation. 
+     */
+    clearTable : function()
+    {
+      if (this._table.getTableModel().getRowCount() > 0) {
+        var clear = confirm("Delete current test command list?");
+        if (clear) {
+          this.__clearTableData();
+        }
+      }
+            
     },
 
     /**

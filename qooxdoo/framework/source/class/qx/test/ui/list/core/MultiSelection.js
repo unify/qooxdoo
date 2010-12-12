@@ -29,6 +29,15 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
       this._list.setSelectionMode("multi");
     },
 
+    createModelData : function()
+    {
+      this._model = new qx.data.Array();
+
+      for (var i = 0; i < 100; i++) {
+        this._model.push("item " + (i + 1));
+      }
+    },
+
     testSelection : function()
     {
       var selection = this._list.getSelection();
@@ -52,7 +61,7 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
         selectionFromManager[i] = this._list._getDataFromRow(selectionFromManager[i]);
       }
       this.assertEquals(3, selectionFromManager.length, "On selection manager");
-      this.assertTrue(selection.equals(new qx.data.Array(selectionFromManager)), "On selection manager");
+      this.assertDataArrayEquals(selection, new qx.data.Array(selectionFromManager), "On selection manager");
     },
 
     testSelectionByUserInteraction : function()
@@ -71,7 +80,7 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
 
       // check selection on list
       this.assertEquals(6, selection.getLength(), "On List");
-      this.assertTrue(selection.equals(new qx.data.Array(
+      this.assertDataArrayEquals(selection, new qx.data.Array(
       [
         this._model.getItem(2),
         this._model.getItem(3),
@@ -79,7 +88,7 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
         this._model.getItem(7),
         this._model.getItem(8),
         this._model.getItem(9)
-      ])), "On List");
+      ]), "On List");
     },
 
     testSelectionEventByUserInteraction : function()
@@ -101,11 +110,11 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
             selectionFromManager[i] = self._list._getDataFromRow(selectionFromManager[i]);
           }
           self.assertEquals(6, selectionFromManager.length, "On selection manager");
-          self.assertTrue(selection.equals(new qx.data.Array(selectionFromManager)), "On selection manager");
+          self.assertDataArrayEquals(selection, new qx.data.Array(selectionFromManager), "On selection manager");
 
           // check selection on list
           self.assertEquals(6, selection.getLength(), "On List");
-          self.assertTrue(selection.equals(new qx.data.Array(
+          self.assertDataArrayEquals(selection, new qx.data.Array(
           [
             self._model.getItem(2),
             self._model.getItem(3),
@@ -113,9 +122,20 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
             self._model.getItem(7),
             self._model.getItem(8),
             self._model.getItem(9)
-          ])), "On List");
+          ]), "On List");
         }
       );
+    },
+
+    testSelectionWithSorter : function()
+    {
+      this._list.setDelegate({
+        sorter : function(a, b) {
+          return a < b ? 1 : a > b ? -1 : 0;
+        }
+      });
+
+      this.testSelection();
     }
   }
 });

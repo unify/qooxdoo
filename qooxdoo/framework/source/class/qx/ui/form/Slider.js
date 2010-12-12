@@ -15,7 +15,6 @@
    Authors:
      * Sebastian Werner (wpbasti)
      * Fabian Jakobs (fjakobs)
-     * Adrian Olaru (adrianolaru)
 
 ************************************************************************ */
 
@@ -103,9 +102,6 @@ qx.Class.define("qx.ui.form.Slider",
     } else {
       this.initOrientation();
     }
-
-    //set default size
-    this.__setSize(100);
   },
 
 
@@ -269,7 +265,7 @@ qx.Class.define("qx.ui.form.Slider",
     },
 
     // overridden
-    _createChildControlImpl : function(id)
+    _createChildControlImpl : function(id, hash)
     {
       var control;
 
@@ -277,11 +273,6 @@ qx.Class.define("qx.ui.form.Slider",
       {
         case "knob":
           control = new qx.ui.core.Widget();
-
-          //fixes #Bug 4020
-          //when slider is used as a inner control for another widget
-          //the knob looses it's appearance...
-          control.setAppearance("slider/knob");
 
           control.addListener("resize", this._onUpdate, this);
           control.addListener("mouseover", this._onMouseOver);
@@ -1057,19 +1048,6 @@ qx.Class.define("qx.ui.form.Slider",
       }
 
       this._updateKnobPosition();
-    },
-
-
-    /**
-     * Sets the width or height depending on the orientation.
-     * If the orientation is horizontal, the width is set,
-     * otherwise the height is set.
-     *
-     * @param value {Integer} The size of the slider.
-     * @return {void}
-     */
-    __setSize: function(value) {
-      this.__isHorizontal ? this.setWidth(value) : this.setHeight(value);
     }
   }
 });

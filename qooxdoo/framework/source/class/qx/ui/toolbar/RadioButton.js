@@ -59,8 +59,17 @@ qx.Class.define("qx.ui.toolbar.RadioButton",
           grp.setSelection([this]);
         }
       }
+    },
+
+
+    // overridden
+    _onExecute : function(e) {
+      var grp = this.getGroup();
+      if (grp && grp.getAllowEmptySelection() || !grp) {
+        this.toggleValue();
+      } else {
+        this.setValue(true);
+      }
     }
-
-
   }
 });

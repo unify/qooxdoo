@@ -64,8 +64,11 @@ qx.Class.define("testrunner2.runner.TestResultData",
       event : "changeState"
     },
 
-    /** Exception thrown by the test code */
-    exception : { nullable : true }
+    /** Exceptions thrown by the test code */
+    exceptions : {
+      nullable : true,
+      check : "Array"
+    }
   },
 
   
@@ -81,8 +84,13 @@ qx.Class.define("testrunner2.runner.TestResultData",
     {
       "default" : function()
       {
-        if (this.getException()) {
-          return this.getException().toString();
+        if (this.getExceptions() && this.getExceptions().length > 0) {
+          var exceptions = this.getExceptions();
+          var message = "";
+          for (var i=0,l=exceptions.length; i<l; i++) {
+            message += exceptions[i].toString() + " ";
+          }
+          return message;          
         } else {
           return "";
         }
@@ -90,15 +98,18 @@ qx.Class.define("testrunner2.runner.TestResultData",
 
       "opera" : function()
       {
-        if (this.getException())
-        {
-          var msg = this.getException().message + "";
-
-          if (msg.indexOf("Backtrace:") < 0) {
-            return this.getException().toString();
-          } else {
-            return qx.lang.String.trim(msg.split("Backtrace:")[0]);
+        if (this.getExceptions() && this.getExceptions().length > 0) {
+          var exceptions = this.getExceptions();
+          var message = "";
+          for (var i=0,l=exceptions.length; i<l; i++) {
+            var msg = exceptions[i].message + "";
+            if (msg.indexOf("Backtrace:") < 0) {
+              message += exceptions[i].toString();
+            } else {
+              message += qx.lang.String.trim(msg.split("Backtrace:")[0]);
+            }
           }
+          return message;
         }
         else
         {
@@ -109,14 +120,13 @@ qx.Class.define("testrunner2.runner.TestResultData",
 
 
     /**
-     * Returns stack trace information for the current exception.
+     * Returns stack trace information for a given exception.
      *
+     * @param ex {Error} Exception
      * @return {String} Stack trace information
      */
-    getStackTrace : function()
+    getStackTrace : function(ex)
     {
-      var ex = this.getException();
-
       var trace = [];
 
       if (typeof (ex.getStackTrace) == "function") {

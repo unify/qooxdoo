@@ -21,7 +21,8 @@
  * The Canvas widget embeds the HMTL canvas element
  * [<a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/the-canvas.html#the-canvas">W3C-HTML5</a>]
  *
- * Note: This widget does not work in Internet Explorer!
+ * Note: This widget does not work in Internet Explorer < 9!
+ * Check for browser support with qx.bom.client.Feature.CANVAS.
  *
  * To paint something on the canvas and keep the content updated on resizes you
  * either have to override the {@link #_draw} method or redraw the content on
@@ -63,7 +64,7 @@
  *
  * *External Documentation*
  *
- * <a href='http://manual.qooxdoo.org/1.2/pages/widget/canvas.html' target='_blank'>
+ * <a href='http://manual.qooxdoo.org/1.3/pages/widget/canvas.html' target='_blank'>
  * Documentation of this widget in the qooxdoo wiki.</a>
  */
 qx.Class.define("qx.ui.embed.Canvas",

@@ -114,7 +114,8 @@ qx.Class.define("testrunner2.view.Html", {
   members :
   {    
     __domElements : null,
-    
+    __testNameToId : null,
+    __filterTimer : null,
     
     /**
      * Creates the header and attaches it to the root node.
@@ -147,6 +148,9 @@ qx.Class.define("testrunner2.view.Html", {
       
       this.__domElements.runButton = document.getElementById("qxtestrunner_run");
       qx.event.Registration.addListener(this.__domElements.runButton, "click", function(ev) {
+        if (this.getTestSuiteState() == "finished" ) {
+          this.reset();
+        }
         this.fireEvent("runTests");
       }, this);
       
@@ -307,6 +311,7 @@ qx.Class.define("testrunner2.view.Html", {
      */
     toggleAllTests : function(selected, onlyVisible)
     {
+      var testsToModify = [];
       var boxes = document.getElementsByTagName("input");
       for (var i=0,l=boxes.length; i<l; i++) {
         if (boxes[i].type == "checkbox" && boxes[i].id.indexOf("cb_") == 0) {
@@ -314,9 +319,11 @@ qx.Class.define("testrunner2.view.Html", {
             continue;
           }
           boxes[i].checked = selected;
-          this.__toggleTestSelected(boxes[i].name, selected);
+          var testName = this.__testNameToId[boxes[i].id.substr(3)];
+          testsToModify.push(testName);
         }
       }
+      this.__toggleTestsSelected(testsToModify, selected);
     },
     
     
@@ -339,15 +346,18 @@ qx.Class.define("testrunner2.view.Html", {
       this.toggleAllTests(false, false);
       this.hideAllTestListEntries();
       if (matches.length > 0) {
+        var testsToModify = [];
         for (var i=0,l=matches.length; i<l; i++) {
-          var checkboxId = "cb_" + this.__testNameToId(matches[i]);
+          var key = this.__simplifyName(matches[i]);
+          var checkboxId = "cb_" + key;
           var box = document.getElementById(checkboxId);
           box.parentNode.style.display = "block";
           if (this.__domElements.allTestsToggle.checked) {
             box.checked = true;
-            this.__toggleTestSelected(matches[i], true);
+            testsToModify.push(matches[i]);
           }
         }
+        this.__toggleTestsSelected(testsToModify, true);
       }
       qx.bom.Cookie.set("testFilter", term);
     },
@@ -366,16 +376,32 @@ qx.Class.define("testrunner2.view.Html", {
     
     
     /**
-     * Simplifies a test function's fully qualified name so it can be used as an
-     * HTML ID.
+     * Simplifies a test function's fully qualified name so it can be used as a
+     * map key.
      * 
      * @param testName {String} The test's full name
-     * @return {String} The ID string
+     * @return {String} The simplified string
      */
-    __testNameToId : function(testName)
+    __simplifyName : function(testName)
     {
-      var id = testName.replace(/[\W]/ig, "")
+      var id = testName.replace(/[\W]/ig, "");
       return id;
+    },
+    
+    
+    /**
+     * Resets the result counters, clears the results display and reapplies the
+     * test selection so that the suite can be run again.
+     */
+    reset : function()
+    {
+      this.resetFailedTestCount();
+      this.resetSuccessfulTestCount();
+      this.resetSkippedTestCount();
+      this.clearResults();
+      var selectedTests = qx.lang.Array.clone(this.getSelectedTests());
+      this.resetSelectedTests();
+      this.setSelectedTests(selectedTests);
     },
     
     
@@ -418,41 +444,46 @@ qx.Class.define("testrunner2.view.Html", {
           this.setSuccessfulTestCount(this.getSuccessfulTestCount() + 1);
       }
       
-      var exception =  testResultData.getException();
-      
-      var id = this.__testNameToId(testName);
-      var listItem = document.getElementById(id);
+      var exceptions =  testResultData.getExceptions();
+      var key = this.__simplifyName(testName);
+      var listItem = document.getElementById(key);
       if (listItem) {
         qx.bom.element.Attribute.set(listItem, "class", state);
       } else {
-        var item = qx.bom.Element.create("li", {id : id, "class" : state});
+        var item = qx.bom.Element.create("li", {id : key, "class" : state});
         if (this.__domElements.elemResultsList.firstChild) {
           qx.dom.Element.insertBefore(item, this.__domElements.elemResultsList.firstChild);
         } else {
           this.__domElements.elemResultsList.appendChild(item);
         }
         item.innerHTML = testName;
-        listItem = document.getElementById(id);
+        listItem = document.getElementById(key);
       }
       
       if (state == "success" && this.getShowPassed() === false) {
         qx.bom.element.Style.set(listItem, "display", "none");
       }
       
-      if (exception) {
-        listItem.innerHTML += '<br/>' + exception;
-
-        var trace = testResultData.getStackTrace();
-        if (trace.length > 0) {
-          var stackDiv = document.createElement("div");
-          qx.bom.element.Class.add(stackDiv, "stacktrace");
-          stackDiv.innerHTML = 'Stack Trace:<br/>' + trace;
+      if (exceptions && exceptions.length > 0) {
+        var errorList = document.createElement("ul");
+        for (var i=0,l=exceptions.length; i<l; i++) {
+          var error = exceptions[i].exception;
+          var errorItem = document.createElement("li");
+          errorItem.innerHTML += error;
           
-          var displayVal = this.getShowStack() ? "block" : "none";
-          qx.bom.element.Style.set(stackDiv, "display", displayVal);
-          listItem.appendChild(stackDiv);
+          var trace = testResultData.getStackTrace(error);
+          if (trace.length > 0) {
+            var stackDiv = document.createElement("div");
+            qx.bom.element.Class.add(stackDiv, "stacktrace");
+            stackDiv.innerHTML = 'Stack Trace:<br/>' + trace;
+            
+            var displayVal = this.getShowStack() ? "block" : "none";
+            qx.bom.element.Style.set(stackDiv, "display", displayVal);
+            errorItem.appendChild(stackDiv);
+          }
+          errorList.appendChild(errorItem);
         }
-        
+        listItem.appendChild(errorList);
       }
     },
     
@@ -464,27 +495,31 @@ qx.Class.define("testrunner2.view.Html", {
      */
     __onToggleTest : function(ev)
     {
-      var testName = ev.getTarget().name;
+      var testName = this.__testNameToId[ev.getTarget().id.substr(3)];
       var selected = ev.getTarget().checked;
-      this.__toggleTestSelected(testName, selected);
+      this.__toggleTestsSelected([testName], selected);
     },
     
     
     /**
-     * Adds or removes a test from the list of selected tests.
+     * Adds or removes tests from the list of selected tests.
      * 
-     * @param ev {qx.event.type.Event} The change event from the checkbox 
-     * associated with the test
+     * @param tests {String[]} List of tests to be added or removed
+     * @param selected {Boolean} Whether the given tests should be added to or
+     * removed from the selection
      */
-    __toggleTestSelected : function(testName, selected)
+    __toggleTestsSelected : function(tests, selected)
     {
       var selectedTests = qx.lang.Array.clone(this.getSelectedTests());
       
-      if (selected && !qx.lang.Array.contains(selectedTests, testName)) {
-        selectedTests.push(testName);
-      }
-      else if (!selected && qx.lang.Array.contains(selectedTests, testName)) {
-        qx.lang.Array.remove(selectedTests, testName);
+      for (var i=0,l=tests.length; i<l; i++) {
+        var testName = tests[i];
+        if (selected && !qx.lang.Array.contains(selectedTests, testName)) {
+          selectedTests.push(testName);
+        }
+        else if (!selected && qx.lang.Array.contains(selectedTests, testName)) {
+          qx.lang.Array.remove(selectedTests, testName);
+        }
       }
       
       selectedTests.sort();
@@ -561,9 +596,9 @@ qx.Class.define("testrunner2.view.Html", {
           statusText += " Failed: " + this.getFailedTestCount();
           statusText += " Skipped: " + this.getSkippedTestCount();
           this.setStatus(statusText);
-          this.__domElements.filterInput.disabled = true;
-          this.__domElements.allTestsToggle.disabled = true;
-          this.__domElements.runButton.disabled = true;
+          this.__domElements.filterInput.disabled = false;
+          this.__domElements.allTestsToggle.disabled = false;
+          this.__domElements.runButton.disabled = false;
           this.__domElements.stopButton.disabled = true;
           break;
         case "aborted" :
@@ -591,20 +626,33 @@ qx.Class.define("testrunner2.view.Html", {
       }
 
       this.setSelectedTests(value);
-      
+      this.__testNameToId = {};
       this.clearTestList();
       this.clearResults();
       
       for (var i=0,l=value.length; i<l; i++) {
         var listItem = document.createElement("li");
         var testName = value[i];
-        var checkBoxId = "cb_" + this.__testNameToId(testName);
-        var cb = qx.bom.Input.create("checkbox", {id: checkBoxId, name: testName, checked: "checked"});
+        var key = this.__simplifyName(testName);
+        this.__testNameToId[key] = testName;
+        var checkboxId = "cb_" + key;
+        var cb = qx.bom.Input.create("checkbox", {id: checkboxId, checked: "checked"});
         listItem.appendChild(cb);
-        listItem.innerHTML += '<label for="' + checkBoxId + '">' + testName + '</label>';
+        listItem.innerHTML += '<label for="' + checkboxId + '">' + testName + '</label>';
         this.__domElements.elemTestList.appendChild(listItem);
+        
+        /*
+        var html = "<li>";
+        var testName = value[i];
+        var key = this.__simplifyName(testName);
+        this.__testNameToId[key] = testName;
+        var checkboxId = "cb_" + key;
+        html += '<input checked="checked" type="checkbox" id="' + checkboxId + '" >'
+        html += '<label for="' + checkboxId + '">' + testName + '</label></li>';
+        this.__domElements.elemTestList.innerHTML += html;
+        */
                 
-        cb = document.getElementById(checkBoxId);
+        cb = document.getElementById(checkboxId);
         qx.event.Registration.addListener(cb, "change", this.__onToggleTest, this);
       }
     },    

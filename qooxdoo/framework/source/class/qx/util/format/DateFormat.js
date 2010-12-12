@@ -36,8 +36,9 @@ qx.Class.define("qx.util.format.DateFormat",
   */
 
   /**
-   * @param format {String} The format to use. If null, the format is used.
-   * @param locale {String} optional locale to be used
+   * @param format {String|null} The format to use. If null, the locale's default
+   * format is used.
+   * @param locale {String?} optional locale to be used.
    */
   construct : function(format, locale)
   {
@@ -782,7 +783,7 @@ qx.Class.define("qx.util.format.DateFormat",
       }
 
       var rules = this.__parseRules = [];
-      
+
       var amMarker = qx.locale.Date.getAmMarker(this.__locale).toString() || DateFormat.AM_MARKER;
       var pmMarker = qx.locale.Date.getPmMarker(this.__locale).toString() || DateFormat.PM_MARKER;
 

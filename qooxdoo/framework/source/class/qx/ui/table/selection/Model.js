@@ -92,9 +92,9 @@ qx.Class.define("qx.ui.table.selection.Model",
 
     /**
      * (int) The selection mode "multiple interval". This mode only allows any
-     * selection. The difference with the previous one, is that multiple 
-     * selection is eased. A click on an item, toggles its selection state.  
-     * On the other hand, MULTIPLE_INTERVAL_SELECTION does this behavior only 
+     * selection. The difference with the previous one, is that multiple
+     * selection is eased. A click on an item, toggles its selection state.
+     * On the other hand, MULTIPLE_INTERVAL_SELECTION does this behavior only
      * when Ctrl-clicking an item.
      */
     MULTIPLE_INTERVAL_SELECTION_TOGGLE : 5
@@ -413,6 +413,10 @@ qx.Class.define("qx.ui.table.selection.Model",
           catch (e)
           {
             // IE doesn't execute the "finally" block if no "catch" block is present
+            // this hack is used to fix [BUG #3688]
+            if(qx.bom.client.Browser.NAME == 'ie' && qx.bom.client.Browser.VERSION<=7) {
+              this.setBatchMode(false);
+            }
             throw e;
           }
           finally {

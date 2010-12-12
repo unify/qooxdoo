@@ -139,7 +139,7 @@ qx.Class.define("qx.ui.form.ComboBox",
     */
 
     // overridden
-    _createChildControlImpl : function(id)
+    _createChildControlImpl : function(id, hash)
     {
       var control;
 
@@ -192,10 +192,10 @@ qx.Class.define("qx.ui.form.ComboBox",
       field.getFocusElement().focus();
       field.selectAllText();
     },
-    
-    
+
+
     // overridden
-    focus : function() 
+    focus : function()
     {
       this.base(arguments);
       this.getChildControl("textfield").getFocusElement().focus();

@@ -53,7 +53,7 @@ qx.Class.define("qx.log.appender.Native",
     {
       // Prefer PhoneGap interface over Firebug interface (fixes iOS 4.0 logging)
       // Prefer Firebug over native AIR console if available
-      var obj = window.debug || window.console || (window.air && window.air.Introspector.Console);
+      var obj = window.debug || window.console || (window.air && window.air.Introspector && window.air.Introspector.Console);
       if (obj)
       {
         var level = entry.level;

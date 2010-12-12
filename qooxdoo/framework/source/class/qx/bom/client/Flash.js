@@ -67,6 +67,11 @@ qx.Class.define("qx.bom.client.Flash",
     /** {Boolean} Whether the flash version uses the new security model or not (since 9.0.151.0 && 10.0.12.36) */
     STRICT_SECURITY_MODEL : false,
 
+    /**
+     * Storage for supported Flash versions.
+     *
+     * @internal
+     */
     _cachedSupportsVersion : {},
 
     /**
@@ -88,7 +93,7 @@ qx.Class.define("qx.bom.client.Flash",
 
         for (var i=0; i<splitInput.length; i++)
         {
-          var diff = parseInt(system[i]) - parseInt(splitInput[i]);
+          var diff = parseInt(system[i], 10) - parseInt(splitInput[i], 10);
           if (diff > 0) {
             return (this._cachedSupportsVersion[input] = true);
           } else if (diff < 0) {

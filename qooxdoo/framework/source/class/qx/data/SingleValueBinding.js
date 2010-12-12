@@ -419,7 +419,7 @@ qx.Class.define("qx.data.SingleValueBinding",
             listenerIds[j] = target.addListener(eventName, listeners[j]);
            }
 
-          qx.data.SingleValueBinding.__updateTarget(
+          qx.data.SingleValueBinding.updateTarget(
             sourceObject, sourcePropertyChain, targetObject, targetPropertyChain, options
           );
         };
@@ -461,8 +461,10 @@ qx.Class.define("qx.data.SingleValueBinding",
      *   object.
      * @param options {Map} The options map perhaps containing the user defined
      *   converter.
+     *
+     * @internal
      */
-    __updateTarget : function(
+    updateTarget : function(
       sourceObject, sourcePropertyChain, targetObject, targetPropertyChain, options
     )
     {
@@ -535,7 +537,7 @@ qx.Class.define("qx.data.SingleValueBinding",
           eventName = "change" + qx.lang.String.firstUp(propertyname);
         } else {
           throw new qx.core.AssertionError(
-            "Binding property " + propertyname + " of object " + source + 
+            "Binding property " + propertyname + " of object " + source +
             " not possible: No event available. "
           );
         }
@@ -743,7 +745,7 @@ qx.Class.define("qx.data.SingleValueBinding",
               + name + " does not work.");
           }
           if (arrayIndex !== "last") {
-            if (arrayIndex == "" || isNaN(parseInt(arrayIndex))) {
+            if (arrayIndex == "" || isNaN(parseInt(arrayIndex, 10))) {
               throw new Error("No number or 'last' value hast been given"
                 + " in a array binding: " + name + " does not work.");
             }
@@ -1016,7 +1018,7 @@ qx.Class.define("qx.data.SingleValueBinding",
       // to integer
       if ((dataType == "Number" || dataType == "String") &&
           (targetCheck == "Integer" || targetCheck == "PositiveInteger")) {
-        data = parseInt(data);
+        data = parseInt(data, 10);
       }
 
       // to string

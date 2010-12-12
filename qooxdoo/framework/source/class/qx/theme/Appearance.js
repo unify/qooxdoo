@@ -285,30 +285,52 @@ qx.Theme.define("qx.theme.Appearance",
 
       style : function(states)
       {
-        // "disabled" state is not handled here with purpose. The image widget
-        // does handle this already by replacing the current image with a
-        // disabled version (if available). If no disabled image is found the
-        // opacity style is used.
+        // The "disabled" icon is set to an icon **without** the -disabled
+        // suffix on purpose. This is because the Image widget handles this
+        // already by replacing the current image with a disabled version
+        // (if available). If no disabled image is found, the opacity style
+        // is used.
         var icon;
-        if (states.checked && states.focused) {
-          icon = "checkbox-checked-focused";
-        } else if (states.checked && states.disabled) {
-          icon = "checkbox-checked-disabled";
-        } else if (states.checked && states.pressed) {
-          icon = "checkbox-checked-pressed";
-        } else if (states.checked && states.hovered) {
-          icon = "checkbox-checked-hovered";
-        } else if (states.checked) {
-          icon = "checkbox-checked";
-        } else if (states.focused) {
-          icon = "checkbox-focused";
-        } else if (states.pressed) {
-          icon = "checkbox-pressed";
-        } else if (states.hovered) {
-          icon = "checkbox-hovered";
-        } else {
-          icon = "checkbox";
+
+        // Checked
+        if (states.checked) {
+          if (states.disabled) {
+            icon = "checkbox-checked";
+          } else if (states.focused) {
+            icon = "checkbox-checked-focused";
+          } else if (states.pressed) {
+            icon = "checkbox-checked-pressed";
+          } else if (states.hovered) {
+            icon = "checkbox-checked-hovered";
+          } else {
+            icon = "checkbox-checked";
+          }
+
+        // Undetermined
+        } else if (states.undetermined) {
+          if (states.disabled) {
+            icon = "checkbox-undetermined";
+          } else if (states.focused) {
+            icon = "checkbox-undetermined-focused";
+          } else if (states.hovered) {
+            icon = "checkbox-undetermined-hovered";
+          } else {
+            icon = "checkbox-undetermined";
+          }
+
+        // Focused & Pressed & Hovered (when enabled)
+        } else if (!states.disabled) {
+          if (states.focused) {
+            icon = "checkbox-focused";
+          } else if (states.pressed) {
+            icon = "checkbox-pressed";
+          } else if (states.hovered ) {
+            icon = "checkbox-hovered";
+          }
         }
+
+        // Unchecked
+        icon = icon || "checkbox";
 
         var invalid = states.invalid && !states.disabled ? "-invalid" : "";
 
@@ -2762,6 +2784,22 @@ qx.Theme.define("qx.theme.Appearance",
       }
     },
 
+    "group-item" :
+    {
+      include : "label",
+      alias : "label",
+
+      style : function(states)
+      {
+        return {
+          padding : 4,
+          decorator : "group-item",
+          textColor : "white",
+          font: "bold"
+        };
+      }
+    },
+
     "column-layer" : "widget",
 
     "cell" :
@@ -2829,7 +2867,7 @@ qx.Theme.define("qx.theme.Appearance",
       PROGRESSBAR
     ---------------------------------------------------------------------------
     */
-    "progressbar": 
+    "progressbar":
     {
       style: function(states) {
         return {
@@ -2839,8 +2877,8 @@ qx.Theme.define("qx.theme.Appearance",
         }
       }
     },
-    
-    "progressbar/progress": 
+
+    "progressbar/progress":
     {
       style: function(states) {
         return {

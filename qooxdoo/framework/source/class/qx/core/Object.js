@@ -500,8 +500,8 @@ qx.Class.define("qx.core.Object",
     /**
      * Logs a debug message.
      *
-     * @param varargs {var} The item(s) to log. Any number of arguments is 
-     * supported. If an argument is not a string, the object dump will be 
+     * @param varargs {var} The item(s) to log. Any number of arguments is
+     * supported. If an argument is not a string, the object dump will be
      * logged.
      */
     debug : function(varargs) {
@@ -512,8 +512,8 @@ qx.Class.define("qx.core.Object",
     /**
      * Logs an info message.
      *
-     * @param varargs {var} The item(s) to log. Any number of arguments is 
-     * supported. If an argument is not a string, the object dump will be 
+     * @param varargs {var} The item(s) to log. Any number of arguments is
+     * supported. If an argument is not a string, the object dump will be
      * logged.
      */
     info : function(varargs) {
@@ -524,8 +524,8 @@ qx.Class.define("qx.core.Object",
     /**
      * Logs a warning message.
      *
-     * @param varargs {var} The item(s) to log. Any number of arguments is 
-     * supported. If an argument is not a string, the object dump will be 
+     * @param varargs {var} The item(s) to log. Any number of arguments is
+     * supported. If an argument is not a string, the object dump will be
      * logged.
      */
     warn : function(varargs) {
@@ -536,8 +536,8 @@ qx.Class.define("qx.core.Object",
     /**
      * Logs an error message.
      *
-     * @param varargs {var} The item(s) to log. Any number of arguments is 
-     * supported. If an argument is not a string, the object dump will be 
+     * @param varargs {var} The item(s) to log. Any number of arguments is
+     * supported. If an argument is not a string, the object dump will be
      * logged.
      */
     error : function(varargs) {
@@ -558,9 +558,9 @@ qx.Class.define("qx.core.Object",
     /**
      * Helper that calls the appropriate logger function with the current object
      * and any number of items.
-     * 
+     *
      * @param level {String} The log level of the message
-     * @param varargs {arguments} Arguments list to be logged 
+     * @param varargs {arguments} Arguments list to be logged
      * @break {qx.log.Logger}
      */
     __logMessage : function(level, varargs)

@@ -61,8 +61,13 @@ MIGRATION_ORDER = [
     "0.8.3",
     "1.0",
     "1.0.1",
+    "1.0.2",
     "1.1",
+    "1.1.1",
+    "1.1.2",
     "1.2",
+    "1.2.1",
+    "1.3",
 ]
 
 
@@ -739,7 +744,7 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    default_old_version = "1.1"
+    default_old_version = "1.2"
 
     while options.from_version == "":
         choice = raw_input("""
