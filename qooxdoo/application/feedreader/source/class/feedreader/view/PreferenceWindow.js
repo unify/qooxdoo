@@ -107,7 +107,7 @@ qx.Class.define("feedreader.view.PreferenceWindow",
         groupBox.add(radioButton);
 
         // Select entry containing current language
-        if (locale.info.language == lang) {
+        if (locale.Info.LANGUAGE == lang) {
           radioManager.setSelection([radioButton]);
         }
       }
