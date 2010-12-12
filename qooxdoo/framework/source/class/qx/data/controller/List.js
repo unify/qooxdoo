@@ -118,8 +118,7 @@ qx.Class.define("qx.data.controller.List",
       check: "qx.data.IListData",
       apply: "_applyModel",
       event: "changeModel",
-      nullable: true,
-      dereference: true
+      nullable: true
     },
 
 
@@ -129,8 +128,7 @@ qx.Class.define("qx.data.controller.List",
       apply: "_applyTarget",
       event: "changeTarget",
       nullable: true,
-      init: null,
-      dereference: true
+      init: null
     },
 
 

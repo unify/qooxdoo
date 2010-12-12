@@ -92,8 +92,7 @@ qx.Class.define("qx.data.controller.Object",
       check: "qx.core.Object",
       event: "changeModel",
       apply: "_applyModel",
-      nullable: true,
-      dereference: true
+      nullable: true
     }
   },
 

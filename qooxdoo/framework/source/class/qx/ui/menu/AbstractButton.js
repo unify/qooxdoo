@@ -85,8 +85,7 @@ qx.Class.define("qx.ui.menu.AbstractButton",
     {
       check : "qx.ui.menu.Menu",
       apply : "_applyMenu",
-      nullable : true,
-      dereference : true
+      nullable : true
     },
 
     /** The icon to use */

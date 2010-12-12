@@ -154,8 +154,7 @@ qx.Class.define("qx.fx.Base",
       */
      queue :
      {
-       check : "Object",
-       dereference : true
+       check : "Object"
      },
 
      /**
