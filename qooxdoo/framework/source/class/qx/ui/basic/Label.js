@@ -79,10 +79,6 @@ qx.Class.define("qx.ui.basic.Label",
     if (value != null) {
       this.setValue(value);
     }
-
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().addListener("changeLocale", this._onChangeLocale, this);
-    }
   },
 
 
@@ -444,26 +440,6 @@ qx.Class.define("qx.ui.basic.Label",
     },
 
 
-    /**
-     * Locale change event handler
-     *
-     * @signature function(e)
-     * @param e {Event} the change event
-     */
-    _onChangeLocale : qx.core.Variant.select("qx.dynlocale",
-    {
-      "on" : function(e)
-      {
-        var content = this.getValue();
-        if (content && content.translate) {
-          this.setValue(content.translate());
-        }
-      },
-
-      "off" : null
-    }),
-
-
     // property apply
     _applyValue : function(value, old)
     {
@@ -490,10 +466,6 @@ qx.Class.define("qx.ui.basic.Label",
 
   destruct : function()
   {
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().removeListener("changeLocale", this._onChangeLocale, this);
-    }
-
     // remove the binding
     if (this.__buddyEnabledBinding != null) {
       var buddy = this.getBuddy();

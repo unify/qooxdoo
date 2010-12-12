@@ -70,13 +70,6 @@ qx.Class.define("qx.ui.form.AbstractField",
     // TODO: Fix Placeholder. There should be an alternative to this!
     // assign the placeholder text after the appearance has been applied
     // this.addListener("syncAppearance", this._syncPlaceholder, this);
-
-    // translation support
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().addListener(
-        "changeLocale", this._onChangeLocale, this
-      );
-    }
   },
 
 
@@ -805,25 +798,6 @@ qx.Class.define("qx.ui.form.AbstractField",
     },
 
 
-    /**
-     * Locale change event handler
-     *
-     * @signature function(e)
-     * @param e {Event} the change event
-     */
-    _onChangeLocale : qx.core.Variant.select("qx.dynlocale",
-    {
-      "on" : function(e)
-      {
-        var content = this.getPlaceholder();
-        if (content && content.translate) {
-          this.setPlaceholder(content.translate());
-        }
-      },
-
-      "off" : null
-    }),
-
 
     /*
     ---------------------------------------------------------------------------
@@ -890,9 +864,5 @@ qx.Class.define("qx.ui.form.AbstractField",
   destruct : function()
   {
     this.__placeholder = null;
-
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().removeListener("changeLocale", this._onChangeLocale, this);
-    }
   }
 });

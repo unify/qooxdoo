@@ -72,11 +72,6 @@ qx.Class.define("qx.ui.form.renderer.Single",
         this._row++;
 
         this._connectVisibility(item, label);
-
-        // store the names for translation
-        if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-          this._names.push({name: names[i], label: label, item: items[i]});
-        }
       }
     },
 

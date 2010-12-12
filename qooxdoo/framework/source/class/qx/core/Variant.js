@@ -337,8 +337,6 @@ qx.Bootstrap.define("qx.core.Variant",
   {
     statics.define("qx.client", [ "gecko", "mshtml", "opera", "webkit" ], qx.bom.client.Engine.NAME);
     statics.define("qx.debug", [ "on", "off" ], "on");
-    statics.define("qx.dynlocale", [ "on", "off" ], "on");
-    statics.define("qx.mobile", [ "on", "off" ], "off");
 
     statics.__init();
   }

@@ -39,14 +39,6 @@ qx.Class.define("qx.ui.form.renderer.AbstractRenderer",
 
     this._visibilityBindingIds = [];
 
-    // translation support
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().addListener(
-        "changeLocale", this._onChangeLocale, this
-      );
-      this._names = [];
-    }
-
     // add the groups
     var groups = form.getGroups();
     for (var i = 0; i < groups.length; i++) {
@@ -81,29 +73,6 @@ qx.Class.define("qx.ui.form.renderer.AbstractRenderer",
       var id = item.bind("visibility", label, "visibility");
       this._visibilityBindingIds.push({id: id, item: item});
     },
-
-
-    /**
-     * Locale change event handler
-     *
-     * @signature function(e)
-     * @param e {Event} the change event
-     */
-    _onChangeLocale : qx.core.Variant.select("qx.dynlocale",
-    {
-      "on" : function(e) {
-        for (var i = 0; i < this._names.length; i++) {
-          var entry = this._names[i];
-          if (entry.name && entry.name.translate) {
-            entry.name = entry.name.translate();
-          }
-          var newText = this._createLabelText(entry.name, entry.item);
-          entry.label.setValue(newText);
-        };
-      },
-
-      "off" : null
-    }),
 
 
     /**
@@ -149,9 +118,6 @@ qx.Class.define("qx.ui.form.renderer.AbstractRenderer",
 
   destruct : function()
   {
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().removeListener("changeLocale", this._onChangeLocale, this);
-    }
     this._names = null;
 
     // remove the visibility bindings

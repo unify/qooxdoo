@@ -96,10 +96,6 @@ qx.Class.define("qx.ui.form.Spinner",
     this.addListener("keyup", this._onKeyUp, this);
     this.addListener("mousewheel", this._onMouseWheel, this);
 
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().addListener("changeLocale", this._onChangeLocale, this);
-    }
-
     // CREATE CONTROLS
     this._createChildControl("textfield");
     this._createChildControl("upbutton");
@@ -703,23 +699,6 @@ qx.Class.define("qx.ui.form.Spinner",
 
 
     /**
-     * Callback method for the locale Manager's "changeLocale" event.
-     *
-     * @param ev {qx.event.type.Event} locale change event
-     */
-
-    _onChangeLocale : function(ev)
-    {
-      if (this.getNumberFormat() !== null) {
-        this.setNumberFormat(this.getNumberFormat());
-        var textfield = this.getChildControl("textfield");
-        textfield.setFilter(this._getFilterRegExp());
-        textfield.setValue(this.getNumberFormat().format(this.getValue()));
-      }
-    },
-
-
-    /**
      * Callback method for the number format's "changeNumberFormat" event.
      *
      * @param ev {qx.event.type.Event} number format change event
@@ -802,14 +781,6 @@ qx.Class.define("qx.ui.form.Spinner",
      */
     gotoValue : function(value) {
       return this.setValue(Math.min(this.getMaximum(), Math.max(this.getMinimum(), value)));
-    }
-  },
-
-
-  destruct : function()
-  {
-    if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
-      qx.locale.Manager.getInstance().removeListener("changeLocale", this._onChangeLocale, this);
     }
   }
 });
