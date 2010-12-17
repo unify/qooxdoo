@@ -74,6 +74,9 @@ qx.Class.define("feedreader.Application",
     {
       this.base(arguments);
 
+try{
+  
+
       // Add log appenders
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
@@ -105,6 +108,12 @@ qx.Class.define("feedreader.Application",
       );
       
       this.reload();
+      
+}catch(ex){
+  console.error("OOPS", JSON.stringify(ex))
+  
+}
+      
     },
 
 
