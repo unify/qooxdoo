@@ -33,12 +33,20 @@ qx.Class.define("qx.util.format.NumberFormat",
   */
 
   /**
-   * @param locale {String} optional locale to be used
+   * @param locale {String} optional locale to be used (NOT SUPPORTED ANYMORE!)
    */
   construct : function(locale)
   {
     this.base(arguments);
-    this.__locale = locale;
+    
+    if (locale)
+    {
+      if (locale != locale.Info.LOCALE) {
+        throw new Error("NumberFormat does not support locale: " + locale.Info.LOCALE);
+      } else {
+        this.warn("Locale definition in NumberFormat is not supported anymore!");
+      }
+    }
   },
 
 
@@ -180,9 +188,6 @@ qx.Class.define("qx.util.format.NumberFormat",
 
   members :
   {
-
-    __locale : null,
-
     /**
      * Formats a number.
      *
@@ -255,7 +260,7 @@ qx.Class.define("qx.util.format.NumberFormat",
         var groupPos;
 
         for (groupPos=origIntegerStr.length; groupPos>3; groupPos-=3) {
-          integerStr = "" + qx.locale.Number.getGroupSeparator(this.__locale) + origIntegerStr.substring(groupPos - 3, groupPos) + integerStr;
+          integerStr = "" + locale.number.Symbol.GROUP + origIntegerStr.substring(groupPos - 3, groupPos) + integerStr;
         }
 
         integerStr = origIntegerStr.substring(0, groupPos) + integerStr;
@@ -270,7 +275,7 @@ qx.Class.define("qx.util.format.NumberFormat",
       var str = prefix + (negative ? "-" : "") + integerStr;
 
       if (fractionStr.length > 0) {
-        str += "" + qx.locale.Number.getDecimalSeparator(this.__locale) + fractionStr;
+        str += "" + locale.number.Symbol.DECIMAL + fractionStr;
       }
 
       str += postfix;
@@ -289,8 +294,8 @@ qx.Class.define("qx.util.format.NumberFormat",
     parse : function(str)
     {
       // use the escaped separators for regexp
-      var groupSepEsc = qx.lang.String.escapeRegexpChars(qx.locale.Number.getGroupSeparator(this.__locale) + "");
-      var decimalSepEsc = qx.lang.String.escapeRegexpChars(qx.locale.Number.getDecimalSeparator(this.__locale) + "");
+      var groupSepEsc = qx.lang.String.escapeRegexpChars(locale.number.Symbol.GROUP + "");
+      var decimalSepEsc = qx.lang.String.escapeRegexpChars(locale.number.Symbol.DECIMAL + "");
 
       var regex = new RegExp(
         "^" +

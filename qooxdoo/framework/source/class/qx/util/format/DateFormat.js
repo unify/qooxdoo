@@ -38,22 +38,25 @@ qx.Class.define("qx.util.format.DateFormat",
   /**
    * @param format {String|null} The format to use. If null, the locale's default
    * format is used.
-   * @param locale {String?} optional locale to be used.
+   * @param locale {String?} optional locale to be used. (NOT SUPPORTED ANYMORE!)
    */
   construct : function(format, locale)
   {
     this.base(arguments);
 
-    if (!locale) {
-      this.__locale = qx.locale.Manager.getInstance().getLocale();
-    } else {
-      this.__locale = locale;
+    if (locale)
+    {
+      if (locale != locale.Info.LOCALE) {
+        throw new Error("NumberFormat does not support locale: " + locale.Info.LOCALE);
+      } else {
+        this.warn("Locale definition in DateFormat is not supported anymore!");
+      }
     }
-
+    
     if (format != null) {
       this.__format = format.toString();
     } else {
-      this.__format = qx.locale.Date.getDateFormat("long", this.__locale) + " " + qx.locale.Date.getDateTimeFormat("HHmmss", "HH:mm:ss", this.__locale);
+      this.__format = qx.locale.Date.getDateFormat("long") + " " + qx.locale.Date.getDateTimeFormat("HHmmss", "HH:mm:ss");
     }
   },
 
@@ -144,8 +147,6 @@ qx.Class.define("qx.util.format.DateFormat",
 
   members :
   {
-
-    __locale : null,
     __format : null,
     __parseFeed : null,
     __parseRules : null,
@@ -249,7 +250,6 @@ qx.Class.define("qx.util.format.DateFormat",
       }
 
       var DateFormat = qx.util.format.DateFormat;
-      var locale = this.__locale;
 
       var fullYear = date.getFullYear();
       var month = date.getMonth();
@@ -319,22 +319,22 @@ qx.Class.define("qx.util.format.DateFormat",
 
             case 'E': // Day in week
               if (wildcardSize == 2) {
-                replacement = qx.locale.Date.getDayName("narrow", dayOfWeek, locale, "format");
+                replacement = qx.locale.Date.getDayName("narrow", dayOfWeek, "format");
               } else if (wildcardSize == 3) {
-                replacement = qx.locale.Date.getDayName("abbreviated", dayOfWeek, locale, "format");
+                replacement = qx.locale.Date.getDayName("abbreviated", dayOfWeek, "format");
               } else if (wildcardSize == 4) {
-                replacement = qx.locale.Date.getDayName("wide", dayOfWeek, locale, "format");
+                replacement = qx.locale.Date.getDayName("wide", dayOfWeek, "format");
               }
 
               break;
 
             case 'c': // Stand-alone local day in week
               if (wildcardSize == 2) {
-                replacement = qx.locale.Date.getDayName("narrow", dayOfWeek, locale, "stand-alone");
+                replacement = qx.locale.Date.getDayName("narrow", dayOfWeek, "stand-alone");
               } else if (wildcardSize == 3) {
-                replacement = qx.locale.Date.getDayName("abbreviated", dayOfWeek, locale, "stand-alone");
+                replacement = qx.locale.Date.getDayName("abbreviated", dayOfWeek, "stand-alone");
               } else if (wildcardSize == 4) {
-                replacement = qx.locale.Date.getDayName("wide", dayOfWeek, locale, "stand-alone");
+                replacement = qx.locale.Date.getDayName("wide", dayOfWeek, "stand-alone");
               }
 
               break;
@@ -343,9 +343,9 @@ qx.Class.define("qx.util.format.DateFormat",
               if (wildcardSize == 1 || wildcardSize == 2) {
                 replacement = this.__fillNumber(month + 1, wildcardSize);
               } else if (wildcardSize == 3) {
-                replacement = qx.locale.Date.getMonthName("abbreviated", month, locale, "format");
+                replacement = qx.locale.Date.getMonthName("abbreviated", month, "format");
               } else if (wildcardSize == 4) {
-                replacement = qx.locale.Date.getMonthName("wide", month, locale, "format");
+                replacement = qx.locale.Date.getMonthName("wide", month, "format");
               }
 
               break;
@@ -354,16 +354,16 @@ qx.Class.define("qx.util.format.DateFormat",
               if (wildcardSize == 1 || wildcardSize == 2) {
                 replacement = this.__fillNumber(month + 1, wildcardSize);
               } else if (wildcardSize == 3) {
-                replacement = qx.locale.Date.getMonthName("abbreviated", month, locale, "stand-alone");
+                replacement = qx.locale.Date.getMonthName("abbreviated", month, "stand-alone");
               } else if (wildcardSize == 4) {
-                replacement = qx.locale.Date.getMonthName("wide", month, locale, "stand-alone");
+                replacement = qx.locale.Date.getMonthName("wide", month, "stand-alone");
               }
 
               break;
 
             case 'a': // am/pm marker
               // NOTE: 0:00 is am, 12:00 is pm
-              replacement = (hours < 12) ? qx.locale.Date.getAmMarker(locale) : qx.locale.Date.getPmMarker(locale);
+              replacement = (hours < 12) ? qx.locale.Date.getAmMarker() : qx.locale.Date.getPmMarker();
               break;
 
             case 'H': // Hour in day (0-23)
@@ -784,8 +784,8 @@ qx.Class.define("qx.util.format.DateFormat",
 
       var rules = this.__parseRules = [];
 
-      var amMarker = qx.locale.Date.getAmMarker(this.__locale).toString() || DateFormat.AM_MARKER;
-      var pmMarker = qx.locale.Date.getPmMarker(this.__locale).toString() || DateFormat.PM_MARKER;
+      var amMarker = qx.locale.Date.getAmMarker().toString() || DateFormat.AM_MARKER;
+      var pmMarker = qx.locale.Date.getPmMarker().toString() || DateFormat.PM_MARKER;
 
       var yearManipulator = function(dateValues, value)
       {
@@ -805,7 +805,7 @@ qx.Class.define("qx.util.format.DateFormat",
       };
 
       var ampmManipulator = function(dateValues, value) {
-        var pmMarker = qx.locale.Date.getPmMarker(this.__locale).toString() || DateFormat.PM_MARKER;
+        var pmMarker = qx.locale.Date.getPmMarker().toString() || DateFormat.PM_MARKER;
         dateValues.ispm = (value == pmMarker);
       };
 
@@ -821,7 +821,7 @@ qx.Class.define("qx.util.format.DateFormat",
         return;
       };
 
-      var shortMonthNames = qx.locale.Date.getMonthNames("abbreviated", this.__locale, "format");
+      var shortMonthNames = qx.locale.Date.getMonthNames("abbreviated", "format");
       for (var i=0; i<shortMonthNames.length; i++) {
         shortMonthNames[i] = LString.escapeRegexpChars(shortMonthNames[i].toString());
       }
@@ -831,7 +831,7 @@ qx.Class.define("qx.util.format.DateFormat",
         dateValues.month = shortMonthNames.indexOf(value);
       }
 
-      var fullMonthNames = qx.locale.Date.getMonthNames("wide", this.__locale, "format");
+      var fullMonthNames = qx.locale.Date.getMonthNames("wide", "format");
       for (var i=0; i<fullMonthNames.length; i++) {
         fullMonthNames[i] = LString.escapeRegexpChars(fullMonthNames[i].toString());
       }
@@ -841,7 +841,7 @@ qx.Class.define("qx.util.format.DateFormat",
         dateValues.month = fullMonthNames.indexOf(value);
       }
 
-      var narrowDayNames = qx.locale.Date.getDayNames("narrow", this.__locale, "format");
+      var narrowDayNames = qx.locale.Date.getDayNames("narrow", "format");
       for (var i=0; i<narrowDayNames.length; i++) {
         narrowDayNames[i] = LString.escapeRegexpChars(narrowDayNames[i].toString());
       }
@@ -851,7 +851,7 @@ qx.Class.define("qx.util.format.DateFormat",
         dateValues.month = narrowDayNames.indexOf(value);
       }
 
-      var abbrDayNames = qx.locale.Date.getDayNames("abbreviated", this.__locale, "format");
+      var abbrDayNames = qx.locale.Date.getDayNames("abbreviated", "format");
       for (var i=0; i<abbrDayNames.length; i++) {
         abbrDayNames[i] = LString.escapeRegexpChars(abbrDayNames[i].toString());
       }
@@ -861,7 +861,7 @@ qx.Class.define("qx.util.format.DateFormat",
         dateValues.month = abbrDayNames.indexOf(value);
       }
 
-      var fullDayNames = qx.locale.Date.getDayNames("wide", this.__locale, "format");
+      var fullDayNames = qx.locale.Date.getDayNames("wide", "format");
       for (var i=0; i<fullDayNames.length; i++) {
         fullDayNames[i] = LString.escapeRegexpChars(fullDayNames[i].toString());
       }

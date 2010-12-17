@@ -32,7 +32,7 @@ qx.Class.define("qx.ui.form.validation.Manager",
     // storage for all results of async validation calls
     this.__asyncResults = {};
     // set the default required field message
-    this.setRequiredFieldMessage(qx.locale.Manager.tr("This field is required"));
+    this.setRequiredFieldMessage(i18n.tr("This field is required"));
   },
 
 

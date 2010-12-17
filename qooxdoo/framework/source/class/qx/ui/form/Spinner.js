@@ -288,8 +288,8 @@ qx.Class.define("qx.ui.form.Spinner",
      */
     _getFilterRegExp : function()
     {
-      var decimalSeparator = qx.locale.Number.getDecimalSeparator();
-      var groupSeparator = qx.locale.Number.getGroupSeparator();
+      var decimalSeparator = locale.number.Symbol.DECIMAL;
+      var groupSeparator = locale.number.Symbol.GROUP;
 
       var prefix = "";
       var postfix = "";
