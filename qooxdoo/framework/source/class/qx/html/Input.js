@@ -98,6 +98,14 @@ qx.Class.define("qx.html.Input",
         qx.bom.Input.setValue(element, value);
       } else if (name === "wrap") {
         qx.bom.Input.setWrap(element, value);
+
+        // qx.bom.Input#setWrap has the side-effect that the CSS property
+        // overflow is set to "" via DOM methods, causing queue and DOM to get
+        // out of sync. Fix this.
+        var overflow = element.style.overflow;
+        this.setStyle("overflow", overflow);
+        this.setStyle("overflowY", overflow);
+        this.setStyle("overflowX", overflow);
       }
     },
 
@@ -221,12 +229,13 @@ qx.Class.define("qx.html.Input",
      * This property uses the style property "wrap" (IE) respectively "whiteSpace"
      *
      * @param wrap {Boolean} Whether to turn text wrap on or off.
+     * @param direct {Boolean} Whether to apply required changes to the DOM directly.
      * @return {qx.html.Input} This instance for for chaining support.
      */
-    setWrap : function(wrap)
+    setWrap : function(wrap, direct)
     {
       if (this.__type === "textarea") {
-        this._setProperty("wrap", wrap);
+        this._setProperty("wrap", wrap, direct);
       } else {
         throw new Error("Text wrapping is only support by textareas!");
       }

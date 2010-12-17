@@ -56,12 +56,9 @@
   "let" :
   {
     "APPLICATION"  : "demobrowser",
-    "API_EXCLUDE"  : ["${APPLICATION}.demo.*"],
-    "TEST_INCLUDE"   : "${APPLICATION}.*",
-    "CACHE"        : "${TMPDIR}/cache",
+    "API_EXCLUDE"  : ["qx.test.*", "${APPLICATION}.demo.*", "${APPLICATION}.test.*"],
     "QOOXDOO_PATH" : "../..",
-    "THEME"        : "demobrowser.Theme",
-    "PYTHON"       : "python"
+    "THEME"        : "demobrowser.Theme"
   },
 
   "jobs" :
@@ -69,6 +66,8 @@
     "common" :
     {
       "desc"    : "common settings for Demobrowser jobs",
+
+      "extend"  : [ "cache" ],
 
       "library" :
       [
@@ -99,11 +98,6 @@
       {
         "qx.icontheme" : ["Tango", "Oxygen"],
         "qx.theme"     : ["Modern"]
-      },
-
-      "cache" :
-      {
-        "compile" : "${CACHE}"
       }
     },
 
@@ -117,7 +111,7 @@
 
       "shell" :
       {
-        "command" : "${PYTHON} tool/gendata.py ./source/script ./source/demo"
+        "command" : "${PYTHON_CMD} tool/gendata.py ./source/script ./source/demo"
       }
     },
 
@@ -130,7 +124,7 @@
 
       "shell" :
       {
-        "command" : "${PYTHON} ${QOOXDOO_PATH}/tool/bin/generator.py -c config.demobrowser.json source"
+        "command" : "${PYTHON_CMD} ${QOOXDOO_PATH}/tool/bin/generator.py -c config.demobrowser.json source"
       }
     },
 
@@ -159,7 +153,7 @@
 
       "shell" :
       {
-        "command" : "${PYTHON} tool/gendata.py ./build/script ./source/demo"
+        "command" : "${PYTHON_CMD} tool/gendata.py ./build/script ./source/demo"
       }
     },
 
@@ -170,7 +164,7 @@
 
       "shell" :
       {
-        "command" : "${PYTHON} ${QOOXDOO_PATH}/tool/bin/generator.py -c ./config.demobrowser.json build"
+        "command" : "${PYTHON_CMD} ${QOOXDOO_PATH}/tool/bin/generator.py -c ./config.demobrowser.json build"
       }
       
     },

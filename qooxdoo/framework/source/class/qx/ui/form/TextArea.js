@@ -76,7 +76,26 @@ qx.Class.define("qx.ui.form.TextArea",
     {
       check : "Integer",
       init : 20
+    },
+
+    /**
+    * Whether the textarea should automatically grow or shrink when content
+    * does not fit.
+    */
+    autoSize :
+    {
+      check : "Boolean",
+      apply : "_applyAutoSize",
+      init : false
+    },
+
+    autoSizeMaxHeight :
+    {
+      check : "Integer",
+      apply : "_applyAutoSizeMaxHeight",
+      nullable : true
     }
+
   },
 
 
@@ -90,6 +109,18 @@ qx.Class.define("qx.ui.form.TextArea",
 
   members :
   {
+    __areaClone : null,
+    __originalAreaHeight : null,
+
+    // overridden
+    setValue : function(value)
+    {
+      value = this.base(arguments, value);
+      this.__autoSize();
+
+      return value;
+    },
+
     /**
      * Handles the mouse wheel for scrolling the <code>TextArea</code>.
      *
@@ -105,6 +136,167 @@ qx.Class.define("qx.ui.form.TextArea",
 
       if (newScrollY != scrollY) {
         e.stop();
+      }
+    },
+
+    /*
+    ---------------------------------------------------------------------------
+      AUTO SIZE
+    ---------------------------------------------------------------------------
+    */
+
+    /**
+    * Set height of textarea so that content fits without scroll bar.
+    *
+    * @return {void}
+    */
+    __autoSize: function() {
+      if (this.getContentElement().getDomElement() && this.isAutoSize()) {
+
+        var clone = this.__getAreaClone();
+        if (clone) {
+
+          // Remember original area height
+          // debugger;
+          // this.__originalAreaHeight = this.__originalAreaHeight || this._getAreaHeight();
+          // console.log("this.__originalAreaHeight", this.__originalAreaHeight);
+
+          // Increase height when input triggers scrollbar
+          var scrolledHeight = this._getScrolledAreaHeight();
+          if (scrolledHeight != this._getAreaHeight()) {
+
+            // Never shrink below original area height, or content hint height
+            var minHeight = this.__originalAreaHeight || this._getContentHint().height;
+            var desiredHeight = Math.max(scrolledHeight, minHeight);
+
+            // Never grow widget above autoSizeMaxHeight, if defined
+            if (this.getAutoSizeMaxHeight()) {
+              var insets = this.getInsets();
+              var maxHeight = -insets.top + this.getAutoSizeMaxHeight() - insets.bottom;
+
+              // Should not be negative
+              if (maxHeight < 0 ) {
+                maxHeight = 0;
+              }
+
+              // Show scroll-bar when above autoSizeMaxHeight
+              if (desiredHeight > maxHeight) {
+                this.getContentElement().setStyle("overflowY", "auto");
+              } else {
+                this.getContentElement().setStyle("overflowY", "hidden");
+              }
+
+              desiredHeight = Math.min(desiredHeight, maxHeight);
+            }
+
+            this._setAreaHeight(desiredHeight);
+          }
+        }
+      }
+    },
+
+    /**
+    * Get actual height of textarea
+    *
+    * @return {Integer} Height of textarea
+    */
+    _getAreaHeight: function() {
+      return parseInt(this.getContentElement().getStyle("height"), 10);
+    },
+
+    /**
+    * Set actual height of textarea
+    *
+    * @param height {Integer} Desired height of textarea
+    */
+    _setAreaHeight: function(height) {
+      if (this._getAreaHeight() !== height) {
+        // Inner height is outer height minus vertical insets
+        var insets = this.getInsets();
+        var newOuterHeight = insets.top + height + insets.bottom;
+
+        this.setHeight(newOuterHeight);
+      }
+    },
+
+    /**
+    * Get scrolled area height. Equals the total height of the textarea,
+    * as if no scroll-bar was visible.
+    *
+    * @return {Integer} Height of scrolled area
+    */
+    _getScrolledAreaHeight: function() {
+      var clone = this.__getAreaClone();
+
+      // Make sure size is computed based on current value
+      clone.setValue(this.getValue());
+      clone.setWrap(this.getWrap(), true);
+
+      this.__scrollCloneToBottom(clone);
+
+      clone = clone.getDomElement();
+      if (clone) {
+        return clone.scrollTop;
+      }
+    },
+
+    /**
+    * Returns the hidden area clone.
+    *
+    * @return {Element} DOM Element
+    */
+    __getAreaClone: function() {
+      this.__areaClone = this.__areaClone || this.__createAreaClone();
+      return this.__areaClone;
+    },
+
+    /**
+    * Creates and hides area clone.
+    *
+    * @return {Element} DOM Element
+    */
+    __createAreaClone: function() {
+      var orig,
+          clone;
+
+      orig = this.getContentElement();
+
+      clone = new qx.html.Input("textarea");
+
+      // Push out of view
+      // Zero height (i.e. scrolled area equals height)
+      clone.setStyles({
+        position: "absolute",
+        left: "-9999px",
+        height: 0
+      });
+
+      // Set tab index
+      clone.setAttribute("tabIndex", "-1");
+
+      // Copy value
+      clone.setValue(orig.getValue());
+
+      // Attach to DOM
+      clone.insertAfter(orig);
+      qx.html.Element.flush();
+
+      // Make sure scrollTop is actual height
+      this.__scrollCloneToBottom(clone);
+
+      return clone;
+    },
+
+    /**
+    * Scroll textarea to bottom. That way, scrollTop reflects the height
+    * of the textarea.
+    *
+    * @param area {Element} The textarea to scroll
+    */
+    __scrollCloneToBottom: function(clone) {
+      var clone = clone.getDomElement();
+      if (clone) {
+        clone.scrollTop = 10000;
       }
     },
 
@@ -133,6 +325,42 @@ qx.Class.define("qx.ui.form.TextArea",
     // property apply
     _applyWrap : function(value, old) {
       this.getContentElement().setWrap(value);
+      this.__autoSize();
+    },
+
+    // property apply
+    _applyAutoSize: function(value, old) {
+      if (value) {
+        this.addListener("input", this.__autoSize, this);
+
+        // This is done asynchronously on purpose. The style given would
+        // otherwise be overridden by the DOM changes queued in the
+        // property apply for wrap. See [BUG #4493] for more details.
+        this.addListenerOnce("appear", function() {
+          this.getContentElement().setStyle("overflowY", "hidden");
+        });
+
+      } else {
+        this.removeListener("input", this.__autoSize);
+        this.getContentElement().setStyle("overflowY", "auto");
+      }
+
+    },
+
+    // property apply
+    _applyAutoSizeMaxHeight: function() {
+      if (this.__getAreaClone()) {
+        this.__autoSize();
+      }
+    },
+
+    // property apply
+    _applyDimension : function() {
+      this.base(arguments);
+
+      var insets = this.getInsets();
+      this.__originalAreaHeight =
+        this.__originalAreaHeight || -insets.top + this.getHeight() -insets.bottom;
     },
 
     /*

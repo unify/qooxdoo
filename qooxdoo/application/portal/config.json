@@ -15,8 +15,6 @@
   {
     "APPLICATION"  : "portal",
     "QOOXDOO_PATH" : "../..",
-    "TEST_INCLUDE"   : "${APPLICATION}.*",
-    "CACHE"        : "${TMPDIR}/cache",
     "ROOT"         : "."
   }
 }
