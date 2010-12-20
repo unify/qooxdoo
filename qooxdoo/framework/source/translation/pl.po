@@ -1,0 +1,133 @@
+# Polish
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: qooxdoo framework\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-05-19 10:11+0200\n"
+"PO-Revision-Date: 2010-04-22 17:53+0100\n"
+"Last-Translator: Thomas Herchenroeder <thron7 AT users DOT sourceforge DOT net>\n"
+"Language-Team: none\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: KBabel 1.11.4\n"
+
+#: qx/ui/control/ColorPopup.js:147
+msgid "Automatic"
+msgstr ""
+
+#: qx/ui/control/ColorPopup.js:155
+msgid "Open ColorSelector"
+msgstr ""
+
+#: qx/ui/control/ColorPopup.js:180
+msgid "OK"
+msgstr ""
+
+#: qx/ui/control/ColorPopup.js:185
+msgid "Cancel"
+msgstr ""
+
+#: qx/ui/control/ColorPopup.js:242
+msgid "Color Selector"
+msgstr ""
+
+#: qx/ui/control/ColorSelector.js:258
+msgid "Visual"
+msgstr ""
+
+#: qx/ui/control/ColorSelector.js:318
+msgid "Presets"
+msgstr ""
+
+#: qx/ui/control/ColorSelector.js:349
+msgid "Details"
+msgstr ""
+
+#: qx/ui/control/ColorSelector.js:360 qx/ui/control/ColorPopup.js:162
+msgid "Preview (Old/New)"
+msgstr ""
+
+#: qx/ui/control/ColorSelector.js:378
+msgid "Hex"
+msgstr ""
+
+#: qx/ui/control/ColorSelector.js:400
+msgid "RGB"
+msgstr "RGB"
+
+#: qx/ui/control/ColorSelector.js:432
+msgid "HSB"
+msgstr "HSB"
+
+#: qx/ui/control/DateChooser.js:243
+msgid "Last year"
+msgstr ""
+
+#: qx/ui/control/DateChooser.js:255
+msgid "Last month"
+msgstr ""
+
+#: qx/ui/control/DateChooser.js:267
+msgid "Next month"
+msgstr ""
+
+#: qx/ui/control/DateChooser.js:279
+msgid "Next year"
+msgstr ""
+
+#: qx/ui/form/validation/Manager.js:35
+msgid "This field is required"
+msgstr ""
+
+#: qx/ui/table/Table.js:1907
+msgid "one row"
+msgid_plural "%1 rows"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: qx/ui/table/Table.js:1909
+msgid "one of one row"
+msgid_plural "%1 of %2 rows"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: qx/ui/table/columnmodel/Resize.js:199
+msgid "Reset column widths"
+msgstr ""
+
+#: qx/util/Validate.js:91
+msgid "%1 is not a number."
+msgstr ""
+
+#: qx/util/Validate.js:130
+msgid "'%1' is not an email address."
+msgstr ""
+
+#: qx/util/Validate.js:167
+msgid "%1 is not a string."
+msgstr ""
+
+#: qx/util/Validate.js:203
+msgid "%1 is not an url."
+msgstr ""
+
+#: qx/util/Validate.js:244
+msgid "%1 is not a color! %2"
+msgstr ""
+
+#: qx/util/Validate.js:268
+msgid "%1 is not in the range from [%2, %3]."
+msgstr ""
+
+#: qx/util/Validate.js:291
+msgid "%1 is not in %2"
+msgstr ""
+
+#: qx/util/Validate.js:315
+msgid "%1 does not fit %2."
+msgstr ""
