@@ -60,13 +60,31 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       qx.data.SingleValueBinding.bind(this.view, "selectedTests", this, "selectedTests");
     }
     
+    // Get log appender element from view
+    if (this.view.getLogAppenderElement) {
+      this.__logAppender = new qx.log.appender.Element();
+      qx.log.Logger.unregister(this.__logAppender);
+      this.__logAppender.setElement(this.view.getLogAppenderElement());
+      if (!qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
+        qx.log.Logger.register(this.__logAppender);        
+      }
+    }
+        
+    // Test namespace set by URI parameter
+    var params = location.search;
+    if (params.indexOf("testclass=") > 0 ) {
+      this._testNameSpace = params.substr(params.indexOf("testclass=") + 10);
+    } else {
+      this._testNameSpace = qx.core.Setting.get("qx.testNameSpace");
+    }
+    
     // Load unit tests
     if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
       // Load the tests from a standalone AUT
       this.__iframe = this.view.getIframe();
       qx.event.Registration.addListener(this.__iframe, "load", this._onLoadIframe, this);
-      var src = qx.core.Setting.get("qx.testPageUri")
-      src += "?testclass=" + qx.core.Setting.get("qx.testNameSpace");
+      var src = qx.core.Setting.get("qx.testPageUri");      
+      src += "?testclass=" + this._testNameSpace;
       this.view.setAutUri(src);
     } 
     else {
@@ -136,7 +154,9 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     __iframe : null,
     __loadTimer : null,
     __loadAttempts : null,
+    __logAppender : null,
     __testParts : null,
+    _testNameSpace : null,
   
     
     /**
@@ -146,7 +166,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
      */
     _loadInlineTests : function(nameSpace)
     {
-      nameSpace = nameSpace || qx.core.Setting.get("qx.testNameSpace");
+      nameSpace = nameSpace || this._testNameSpace;
       this.setTestSuiteState("loading");
       this.loader = new qx.dev.unit.TestLoaderInline();
       this.loader.setTestNamespace(nameSpace);
@@ -235,8 +255,12 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       switch (suiteState) {
         case "ready":
         case "finished":
-          this.setTestSuiteState("running");
-          break;
+          if (this.testList.length > 0) {
+            this.setTestSuiteState("running");
+            break;
+          } else {
+            return;
+          }
         case "aborted":
         case "error":
           return;
@@ -253,7 +277,15 @@ qx.Class.define("testrunner2.runner.TestRunner", {
           return;
         }
         else {
-          this.setTestSuiteState("finished");
+          var self = this;
+          /*
+           * Ugly hack: Since the tests are run asynchronously we can't rely on
+           * the queue to determine when everything is done.
+           * TODO: de-uglify this.
+           */
+          window.setTimeout(function() {
+            self.setTestSuiteState("finished");
+          }, 250);
           return;
         }
       }
@@ -329,6 +361,12 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       }, this);
       
       testResult.addListener("endTest", function(e) {
+        if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
+          if (this.__logAppender) {
+            this.__fetchIframeLog();
+          }
+        }
+        
         var state = this.currentTestData.getState();
         if (state == "start") {
           this.currentTestData.setState("success");
@@ -471,6 +509,25 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     _handleGlobalError : function(ex)
     {
       this.error(ex);
+    },
+    
+    /**
+     * Retrieves the AUT's log messages and writes them to the current appender.
+     */
+    __fetchIframeLog : function()
+    {
+      var w = qx.bom.Iframe.getWindow(this.__iframe);
+
+      var logger;
+      if (w.qx && w.qx.log && w.qx.log.Logger)
+      {
+        logger = w.qx.log.Logger;
+        //logger.setLevel(this.getLogLevel());
+        // Register to flush the log queue into the appender.
+        logger.register(this.__logAppender);
+        logger.clear();
+        logger.unregister(this.__logAppender);
+      }
     }
     
   }
