@@ -24,7 +24,7 @@
  */
 qx.Class.define("qx.util.Template",
 {
-  extend : qx.core.Object,
+  extend : Object,
 
 
 
