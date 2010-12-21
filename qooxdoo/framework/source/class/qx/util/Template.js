@@ -39,8 +39,6 @@ qx.Class.define("qx.util.Template",
    */
   construct : function(content)
   {
-    this.base(arguments);
-
     if (content != null) {
       this.setContent(content);
     }
