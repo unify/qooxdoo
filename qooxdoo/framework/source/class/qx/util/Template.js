@@ -21,6 +21,8 @@
  * Class to process string content with placeholders into a resulting string.
  * This is especially interesting to use in combination with database
  * driven creation of HTML markup etc.
+ *
+ * Please omit single quotes (') in your template string.
  */
 qx.Class.define("qx.util.Template",
 {
@@ -84,9 +86,16 @@ qx.Class.define("qx.util.Template",
     // property apply
     _applyContent : function(value, old)
     {
-      if (value) {
-        this.run = new Function("values", "return ['" + value.replace(this.__reg, this.__replace) + "'].join('')");
-      } else {
+      if (value) 
+      {
+        try{
+          this.run = new Function("values", "return ['" + value.replace(this.__reg, this.__replace) + "'].join('')");
+        } catch(ex) {
+          throw new Error("Cannot compile template: " + ex);
+        }
+      }
+      else 
+      {
         delete this.run;
       }
     },
