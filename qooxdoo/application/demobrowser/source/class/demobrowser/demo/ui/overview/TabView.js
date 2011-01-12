@@ -27,11 +27,14 @@ qx.Class.define("demobrowser.demo.ui.overview.TabView",
     this.base(arguments);
 
     this.__init();
+    this.addListener("changeSelection", this.__rememberCurrentTab, this);
+    this.__setCurrentTab();
   },
 
   members :
   {
-    __init: function(){
+    __init: function() {
+
       // Basic
       var basic = new demobrowser.demo.ui.overview.pages.Basic();
       this.add(basic);
@@ -56,6 +59,47 @@ qx.Class.define("demobrowser.demo.ui.overview.TabView",
       var menu = new demobrowser.demo.ui.overview.pages.ToolBar();
       this.add(menu);
 
+      // Window
+      var win = new demobrowser.demo.ui.overview.pages.Window();
+      this.add(win);
+
+      // SplitPane
+      var splitPane = new demobrowser.demo.ui.overview.pages.SplitPane();
+      this.add(splitPane);
+
+      // Tree
+      var tree = new demobrowser.demo.ui.overview.pages.Tree();
+      this.add(tree);
+
+      // List
+      var list = new demobrowser.demo.ui.overview.pages.List();
+      this.add(list);
+
+      // Table
+      var table = new demobrowser.demo.ui.overview.pages.Table();
+      this.add(table);
+
+      // Misc
+      var misc = new demobrowser.demo.ui.overview.pages.Misc();
+      this.add(misc);
+
+    },
+
+    __rememberCurrentTab: function(e) {
+      qx.bom.Cookie.set("currentTab", e.getData()[0].getLabel());
+    },
+
+    __setCurrentTab: function() {
+      var cookie = qx.bom.Cookie.get("currentTab") ||
+                   qx.bom.Cookie.set("currentTab", "basic");
+
+      var currentTab = new qx.type.Array().append(this.getSelectables()).filter(function(tab) {
+        return tab.getLabel() == cookie;
+      })[0];
+
+      if (currentTab) {
+        this.setSelection([currentTab]);
+      }
     }
   }
 });

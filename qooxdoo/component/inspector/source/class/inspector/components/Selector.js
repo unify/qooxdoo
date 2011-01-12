@@ -86,7 +86,11 @@ qx.Class.define("inspector.components.Selector",
     start : function()
     {
       if (this.__catchClickLayer != null) {
+        this.__updateCatchClickLayer();
         this.__catchClickLayer.show();
+
+        // Flush queue before next user interaction occurs.
+        qx.ui.core.queue.Manager.flush();
       }
     },
 
@@ -97,6 +101,10 @@ qx.Class.define("inspector.components.Selector",
     {
       if (this.__catchClickLayer != null) {
         this.__catchClickLayer.hide();
+        this.__onHighlighterInterval();
+
+        // Flush queue before next user interaction occurs.
+        qx.ui.core.queue.Manager.flush();
       }
     },
 
@@ -138,8 +146,11 @@ qx.Class.define("inspector.components.Selector",
         return;
       }
 
-      this.__timerHighlighter.restart();
+      // Hide highlighter and flush queue before next user interaction occurs.
+      this.__highlighter.hide();
+      qx.ui.core.queue.Manager.flush();
 
+      this.__timerHighlighter.restart();
       this.__highlight(inspected);
     },
 
@@ -152,6 +163,9 @@ qx.Class.define("inspector.components.Selector",
     {
       this.__timerHighlighter.stop();
       this.__highlighter.hide();
+
+      // Flush queue before next user interaction occurs.
+      qx.ui.core.queue.Manager.flush();
     },
 
     /**
@@ -238,7 +252,10 @@ qx.Class.define("inspector.components.Selector",
 
       var clickedElement = this.__searchWidgetInAllRoots(xPosition, yPosition);
 
+      // Hide highlighter and flush queue before next user interaction occurs.
       this.__highlighter.hide();
+      qx.ui.core.queue.Manager.flush();
+
       this.__model.setInspected(clickedElement);
     },
 
@@ -355,20 +372,26 @@ qx.Class.define("inspector.components.Selector",
      * @param object {qx.ui.core.Widget|qx.html.Element} object to highlight.
      */
     __highlight: function(object) {
-      var element = null;
+      // Flush queue before compute size
+      qx.ui.core.queue.Manager.flush();
 
+      var element = null;
       if (this.__isWidget(object) && !this.__isRootElement(object)) {
         element = object.getContainerElement().getDomElement();
       } else if (this.__isQxHtmlElement(object)) {
         element = object.getDomElement();
       } else {
+        // Hide highlighter and flush queue before next user interaction occurs.
         this.__highlighter.hide();
+        qx.ui.core.queue.Manager.flush();
         return;
       }
 
       // if element is null, the object is not rendered.
       if (element == null) {
+        // Hide highlighter and flush queue before next user interaction occurs.
         this.__highlighter.hide();
+        qx.ui.core.queue.Manager.flush();
         return;
       }
 
@@ -380,6 +403,9 @@ qx.Class.define("inspector.components.Selector",
 
       this.__highlighter.renderLayout(left, top, right - left, bottom - top);
       this.__highlighter.show();
+
+      // Flush queue before next user interaction occurs.
+      qx.ui.core.queue.Manager.flush();
     },
 
     /**
@@ -420,7 +446,7 @@ qx.Class.define("inspector.components.Selector",
 
     /**
      * Helper methide to update the "CatchClickLayer" size.
-     * 
+     *
      * @param e {qx.event.type.Data} the resize event.
      */
     __updateCatchClickLayer : function(e)
@@ -432,13 +458,16 @@ qx.Class.define("inspector.components.Selector",
       {
         this.__highlighter.hide();
 
-        // Flush the queue and set the size asynchronous, 
+        // Flush the queue and set the size asynchronous,
         // otherwise the resize doesn't work
         qx.ui.core.queue.Manager.flush();
         qx.event.Timer.once(function()
         {
           this.__catchClickLayer.setHeight(qx.bom.Document.getHeight(win));
           this.__catchClickLayer.setWidth(qx.bom.Document.getWidth(win));
+
+          // Flush queue before next user interaction occurs.
+          qx.ui.core.queue.Manager.flush();
         }, this, 0);
       }
     }

@@ -46,113 +46,18 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assertEquals("Affe", textArea.getValue());
     },
 
-    //
-    // _setAreaHeight
-    //
-
-    "test: _setAreaHeight<br/> sets height of textarea": function() {
+    "test: textarea<br/> set minimal line-height": function() {
       var textArea = this.__textArea;
-      textArea._setAreaHeight(100);
       this.flush();
+      var heightInitial = textArea.getSizeHint().height;
 
-      var expectedHeight = textArea._getAreaHeight();
-      this.assertEquals("100", expectedHeight, "Unexpected height of textarea element");
-    },
-
-    "test: _setAreaHeight<br/> adjusts height of the textarea's container": function() {
-      var textArea = this.__textArea;
-      textArea._setAreaHeight(100);
+      textArea.setMinimalLineHeight(1);
       this.flush();
+      var heightSmall = textArea.getSizeHint().height;
 
-      var insets = textArea.getInsets();
-      var expectedHeight = insets.top + 100 + insets.bottom;
-      this.assertEquals(expectedHeight, textArea.getHeight(), "Unexpected height of textarea widget");
-    },
-
-
-    //
-    // _getAreaHeight
-    //
-
-    "test: _getAreaHeight<br/> gets actual height of textarea": function() {
-      var textArea = this.__textArea;
-      textArea.setHeight(100);
-      this.flush();
-
-      var insets = textArea.getInsets();
-      var expectedHeight = -insets.top + 100 -insets.bottom;
-      this.assertEquals(expectedHeight, textArea._getAreaHeight(), "Unexpected height of textarea element");
-    },
-
-    //
-    // _getScrolledAreaHeight
-    //
-
-    "test: _getScrolledAreaHeight<br/> returns height larger than height of textarea when content triggers scrollbar": function() {
-      var textArea = this.__textArea;
-      textArea.setAutoSize(true);
-      textArea.setHeight(10);
-      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
-      this.flush();
-
-      var cloneHeight = textArea._getScrolledAreaHeight();
-      this.assert(cloneHeight > 10, "Scrolled area height must be larger than height of original textarea");
-    },
-
-    "test: _getScrolledAreaHeight<br/> returns increased height when value gets longer": function() {
-      var textArea = this.__textArea;
-      textArea.setAutoSize(true);
-      textArea.setHeight(10);
-
-      textArea.setValue("Affe\nMaus\nElefant");
-      var heightFirstStep = textArea._getScrolledAreaHeight();
-      this.flush();
-
-      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
-      var heightSecondStep = textArea._getScrolledAreaHeight();
-      this.flush();
-
-      var msg =  "Scrolled area height must increase";
-      this.assertNotEquals(heightSecondStep, heightFirstStep, msg);
-      this.assert(heightSecondStep > heightFirstStep, msg);
-    },
-
-    "test: _getScrolledAreaHeight<br/> returns decreased height when value gets shorter": function() {
-      var textArea = this.__textArea;
-      textArea.setAutoSize(true);
-      textArea.setHeight(10);
-
-      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
-      var heightFirstStep = textArea._getScrolledAreaHeight();
-      this.flush();
-
-      textArea.setValue("Affe\nMaus\nElefant");
-      var heightSecondStep = textArea._getScrolledAreaHeight();
-      this.flush();
-
-      var msg =  "Scrolled area height must decrease";
-      this.assertNotEquals(heightSecondStep, heightFirstStep, msg);
-      this.assert(heightSecondStep < heightFirstStep, msg);
-    },
-
-    "test: _getScrolledAreaHeight<br/> creates clone of textarea": function() {
-      var textArea = this.__textArea;
-      textArea._getScrolledAreaHeight();
-      this.flush();
-
-      var textAreaCount = qx.bom.Collection.query("textarea").length;
-      this.assertEquals(2, textAreaCount);
-    },
-
-    "test: destroy<br/> removes original and cloned textarea": function() {
-      var textArea = this.__textArea;
-      textArea._getScrolledAreaHeight();
-      this.flush();
-      textArea.destroy();
-      this.flush();
-
-      var textAreaCount = qx.bom.Collection.query("textarea").length;
-      this.assertEquals(0, textAreaCount);
+      var msg =  "Widget height must decrease (was: " + heightInitial +
+                 " is: " + heightSmall + ")";
+      this.assert(heightSmall < heightInitial, msg);
     },
 
     //
@@ -162,97 +67,96 @@ qx.Class.define("qx.test.ui.form.TextArea",
     "test: textarea with autoSize<br/> grows when input would trigger scrollbar": function() {
       var textArea = this.__textArea;
       textArea.setAutoSize(true);
-      textArea.setHeight(20);
       this.flush();
 
       textArea.setValue("Affe\nMaus\nElefant");
-      var heightFirstStep = textArea.getHeight();
       this.flush();
+      var heightSmall = textArea.getSizeHint().height;
 
-      // Additional input
+      // Grow
       textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
-      var heightSecondStep = textArea.getHeight();
       this.flush();
+      var heightTall = textArea.getSizeHint().height;
 
-      var msg =  "Widget height must increase (was: " + heightFirstStep +
-                 " is: " + heightSecondStep + ")";
-      this.assert(heightSecondStep > heightFirstStep, msg);
+      var msg =  "Widget height must increase (was: " + heightSmall +
+                 " is: " + heightTall + ")";
+      this.assert(heightTall > heightSmall, msg);
     },
 
     "test: textarea with autoSize<br/> shrinks when removal would hide scrollbar": function() {
       var textArea = this.__textArea;
       textArea.setAutoSize(true);
-      textArea.setHeight(20);
       this.flush();
 
-      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
-      var heightFirstStep = textArea.getHeight();
-      this.flush();
-
-      // Removal
       textArea.setValue("Affe\nMaus\nElefant");
-      var heightSecondStep = textArea.getHeight();
       this.flush();
 
-      var msg =  "Widget height must decrease (was: " + heightFirstStep +
-                 " is: " + heightSecondStep + ")";
-      this.assert(heightSecondStep < heightFirstStep, msg);
+      // Grow
+      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
+      this.flush();
+      var heightTall = textArea.getSizeHint().height;
+
+      // Shrink
+      textArea.setValue("Affe\nMaus\nElefant");
+      this.flush();
+      var heightShrink = textArea.getSizeHint().height;
+
+      var msg =  "Widget height must decrease (was: " + heightTall +
+                 " is: " + heightShrink + ")";
+      this.assert(heightShrink < heightTall, msg);
     },
 
     "test: textarea with autoSize<br/> does not shrink below original height": function() {
       var textArea = this.__textArea;
-      var originalHeight = 100;
       textArea.setAutoSize(true);
-      textArea.setHeight(originalHeight);
       this.flush();
+
+      var originalHeight = textArea.getBounds().height;
 
       textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
       this.flush();
 
-      // Removal
+      // Shrink
       textArea.setValue("Affe\nMaus\nElefant");
-      var heightSecondStep = textArea.getHeight();
+      var heightShrink = textArea.getSizeHint().height;
       this.flush();
 
-      var msg =  "Widget height shrinks below original height (is: " + heightSecondStep +
+      var msg =  "Widget height must not shrink below original height (is: " + heightShrink +
                  " original: " + originalHeight + ")";
-      this.assert(!(heightSecondStep < originalHeight), msg);
-    },
-
-    "test: textarea with autoSize<br/> does not grow above maxHeight": function() {
-      var textArea = this.__textArea;
-      var maxHeight = 20;
-      textArea.set({
-        autoSize: true,
-        height: 20,
-        autoSizeMaxHeight: maxHeight,
-        value: "Affe\nMaus\nElefant"
-      });
-      this.flush();
-
-      // Additional input
-      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
-      var heightSecondStep = textArea.getHeight();
-      this.flush();
-
-      var msg =  "Widget height grows above maxHeight (is: " + heightSecondStep +
-                 " maxHeight: " + maxHeight + ")";
-      this.assert(!(heightSecondStep > maxHeight), msg);
+      this.assert(!(heightShrink < originalHeight), msg);
     },
 
     "test: textarea with autoSize<br/> shows scroll-bar when above maxHeight": function() {
       var textArea = this.__textArea;
-      var maxHeight = 20;
       textArea.set({
         autoSize: true,
-        height: 20,
-        autoSizeMaxHeight: maxHeight,
+        maxHeight: 50,
         value: "Affe\nMaus\nElefant"
       });
       this.flush();
 
-      // Additional input
+      // Grow
       textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
+      this.flush();
+
+      var overflow = textArea.getContentElement().getStyle("overflowY");
+      this.assertEquals("auto", overflow);
+    },
+
+    "test: textarea with autoSize<br/> shows scroll-bar when finally above maxHeight": function() {
+      var textArea = this.__textArea;
+      textArea.set({
+        autoSize: true,
+        value: "Affe\nMaus\nElefant"
+      });
+      this.flush();
+
+      // Grow
+      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
+      this.flush();
+
+      // Limit height
+      textArea.setMaxHeight(50);
       this.flush();
 
       var overflow = textArea.getContentElement().getStyle("overflowY");
@@ -263,74 +167,135 @@ qx.Class.define("qx.test.ui.form.TextArea",
       var textArea = this.__textArea;
       textArea.set({
         autoSize: true,
-        height: 20,
-        autoSizeMaxHeight: 20,
-        value: "Affe\nMaus\nElefant"
+        maxHeight: 50
       });
       this.flush();
 
-      // Additional input
+      // Grow
       textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
       this.flush();
 
-      // Removal
-      textArea.setValue("Affe\nMaus\nElefant\nGiraffe\nTiger");
-      textArea.setAutoSizeMaxHeight(300);
+      // Shrink
+      textArea.setValue("Affe");
       this.flush();
 
       var overflow = textArea.getContentElement().getStyle("overflowY");
       this.assertEquals("hidden", overflow);
     },
 
-    "test: textarea with autoSize<br/> shrinks when long line is unwrapped": function() {
+    "test: textarea with autoSize<br/> takes initial value into consideration": function() {
       var textArea = this.__textArea;
       textArea.set({
         autoSize: true,
-        height: 20
+        value: this.__getLongValue()
       });
+
+      var textAreaNoValue = new qx.ui.form.TextArea();
+      textAreaNoValue.set({
+        autoSize: true,
+        value: ""
+      });
+      this.getRoot().add(textAreaNoValue, {left: 100});
+
+      this.flush();
+      var heightValue = textArea.getBounds().height;
+      var heightNoValue = textAreaNoValue.getBounds().height;
+
+      var msg = "Must be higher with long value than without value";
+      this.assert(heightValue > heightNoValue, msg);
+
+      textAreaNoValue.destroy();
+    },
+
+    "test: textarea with autoSize<br/> shrinks when long line is unwrapped": function() {
+
+      if (!this.__supportsLiveWrap()) {
+        return;
+      }
+
+      var textArea = this.__textArea;
+      textArea.setAutoSize(true);
       this.flush();
 
-      textArea.setValue("AffeMausElefantGiraffeTigerAffeMausElefantGiraffeTiger");
-      var wrapHeight = textArea.getHeight();
+      // Grow
+      var longValue = this.__getLongValue();
+      textArea.setValue(longValue);
+      this.flush();
+      var wrapHeight = textArea.getSizeHint().height;
 
       // Shrink
       textArea.setWrap(false);
-      var noWrapHeight = textArea.getHeight();
+      this.flush();
+      var noWrapHeight = textArea.getSizeHint().height;
 
       var msg = "Must shrink when long line is unwrapped";
       this.assertNotEquals(wrapHeight, noWrapHeight, msg);
-      this.assert(wrapHeight > noWrapHeight, msg);
+      this.assert(noWrapHeight < wrapHeight, msg);
     },
 
     "test: textarea with autoSize<br/> grows when long line is wrapped": function() {
+
+      if (!this.__supportsLiveWrap()) {
+        return;
+      }
+
       var textArea = this.__textArea;
       textArea.set({
         autoSize: true,
-        height: 20,
-        wrap: false
+        wrap: true
       });
       this.flush();
 
-      textArea.setValue("AffeMausElefantGiraffeTigerAffeMausElefantGiraffeTiger");
-      this.flush();
-      var noWrapHeight = textArea.getHeight();
+      // Does not work unfortunately
+      //
+      // var longValue = new qx.type.Array(50).map(function() {
+      //   return "AffeMausElefantGiraffeTiger";
+      // }).join("");
 
-      // Grow
+      var longValue = this.__getLongValue();
+
+      // Wrap
+      textArea.setValue(longValue);
+      this.flush();
+      var initialWrapHeight = textArea.getSizeHint().height;
+
+      // Unwrap
+      textArea.setWrap(false);
+      this.flush();
+      var noWrapHeight = textArea.getSizeHint().height;
+
+      // Wrap
       textArea.setWrap(true);
-      var wrapHeight = textArea.getHeight();
+      this.flush();
+      var wrapHeight = textArea.getSizeHint().height;
 
       var msg = "Must grow when long line is unwrapped";
       this.assertNotEquals(wrapHeight, noWrapHeight, msg);
       this.assert(wrapHeight > noWrapHeight, msg);
 
-      // TODO:
-      // this.assertEquals(initialWrapHeight, wrapHeight)
-
+      var msg = "Must be same height when wrap is toggled"
+      this.assertEquals(initialWrapHeight, wrapHeight, msg);
     },
 
-    // "test: textarea with autoSize<br/> does not grow when input fits": function() {
-    //
-    // },
+    __getLongValue: function() {
+      var val = new qx.type.Array(50);
+      for(var i=0; i < val.length; i++) {
+        val[i] = "AAAAA ";
+      }
+      return val.join("");
+    },
+
+    __supportsLiveWrap: function() {
+
+      // Opera and older versions of IE ignore changes to wrap settings
+      // once the textarea is in the DOM
+      var Engine = qx.bom.client.Engine;
+      if (Engine.OPERA || (Engine.MSHTML && Engine.FULLVERSION < 8)) {
+        this.warn("Skipping test");
+        return false;
+      }
+
+    },
 
     tearDown : function()
     {
