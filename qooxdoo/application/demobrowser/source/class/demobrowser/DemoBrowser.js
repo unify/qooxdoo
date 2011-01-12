@@ -38,6 +38,11 @@
 #asset(qx/icon/Tango/22/apps/internet-web-browser.png)
 #asset(qx/icon/Tango/22/mimetypes/executable.png)
 
+#asset(qx/icon/Tango/22/actions/help-contents.png)
+#asset(qx/icon/Tango/22/actions/help-about.png)
+
+#asset(qx/icon/Tango/22/mimetypes/text-html.png)
+
 ************************************************************************ */
 
 /**
@@ -137,6 +142,7 @@ qx.Class.define("demobrowser.DemoBrowser",
 
     this._tree = this.__makeTree();
     leftComposite.add(this._tree, {flex: 1});
+    this.__makeUrlMenu();
 
     this._demoView = this.__makeDemoView();
 
@@ -260,6 +266,7 @@ qx.Class.define("demobrowser.DemoBrowser",
     _infosplit : null,
     _demoView : null,
     __autorunTimer : null,
+    _urlWindow : null,
 
 
     defaultUrl : "demo/welcome.html",
@@ -340,7 +347,26 @@ qx.Class.define("demobrowser.DemoBrowser",
       }
     },
 
+    /**
+     * Handler for opening the api viewer.
+     */
+    __onApiOpen : function() {
+      window.open(
+        "http://demo.qooxdoo.org/" +
+        qx.core.Setting.get("qx.version") +
+        "/apiviewer/"
+      );
+    },
 
+
+    /**
+     * Handler for opening the manual.
+     */
+    __onManualOpen : function() {
+      var vers = (qx.core.Setting.get("qx.version").split("-")[0]);
+      window.open("http://manual.qooxdoo.org/" + vers);
+    },
+    
     /**
      * TODOC
      * @param e {Event} TODOC
@@ -439,6 +465,23 @@ qx.Class.define("demobrowser.DemoBrowser",
 
         this.__playgroundButton = playgroundButton;
         this._navPart.add(playgroundButton);
+        
+        // api button
+        var apiButton = new qx.ui.toolbar.Button(
+          this.tr("API Viewer"), "icon/22/actions/help-contents.png"
+        );
+        this._navPart.add(apiButton);
+        apiButton.setToolTipText(this.tr("Open the qooxdoo API Viewer"));
+        apiButton.addListener("execute", this.__onApiOpen, this);
+
+        // help button
+        var helpButton = new qx.ui.toolbar.Button(
+          this.tr("Manual"), "icon/22/actions/help-about.png"
+        );
+        this._navPart.add(helpButton);
+        helpButton.setToolTipText(this.tr("Open the qooxdoo Manual"));
+        helpButton.addListener("execute", this.__onManualOpen, this);
+        
       }
 
 
@@ -651,6 +694,44 @@ qx.Class.define("demobrowser.DemoBrowser",
       }, this);
 
       return tree1;
+    },
+    
+    
+    __makeUrlMenu : function()
+    {
+      var urlWindow = new qx.ui.window.Window(this.tr("Demo Link"), "icon/22/mimetypes/text-html.png");
+      urlWindow.setLayout(new qx.ui.layout.VBox(10));
+      urlWindow.setAllowMaximize(false);
+      urlWindow.setAllowMinimize(false);
+      var urlLabel = new qx.ui.basic.Label("");
+      urlLabel.setSelectable(true);
+      urlLabel.setNativeContextMenu(true);
+      urlWindow.add(urlLabel);
+      this._urlWindow = urlWindow;
+      var left = Math.ceil((qx.bom.Viewport.getWidth() / 2) - 250);
+      if (left < 0) {
+        left = 0;
+      }
+      var top = Math.ceil((qx.bom.Viewport.getHeight() / 2) - 25);
+      if (top < 0) {
+        top = 0;
+      }
+      urlWindow.moveTo(left, top);      
+      this.getApplicationRoot().add(urlWindow);
+      
+      var menu = new qx.ui.menu.Menu();
+      var copyButton = new qx.ui.menu.Button(this.tr("Get Demo Link"), "icon/22/mimetypes/text-html.png");
+      copyButton.addListener("execute", function(e) {
+        var treeNode = this.tree.getSelection()[0];
+        var modelNode = treeNode.getUserData("modelLink");
+        var demoName = this.tests.handler.getFullName(modelNode);
+        demoName = demoName.replace(".", "~");
+        var fullUrl = location.protocol + "//" + location.host + location.pathname + "#" + demoName;
+        this._urlWindow.getChildren()[0].setValue(fullUrl);
+        this._urlWindow.open();
+      }, this);
+      menu.add(copyButton);
+      this._tree.setContextMenu(menu);    
     },
 
 
@@ -1543,6 +1624,6 @@ qx.Class.define("demobrowser.DemoBrowser",
       "_navPart", "_runbutton", "_stopbutton", "__sobutt", "__themePart",
       "__viewPart", "viewGroup", "__menuBar", "_infosplit", "_searchTextField",
       "_status", "_tree", "_iframe", "_demoView", "__menuElements",
-      "__logSync", "_leftComposite", "_demoView");
+      "__logSync", "_leftComposite", "_urlWindow");
   }
 });

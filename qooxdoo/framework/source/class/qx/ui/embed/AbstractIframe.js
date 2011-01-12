@@ -38,6 +38,8 @@ qx.Class.define("qx.ui.embed.AbstractIframe",
     if (source) {
       this.setSource(source);
     }
+
+    this._getIframeElement().addListener("navigate", this.__onNavigate, this);
   },
 
 
@@ -46,7 +48,12 @@ qx.Class.define("qx.ui.embed.AbstractIframe",
     /**
      * The "load" event is fired after the iframe content has successfully been loaded.
      */
-    "load" : "qx.event.type.Event"
+    "load" : "qx.event.type.Event",
+    
+    /**
+    * The "navigate" event is fired when the user browses the iframe.
+    */
+    "navigate" : "qx.event.type.Data"
   },
 
 
@@ -145,6 +152,22 @@ qx.Class.define("qx.ui.embed.AbstractIframe",
      */
     reload : function() {
       this._getIframeElement().reload();
+    },
+
+    /**
+    * Handle user navigation. Sync actual URL of iframe with source property.
+    *
+    * @param e {qx.event.type.Data} navigate event
+    * @return {void}
+    */
+    __onNavigate: function(e) {
+      var actualUrl = e.getData();
+
+      if (actualUrl) {
+        this.setSource(actualUrl);
+      }
+
+      this.fireDataEvent("navigate", actualUrl);
     }
   }
 })
