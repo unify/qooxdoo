@@ -1,0 +1,7 @@
+{
+  "main" :
+  {
+    "name" : "feedreader",
+    "kind" : "qooxdoo"
+  }
+}
