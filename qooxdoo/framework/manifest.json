@@ -1,9 +1,6 @@
 {
-  "main" :
-  {
-    "name" : "qooxdoo"
-    "kind" : "qooxdoo"
-  },
+  "name" : "qooxdoo",
+  "kind" : "qooxdoo",
   
   "values" :
   {
