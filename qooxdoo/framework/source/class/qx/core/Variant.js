@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2011 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -41,60 +42,8 @@ qx.Bootstrap.define("qx.core.Variant",
 {
   statics :
   {
-    /** {Map} stored variants */
-    __variants : {},
-
-
     /** {Map} cached results */
     __cache : {},
-
-
-    /**
-     * Pseudo function as replacement for isSet() which will only be handled by the optimizer
-     *
-     * @return {Boolean}
-     */
-    compilerIsSet : function() {
-      return true;
-    },
-
-
-    /**
-     * Define a variant
-     *
-     * @param key {String} An Unique key for the variant. The key must be prefixed with a
-     *   namespace identifier (e.g. <code>"qx.debug"</code>)
-     * @param allowedValues {String[]} An array of all allowed values for this variant.
-     * @param defaultValue {String} Default value for the variant. Must be one of the values
-     *   defined in <code>defaultValues</code>.
-     */
-    define : function(key, allowedValues, defaultValue)
-    {
-      if (qx.core.Variant.compilerIsSet("qx.debug", "on"))
-      {
-        if (!this.__isValidArray(allowedValues)) {
-          throw new Error('Allowed values of variant "' + key + '" must be defined!');
-        }
-
-        if (defaultValue === undefined) {
-          throw new Error('Default value of variant "' + key + '" must be defined!');
-        }
-      }
-
-      if (!this.__variants[key])
-      {
-        this.__variants[key] = {};
-      }
-      else if (qx.core.Variant.compilerIsSet("qx.debug", "on"))
-      {
-        if (this.__variants[key].defaultValue !== undefined) {
-          throw new Error('Variant "' + key + '" is already defined!');
-        }
-      }
-
-      this.__variants[key].allowedValues = allowedValues;
-      this.__variants[key].defaultValue = defaultValue;
-    },
 
 
     /**
@@ -105,54 +54,12 @@ qx.Bootstrap.define("qx.core.Variant",
      */
     get : function(key)
     {
-      var data = this.__variants[key];
-
-      if (qx.core.Variant.compilerIsSet("qx.debug", "on"))
-      {
-        if (data === undefined) {
-          throw new Error('Variant "' + key + '" is not defined.');
-        }
+      var value = jasy.Permutation.selected[key];
+      if (value == null) {
+        throw new Error('Variant "' + key + '" is not defined.');
       }
 
-      if (data.value !== undefined) {
-        return data.value;
-      }
-
-      return data.defaultValue;
-    },
-
-
-    /**
-     * Import settings from global qxvariants into current environment
-     *
-     * @return {void}
-     */
-    __init : function()
-    {
-      if (window.qxvariants)
-      {
-        for (var key in qxvariants)
-        {
-          if (qx.core.Variant.compilerIsSet("qx.debug", "on"))
-          {
-            if ((key.split(".")).length < 2) {
-              throw new Error('Malformed variants key "' + key + '". Must be following the schema "namespace.key".');
-            }
-          }
-
-          if (!this.__variants[key]) {
-            this.__variants[key] = {};
-          }
-
-          this.__variants[key].value = qxvariants[key];
-        }
-
-        window.qxvariants = undefined;
-
-        try {
-          delete window.qxvariants;
-        } catch(ex) {};
-      }
+      return value;
     },
 
 
@@ -181,19 +88,6 @@ qx.Bootstrap.define("qx.core.Variant",
      */
     select : function(key, variantFunctionMap)
     {
-      if (qx.core.Variant.compilerIsSet("qx.debug", "on"))
-      {
-        // WARINING: all changes to this function must be duplicated in the generator!!
-        // modules/variantoptimizer.py (processVariantSelect)
-        if (!this.__isValidObject(this.__variants[key])) {
-          throw new Error("Variant \"" + key + "\" is not defined");
-        }
-
-        if (!this.__isValidObject(variantFunctionMap)) {
-          throw new Error("the second parameter must be a map!");
-        }
-      }
-
       for (var variant in variantFunctionMap)
       {
         if (this.isSet(key, variant)) {
@@ -201,16 +95,11 @@ qx.Bootstrap.define("qx.core.Variant",
         }
       }
 
-      if (variantFunctionMap["default"] !== undefined) {
+      if ("default" in variantFunctionMap) {
         return variantFunctionMap["default"];
       }
 
-      if (qx.core.Variant.compilerIsSet("qx.debug", "on"))
-      {
-        throw new Error('No match for variant "' + key +
-          '" in variants [' + qx.Bootstrap.getKeysAsString(variantFunctionMap) +
-          '] found, and no default ("default") given');
-      }
+      throw new Error('No match for variant "' + key + '" found, and no default ("default") given!');
     },
 
 
@@ -257,7 +146,6 @@ qx.Bootstrap.define("qx.core.Variant",
       else
       {
         var keyParts = variants.split("|");
-
         for (var i=0, l=keyParts.length; i<l; i++)
         {
           if (this.get(key) === keyParts[i])
@@ -268,76 +156,7 @@ qx.Bootstrap.define("qx.core.Variant",
         }
       }
 
-      this.__cache[access] = retval;
-      return retval;
-    },
-
-
-    /**
-     * Whether a value is a valid array. Valid arrays are:
-     *
-     * * type is object
-     * * instance is Array
-     *
-     * @name __isValidArray
-     * @param v {var} the value to validate.
-     * @return {Boolean} whether the variable is valid
-     */
-    __isValidArray : function(v) {
-      return typeof v === "object" && v !== null && v instanceof Array;
-    },
-
-
-    /**
-     * Whether a value is a valid object. Valid object are:
-     *
-     * * type is object
-     * * instance != Array
-     *
-     * @name __isValidObject
-     * @param v {var} the value to validate.
-     * @return {Boolean} whether the variable is valid
-     */
-    __isValidObject : function(v) {
-      return typeof v === "object" && v !== null && !(v instanceof Array);
-    },
-
-
-    /**
-     * Whether the array contains the given element
-     *
-     * @name __arrayContains
-     * @param arr {Array} the array
-     * @param obj {var} object to look for
-     * @return {Boolean} whether the array contains the element
-     */
-    __arrayContains : function(arr, obj)
-    {
-      for (var i=0, l=arr.length; i<l; i++)
-      {
-        if (arr[i] == obj) {
-          return true;
-        }
-      }
-
-      return false;
+      return this.__cache[access] = retval;
     }
-  },
-
-
-
-
-  /*
-  *****************************************************************************
-     DEFER
-  *****************************************************************************
-  */
-
-  defer : function(statics)
-  {
-    statics.define("qx.client", [ "gecko", "mshtml", "opera", "webkit" ], qx.bom.client.Engine.NAME);
-    statics.define("qx.debug", [ "on", "off" ], "on");
-
-    statics.__init();
   }
 });

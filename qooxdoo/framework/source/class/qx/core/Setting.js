@@ -6,6 +6,7 @@
 
    Copyright:
      2004-2008 1&1 Internet AG, Germany, http://www.1und1.de
+     2011 Sebastian Werner, http://sebastian-werner.net
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
