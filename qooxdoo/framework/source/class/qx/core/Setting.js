@@ -67,34 +67,6 @@ qx.Bootstrap.define("qx.core.Setting",
 {
   statics :
   {
-    /** {Map} Internal storage */
-    __settings : {},
-
-
-    /**
-     * Define a new setting
-     *
-     * @param key {String} The key to store the value under
-     * @param defaultValue {String|Boolean|Number} Primitive default value for the new setting
-     * @return {void}
-     * @throws an exception if the setting is already defined (overwriting is not allowed at all)
-     */
-    define : function(key, defaultValue)
-    {
-      if (defaultValue === undefined) {
-        throw new Error('Default value of setting "' + key + '" must be defined!');
-      }
-
-      if (!this.__settings[key]) {
-        this.__settings[key] = {};
-      } else if (this.__settings[key].defaultValue !== undefined) {
-        throw new Error('Setting "' + key + '" is already defined!');
-      }
-
-      this.__settings[key].defaultValue = defaultValue;
-    },
-
-
     /**
      * Get the value of a previously defined setting
      *
@@ -104,105 +76,12 @@ qx.Bootstrap.define("qx.core.Setting",
      */
     get : function(key)
     {
-      var cache = this.__settings[key];
-
-      if (cache === undefined) {
+      var value = jasy.Permutation.selected[key];
+      if (value == null) {
         throw new Error('Setting "' + key + '" is not defined.');
       }
 
-      if (cache.value !== undefined) {
-        return cache.value;
-      }
-
-      return cache.defaultValue;
-    },
-
-
-    /**
-     * Set a settings value
-     *
-     * @internal Only to be used in unit tests.
-     * @param key {String} The setting name
-     * @param value {var} The new setting's value
-     */
-    set : function(key, value)
-    {
-      if ((key.split(".")).length < 2) {
-        throw new Error('Malformed settings key "' + key + '". Must be following the schema "namespace.key".');
-      }
-
-      if (!this.__settings[key]) {
-        this.__settings[key] = {};
-      }
-
-      this.__settings[key].value = value;
-    },
-
-
-    /**
-     * Import settings from global qxsettings into current environment
-     *
-     * @return {void}
-     * @throws an exception if a setting definition is in a wrong format
-     */
-    __init : function()
-    {
-      if (window.qxsettings)
-      {
-        for (var key in window.qxsettings) {
-          this.set(key, window.qxsettings[key]);
-        }
-
-        window.qxsettings = undefined;
-
-        try {
-          delete window.qxsettings;
-        } catch(ex) {};
-
-        this.__loadUrlSettings();
-      }
-    },
-
-
-    /**
-     * Load settings from URL parameters if the setting <code>"qx.allowUrlSettings"</code>
-     * is set to true.
-     */
-    __loadUrlSettings : function()
-    {
-      if (this.get("qx.allowUrlSettings") != true) {
-        return
-      }
-
-      var urlSettings = document.location.search.slice(1).split("&");
-
-      for (var i=0; i<urlSettings.length; i++)
-      {
-        var setting = urlSettings[i].split(":");
-        if (setting.length != 3 || setting[0] != "qxsetting") {
-          continue;
-        }
-
-        this.set(setting[1], decodeURIComponent(setting[2]));
-      }
+      return value;
     }
-  },
-
-
-
-
-  /*
-  *****************************************************************************
-     DEFER
-  *****************************************************************************
-  */
-
-  defer : function(statics)
-  {
-    statics.define("qx.allowUrlSettings", false);
-    statics.define("qx.allowUrlVariants", false);
-    statics.define("qx.propertyDebugLevel", 0);
-
-    statics.__init();
   }
 });

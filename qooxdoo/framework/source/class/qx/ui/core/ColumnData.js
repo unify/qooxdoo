@@ -110,10 +110,5 @@ qx.Class.define("qx.ui.core.ColumnData",
         width: percent
       });
     }
-  },
-
-  defer : function()
-  {
-    qx.core.Setting.define("qx.tableResizeDebug", false);
   }
 })

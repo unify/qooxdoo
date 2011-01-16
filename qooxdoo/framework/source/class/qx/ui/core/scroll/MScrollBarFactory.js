@@ -17,8 +17,6 @@
 
 ************************************************************************ */
 
-qx.core.Setting.define("qx.nativeScrollBars", false);
-
 /**
  * Include this widget if you want to create scrollbars depending on the global
  * "qx.nativeScrollBars" setting.

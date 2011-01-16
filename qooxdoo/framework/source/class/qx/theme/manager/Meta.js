@@ -106,18 +106,5 @@ qx.Class.define("qx.theme.manager.Meta",
         this.setTheme(obj);
       }
     }
-  },
-
-
-
-
-  /*
-  *****************************************************************************
-     DEFER
-  *****************************************************************************
-  */
-
-  defer : function(statics) {
-    qx.core.Setting.define("qx.theme", "qx.theme.Modern");
   }
 });

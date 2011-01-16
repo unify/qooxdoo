@@ -142,7 +142,6 @@ qx.Bootstrap.define("qx.event.GlobalError",
 
   defer : function(statics)
   {
-    qx.core.Setting.define("qx.globalErrorHandling", "on");
     statics.setErrorHandler(null, null);
   }
 });
