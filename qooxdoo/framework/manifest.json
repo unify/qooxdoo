@@ -1,17 +1,77 @@
-[main]
-name = qooxdoo
-kind = qooxdoo
-
-[values]
-qx.bom.htmlarea.HtmlArea.debug = "off"
-qx.disposerDebugging = false
-qx.globalErrorHandling = "off"
-qx.ioRemoteDebug = false
-qx.ioRemoteDebugData = false
-qx.theme = "qx.theme.Modern"
-qx.tableResizeDebug = false
-qx.nativeScrollBars = false
-qx.client = null
-qx.debug = "on"
-qx.version = 1.4
+{
+  "main" :
+  {
+    "name" : "qooxdoo"
+    "kind" : "qooxdoo"
+  },
+  
+  "values" :
+  {
+    "qx.version" : 
+    {
+      "check" : "String"
+      "default" : "1.4"
+    },
+        
+    "qx.debug" : 
+    {
+      "check" : ["on", "off"]
+      "default" : "on"
+    },
+        
+    "qx.client" : 
+    {
+      "check" : ["mshtml", "gecko", "webkit", "opera"],
+      "default" : null
+    },
+    
+    "qx.theme" : 
+    {
+      "check" : "String",
+      "default" : "qx.theme.Modern"
+    },    
+    
+    "qx.bom.htmlarea.HtmlArea.debug" : 
+    {
+      "check" : ["on", "off"],
+      "default" : "off"
+    },
+    
+    "qx.disposerDebugging" : 
+    {
+      "check" : "Boolean",
+      "default" : false
+    },
+    
+    "qx.globalErrorHandling" : 
+    {
+      "check" : ["on", "off"],
+      "default" : "off"
+    },
+    
+    "qx.ioRemoteDebug" :
+    {
+      "check" : "Boolean",
+      "default" : false
+    },
+    
+    "qx.ioRemoteDebugData" :
+    {
+      "check" : "Boolean",
+      "default" : false
+    },
+    
+    "qx.tableResizeDebug" : 
+    {
+      "check" : "Boolean",
+      "default" : false
+    },
+    
+    "qx.nativeScrollBars" : 
+    {
+      "check" : "Boolean",
+      "default" : false
+    }
+  }
+}
 
