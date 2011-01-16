@@ -415,6 +415,8 @@ qx.Class.define("qx.ui.core.LayoutItem",
       // Results into a relayout which means that width/height is applied in the next iteration.
       var flowHeight = null;
       if (this.getHeight() == null && this._hasHeightForWidth()) {
+        // TODO: Reflow of height might also have consequenes on width e.g. to match the exact column width 
+        // (e.g. 3 floating columns with each 200px results in ideal width of 600px even when we have 680px available)
         var flowHeight = this._getHeightForWidth(width);
       }
 
