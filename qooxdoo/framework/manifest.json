@@ -6,13 +6,13 @@
   {
     "qx.version" : 
     {
-      "check" : "String"
+      "check" : "String",
       "default" : "1.4"
     },
         
     "qx.debug" : 
     {
-      "check" : ["on", "off"]
+      "check" : ["on", "off"],
       "default" : "on"
     },
         
