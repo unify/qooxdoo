@@ -251,6 +251,8 @@ qx.Class.define("qx.ui.form.ComboBox",
       {
         if (popup.isVisible())
         {
+          this._setPreselectedItem();
+          this.resetAllTextSelection();
           this.close();
           e.stop();
         }
@@ -281,7 +283,14 @@ qx.Class.define("qx.ui.form.ComboBox",
     // overridden
     _onListMouseDown : function(e)
     {
-      // Apply pre-selected item (translate quick selection to real selection)
+      this._setPreselectedItem();
+    },
+
+
+    /**
+     * Apply pre-selected item
+     */
+    _setPreselectedItem: function() {
       if (this.__preSelectedItem)
       {
         var label = this.__preSelectedItem.getLabel();
@@ -309,7 +318,8 @@ qx.Class.define("qx.ui.form.ComboBox",
         // Ignore quick context (e.g. mouseover)
         // and configure the new value when closing the popup afterwards
         var list = this.getChildControl("list");
-        if (list.getSelectionContext() == "quick")
+        var ctx = list.getSelectionContext();
+        if (ctx == "quick" || ctx == "key" )
         {
           this.__preSelectedItem = current[0];
         }
@@ -361,7 +371,11 @@ qx.Class.define("qx.ui.form.ComboBox",
       {
         // When closing the popup text should selected and field should
         // have the focus. Identical to when reaching the field using the TAB key.
-        this.tabFocus();
+        //
+        // Only focus if popup was visible before. Fixes [BUG #4453].
+        if (e.getOldData() == "visible") {
+          this.tabFocus();
+        }
       }
 
       // In all cases: Remove focused state from button
@@ -462,6 +476,17 @@ qx.Class.define("qx.ui.form.ComboBox",
      */
     selectAllText : function() {
       this.getChildControl("textfield").selectAllText();
+    },
+
+
+    /**
+     * Clear any text selection, then select all text
+     *
+     * @return {void}
+     */
+    resetAllTextSelection: function() {
+      this.clearTextSelection();
+      this.selectAllText();
     }
   }
 });
