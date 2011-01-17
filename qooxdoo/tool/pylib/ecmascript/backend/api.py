@@ -192,6 +192,10 @@ def handleClassDefinition(docTree, item, variant):
 
 
 def handleClassExtend(valueItem, classNode, docTree, className):
+    if valueItem.type != "variable":
+        print("Invalid super class declaration in %s" % className)
+        return
+        
     superClassName = (assembleVariable(valueItem))[0]
     if superClassName not in [
                               "Array", "Boolean", "Date", "Error",
