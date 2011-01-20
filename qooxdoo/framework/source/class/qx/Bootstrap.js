@@ -499,6 +499,7 @@ qx.Bootstrap.define("qx.Bootstrap",
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
         if (typeof str != "string") {
+          qx.log.Logger.trace();
           throw new Error("Invalid type for firstUp(): " + str);
         }
       }
