@@ -212,6 +212,14 @@ qx.Class.define("qx.core.Object",
      */
     reset : function(prop) 
     {
+      if (qx.core.Variant.isSet("qx.debug", "on")) 
+      {
+        if (!prop) {
+          qx.log.Logger.trace();
+          throw new Error("Generic reset() requires first parameter to be a property name: " + prop);
+        }
+      }
+      
       var Bootstrap = qx.Bootstrap;
       var method = "reset" + (Bootstrap.$$firstUp[prop] || Bootstrap.firstUp(prop));
       
@@ -236,6 +244,13 @@ qx.Class.define("qx.core.Object",
      */
     get : function(prop) 
     {
+      if (qx.core.Variant.isSet("qx.debug", "on")) 
+      {
+        if (!prop) {
+          throw new Error("Generic get() requires first parameter to be a property name: " + prop);
+        }
+      }
+      
       var Bootstrap = qx.Bootstrap;
       var method = "get" + (Bootstrap.$$firstUp[prop] || qx.Bootstrap.firstUp(prop));
       if (qx.core.Variant.isSet("qx.debug", "on")) 

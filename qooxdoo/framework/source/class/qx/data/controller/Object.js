@@ -52,7 +52,6 @@ qx.Class.define("qx.data.controller.Object",
   extend : qx.core.Object,
   include : qx.data.MBinding,
 
-
   /*
   *****************************************************************************
      CONSTRUCTOR

@@ -977,7 +977,7 @@ qx.Class.define("qx.ui.window.Window",
     _onMinimizeButtonClick : function(e)
     {
       this.minimize();
-      this.getChildControl("minimize-button").reset();
+      this.getChildControl("minimize-button").resetState();
     },
 
 
@@ -990,7 +990,7 @@ qx.Class.define("qx.ui.window.Window",
     _onRestoreButtonClick : function(e)
     {
       this.restore();
-      this.getChildControl("restore-button").reset();
+      this.getChildControl("restore-button").resetState();
     },
 
 
@@ -1003,7 +1003,7 @@ qx.Class.define("qx.ui.window.Window",
     _onMaximizeButtonClick : function(e)
     {
       this.maximize();
-      this.getChildControl("maximize-button").reset();
+      this.getChildControl("maximize-button").resetState();
     },
 
 
@@ -1016,7 +1016,7 @@ qx.Class.define("qx.ui.window.Window",
     _onCloseButtonClick : function(e)
     {
       this.close();
-      this.getChildControl("close-button").reset();
+      this.getChildControl("close-button").resetState();
     }
   }
 });

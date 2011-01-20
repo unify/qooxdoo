@@ -541,7 +541,7 @@ qx.Class.define("qx.ui.tabview.TabView",
       // see http://bugzilla.qooxdoo.org/show_bug.cgi?id=3763 for details
       var page = e.getTarget()
       var closeButton = page.getButton().getChildControl("close-button");
-      closeButton.reset();
+      closeButton.resetState();
 
       this.remove(page);
     }
