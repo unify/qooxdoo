@@ -50,7 +50,7 @@
 qx.Class.define("qx.data.controller.Tree",
 {
   extend : qx.core.Object,
-  include: qx.data.controller.MSelection,
+  include: [qx.data.MBinding, qx.data.controller.MSelection],
 
 
   /*

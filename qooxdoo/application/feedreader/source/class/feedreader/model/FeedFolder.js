@@ -22,6 +22,7 @@
 qx.Class.define("feedreader.model.FeedFolder",
 {
   extend : qx.core.Object,
+  include : qx.data.MBinding,
 
   /**
    * @param title {String} The name of the folder.
