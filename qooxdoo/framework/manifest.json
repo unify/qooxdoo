@@ -13,13 +13,15 @@
     "qx.debug" : 
     {
       "check" : ["on", "off"],
-      "default" : "on"
+      "default" : "on",
+      "test" : "jasy.detect.Param"
     },
         
     "qx.client" : 
     {
       "check" : ["mshtml", "gecko", "webkit", "opera"],
-      "default" : null
+      "default" : null,
+      "test" : "jasy.detect.Engine"
     },
     
     "qx.theme" : 
