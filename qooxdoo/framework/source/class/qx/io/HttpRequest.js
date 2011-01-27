@@ -584,7 +584,8 @@ qx.Class.define("qx.io.HttpRequest",
       }
 
       // Set content type to post data type
-      if (this.getMethod() === "POST") {
+      var method = this.getMethod();
+      if ((method === "POST") || (method === "PUT")) {
         req.setRequestHeader("Content-Type", this.getRequestType());
       }
 
