@@ -18,6 +18,10 @@
 
 ************************************************************************ */
 
+/*
+#require(qx.core.property.Multi)
+*/
+
 /**
  * Methods to place popup like widgets to other widgets, points,
  * mouse event coordinates, etc.
