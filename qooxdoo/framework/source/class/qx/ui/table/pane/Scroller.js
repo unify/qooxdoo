@@ -207,7 +207,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     horizontalScrollBarVisible :
     {
       check : "Boolean",
-      init : true,
+      init : false,
       apply : "_applyHorizontalScrollBarVisible",
       event : "changeHorizontalScrollBarVisible"
     },
@@ -216,7 +216,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     verticalScrollBarVisible :
     {
       check : "Boolean",
-      init : true,
+      init : false,
       apply : "_applyVerticalScrollBarVisible",
       event : "changeVerticalScrollBarVisible"
     },
@@ -274,6 +274,22 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       check : "Boolean",
       init : true,
       apply : "_applyShowCellFocusIndicator"
+    },
+
+
+    /**
+     * By default, the "cellContextmenu" event is fired only when a data cell
+     * is right-clicked. It is not fired when a right-click occurs in the
+     * empty area of the table below the last data row. By turning on this
+     * property, "cellContextMenu" events will also be generated when a
+     * right-click occurs in that empty area. In such a case, row identifier
+     * in the event data will be null, so event handlers can check (row ===
+     * null) to handle this case.
+     */
+    contextMenuFromDataCellsOnly :
+    {
+      check : "Boolean",
+      init : true
     },
 
 
@@ -1441,7 +1457,19 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       var row = this._getRowForPagePos(pageX, pageY);
       var col = this._getColumnForPageX(pageX);
 
-      if (this.__focusIndicator.isHidden() ||
+      /*
+       * The 'row' value will be null if the right-click was in the blank
+       * area below the last data row. Some applications desire to receive
+       * the context menu event anyway, and can set the property value of
+       * contextMenuFromDataCellsOnly to false to achieve that.
+       */
+      if (row === null && this.getContextMenuFromDataCellsOnly())
+      {
+        return;
+      }
+
+      if (! this.getShowCellFocusIndicator() ||
+          row === null ||
           (this.__lastMouseDownCell &&
            row == this.__lastMouseDownCell.row &&
            col == this.__lastMouseDownCell.col))
@@ -2117,20 +2145,25 @@ qx.Class.define("qx.ui.table.pane.Scroller",
      */
     getNeededScrollBars : function(forceHorizontal, preventVertical)
     {
-      var barWidth = this.__verScrollBar.getSizeHint().width;
+      var verScrollBar = this.__verScrollBar;
+      var verBarWidth = verScrollBar.getSizeHint().width
+        + verScrollBar.getMarginLeft() + verScrollBar.getMarginRight();
+      var horScrollBar = this.__horScrollBar;
+      var horBarHeight = horScrollBar.getSizeHint().height
+        + horScrollBar.getMarginTop() + horScrollBar.getMarginBottom();
 
       // Get the width and height of the view (without scroll bars)
       var clipperSize = this.__paneClipper.getInnerSize();
       var viewWidth = clipperSize ? clipperSize.width : 0;
 
       if (this.getVerticalScrollBarVisible()) {
-        viewWidth += barWidth;
+        viewWidth += verBarWidth;
       }
 
       var viewHeight = clipperSize ? clipperSize.height : 0;
 
       if (this.getHorizontalScrollBarVisible()) {
-        viewHeight += barWidth;
+        viewHeight += horBarHeight;
       }
 
       var tableModel = this.getTable().getTableModel();
@@ -2148,7 +2181,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       {
         horNeeded = true;
 
-        if (paneHeight > viewHeight - barWidth) {
+        if (paneHeight > viewHeight - horBarHeight) {
           verNeeded = true;
         }
       }
@@ -2156,7 +2189,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       {
         verNeeded = true;
 
-        if (!preventVertical && (paneWidth > viewWidth - barWidth)) {
+        if (!preventVertical && (paneWidth > viewWidth - verBarWidth)) {
           horNeeded = true;
         }
       }

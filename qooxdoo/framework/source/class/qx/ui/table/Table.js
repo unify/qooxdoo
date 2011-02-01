@@ -499,6 +499,22 @@ qx.Class.define("qx.ui.table.Table",
     },
 
     /**
+     * By default, the "cellContextmenu" event is fired only when a data cell
+     * is right-clicked. It is not fired when a right-click occurs in the
+     * empty area of the table below the last data row. By turning on this
+     * property, "cellContextMenu" events will also be generated when a
+     * right-click occurs in that empty area. In such a case, row identifier
+     * in the event data will be null, so event handlers can check (row ===
+     * null) to handle this case.
+     */
+    contextMenuFromDataCellsOnly :
+    {
+      check : "Boolean",
+      init : true,
+      apply : "_applyContextMenuFromDataCellsOnly"
+    },
+
+    /**
      * Whether the table should keep the first visible row complete. If set to false,
      * the first row may be rendered partial, depending on the vertical scroll value.
      */
@@ -705,6 +721,8 @@ qx.Class.define("qx.ui.table.Table",
     __columnMenuButtons : null,
     __columnModel : null,
     __emptyTableModel : null,
+
+    __hadVerticalScrollBar : null,
 
 
 
@@ -1103,6 +1121,17 @@ qx.Class.define("qx.ui.table.Table",
 
       for (var i=0; i<scrollerArr.length; i++) {
         scrollerArr[i].setShowCellFocusIndicator(value);
+      }
+    },
+
+
+    // property modifier
+    _applyContextMenuFromDataCellsOnly : function(value, old)
+    {
+      var scrollerArr = this._getPaneScrollerArr();
+
+      for (var i=0; i<scrollerArr.length; i++) {
+        scrollerArr[i].setContextMenuFromDataCellsOnly(value);
       }
     },
 
@@ -1984,7 +2013,6 @@ qx.Class.define("qx.ui.table.Table",
       for (var i=0; i<scrollerArr.length; i++)
       {
         var isLast = (i == (scrollerArr.length - 1));
-        var bHadVerticalScrollBar;
 
         // Only show the last vertical scrollbar
         scrollerArr[i].setHorizontalScrollBarVisible(horNeeded);
@@ -1993,14 +2021,22 @@ qx.Class.define("qx.ui.table.Table",
         if (isLast)
         {
           // ... then get the current (old) use of vertical scroll bar
-          bHadVerticalScrollBar = scrollerArr[i].getVerticalScrollBarVisible();
+          if (this.__hadVerticalScrollBar == null) {
+            this.__hadVerticalScrollBar = scrollerArr[i].getVerticalScrollBarVisible();
+            qx.event.Timer.once(function()
+            {
+              // reset the last visible state of the vertical scroll bar
+              // in a timeout to prevent infinite loops.
+              this.__hadVerticalScrollBar = null;
+            }, this, 0);
+          }
         }
 
         scrollerArr[i].setVerticalScrollBarVisible(isLast && verNeeded);
 
         // If this is the last meta-column and the use of a vertical scroll bar
         // has changed...
-        if (isLast && verNeeded != bHadVerticalScrollBar)
+        if (isLast && verNeeded != this.__hadVerticalScrollBar)
         {
           // ... then dispatch an event to any awaiting listeners
           this.fireDataEvent("verticalScrollBarChanged", verNeeded);

@@ -2083,7 +2083,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
       {
         var ret = {
           icon : "decoration/arrows/down.png",
-          padding : 2
+          padding : 2,
+          shadow : undefined
         };
 
         if (states.selected) {
@@ -2804,6 +2805,18 @@ qx.Theme.define("qx.theme.modern.Appearance",
       }
     },
 
+    "virtual-selectbox" : "selectbox",
+    "virtual-selectbox/dropdown" : "popup",
+    "virtual-selectbox/dropdown/list" : {
+      alias : "virtual-list"
+    },
+    
+    "virtual-combobox" : "combobox",
+    "virtual-combobox/dropdown" : "popup",
+    "virtual-combobox/dropdown/list" : {
+      alias : "virtual-list"
+    },
+        
     "column-layer" : "widget",
 
     "cell" :

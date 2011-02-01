@@ -13,7 +13,7 @@
   
   "jobs" :
   {
-    "build-simulator" :
+    "simulation-build" :
     {
       "extend" : ["cache"],
       
@@ -36,7 +36,7 @@
         "qx.Mixin",
         "qx.Interface",
         "simulator.Init",
-        "simulator.unit.TestLoader",
+        "simulator.Application",
         "${SIMULATION_INCLUDE}"
       ],
       
@@ -74,16 +74,24 @@
       
       "settings" :
       {
-        "qx.application" : "simulator.unit.TestLoader",
+        "qx.application" : "simulator.Application",
         "simulator.nameSpace" : "${APPLICATION}.simulation",
         "qx.globalErrorHandling" : "off"
       }
       
     },
     
-    "simulation-build" :
+    "simulation-run" :
     {
-      "extend" : ["build-simulator"],
+      "extend"   : [ "cache" ],
+
+      "simulate" : 
+      {
+        "java-classpath" : "${SIMULATOR_CLASSPATH}",
+        "qxselenium-path" : "${SIMULATOR_ROOT}/tool",
+        "rhino-class" : "org.mozilla.javascript.tools.shell.Main",
+        "simulator-script" : "${BUILD_PATH}/script/simulator.js"
+      },
       
       "settings" :
       {
@@ -97,19 +105,6 @@
         "simulator.testEvents" : false,
         "simulator.applicationLog" : false,
         "simulator.disposerDebug" : false
-      }
-    },
-    
-    "simulation-run" :
-    {
-      "extend"   : [ "cache" ],
-
-      "simulate" : 
-      {
-        "java-classpath" : "${SIMULATOR_CLASSPATH}",
-        "qxselenium-path" : "${SIMULATOR_ROOT}/tool",
-        "rhino-class" : "org.mozilla.javascript.tools.shell.Main",
-        "simulator-script" : "${BUILD_PATH}/script/simulator.js"
       }
     }
   }
