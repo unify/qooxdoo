@@ -34,6 +34,7 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
 
     this._createChildControl("textfield");
     this._createChildControl("button");
+    this.getChildControl("dropdown").getChildControl("list").setSelectionMode("single");
   },
 
   properties : {
@@ -51,9 +52,7 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
     },
 
     value : {
-      init : null,
       nullable : true,
-      deferredInit : true,
       event : "changeValue",
       apply : "_applyValue"
     }
@@ -123,8 +122,7 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
 
       var type = event.getType();
       var target = event.getTarget();
-      if (type === "click"
-          && target == this.getChildControl("button")) {
+      if (type === "click" && target == this.getChildControl("button")) {
         this._selectFirstMatch();
         this.toggle();
       }
@@ -136,19 +134,15 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
       var textfield = this.getChildControl("textfield");
 
       if (this.__selectionBindingId) {
-        this.__selection
-            .removeBinding(this.__selectionBindingId);
+        this.__selection.removeBinding(this.__selectionBindingId);
         this.__selectionBindingId = null;
       }
 
-      this.__selection = this.getChildControl("dropdown")
-          .getSelection();
+      this.__selection = this.getChildControl("dropdown").getSelection();
 
-      var labelSourcePath = this._getBindPath("", this
-              .getLabelPath());
-      this.__selectionBindingId = this.__selection.bind(
-          labelSourcePath, textfield, "value", this
-              .getLabelOptions());
+      var labelSourcePath = this._getBindPath("", this.getLabelPath());
+      this.__selectionBindingId = this.__selection.bind(labelSourcePath, 
+        textfield, "value", this.getLabelOptions());
     },
 
     /**
@@ -159,11 +153,19 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
     _selectFirstMatch : function()
     {
       var value = this.getValue();
+      var labelPath = this.getLabelPath();
       if (this.__selection.getItem(0) !== value) {
         var model = this.getModel();
         for (var i = 0, l = model.length; i < l; i++) {
           var modelItem = model.getItem(i);
-          if (modelItem.indexOf(value) == 0) {
+          var itemLabel = null;
+          if (labelPath) {
+            itemLabel = modelItem.get(labelPath);
+          }
+          else if (typeof(modelItem) == "string") {
+            itemLabel = modelItem;
+          }
+          if (itemLabel && itemLabel.indexOf(value) == 0) {
             this.__selection.setItem(0, modelItem);
             break;
           }
@@ -173,8 +175,10 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
 
     _applyValue : function(value, old)
     {
-      var textfield = this.getChildControl("textfield");
-      textfield.setValue(value);
+      if (value && value !== old) {
+        var textfield = this.getChildControl("textfield");
+        textfield.setValue(value);
+      }
     },
 
     /*
@@ -202,8 +206,7 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
      */
     getTextSelectionLength : function()
     {
-      return this.getChildControl("textfield")
-          .getTextSelectionLength();
+      return this.getChildControl("textfield").getTextSelectionLength();
     },
 
     /**
