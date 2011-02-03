@@ -44,7 +44,7 @@ import graph
 
 from misc.ExtMap                import ExtMap
 from ecmascript.frontend        import lang
-from generator.code.Class       import DependencyItem
+from generator.code.Class       import DependencyItem, DependencyError
 
 class DependencyLoader(object):
 
@@ -59,14 +59,17 @@ class DependencyLoader(object):
         self.counter  = 0
 
 
+    ##
+    # Return a class list for the current script
     def getClassList(self, includeWithDeps, excludeWithDeps, includeNoDeps, excludeNoDeps, variants, verifyDeps=False, script=None):
-        # return a class list for the current script (i.e. compilation)
-
+        
+        ##
+        # Resolve intelli include/exclude depdendencies
         def resolveDepsSmartCludes():
-            # Resolve intelli include/exclude depdendencies
             if len(includeWithDeps) == 0 and len(includeNoDeps) > 0:
                 if len(excludeWithDeps) > 0:
-                    raise ValueError("Blocking is not supported when only explicit includes are defined!");
+                    #raise ValueError("Blocking is not supported when only explicit includes are defined!");
+                    pass
                 result = []
             else:
                 result = self.classlistFromInclude(includeWithDeps, excludeWithDeps, variants, verifyDeps, script)
@@ -74,8 +77,9 @@ class DependencyLoader(object):
             return result
 
 
-        def processExplicitCludes(result):
-            # Explicit include/exclude
+        ##
+        # Explicit include/exclude
+        def processExplicitCludes(result, includeNoDeps, excludeNoDeps):
             if len(includeNoDeps) > 0 or len(excludeNoDeps) > 0:
                 self._console.info("Processing explicitely configured includes/excludes...")
                 for entry in includeNoDeps:
@@ -95,7 +99,7 @@ class DependencyLoader(object):
             buildType = ""
 
         result = resolveDepsSmartCludes()
-        result = processExplicitCludes(result)
+        result = processExplicitCludes(result, includeNoDeps, excludeWithDeps) # using excludeWithDeps here as well
         # Sort classes
         self._console.info("Sorting %s classes " % len(result), False)
         if  self._jobconf.get("dependencies/sort-topological", False):
@@ -119,24 +123,26 @@ class DependencyLoader(object):
 
 
     def classlistFromInclude(self, includeWithDeps, excludeWithDeps, variants, 
-                             verifyDeps=False, script=None):
+                             verifyDeps=False, script=None, allowBlockLoaddeps=True):
 
-        def classlistFromClassRecursive(item, excludeWithDeps, variants, result, warn_deps):
+        def classlistFromClassRecursive(depsItem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps=True):
             # support blocking
-            if item in excludeWithDeps:
+            if depsItem.name in excludeWithDeps:
+                if depsItem.isLoadDep and not allowBlockLoaddeps:
+                    raise DependencyError()
                 return
 
             # check if already in
-            if item in result:
+            if depsItem in result:  # DependencyItem overloads __eq__, checking name and detail
                 return
 
             # add self
-            result.append(item)
+            result.append(depsItem)
 
             # reading dependencies
-            self._console.debug("Gathering dependencies: %s" % item)
+            self._console.debug("Gathering dependencies: %s" % depsItem.name)
             self._console.indent()
-            deps, cached = self.getCombinedDeps(item, variants, buildType)
+            deps, cached = self.getCombinedDeps(depsItem.name, variants, buildType)
             self._console.outdent()
             if self._console.getLevel() is "info":
                 self._console.dot("%s" % "." if cached else "*")
@@ -149,30 +155,32 @@ class DependencyLoader(object):
                     if dep.name not in ignore_names:
                         warn_deps.append(dep)
                         #self._console.nl()
-                        #self._console.warn("Hint: Unknown global symbol referenced: %s (%s:%s)" % (dep.name, item, dep.line))
+                        #self._console.warn("Hint: Unknown global symbol referenced: %s (%s:%s)" % (dep.name, depsItem, dep.line))
 
             # process lists
             try:
-              skipList = [x.name for x in deps["warn"] + deps["ignore"]]
+              #skipList = [x.name for x in deps["warn"] + deps["ignore"]]
+              skipList = deps["warn"] + deps["ignore"]
 
               for subitem in deps["load"]:
-                  subname = subitem.name
-                  if subname not in result and subname not in excludeWithDeps and subname not in skipList:
-                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result, warn_deps)
+                  if subitem not in result and subitem not in skipList:
+                      classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
 
               for subitem in deps["run"]:
-                  subname = subitem.name
-                  if subname not in result and subname not in excludeWithDeps and subname not in skipList:
-                      classlistFromClassRecursive(subname, excludeWithDeps, variants, result, warn_deps)
+                  if subitem not in result and subitem not in skipList:
+                      classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
+
+            except DependencyError, detail:
+                raise ValueError("Attempt to block load-time dependency of class %s to %s" % (depsItem.name, subitem.name))
 
             except NameError, detail:
-                raise NameError("Could not resolve dependencies of class: %s \n%s" % (item, detail))
+                raise NameError("Could not resolve dependencies of class: %s \n%s" % (depsItem.name, detail))
 
             # TODO: superseded by checkDepsAreKnown()
             #if deps['undef']:
             #    self._console.indent()
             #    for id in deps['undef']:
-            #        self._console.warn("! Unknown class referenced: %s (in: %s)" % (id, item))
+            #        self._console.warn("! Unknown class referenced: %s (in: %s)" % (id, depsItem))
             #    self._console.outdent()
 
             return
@@ -202,11 +210,15 @@ class DependencyLoader(object):
             self._console.info(" ", feed=False)
 
             for item in includeWithDeps:
+                depsItem = DependencyItem(item, '', '|config|')
                 # calculate dependencies and add required classes
-                classlistFromClassRecursive(item, excludeWithDeps, variants, result, warn_deps)
+                classlistFromClassRecursive(depsItem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
 
             if self._console.getLevel() is "info":
                 self._console.nl()
+
+            # extract names of depsItems
+            result = [x.name for x in result]
 
         # warn about unknown references
         ignored_names = set()
@@ -277,10 +289,10 @@ class DependencyLoader(object):
                     break
 
         # add config dependencies
-        if self._require.has_key(fileId):
+        if fileId in self._require:
             loadFinal.extend(DependencyItem(x, '', "|config|") for x in self._require[fileId])
 
-        if self._use.has_key(fileId):
+        if fileId in self._use:
             runFinal.extend(DependencyItem(x, '', "|config|") for x in self._use[fileId])
 
         # result dict

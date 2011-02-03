@@ -19,6 +19,7 @@
 ************************************************************************ */
 /**
  * Mixin for supporting the background images on decorators.
+ * This mixin is usually used by {@link qx.ui.decoration.DynamicDecorator}.
  */
 qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
 {
@@ -35,7 +36,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     {
       check : "String",
       nullable : true,
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -44,7 +45,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     {
       check : ["repeat", "repeat-x", "repeat-y", "no-repeat", "scale"],
       init : "repeat",
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -61,7 +62,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     backgroundPositionX :
     {
       nullable : true,
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -78,7 +79,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     backgroundPositionY :
     {
       nullable : true,
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -103,14 +104,21 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
   members :
   {
     /**
+     * Mapping for the dynamic decorator.
+     */
+    _generateMarkup : this._generateBackgroundMarkup,
+
+
+    /**
      * Responsible for generating the markup for the background.
      * This method just uses the settings in the properties to generate
      * the markup.
      *
      * @param styles {Map} CSS styles as map
+     * @param content {String?null} The content of the created div as HTML
      * @return {String} The generated HTML fragment
      */
-    _generateBackgroundMarkup: function(styles)
+    _generateBackgroundMarkup: function(styles, content)
     {
       var Style = qx.bom.element2.Style;
       
@@ -137,6 +145,12 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
           stylesMarkup = Style.compile(styles) + Style.compile(qx.bom.element.Decoration.getStyles(image, repeat));
           markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'></div>";
         }
+        
+        if (!content) {
+          content = "";
+        }
+
+        markup = '<div style="' + qx.bom.element.Style.compile(styles) + '">' + content + '</div>';
       }
       else
       {
@@ -149,14 +163,8 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     
 
 
-    /*
-    ---------------------------------------------------------------------------
-      PROPERTY APPLY ROUTINES
-    ---------------------------------------------------------------------------
-    */
-
     // property apply
-    _applyBackground : function()
+    _applyBackgroundImage : function()
     {
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {

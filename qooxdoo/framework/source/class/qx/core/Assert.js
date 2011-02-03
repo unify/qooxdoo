@@ -231,7 +231,7 @@ qx.Class.define("qx.core.Assert",
     {
       value !== undefined || this.__fail(
         msg || "",
-        "Expected value not to be undefined but found ", value, "!"
+        "Expected value not to be undefined but found undefined!"
       );
     },
 
@@ -261,7 +261,7 @@ qx.Class.define("qx.core.Assert",
     {
       value !== null || this.__fail(
         msg || "",
-        "Expected value not to be null but found ", value, "!"
+        "Expected value not to be null but found null!"
       );
     },
 

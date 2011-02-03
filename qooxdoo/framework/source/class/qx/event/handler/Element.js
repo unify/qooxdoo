@@ -70,8 +70,15 @@ qx.Class.define("qx.event.handler.Element",
       load : true, // Image elements
       scroll : true,
       select : true,
+      selectstart: true,
       reset : true,    // Form Elements
       submit : true   // Form Elements
+    },
+
+    /** {MAP} Whether the event is cancelable */
+    CANCELABLE :
+    {
+      selectstart: true
     },
 
     /** {Integer} Which target check to use */
@@ -163,10 +170,11 @@ qx.Class.define("qx.event.handler.Element",
       }
 
       var eventData = events[eventId];
+      var isCancelable = this.constructor.CANCELABLE[eventData.type];
 
       qx.event.Registration.fireNonBubblingEvent(
         eventData.element, eventData.type,
-        qx.event.type.Native, [nativeEvent]
+        qx.event.type.Native, [nativeEvent, undefined, undefined, undefined, isCancelable]
       );
     })
   },

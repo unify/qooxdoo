@@ -25,6 +25,7 @@
  * @asset {feedreader/*}
  * @asset {qx/icon/22/apps/internet-feed-reader.png}
  * @asset {qx/icon/22/actions/process-stop.png}
+ * @asset {qx/icon/22/places/folder.png}
  */
 qx.Class.define("feedreader.Application",
 {
@@ -355,7 +356,7 @@ try{
     {
       // Create main layout
       var dockLayout = new qx.ui.layout.Dock();
-      dockLayout.setSeparatorY("separator-vertical");
+      // dockLayout.setSeparatorY("separator-vertical");
       var dockLayoutComposite = new qx.ui.container.Composite(dockLayout);
       this.getRoot().add(dockLayoutComposite, {edge:0});
 
@@ -374,7 +375,8 @@ try{
       // Create tree view
       this.__treeView = new qx.ui.tree.Tree();
       this.__treeView.setWidth(250);
-      this.__treeView.setBackgroundColor("white");
+      this.__treeView.setDecorator("main");
+      this.__treeView.setPadding(0);
       this.__horizontalSplitPane.add(this.__treeView, 0);
 
       // Create vertical splitpane for list and detail view

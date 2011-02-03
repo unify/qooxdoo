@@ -25,7 +25,10 @@
 qx.Class.define("qx.ui.decoration.Background",
 {
   extend : qx.ui.decoration.Abstract,
-  include : [qx.ui.decoration.MBackgroundImage],
+  include : [
+    qx.ui.decoration.MBackgroundImage, 
+    qx.ui.decoration.MBackgroundColor
+  ],
 
 
 
@@ -46,28 +49,6 @@ qx.Class.define("qx.ui.decoration.Background",
       this.setBackgroundColor(backgroundColor);
     }
   },
-
-
-
-
-  /*
-  *****************************************************************************
-     PROPERTIES
-  *****************************************************************************
-  */
-
-  properties :
-  {
-    /** Color of the background */
-    backgroundColor :
-    {
-      check : "Color",
-      nullable : true,
-      apply : "_applyStyle"
-    }
-  },
-
-
 
 
   /*
@@ -104,7 +85,7 @@ qx.Class.define("qx.ui.decoration.Background",
     */
 
     // interface implementation
-    getMarkup : function()
+    getMarkup : function(element)
     {
       if (this.__markup) {
         return this.__markup;
@@ -135,33 +116,8 @@ qx.Class.define("qx.ui.decoration.Background",
 
 
     // interface implementation
-    tint : function(element, bgcolor)
-    {
-      var Color = qx.theme.manager.Color.getInstance();
-
-      if (bgcolor == null) {
-        bgcolor = this.getBackgroundColor();
-      }
-
-      element.style.backgroundColor = Color.resolve(bgcolor) || "";
-    },
-
-
-    /*
-    ---------------------------------------------------------------------------
-      PROPERTY APPLY ROUTINES
-    ---------------------------------------------------------------------------
-    */
-
-    // property apply
-    _applyStyle : function()
-    {
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        if (this._isInitialized()) {
-          throw new Error("This decorator is already in-use. Modification is not possible anymore!");
-        }
-      }
+    tint : function(element, bgcolor) {
+      this._tintBackgroundColor(element, bgcolor, element.style);
     }
   },
 

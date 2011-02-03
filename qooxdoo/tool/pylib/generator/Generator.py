@@ -355,6 +355,13 @@ class Generator(object):
 
         def getExcludes(excludeCfg):
             #excludeCfg = self._job.get("exclude", [])
+            excludeWithDeps = []
+            excludeNoDeps   = []
+
+            if len(excludeCfg) == 0:
+                return [], []
+            else:
+                self._console.warn("Excludes may break code (%r)" % excludeCfg)
 
             # Splitting lists
             self._console.debug("Preparing exclude configuration...")
@@ -362,10 +369,12 @@ class Generator(object):
 
             # Configuration feedback
             self._console.indent()
-            self._console.debug("Excluding %s items smart, %s items explicit" % (len(excludeWithDeps), len(excludeNoDeps)))
 
-            if len(excludeCfg) > 0:
-                self._console.warn("Excludes may break code (%r)" % excludeCfg)
+            if len(excludeNoDeps) > 0:
+                self._console.warn("Excluding without dependencies is not supported, treating them as normal excludes: %r" % excludeNoDeps)
+                excludeWithDeps.extend(excludeNoDeps)
+                excludeNoDeps = []
+            self._console.debug("Excluding %s items smart, %s items explicit" % (len(excludeWithDeps), len(excludeNoDeps)))
 
             self._console.outdent()
 
@@ -1822,20 +1831,31 @@ class Generator(object):
         
         cmd = " ".join(textutil.quoteCommandArgs(argv))
         
+        settings = self._job.get("settings", None)
+        if settings:
+            settings = json.dumps(settings)
+            settings = "'settings=" + settings + "'"
+            cmd += " " + settings
+        
         self._console.debug("Selenium start command: " + cmd)
         shell = ShellCmd()
         shell.execute_logged(cmd, self._console, True)
         
     
+    ##
+    # Sorts the entries in [data] in those without ('intelli') and with
+    # ('explicit') "=" at the beginning, stripping off the "=" in the latter
+    # case.
     def _splitIncludeExcludeList(self, data):
         intelli = []
         explicit = []
 
         for entry in data:
-            if entry[0] == "=":
-                explicit.append(entry[1:])
-            else:
-                intelli.append(entry)
+            if len(entry) > 0:
+                if entry[0] == "=":
+                    explicit.append(entry[1:])
+                else:
+                    intelli.append(entry)
 
         return intelli, explicit
 
@@ -1848,6 +1868,9 @@ class Generator(object):
         return result
 
 
+    ##
+    # Expand a list of class specifiers, pot. containing wildcards, into the
+    # full list of classes that are covered by the initial list.
     def _expandRegExp(self, entry, container=None):
         if not container:
             container = self._classes

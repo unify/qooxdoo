@@ -27,10 +27,11 @@
 # - PartBuilder.getPackages()
 ##
 
-import sys
-from misc                   import util
-from generator.code.Part    import Part
-from generator.code.Package import Package
+import sys, collections
+from misc                    import util
+from generator.code.Part     import Part
+from generator.code.Package  import Package
+from generator.config.Config import ConfigurationError
 
 class PartBuilder(object):
 
@@ -62,11 +63,13 @@ class PartBuilder(object):
         # Preprocess part data
         script.parts    = {}  # map of Parts
         script.parts    = self._getParts(partIncludes, partsCfg, script)
+        self._checkPartsConfig(script.parts)
         script.parts    = self._getPartDeps(script, smartExclude)
 
         # Compute packages
         script.packages = []  # array of Packages
-        script.packages = self._getPackages(script)
+        script.packages = self._createPackages(script)
+        self._checkPackagesAgainstClassList(script)
         script.sortParts()
 
         self._printPartStats(script)
@@ -111,6 +114,30 @@ class PartBuilder(object):
         return resultParts, script
 
 
+    ##
+    # Check head lists (part.initial_deps) are non-overlapping
+    # @param {Map} { partId : generator.code.Part }
+    def _checkPartsConfig(self, parts):
+        headclasses = dict((x.name,set(x.initial_deps)) for x in parts.values())
+        for partid, parthead in headclasses.items():
+            for partid1, parthead1 in ((x,y) for x,y in headclasses.items() if x!=partid):
+                #print "Checking %s - %s" % (partid, partid1)
+                overlap = parthead.intersection(parthead1)
+                if overlap:
+                    raise ConfigurationError("Part '%s' and '%s' have overlapping includes: %r" % (partid, partid1, list(overlap)))
+
+    ##
+    # Check all classes from the global class list are contained in
+    # *some* package.
+    def _checkPackagesAgainstClassList(self, script):
+        allpackageclasses = set([])
+        for package in script.packages:
+            allpackageclasses.update(package.classes)
+        missingclasses = set(x.id for x in script.classesObj).difference(allpackageclasses)
+        if missingclasses:
+            raise ValueError("These necessary classes are not covered by parts: %r" % list(missingclasses))
+
+
     def verifyParts(self, partsMap, script):
 
         def handleError(msg):
@@ -122,6 +149,7 @@ class PartBuilder(object):
         self._console.info("Verifying Parts...")
         self._console.indent()
         bomb_on_error = self._jobconf.get("packages/verifier-bombs-on-error", True)
+        allpartsclasses = []
 
         for part in partsMap.values():
             if part.is_ignored:  # skip ignored parts
@@ -135,6 +163,7 @@ class PartBuilder(object):
                 for classId in package.classes:
                     classList.append(classId)
                     classPackage.append(packageIdx)
+            allpartsclasses.extend(classList)
             # 1) Check the initial part defining classes are included (trivial sanity)
             for classId in part.initial_deps:
                 if classId not in classList:
@@ -150,7 +179,10 @@ class PartBuilder(object):
                     classDeps, _   = self._depLoader.getCombinedDeps(classId, script.variants, script.buildType)
                     loadDeps    = set(x.name for x in classDeps['load'])
                     ignoreDeps  = set(x.name for x in classDeps['ignore'])
-                    for depsId in loadDeps.difference(ignoreDeps): # + runDeps:
+                    # we cannot enforce runDeps here, as e.g. the 'boot'
+                    # part necessarily lacks classes from subsequent parts
+                    # (that's the whole point of parts)
+                    for depsId in loadDeps.difference(ignoreDeps):
                         try:
                             depsIdx = classList.index(depsId)
                         except ValueError:
@@ -161,6 +193,12 @@ class PartBuilder(object):
                     #if missingDeps:  # there is a load dep not in the part
                     #    self._console.warn("Unfullfilled load dependencies of class '%s': %r" % (classId, tuple(missingDeps)))
             self._console.outdent()
+
+        # 4) Check all classes from the global class list are contained in
+        # *some* part
+        missingclasses = set(x.id for x in script.classesObj).difference(allpartsclasses)
+        if missingclasses:
+            handleError("These necessary classes are not covered by parts: %r" % list(missingclasses))
 
         self._console.outdent()
         return
@@ -196,7 +234,7 @@ class PartBuilder(object):
     def _getPartDeps(self, script, smartExclude):
         parts    = script.parts
         variants = script.variants
-        classList= script.classes
+        globalClassList = [x.id for x in script.classesObj]
 
         self._console.debug("")
         self._console.info("Resolving part dependencies...")
@@ -214,7 +252,7 @@ class PartBuilder(object):
 
             # Remove unknown classes before checking dependencies
             for classId in part.deps[:]:
-                if not classId in classList:
+                if not classId in globalClassList :
                     part.deps.remove(classId)
 
             # Checking we have something to include
@@ -224,11 +262,13 @@ class PartBuilder(object):
                 continue
 
             # Finally resolve the dependencies
-            partClasses = self._depLoader.classlistFromInclude(part.deps, partExcludes, variants, script=script)
+            # do not allow blocked loaddeps, as this would make the part unloadable
+            partClasses = self._depLoader.classlistFromInclude(part.deps, partExcludes, variants, script=script, allowBlockLoaddeps=False)
 
-            # Remove all unknown classes
+            # Remove all unknown classes  -- TODO: Can this ever happen here?!
             for classId in partClasses[:]:  # need to work on a copy because of changes in the loop
-                if not classId in classList:
+                if not classId in globalClassList:
+                    self._console.warn("Removing unknown class dependency '%s' from config of part #%s" % (classId, part.name))
                     partClasses.remove(classId)
 
             # Store
@@ -240,66 +280,70 @@ class PartBuilder(object):
 
 
     ##
-    # cut an initial set of packages out of the set of classes needed by the parts
-    # @returns {Map} { packageId : Package }
+    # Cut an initial set of packages out of the set of classes needed by the parts
+    # @returns {Array} [ Package ]
+    def _createPackages(self, script):
 
-    def _getPackages(self, script):
+        ##
+        # Collect classes from parts, recording which class is used in which part
+        # @returns {Map} { classId : parts_bit_mask }
+        def getClassesFromParts(partObjs):
+            allClasses = collections.defaultdict(lambda: 0)
+            for part in partObjs:
+                for classId in part.deps:
+                    allClasses[classId] |= part.bit_mask  # a class used by multiple parts gets multiple bits
+            return allClasses
+
+        ##
+        # Create packages from classes
+        # @returns {Array} [ Package ]
+        def getPackagesFromClasses(allClasses):
+            packages = {}
+            for classId in allClasses:
+                pkgId = allClasses[classId]
+                # create a Package if necessary
+                if pkgId not in packages:
+                    package = Package(pkgId)
+                    packages[pkgId] = package
+                # store classId with this package
+                packages[pkgId].classes.append(classId)
+            return packages.values()
+
+        # ---------------------------------------------------------------
+
         self._console.indent()
 
-        parts = script.parts
-        # Generating list of all classes
-        allClasses = {}
-        for part in parts.values():
-            for classId in part.deps:
-                allClasses[classId] = True
+        parts = script.parts.values()
+        # generate list of all classes from the part dependencies
+        allClasses = getClassesFromParts(parts)
 
-        # Check for each class which part is using it;
-        # create a package for each set of classes which
-        # are used by the same combination of parts;
-        # track how many parts are using a particular package
-        packages = {}
-        for classId in allClasses.keys():
-            pkgId     = 0
+        # Create a package for each set of classes which
+        # are used by the same parts
+        packages = getPackagesFromClasses(allClasses)
 
-            for part in parts.values():
-                if classId in part.deps:
-                    pkgId     |= part.bit_mask
-
-            if not packages.has_key(pkgId):
-                package            = Package(pkgId)
-                packages[pkgId]    = package
-
-            packages[pkgId].classes.append(classId)
-
-        # Which packages does a part use - and vice versa
-        for package in packages.values():
-            for part in parts.values():
+        # Register packages with using parts
+        for package in packages:
+            for part in parts:
                 if package.id & part.bit_mask:
-                    #part.packages.append(package.id)
                     part.packages.append(package)
-                    #package.parts.append(part.name)
-                    #package.parts.append(part)
                     
-            #package.part_count = len(package.parts)
-
-        # Register dependencies between Packages
-        for package in packages.values():
-            # get all direct deps of this package
+        # Register dependencies between packages
+        for package in packages:
+            # get all direct (load)deps of this package
             allDeps = set(())
             for classId in package.classes:
-                classDeps, _   = self._depLoader.getCombinedDeps(classId, script.variants, script.buildType)
-                loadDeps    = set(x.name for x in classDeps['load'])
+                classDeps, _ = self._depLoader.getCombinedDeps(classId, script.variants, script.buildType)
+                loadDeps = set(x.name for x in classDeps['load'])
                 allDeps.update(loadDeps)
 
-            # record the other packages in which these dependencies are located
+            # record the other packages in which these classes are contained
             for classId in allDeps:
-                for otherpackage in packages.values():
+                for otherpackage in packages:
                     if otherpackage != package and classId in otherpackage.classes:
-                        #print "-- package %s adding dependent package %s" % (package.id, otherpackage.id)
                         package.packageDeps.add(otherpackage)
          
         self._console.outdent()
-        return packages.values()
+        return packages
 
 
     def _computePackageSize(self, package, variants):
@@ -379,42 +423,34 @@ class PartBuilder(object):
 
 
 
-    def _getPreviousCommonPackage(self, searchPackage, packages):
-        # get the "smallest" package (in the sense of _sortPackages()) that is 
-        # in all parts searchPackage is in, and is earlier in the corresponding
-        # packages lists
-
-        def isCommonAndGreaterPackage(searchPackage, package):  
-            # the next takes advantage of the fact that the package id encodes
-            # the parts a package is used by. if another package id has the
-            # same bits turned on, it is in the same packages. this is only
-            # true for the searchId package itself and package id's that have
-            # more bits turned on (ie. are "greater"); hence, and due to 
-            # _sortPackages, they are earlier in the packages list of the
-            # corresponding parts
-            if searchPackage.id & package.id == searchPackage.id:
-                return True
-            return False
+    ##
+    # get the "smallest" package (in the sense of _sortPackages()) that is 
+    # in all parts mergePackage is in, and is earlier in the corresponding
+    # packages lists
+    def _findMergeTarget(self, mergePackage, packages):
 
         ##
-        # check if the deps of searchPackage have deps to targetPackage - 
-        # if merging searchPackage into targetPackage, this would be creating
-        # circular dependencies
+        # if another package id has the same bits turned on, it is available
+        # in the same parts.
+        def areInSameParts(mergePackage, package):  
+            return (mergePackage.id & package.id) == mergePackage.id
 
-        def noCircularDeps(searchPackage, targetPackage):
-            for package in searchPackage.packageDeps:
+        ##
+        # check if any of the deps of mergePackage depend on targetPackage - 
+        # if merging mergePackage into targetPackage, this would be creating
+        # circular dependencies
+        def noCircularDeps(mergePackage, targetPackage):
+            for package in mergePackage.packageDeps:
                 if targetPackage in package.packageDeps:
                     return False
             return True
 
         ##
-        # check that the targetPackage is loaded in (at least) those parts
-        # where searchPackage's deps are also loaded
-
-        def depsAvailWhereTarget (searchPackage, targetPackage):
-            for depsPackage in searchPackage.packageDeps:
-                if not isCommonAndGreaterPackage(targetPackage, depsPackage):
-                #if not targetPackage.id & depsPackage.id == targetPackage.id:
+        # check that the targetPackage is loaded in those parts
+        # where mergePackage's deps are loaded
+        def depsAvailWhereTarget (mergePackage, targetPackage):
+            for depsPackage in mergePackage.packageDeps:
+                if not areInSameParts(targetPackage, depsPackage):
                     return False
             return True
 
@@ -422,22 +458,25 @@ class PartBuilder(object):
 
         allPackages  = reversed(Package.sort(packages))
                                 # sorting and reversing assures we try "smaller" package id's first
-        additional_constraints = self._jobconf.get("packages/additional-merge-constraints", False)
+        addtl_merge_constraints = self._jobconf.get("packages/additional-merge-constraints", False)
 
         for targetPackage in allPackages:
-            if searchPackage.id == targetPackage.id:  # no self-merging ;)
+            if mergePackage.id == targetPackage.id:  # no self-merging ;)
                 continue
-            if not isCommonAndGreaterPackage(searchPackage, targetPackage):
+            if not areInSameParts(mergePackage, targetPackage):
                 self._console.debug("Problematic #%d (different parts using)" % targetPackage.id)
                 continue
-            if not noCircularDeps(searchPackage, targetPackage):
+            if not noCircularDeps(mergePackage, targetPackage):
                 self._console.debug("Problematic #%d (circular dependencies)" % targetPackage.id)
-                if additional_constraints:
-                    continue
-            if not depsAvailWhereTarget(searchPackage, targetPackage):
+                if addtl_merge_constraints:
+                    continue   
+                # why accept this by default?
+            if not depsAvailWhereTarget(mergePackage, targetPackage):
                 self._console.debug("Problematic #%d (dependencies not always available)" % targetPackage.id)
-                if additional_constraints:
-                    continue
+                if addtl_merge_constraints:
+                    continue   
+                # why accept this by default?
+
             yield targetPackage
 
         yield None
@@ -594,7 +633,7 @@ class PartBuilder(object):
         self._console.indent()
         # find toPackage
         toPackage = None
-        for toPackage in self._getPreviousCommonPackage(fromPackage, packages):
+        for toPackage in self._findMergeTarget(fromPackage, packages):
             if toPackage == None:
                 break
             elif seen_targets != None:
@@ -648,7 +687,7 @@ class PartBuilder(object):
         for toId, fromId in enumerate(packageIds):
             for partId in parts:
                 if fromId in parts[partId].packages:
-                    if not resultParts.has_key(partId):
+                    if not partId in resultParts:
                         resultParts[partId] = [toId]
                     else:
                         resultParts[partId].append(toId)

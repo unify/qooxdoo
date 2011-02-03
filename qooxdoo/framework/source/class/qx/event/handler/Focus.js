@@ -804,7 +804,9 @@ qx.Class.define("qx.event.handler.Focus",
             // The unselectable attribute stops focussing as well.
             // Do this manually.
             try {
+              var scrollTop = qx.bom.Viewport.getScrollTop();
               focusTarget.focus();
+              window.document.documentElement.scrollTop = scrollTop;
             } catch (ex) {
               // ignore "Can't move focus of this control" error
             }
