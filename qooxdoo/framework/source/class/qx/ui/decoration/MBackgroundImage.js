@@ -121,9 +121,14 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     _generateBackgroundMarkup: function(styles, content)
     {
       var Style = qx.bom.element2.Style;
-      
+
       var image = this.getBackgroundImage();
       var markup, stylesMarkup;
+      
+      if (content == null) {
+        content = "";
+      }
+      
       if (image)
       {
         var Decoration = qx.bom.element.Decoration;
@@ -136,26 +141,20 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
               throw new Error("Does not support background position on scaled backgroud images.")
             }
           }
-          
+
           stylesMarkup = Style.compile(styles);
           markup = "<img style='" + stylesMarkup + "' src='" + qx.util.ResourceManager.getInstance().toUri(image) + "'/>"
         }
         else
         { 
           stylesMarkup = Style.compile(styles) + Style.compile(qx.bom.element.Decoration.getStyles(image, repeat));
-          markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'></div>";
+          markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'>" + content + "</div>";
         }
-        
-        if (!content) {
-          content = "";
-        }
-
-        markup = '<div style="' + qx.bom.element.Style.compile(styles) + '">' + content + '</div>';
       }
       else
       {
         stylesMarkup = Style.compile(styles);
-        markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'></div>";
+        markup = "<div style='font-size:0;line-height:0;" + stylesMarkup + "'>" + content + "</div>";
       }
 
       return markup;
