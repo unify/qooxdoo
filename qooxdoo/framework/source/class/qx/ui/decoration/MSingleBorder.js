@@ -181,21 +181,21 @@ qx.Mixin.define("qx.ui.decoration.MSingleBorder",
     width :
     {
       group : [ "widthTop", "widthRight", "widthBottom", "widthLeft" ],
-      mode : "shorthand"
+      shorthand : true
     },
 
     /** Property group to set the border style of all sides */
     style :
     {
       group : [ "styleTop", "styleRight", "styleBottom", "styleLeft" ],
-      mode : "shorthand"
+      shorthand : true
     },
 
     /** Property group to set the border color of all sides */
     color :
     {
       group : [ "colorTop", "colorRight", "colorBottom", "colorLeft" ],
-      mode : "shorthand"
+      shorthand : true
     }
   },
 

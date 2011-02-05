@@ -80,7 +80,7 @@ qx.Mixin.define("qx.ui.decoration.MDoubleBorder",
     innerWidth :
     {
       group : [ "innerWidthTop", "innerWidthRight", "innerWidthBottom", "innerWidthLeft" ],
-      mode : "shorthand"
+      shorthand : true
     },
 
 
@@ -126,7 +126,7 @@ qx.Mixin.define("qx.ui.decoration.MDoubleBorder",
     innerColor :
     {
       group : [ "innerColorTop", "innerColorRight", "innerColorBottom", "innerColorLeft" ],
-      mode : "shorthand"
+      shorthand : true
     }
   },  
   

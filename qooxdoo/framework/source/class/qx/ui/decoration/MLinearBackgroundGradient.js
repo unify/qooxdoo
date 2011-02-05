@@ -74,15 +74,13 @@ qx.Mixin.define("qx.ui.decoration.MLinearBackgroundGradient",
     /** Property group to set the start color inluding its start position. */
     gradientStart :
     {
-      group : ["startColor", "startColorPosition"],
-      mode : "shorthand"
+      group : ["startColor", "startColorPosition"]
     },
     
     /** Property group to set the end color inluding its end position. */
     gradientEnd :
     {
-      group : ["endColor", "endColorPosition"],
-      mode : "shorthand"
+      group : ["endColor", "endColorPosition"]
     }
   },
 
