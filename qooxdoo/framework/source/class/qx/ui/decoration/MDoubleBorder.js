@@ -154,28 +154,28 @@ qx.Mixin.define("qx.ui.decoration.MDoubleBorder",
       // Add inner borders
       var width = this.getInnerWidthTop();
       if (width > 0) {
-        styles["border-top"] = width + "px " + this.getStyleTop() + " " + Color.resolve(this.getInnerColorTop());
+        styles["borderTop"] = width + "px " + this.getStyleTop() + " " + Color.resolve(this.getInnerColorTop());
       }
 
       var width = this.getInnerWidthRight();
       if (width > 0) {
-        styles["border-right"] = width + "px " + this.getStyleRight() + " " + Color.resolve(this.getInnerColorRight());
+        styles["borderRight"] = width + "px " + this.getStyleRight() + " " + Color.resolve(this.getInnerColorRight());
       }
 
       var width = this.getInnerWidthBottom();
       if (width > 0) {
-        styles["border-bottom"] = width + "px " + this.getStyleBottom() + " " + Color.resolve(this.getInnerColorBottom());
+        styles["borderBottom"] = width + "px " + this.getStyleBottom() + " " + Color.resolve(this.getInnerColorBottom());
       }
 
       var width = this.getInnerWidthLeft();
       if (width > 0) {
-        styles["border-left"] = width + "px " + this.getStyleLeft() + " " + Color.resolve(this.getInnerColorLeft());
+        styles["borderLeft"] = width + "px " + this.getStyleLeft() + " " + Color.resolve(this.getInnerColorLeft());
       }
 
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
-        if (!styles["border-top"] && !styles["border-right"] &&
-          !styles["border-bottom"] && !styles["border-left"]) {
+        if (!styles["borderTop"] && !styles["borderRight"] &&
+          !styles["borderBottom"] && !styles["borderLeft"]) {
           throw new Error("Invalid Double decorator (zero inner border width). Use qx.ui.decoration.Single instead!");
         }
       }
@@ -194,10 +194,10 @@ qx.Mixin.define("qx.ui.decoration.MDoubleBorder",
       var Color = qx.theme.manager.Color.getInstance();
 
       // get rid of the old borders
-      styles["border-top"] = '';
-      styles["border-right"] = '';
-      styles["border-bottom"] = '';
-      styles["border-left"] = '';
+      styles["borderTop"] = '';
+      styles["borderRight"] = '';
+      styles["borderBottom"] = '';
+      styles["borderLeft"] = '';
 
       // Generate outer HTML
       styles["line-height"] = 0;
@@ -211,28 +211,28 @@ qx.Mixin.define("qx.ui.decoration.MDoubleBorder",
 
       var width = this.getWidthTop();
       if (width > 0) {
-        styles["border-top"] = width + "px " + this.getStyleTop() + " " + Color.resolve(this.getColorTop());
+        styles["borderTop"] = width + "px " + this.getStyleTop() + " " + Color.resolve(this.getColorTop());
       }
 
       var width = this.getWidthRight();
       if (width > 0) {
-        styles["border-right"] = width + "px " + this.getStyleRight() + " " + Color.resolve(this.getColorRight());
+        styles["borderRight"] = width + "px " + this.getStyleRight() + " " + Color.resolve(this.getColorRight());
       }
 
       var width = this.getWidthBottom();
       if (width > 0) {
-        styles["border-bottom"] = width + "px " + this.getStyleBottom() + " " + Color.resolve(this.getColorBottom());
+        styles["borderBottom"] = width + "px " + this.getStyleBottom() + " " + Color.resolve(this.getColorBottom());
       }
 
       var width = this.getWidthLeft();
       if (width > 0) {
-        styles["border-left"] = width + "px " + this.getStyleLeft() + " " + Color.resolve(this.getColorLeft());
+        styles["borderLeft"] = width + "px " + this.getStyleLeft() + " " + Color.resolve(this.getColorLeft());
       }
 
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {
-        if (styles["border-top"] == '' && styles["border-right"] == '' &&
-          styles["border-bottom"] == '' && styles["border-left"] == '') {
+        if (styles["borderTop"] == '' && styles["borderRight"] == '' &&
+          styles["borderBottom"] == '' && styles["borderLeft"] == '') {
           throw new Error("Invalid Double decorator (zero outer border width). Use qx.ui.decoration.Single instead!");
         }
       }

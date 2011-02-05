@@ -215,22 +215,22 @@ qx.Mixin.define("qx.ui.decoration.MSingleBorder",
       // Add borders
       var width = this.getWidthTop();
       if (width > 0) {
-        styles["border-top"] = width + "px " + this.getStyleTop() + " " + (Color.resolve(this.getColorTop()) || "");
+        styles["borderTop"] = width + "px " + this.getStyleTop() + " " + (Color.resolve(this.getColorTop()) || "");
       }
 
       var width = this.getWidthRight();
       if (width > 0) {
-        styles["border-right"] = width + "px " + this.getStyleRight() + " " + (Color.resolve(this.getColorRight()) || "");
+        styles["borderRight"] = width + "px " + this.getStyleRight() + " " + (Color.resolve(this.getColorRight()) || "");
       }
 
       var width = this.getWidthBottom();
       if (width > 0) {
-        styles["border-bottom"] = width + "px " + this.getStyleBottom() + " " + (Color.resolve(this.getColorBottom()) || "");
+        styles["borderBottom"] = width + "px " + this.getStyleBottom() + " " + (Color.resolve(this.getColorBottom()) || "");
       }
 
       var width = this.getWidthLeft();
       if (width > 0) {
-        styles["border-left"] = width + "px " + this.getStyleLeft() + " " + (Color.resolve(this.getColorLeft()) || "");
+        styles["borderLeft"] = width + "px " + this.getStyleLeft() + " " + (Color.resolve(this.getColorLeft()) || "");
       }
 
       // Check if valid
