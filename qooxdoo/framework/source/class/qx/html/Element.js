@@ -1158,7 +1158,7 @@ qx.Class.define("qx.html.Element",
     /**
      * Remove all children from this element.
      *
-     * @return
+     * @return {qx.html.Element} A reference to this.
      */
     removeAll : function()
     {
@@ -2512,7 +2512,7 @@ qx.Class.define("qx.html.Element",
         }
 
         if (capture !== undefined) {
-          this.assertBoolean(capture, "Invalid capture falg.");
+          this.assertBoolean(capture, "Invalid capture flag.");
         }
       }
 

@@ -24,41 +24,30 @@
  *
  */
 
-qx.Class.define("demobrowser.demo.ui.overview.pages.TreeVirtual",
+qx.Class.define("widgetbrowser.pages.TreeVirtual",
 {
-  extend: qx.ui.tabview.Page,
-
-  include : demobrowser.demo.ui.overview.MControls,
+  extend: widgetbrowser.pages.AbstractPage,
 
   construct: function()
   {
     this.base(arguments);
 
-    this.setLabel("TreeVirtual");
-    this.setLayout(new qx.ui.layout.Canvas());
-
-    this.__container = new qx.ui.container.Composite(new qx.ui.layout.Canvas());
-    this.add(this.__container, {top: 40});
-
-    this._initWidgets();
-    this._initControls(this.__widgets, {});
+    this.initWidgets();
   },
 
   members :
   {
-    __widgets: null,
 
-    __container: null,
-
-    _initWidgets: function()
+    initWidgets: function()
     {
-      var widgets = this.__widgets = new qx.type.Array();
+      var widgets = this._widgets;
 
       var tree = new qx.ui.treevirtual.TreeVirtual("TreeVirtual");
+      widgets.push(tree);
       tree.setWidth(300);
       tree.setHeight(300);
       this.__setupTreeDataModel(tree);
-      this.__container.add(tree);
+      this.add(tree);
     },
 
     __setupTreeDataModel: function(tree) {
@@ -68,7 +57,7 @@ qx.Class.define("demobrowser.demo.ui.overview.pages.TreeVirtual",
         null, "Inbox", true, false
       );
 
-      te = dataModel.addBranch(te2, "Spam", false);
+      var te = dataModel.addBranch(te2, "Spam", false);
 
       for (var i = 1; i < 3000; i++)
       {

@@ -133,19 +133,19 @@ class DependencyLoader(object):
                 return
 
             # check if already in
-            if depsItem in result:  # DependencyItem overloads __eq__, checking name and detail
+            if depsItem.name in resultNames:  # string compares are perceivably faster than object compares (as DependencyItem defines __eq__)
                 return
 
             # add self
             result.append(depsItem)
+            resultNames.append(depsItem.name)
 
             # reading dependencies
             self._console.debug("Gathering dependencies: %s" % depsItem.name)
             self._console.indent()
             deps, cached = self.getCombinedDeps(depsItem.name, variants, buildType)
             self._console.outdent()
-            if self._console.getLevel() is "info":
-                self._console.dot("%s" % "." if cached else "*")
+            if logInfos: self._console.dot("%s" % "." if cached else "*")
 
             # and evaluate them
             deps["warn"] = self._checkDepsAreKnown(deps)  # add 'warn' key to deps
@@ -154,20 +154,17 @@ class DependencyLoader(object):
                 for dep in deps["warn"]:
                     if dep.name not in ignore_names:
                         warn_deps.append(dep)
-                        #self._console.nl()
-                        #self._console.warn("Hint: Unknown global symbol referenced: %s (%s:%s)" % (dep.name, depsItem, dep.line))
 
             # process lists
             try:
-              #skipList = [x.name for x in deps["warn"] + deps["ignore"]]
-              skipList = deps["warn"] + deps["ignore"]
+              skipNames = [x.name for x in deps["warn"] + deps["ignore"]]
 
               for subitem in deps["load"]:
-                  if subitem not in result and subitem not in skipList:
+                  if subitem.name not in resultNames and subitem.name not in skipNames:
                       classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
 
               for subitem in deps["run"]:
-                  if subitem not in result and subitem not in skipList:
+                  if subitem.name not in resultNames and subitem.name not in skipNames:
                       classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
 
             except DependencyError, detail:
@@ -175,13 +172,6 @@ class DependencyLoader(object):
 
             except NameError, detail:
                 raise NameError("Could not resolve dependencies of class: %s \n%s" % (depsItem.name, detail))
-
-            # TODO: superseded by checkDepsAreKnown()
-            #if deps['undef']:
-            #    self._console.indent()
-            #    for id in deps['undef']:
-            #        self._console.warn("! Unknown class referenced: %s (in: %s)" % (id, depsItem))
-            #    self._console.outdent()
 
             return
 
@@ -193,7 +183,9 @@ class DependencyLoader(object):
             buildType = ""
 
         result = []
+        resultNames = []
         warn_deps = []
+        logInfos = self._console.getLevel() == "info"
 
         # No dependency calculation
         if len(includeWithDeps) == 0:

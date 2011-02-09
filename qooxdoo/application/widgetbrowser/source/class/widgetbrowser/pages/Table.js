@@ -38,42 +38,30 @@
  *
  */
 
-qx.Class.define("demobrowser.demo.ui.overview.pages.Table",
+qx.Class.define("widgetbrowser.pages.Table",
 {
-  extend: qx.ui.tabview.Page,
-
-  include : demobrowser.demo.ui.overview.MControls,
+  extend: widgetbrowser.pages.AbstractPage,
 
   construct: function()
   {
     this.base(arguments);
 
-    this.setLabel("Table");
-    this.setLayout(new qx.ui.layout.Canvas());
-
-    this.__container = new qx.ui.container.Composite(new qx.ui.layout.Canvas());
-    this.add(this.__container, {top: 40});
-
-    this._initWidgets();
-    this._initControls(this.__widgets, {disabled: true});
+    this.initWidgets();
   },
 
   members :
   {
-    __widgets: null,
-
-    __container: null,
 
     __nextId: 0,
 
-    _initWidgets: function()
+    initWidgets: function()
     {
-      var widgets = this.__widgets = new qx.type.Array();
+      var widgets = this._widgets = new qx.type.Array();
 
       var table = this.__createTable();
       table.setFocusedCell(2,5);
       widgets.push(table);
-      this.__container.add(table);
+      this.add(table);
     },
 
     __createTable : function()

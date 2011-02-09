@@ -45,6 +45,9 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
     this.addListener("mouseout", this._onMouseOut, this);
 
     this.initSelection(this.getChildControl("dropdown").getSelection());
+
+    this.__searchTimer = new qx.event.Timer(500);
+    this.__searchTimer.addListener("interval", this.__preselect, this);
   },
 
 
@@ -74,38 +77,20 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
       apply : "_applySelection",
       nullable : false,
       deferredInit : true
-    },
-
-
-    /**
-     * The path to the property which holds the information that should be
-     * displayed as an icon. This is only needed if objects are stored in the
-     * model and icons should be displayed.
-     */
-    iconPath :
-    {
-      check: "String",
-      event : "changeIconPath",
-      apply: "_applyIconPath",
-      nullable: true
-    },
-
-
-    /**
-     * A map containing the options for the icon binding. The possible keys
-     * can be found in the {@link qx.data.SingleValueBinding} documentation.
-     */
-    iconOptions :
-    {
-      apply: "_applyIconOptions",
-      event : "changeIconOptions",
-      nullable: true
     }
   },
 
 
   members :
   {
+    /** {String} The search value to {@link #__preselect} an item. */
+    __searchValue : "",
+
+
+    /** {qx.event.Timer} The time which triggers the search for preselection. */
+    __searchTimer : null,
+
+
     // overridden
     _createChildControlImpl : function(id, hash)
     {
@@ -120,7 +105,7 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
           break;
 
         case "atom":
-          control = new qx.ui.basic.Atom("");
+          control = new qx.ui.form.ListItem("");
           control.setCenter(false);
           control.setAnonymous(true);
 
@@ -144,6 +129,9 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
       var atom = this.getChildControl("atom");
 
       this.removeAllBindings();
+
+      var modelPath = this._getBindPath("selection", "");
+      this.bind(modelPath, atom, "model", null);
 
       var labelSourcePath = this._getBindPath("selection", this.getLabelPath());
       this.bind(labelSourcePath, atom, "label", this.getLabelOptions());
@@ -170,22 +158,6 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
     },
 
 
-    // property apply
-    _applyIconPath : function(value, old)
-    {
-      this.getChildControl("dropdown").getChildControl("list").setIconPath(value);
-      qx.ui.core.queue.Widget.add(this);
-    },
-
-
-    // property apply
-    _applyIconOptions : function(value, old)
-    {
-      this.getChildControl("dropdown").getChildControl("list").setIconOptions(value);
-      qx.ui.core.queue.Widget.add(this);
-    },
-
-
     /*
     ---------------------------------------------------------------------------
       EVENT LISTENERS
@@ -201,6 +173,24 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
       var type = event.getType();
       if (type === "click") {
         this.toggle();
+      }
+    },
+
+
+    // overridden
+    _handleKeyboard : function(event) {
+      var action = this._getAction(event);
+
+      switch(action)
+      {
+        case "search":
+          this.__searchValue += this.__convertKeyIdentifier(event.getKeyIdentifier());
+          this.__searchTimer.restart();
+          break;
+
+        default:
+          this.base(arguments, event);
+          break;
       }
     },
 
@@ -270,14 +260,89 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
 
       if (!isOpen && (keyIdentifier === "Enter" || keyIdentifier === "Space")) {
         return "open";
+      } else if (isOpen && event.isPrintable()) {
+        return "search";
       } else {
         return this.base(arguments, event);
+      }
+    },
+
+
+    /**
+     * Preselects an item in the drop-down, when item starts with the
+     * {@link #__seachValue} value. 
+     */
+    __preselect : function()
+    {
+      this.__searchTimer.stop();
+
+      var searchValue = this.__searchValue;
+      if (searchValue == null || searchValue == "") {
+        return;
+      }
+
+      var model = this.getModel();
+      var list = this.getChildControl("dropdown").getChildControl("list");
+      var selection = list.getSelection();
+      var length = list._getLookupTable().length;
+      var startIndex = model.indexOf(selection.getItem(0));
+      var startRow = list._reverseLookup(startIndex);
+
+      for (var i = 1; i <= length; i++)
+      {
+        var row = (i + startRow) % length;
+        var item = model.getItem(list._lookup(row));
+        var value = item;
+
+        if (this.getLabelPath() != null)
+        {
+          value = qx.data.SingleValueBinding.getValueFromObject(item, this.getLabelPath());
+
+          var labelOptions = this.getLabelOptions(); 
+          if (labelOptions != null)
+          {
+            var converter = qx.util.Delegate.getMethod(labelOptions, "converter");
+
+            if (converter != null) {
+              value = converter(value, item);
+            }
+          }
+        }
+
+        if (qx.lang.String.startsWith(value.toLowerCase(), searchValue.toLowerCase()))
+        {
+          selection.push(item);
+          break;
+        }
+      }
+      this.__searchValue = "";
+    },
+
+
+    /**
+     * Converts the keyIdentifier to a printable character e.q. <code>"Space"</code>
+     * to <code>" "</code>.
+     * 
+     * @param keyIdentifier {String} The keyIdentifier to convert.
+     * @return {String} The converted keyIdentifier.
+     */
+    __convertKeyIdentifier : function(keyIdentifier)
+    {
+      if (keyIdentifier === "Space") {
+        return " ";
+      } else {
+        return keyIdentifier;
       }
     }
   },
 
 
-  destruct : function() {
+  destruct : function()
+  {
     this.removeAllBindings();
+
+    this.__searchTimer.removeListener("interval", this.__preselect, this);
+    this.__searchTimer.dispose();
+    this.__searchTimer == null;
   }
 });

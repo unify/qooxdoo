@@ -26,6 +26,9 @@ qooxdoo/application/performance/build
 qooxdoo/application/portal/source/script
 qooxdoo/application/portal/build
 qooxdoo/application/performance/source/script
+qooxdoo/application/widgetbrowser/source/script
+qooxdoo/application/widgetbrowser/build
+qooxdoo/application/widgetbrowser/cache/
 qooxdoo/component/inspector/source/script
 qooxdoo/component/inspector/build
 qooxdoo/component/inspector/test

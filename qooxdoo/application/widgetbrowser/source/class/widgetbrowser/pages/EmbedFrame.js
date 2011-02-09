@@ -17,6 +17,12 @@
 
 ************************************************************************ */
 
+/* ************************************************************************
+
+#asset(widgetbrowser/blank.html)
+
+************************************************************************ */
+
 /**
  * Demonstrates (...):
  *
@@ -24,58 +30,49 @@
  * ThemedIframe
  */
 
-qx.Class.define("demobrowser.demo.ui.overview.pages.EmbedFrame",
+qx.Class.define("widgetbrowser.pages.EmbedFrame",
 {
-  extend: qx.ui.tabview.Page,
-
-  include : demobrowser.demo.ui.overview.MControls,
+  extend: widgetbrowser.pages.AbstractPage,
 
   construct: function()
   {
     this.base(arguments);
 
-    this.setLabel("EmbedFrame");
-    this.setLayout(new qx.ui.layout.Canvas());
-
-    this.__container = new qx.ui.container.Composite(new qx.ui.layout.Canvas(10));
-    this.add(this.__container, {top: 40});
-
-    this._initWidgets();
-    this._initControls(this.__widgets);
+    this.setLayout(new qx.ui.layout.Canvas(10));
+    this.initWidgets();
   },
 
   members :
   {
-    __widgets: null,
 
-    __container: null,
-
-    _initWidgets: function()
+    initWidgets: function()
     {
-      var widgets = this.__widgets = new qx.type.Array();
+      var widgets = this._widgets;
       var label;
+      var url = qx.util.ResourceManager.getInstance().toUri("widgetbrowser/blank.html");
 
       // Iframe
       label = new qx.ui.basic.Label("Iframe");
       var iFrame = new qx.ui.embed.Iframe().set({
-        source: "http://www.w3.org/",
+        source: url,
         width: 300,
         height: 200
       });
       widgets.push(iFrame);
-      this.__container.add(label, {top: 0, left: 0});
-      this.__container.add(iFrame, {top: 20, left: 0});
+      this.add(label, {top: 0, left: 0});
+      this.add(iFrame, {top: 20, left: 0});
 
       // ThemedIframe
       label = new qx.ui.basic.Label("ThemedIframe");
+
       var themedIFrame = new qx.ui.embed.ThemedIframe().set({
-        source: "../welcome.html",
+        source: url,
         width: 300,
         height: 200
       });
       widgets.push(themedIFrame);
-      this.__container.add(label, {top: 0, left: 350});
-      this.__container.add(themedIFrame, {top: 20, left: 350});
+      this.add(label, {top: 0, left: 350});
+      this.add(themedIFrame, {top: 20, left: 350});
     }
   }
 });

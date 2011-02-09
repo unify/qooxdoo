@@ -121,19 +121,6 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
 
 
     /**
-     * The path to the property which holds the information that should be
-     * displayed as a group label. This is only needed if objects are stored in the
-     * model.
-     */
-    groupLabelPath :
-    {
-      check: "String",
-      apply: "_applyGroupLabelPath",
-      nullable: true
-    },
-
-
-    /**
      * A map containing the options for the label binding. The possible keys
      * can be found in the {@link qx.data.SingleValueBinding} documentation.
      */
@@ -143,15 +130,30 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
       event: "changeLabelOptions",
       nullable: true
     },
+    
+    
+    /**
+     * The path to the property which holds the information that should be
+     * displayed as an icon. This is only needed if objects are stored in the
+     * model and icons should be displayed.
+     */
+    iconPath :
+    {
+      check: "String",
+      event : "changeIconPath",
+      apply: "_applyIconPath",
+      nullable: true
+    },
 
 
     /**
-     * A map containing the options for the group label binding. The possible keys
+     * A map containing the options for the icon binding. The possible keys
      * can be found in the {@link qx.data.SingleValueBinding} documentation.
      */
-    groupLabelOptions :
+    iconOptions :
     {
-      apply: "_applyGroupLabelOptions",
+      apply: "_applyIconOptions",
+      event : "changeIconOptions",
       nullable: true
     },
 
@@ -251,22 +253,26 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
 
 
     // property apply
-    _applyGroupLabelPath : function(value, old) {
-      this.getChildControl("dropdown").getChildControl("list").setGroupLabelPath(value);
-    },
-
-
-    // property apply
     _applyLabelOptions : function(value, old)
     {
       this.getChildControl("dropdown").getChildControl("list").setLabelOptions(value);
       qx.ui.core.queue.Widget.add(this);
     },
+    
+    
+    // property apply
+    _applyIconPath : function(value, old)
+    {
+      this.getChildControl("dropdown").getChildControl("list").setIconPath(value);
+      qx.ui.core.queue.Widget.add(this);
+    },
 
 
     // property apply
-    _applyGroupLabelOptions : function(value, old) {
-      this.getChildControl("dropdown").getChildControl("list").setGroupLabelOptions(value);
+    _applyIconOptions : function(value, old)
+    {
+      this.getChildControl("dropdown").getChildControl("list").setIconOptions(value);
+      qx.ui.core.queue.Widget.add(this);
     },
 
 
@@ -293,6 +299,7 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
      * Shows the list drop-down.
      */
     open : function() {
+      this._beforeOpen();
       this.getChildControl("dropdown").open();
     },
 
@@ -301,6 +308,7 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
      * Hides the list drop-down.
      */
     close : function() {
+      this._beforeClose();
       this.getChildControl("dropdown").close();
     },
 
@@ -309,9 +317,31 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
      * Toggles the drop-down visibility.
      */
     toggle : function() {
-      this.getChildControl("dropdown").toggle();
+      var dropDown =this.getChildControl("dropdown");
+      
+      if (dropDown.isVisible()) {
+        this.close();
+      } else {
+        this.open();
+      }
     },
 
+    
+    /**
+     * This method is called before the dropdown is opened.
+     */
+    _beforeOpen: function() {
+    
+    },
+    
+    
+    /**
+     * This method is called before the dropdown is closed.
+     */
+    _beforeClose: function() {
+    
+    },
+    
 
     /*
     ---------------------------------------------------------------------------
