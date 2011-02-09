@@ -24,39 +24,27 @@
  *
  */
 
-qx.Class.define("demobrowser.demo.ui.overview.pages.SplitPane",
+qx.Class.define("widgetbrowser.pages.SplitPane",
 {
-  extend: qx.ui.tabview.Page,
-
-  include : demobrowser.demo.ui.overview.MControls,
+  extend: widgetbrowser.pages.AbstractPage,
 
   construct: function()
   {
     this.base(arguments);
 
-    this.setLabel("SplitPane");
-    this.setLayout(new qx.ui.layout.Canvas());
-
-    this.__container = new qx.ui.container.Composite(new qx.ui.layout.Canvas());
-    this.add(this.__container, {top: 40});
-
-    this._initWidgets();
-    this._initControls(this.__widgets, {});
+    this.initWidgets();
   },
 
   members :
   {
-    __widgets: null,
 
-    __container: null,
-
-    _initWidgets: function()
+    initWidgets: function()
     {
-      var widgets = this.__widgets = new qx.type.Array();
+      var widgets = this._widgets;
 
       var splitPane = new qx.ui.splitpane.Pane("horizontal");
       widgets.push(splitPane);
-      this.__container.add(splitPane);
+      this.add(splitPane);
 
       splitPane.add(new qx.ui.core.Widget().set({width: 200, height: 200}));
       splitPane.add(new qx.ui.core.Widget().set({width: 300, height: 200}));

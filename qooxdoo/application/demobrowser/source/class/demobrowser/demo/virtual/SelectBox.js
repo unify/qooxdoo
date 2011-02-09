@@ -50,6 +50,8 @@ qx.Class.define("demobrowser.demo.virtual.SelectBox",
       standard.add(this.createBox4());
 
       advanced.add(this.createBox5());
+      advanced.add(this.createBox6());
+      advanced.add(this.createBox7());
 
       container.add(standard, {left : 20, top : 20});
       container.add(advanced, {left : 20, top : 200});
@@ -185,6 +187,72 @@ qx.Class.define("demobrowser.demo.virtual.SelectBox",
           return a < b ? 1 : a > b ? -1 : 0;
         }
       }
+      selectBox.setDelegate(delegate);
+
+      return container;
+    },
+
+
+    createBox6 : function()
+    {
+      var container = new qx.ui.container.Composite(new qx.ui.layout.VBox(2));
+      container.add(new qx.ui.basic.Label("Filtered"));
+
+      // Creates the model data
+      var model = new qx.data.Array();
+
+      for (var i = 0; i < 300; i++) {
+        model.push("Item " + i);
+      }
+
+      // Creates the select box
+      var selectBox = new qx.ui.form.VirtualSelectBox(model);
+      container.add(selectBox);
+
+      // Creates the delegate for sorting
+      var delegate = {
+        // Filters all even items
+        filter : function(data) {
+          return ((parseInt(data.slice(5, data.length), 10)) % 2 == 1);
+        }
+      }
+      selectBox.setDelegate(delegate);
+
+      return container;
+    },
+
+
+    createBox7 : function()
+    {
+      var container = new qx.ui.container.Composite(new qx.ui.layout.VBox(2));
+      container.add(new qx.ui.basic.Label("Persons"));
+
+      // Creates the select box
+      var selectBox = new qx.ui.form.VirtualSelectBox();
+      selectBox.setLabelPath("firstname");
+      selectBox.setLabelOptions({
+        converter : function(data, model) {
+          return model ? data + " " + model.getLastname() : "no model...";
+        }
+      });
+      container.add(selectBox);
+
+      // Loads and create the model data
+      var url = "json/persons.json";
+      var store = new qx.data.store.Json(url);
+      store.bind("model.persons", selectBox, "model");
+
+      // Creates the delegate for sorting
+      var delegate = {
+        // Sorts the model data by first name
+        sorter : function(a, b)
+        {
+          a = a.getFirstname();
+          b = b.getFirstname();
+
+          return a > b ? 1 : a < b ? -1 : 0;
+        }
+      };
       selectBox.setDelegate(delegate);
 
       return container;
