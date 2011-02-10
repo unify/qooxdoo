@@ -67,8 +67,7 @@ qx.Mixin.define("qx.ui.decoration.MBoxShadow",
     /** Property group to set the shadow length. */
     shadowLength :
     {
-      group : ["shadowHorizontalLength", "shadowVerticalLength"],
-      mode : "shorthand"
+      group : ["shadowHorizontalLength", "shadowVerticalLength"]
     }    
   },
   
