@@ -18,7 +18,6 @@
 ************************************************************************ */
 /**
  * Mixin for the border radius CSS property.
- * This mixin is usually used by {@link qx.ui.decoration.DynamicDecorator}.
  * 
  * Keep in mind that this is not supported by all browsers:
  * 
@@ -76,8 +75,7 @@ qx.Mixin.define("qx.ui.decoration.MBorderRadius",
   {
     /**
      * Takes a styles map and adds the broder radius styles in place to the 
-     * given map. This is the needed behavior for 
-     * {@link qx.ui.decoration.DynamicDecorator}.
+     * given map.
      * 
      * @param styles {Map} A map to add the styles.
      */

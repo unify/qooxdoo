@@ -18,7 +18,6 @@
 ************************************************************************ */
 /**
  * Mixin for supporting the background images on decorators.
- * This mixin is usually used by {@link qx.ui.decoration.DynamicDecorator}.
  */
 qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
 {

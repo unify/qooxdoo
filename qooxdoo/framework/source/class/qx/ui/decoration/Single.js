@@ -92,7 +92,6 @@ qx.Class.define("qx.ui.decoration.Single",
       
       var styles = {};
 
-      // get the single border styles
       this._styleBorder(styles, element);
       this._styleLinearBackgroundGradient(styles);
       this._styleBorderRadius(styles);
