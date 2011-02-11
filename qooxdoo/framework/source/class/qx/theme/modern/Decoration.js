@@ -47,7 +47,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
     "main" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -672,7 +672,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
     "splitpane" :
     {
-      decorator : qx.ui.decoration.Uniform,
+      decorator : qx.ui.decoration.Single,
 
       style :
       {

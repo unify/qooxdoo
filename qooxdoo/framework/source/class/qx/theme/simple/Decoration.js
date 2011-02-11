@@ -36,7 +36,7 @@ qx.Theme.define("qx.theme.simple.Decoration",
 
     "border-blue" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -48,7 +48,7 @@ qx.Theme.define("qx.theme.simple.Decoration",
 
     "main" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -59,7 +59,7 @@ qx.Theme.define("qx.theme.simple.Decoration",
     
     "main-dark" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -796,7 +796,7 @@ qx.Theme.define("qx.theme.simple.Decoration",
 
     "focused-inset" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -807,7 +807,7 @@ qx.Theme.define("qx.theme.simple.Decoration",
 
     "border-invalid" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -825,7 +825,7 @@ qx.Theme.define("qx.theme.simple.Decoration",
 
     "lead-item" :
     {
-      decorator : qx.ui.decoration.Uniform,
+      decorator : qx.ui.decoration.Single,
 
       style :
       {
