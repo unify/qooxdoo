@@ -79,7 +79,11 @@ qx.Mixin.define("qx.ui.decoration.MBorderRadius",
      * 
      * @param styles {Map} A map to add the styles.
      */
-    _styleBorderRadius : function(styles) {
+    _styleBorderRadius : function(styles) 
+    {
+      // http://tumble.sneak.co.nz/post/928998513/fixing-the-background-bleed
+      styles["-webkit-background-clip"] = "padding-box";
+      
       // radius handling
       var radius = this.getRadiusTopLeft();
       if (radius > 0) {
