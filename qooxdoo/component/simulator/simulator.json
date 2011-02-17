@@ -75,6 +75,8 @@
       
       "settings" :
       {
+        "qx.version"     : "${QOOXDOO_VERSION}",
+        "qx.revision"    : "${QOOXDOO_REVISION}",
         "qx.application" : "${SIMULATOR_APPLICATION}",
         "simulator.nameSpace" : "${APPLICATION}.simulation",
         "qx.globalErrorHandling" : "off"
@@ -105,7 +107,8 @@
         "simulator.globalErrorLogging" : false,
         "simulator.testEvents" : false,
         "simulator.applicationLog" : false,
-        "simulator.disposerDebug" : false
+        "simulator.disposerDebug" : false,
+        "simulator.threadSafe" : false
       }
     }
   }

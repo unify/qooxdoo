@@ -268,7 +268,7 @@ qx.Class.define("qx.theme.manager.Appearance",
         if (entry.include) {
           incl = this.styleFrom(entry.include, states, theme, defaultId);
         }
-
+        
         // Create new map
         result = {};
 

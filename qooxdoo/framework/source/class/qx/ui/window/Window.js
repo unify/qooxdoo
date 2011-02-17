@@ -418,7 +418,8 @@ qx.Class.define("qx.ui.window.Window",
     _forwardStates :
     {
       active : true,
-      maximized : true
+      maximized : true,
+      showStatusbar : true
     },
 
 
@@ -875,6 +876,9 @@ qx.Class.define("qx.ui.window.Window",
     // property apply
     _applyShowStatusbar : function(value, old)
     {
+      // store the state if the status bar is shown
+      value ? this.addState("showStatusbar") : this.removeState("showStatusbar");
+      
       if (value) {
         this._showChildControl("statusbar");
       } else {
