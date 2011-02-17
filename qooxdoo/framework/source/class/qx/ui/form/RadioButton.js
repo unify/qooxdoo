@@ -128,6 +128,19 @@ qx.Class.define("qx.ui.form.RadioButton",
 
   members :
   {
+    // overridden
+    /**
+     * @lint ignoreReferenceField(_forwardStates)
+     */
+    _forwardStates :
+    {
+      checked : true,
+      focused : true,
+      invalid : true,
+      hovered : true
+    },
+    
+    
     /*
     ---------------------------------------------------------------------------
       APPLY ROUTINES

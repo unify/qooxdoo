@@ -114,11 +114,13 @@ qx.Class.define("qx.theme.manager.Decoration",
       if (!entry.style) {
         entry.style = {};
       }
-      
+
       // check for inheritance
       var currentEntry = entry;
-      while (currentEntry.include) {
+      while (currentEntry.include) 
+      {
         currentEntry = theme.decorations[currentEntry.include];
+        
         // decoration key
         if (!entry.decorator && currentEntry.decorator) {
           entry.decorator = currentEntry.decorator;
@@ -127,7 +129,7 @@ qx.Class.define("qx.theme.manager.Decoration",
         // styles key
         if (currentEntry.style) {
           for (var key in currentEntry.style) {
-            if (!entry.style[key]) {
+            if (entry.style[key] == undefined) {
               entry.style[key] = currentEntry.style[key];
             }
           }

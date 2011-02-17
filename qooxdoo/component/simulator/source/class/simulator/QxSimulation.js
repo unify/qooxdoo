@@ -63,7 +63,11 @@ qx.Class.define("simulator.QxSimulation", {
      */
     startSession : function()
     {
-      this.qxSelenium.start();
+      if (!this._options.threadSafe) {
+        // Using Selenium Grid's ThreadSafeSeleniumSessionStorage, session
+        // should already be started.
+        this.qxSelenium.start();
+      }
       var autUri = this.__autHost + "" + this.__autPath;
       this.qxOpen(autUri);
       this.waitForQxApplication();
@@ -93,16 +97,19 @@ qx.Class.define("simulator.QxSimulation", {
      * Waits until qx.core.Init.getApplication() in the AUT window returns 
      * something.
      * 
-     * @throws {Error} If the application isn't ready within 30 seconds
+     * @param timeout {Integer} Time to wait (in milliseconds). Default: 3000
+     * @param window {DOMWindow} Window the qooxdoo application is running in
+     * @throws {Error} If the application isn't ready within the timeout
      */
-    waitForQxApplication : function()
+    waitForQxApplication : function(timeout, window)
     {
+      var qxWin = window || simulator.QxSimulation.AUTWINDOW;
       var qxAppReady = 'var qxReady = false; try { if (' + 
-                  simulator.QxSimulation.AUTWINDOW + '.' + 
+                  qxWin + '.' + 
                   simulator.QxSimulation.QXAPPLICATION + 
                   ') { qxReady = true; } } catch(e) {} qxReady;';
                             
-      this.qxSelenium.waitForCondition(qxAppReady, 30000);
+      this.qxSelenium.waitForCondition(qxAppReady, timeout || 30000);
     },
     
     
@@ -257,11 +264,7 @@ qx.Class.define("simulator.QxSimulation", {
      */
     logRingBufferEntries : function()
     {
-      var debugLog = this.qxSelenium.getEval(simulator.QxSimulation.AUTWINDOW 
-        + ".qx.Simulation.getRingBufferEntries()");
-      debugLog = String(debugLog);
-      var debugLogArray = debugLog.split("|");
-      
+      var debugLogArray = this.getRingBufferEntries();
       for (var i=0,l=debugLogArray.length; i<l; i++) {
         this.info(debugLogArray[i]);
       }
@@ -280,6 +283,23 @@ qx.Class.define("simulator.QxSimulation", {
           this.error(globalErrors[i]);
         }
       }
+    },
+    
+    /**
+     * Logs the total duration of this simulation.
+     */
+    logRunTime : function()
+    {
+      var stopDate = new Date();
+      var elapsed = stopDate.getTime() - this.startDate.getTime();
+      elapsed = (elapsed / 1000);
+      var min = Math.floor(elapsed / 60);
+      var sec = Math.round(elapsed % 60);
+      if (sec < 10) {
+        sec = "0" + sec;
+      }
+    
+      this.info("Simulator run finished in: " + min + " minutes " + sec + " seconds.");
     },
     
     /**

@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head profile="http://dublincore.org/documents/dcq-html">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -114,6 +114,11 @@ code{
   margin-top: 40px;
   float: left;
 }
+
+.hide, .publish {
+  display: none;
+}
+
   </style>
 
   <script type="text/javascript">
@@ -147,7 +152,8 @@ code{
     <p>
       Welcome to qooxdoo! It is easy to create your own rich internet applications. For detailed information please
       see the external documentation to
-      <a name="verslink" href="http://manual.qooxdoo.org/$(qxversion)/pages/getting_started.html">get started</a>.
+      <span class="local"><a href="documentation/manual/build/html/pages/getting_started.html">get started</a> <i>(needs generation)</i>.</span>
+      <span class="publish"><a href="documentation/manual/pages/getting_started.html">get started</a>.</span>
     </p>
     <p>
       For the impatient, here is a short version as well:<br/>
@@ -157,12 +163,18 @@ code{
       <code>generate.py source-all</code> to build a development version of your app.
       Open <code>source/index.html</code> in your browser and see your first application in action. You can
       then go on and extend it into an application of your liking by changing the
-      <code>Application.js</code> class file below the <code>source/class/</code> folder.
+      <code>Application.js</code> class file below the <code>source/class/</code> folder. The command
+      <code>generate.py build</code> builds an optimized  and compressed version of your application, 
+      located at <code>build/index.html</code>.
     </p>
     <p>
       Open the included <a href="framework/api/index.html">API viewer</a> to display and search the entire API reference of the framework.
     </p>
     <p>Also have a look at the <a href="readme.txt">readme.txt</a> and <a href="license.txt">license.txt</a>.</p>
+    <p>Here is the complete 
+      <span class="local"><a href="documentation/manual/build/html/index.html">manual</a><i> (needs generation)</i>.</span>
+      <span class="publish"><a href="documentation/manual/index.html">manual</a>.</span>
+    </p>
   </div>
 
   <div class="block">
@@ -176,6 +188,12 @@ code{
         <p>Highlights some of qooxdoo's main features and provides a good overview of what can be achieved.</p>
         <a href="application/showcase/source/index.html">Source</a> <i>(needs generation)</i><br/>
         <b><a href="application/showcase/build/index.html">Build</a></b> <i>(ready to run)</i>
+      </li>
+      <li>
+        <h3>Widget Browser <span>(<a name="verslink" href="http://demo.qooxdoo.org/$(qxversion)/widgetbrowser">Online</a>)</span></h3>
+        <p>Shows the widgets and themes available in qooxdoo.</p>
+        <a href="application/widgetbrowser/source/index.html">Source</a> |
+        <a href="application/widgetbrowser/build/index.html">Build</a> <i>(both need generation)</i>
       </li>
       <li>
         <h3>Demo Browser <span>(<a name="verslink" href="http://demo.qooxdoo.org/$(qxversion)/demobrowser">Online</a>)</span></h3>

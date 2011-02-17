@@ -60,7 +60,7 @@
  * }, this);
  * </pre>
  *
- * @childControl row-layer {qx.ui.virtual.Row} layer for all rows
+ * @childControl row-layer {qx.ui.virtual.layer.Row} layer for all rows
  */
 qx.Class.define("qx.ui.list.List",
 {
@@ -382,6 +382,17 @@ qx.Class.define("qx.ui.list.List",
 
 
     /**
+     * Return the internal lookup table. But do not manipulate the
+     * lookup table!
+     *
+     * @return {Array} The internal lookup table.
+     */
+    _getLookupTable : function() {
+      return this.__lookupTable;
+    },
+
+
+    /**
      * Performs a lookup from row to model index.
      *
      * @param row {Number} The row to look at.
@@ -446,7 +457,7 @@ qx.Class.define("qx.ui.list.List",
       }
 
       this._provider.removeBindings();
-      this.__buildUpLookupTable();
+      this._onModelChange();
     },
 
 
@@ -523,6 +534,7 @@ qx.Class.define("qx.ui.list.List",
      */
     _onModelChange : function(e) {
       this.__buildUpLookupTable();
+      this._applyDefaultSelection();
     },
 
 

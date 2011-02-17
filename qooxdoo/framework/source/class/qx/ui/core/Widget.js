@@ -86,6 +86,7 @@ qx.Class.define("qx.ui.core.Widget",
     this.initFocusable();
     this.initSelectable();
     this.initNativeContextMenu();
+
   },
 
 
@@ -181,7 +182,7 @@ qx.Class.define("qx.ui.core.Widget",
     /** Fired during a touch at the screen. */
     touchmove : "qx.event.type.Touch",
 
-    /** Fired if a touch at the screen is cancled. */
+    /** Fired if a touch at the screen is canceled. */
     touchcancel : "qx.event.type.Touch",
 
     /** Fired when a finger taps on the screen. */
@@ -2124,11 +2125,13 @@ qx.Class.define("qx.ui.core.Widget",
 
     /**
      * Remove all children.
+     * 
+     * @return {Array} An array containing the removed children.
      */
     _removeAll : function()
     {
       if (!this.__widgetChildren) {
-        return;
+        return [];
       }
 
       // Working on a copy to make it possible to clear the
@@ -2141,6 +2144,8 @@ qx.Class.define("qx.ui.core.Widget",
       }
 
       qx.ui.core.queue.Layout.add(this);
+      
+      return children;
     },
 
 
@@ -3444,6 +3449,7 @@ qx.Class.define("qx.ui.core.Widget",
 
 
 
+
     /*
     ---------------------------------------------------------------------------
       USEFUL COMMON EVENT LISTENERS
@@ -3625,6 +3631,40 @@ qx.Class.define("qx.ui.core.Widget",
      */
     scrollChildIntoView : function(child, alignX, alignY, direct)
     {
+      // Scroll directly on default
+      direct = typeof direct == "undefined" ? true : direct;
+
+      // Always lazy scroll when either
+      // - the child
+      // - its layout parent
+      // - its siblings
+      // have layout changes scheduled.
+      //
+      // This is to make sure that the scroll position is computed
+      // after layout changes have been applied to the DOM. Note that changes
+      // scheduled for the grand parent (and up) are not tracked and need to
+      // be signalled manually.
+      var Layout = qx.ui.core.queue.Layout;
+      var parent;
+
+      // Child
+      if (direct) {
+        direct = !Layout.isScheduled(child);
+        parent = child.getLayoutParent();
+
+        // Parent
+        if (direct && parent) {
+          direct = !Layout.isScheduled(parent);
+
+          // Siblings
+          if (direct) {
+            parent.getChildren().forEach(function(sibling) {
+              direct = direct && !Layout.isScheduled(sibling);
+            });
+          }
+        }
+      }
+
       this.scrollChildIntoViewX(child, alignX, direct);
       this.scrollChildIntoViewY(child, alignY, direct);
     },

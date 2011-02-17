@@ -71,7 +71,8 @@ qx.Class.define("testrunner2.view.Abstract", {
     {
       init : null,
       nullable : true,
-      apply : "_applyTestCount"
+      apply : "_applyTestCount",
+      event : "changeTestCount"
     },
     
     /** List of tests in the current suite */
@@ -129,7 +130,7 @@ qx.Class.define("testrunner2.view.Abstract", {
      */
     _onTestChangeState : function(testResultData)
     {
-      this.error("Missing implementation of __onTestChangeState!");
+      this.error("Missing implementation of _onTestChangeState!");
     },
     
     

@@ -1164,7 +1164,7 @@ qx.Class.define("qx.html.Element",
     /**
      * Remove all children from this element.
      *
-     * @return
+     * @return {qx.html.Element} A reference to this.
      */
     removeAll : function()
     {
@@ -1477,7 +1477,14 @@ qx.Class.define("qx.html.Element",
       {
         // Apply qooxdoo attribute
         this.setAttribute("qxSelectable", value ? "on" : "off");
-        this.setStyle("userSelect", value ? "text" : "none");
+
+        // In Chrome, the text of elements with the CSS property
+        // -webkit-user-select set to "none" is not searchable.
+        // Refer to qx.html.Root#__forcePreventSelection for
+        // more details and a work-around.
+        if (qx.bom.client.Browser.NAME !== "chrome") {
+          this.setStyle("userSelect", value ? "text" : "none");
+        }
       },
 
       "gecko" : function(value)
@@ -1750,6 +1757,7 @@ qx.Class.define("qx.html.Element",
       if (lazy !== true && thisEl && thisEl.offsetWidth)
       {
         thisEl.scrollLeft = x;
+        delete this.__lazyScrollX;
       }
       else
       {
@@ -1792,6 +1800,7 @@ qx.Class.define("qx.html.Element",
       if (lazy !== true && thisEl && thisEl.offsetWidth)
       {
         thisEl.scrollTop = y;
+        delete this.__lazyScrollY;
       }
       else
       {
@@ -2509,7 +2518,7 @@ qx.Class.define("qx.html.Element",
         }
 
         if (capture !== undefined) {
-          this.assertBoolean(capture, "Invalid capture falg.");
+          this.assertBoolean(capture, "Invalid capture flag.");
         }
       }
 

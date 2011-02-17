@@ -89,6 +89,12 @@ qx.Class.define("qx.util.Json",
       "object"    : "__convertObject",
       "undefined" : "__convertUndefined"
     },
+    
+    
+    /**
+     * Single instance of number format for the JSON serialization.
+     */
+    NUMBER_FORMAT : new qx.util.format.NumberFormat(),
 
 
     /**
@@ -311,11 +317,11 @@ qx.Class.define("qx.util.Json",
       if (!qx.util.Json.CONVERT_DATES) {
         // use the native toJSON if available
         if (incoming.toJSON && !qx.bom.client.Engine.OPERA) {
-          return incoming.toJSON();
+          return '"' + incoming.toJSON() + '"';
         }
 
         // fallback implementation
-        var formatter = qx.util.format.NumberFormat.getInstance();
+        var formatter = this.NUMBER_FORMAT;
         formatter.setMinimumIntegerDigits(2);
 
         var formated = incoming.getUTCFullYear() + '-' +
@@ -326,11 +332,18 @@ qx.Class.define("qx.util.Json",
           formatter.format(incoming.getUTCSeconds()) + '.';
 
         formatter.setMinimumIntegerDigits(3);
-        return formated + formatter.format(incoming.getUTCMilliseconds())   + 'Z';
+        return '"' + formated + formatter.format(incoming.getUTCMilliseconds())   + 'Z"';
 
       // if its set to true
       } else {
-        var dateParams = incoming.getUTCFullYear() + "," + incoming.getUTCMonth() + "," + incoming.getUTCDate() + "," + incoming.getUTCHours() + "," + incoming.getUTCMinutes() + "," + incoming.getUTCSeconds() + "," + incoming.getUTCMilliseconds();
+        var dateParams = 
+          incoming.getUTCFullYear() + "," + 
+          incoming.getUTCMonth() + "," + 
+          incoming.getUTCDate() + "," + 
+          incoming.getUTCHours() + "," + 
+          incoming.getUTCMinutes() + "," + 
+          incoming.getUTCSeconds() + "," + 
+          incoming.getUTCMilliseconds();
         return "new Date(Date.UTC(" + dateParams + "))";
       }
     },

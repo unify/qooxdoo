@@ -377,9 +377,7 @@ Exclude classes from processing in the job. Takes an array of class specifiers.
 
   "exclude" : ["qx.util.*"]
 
-Classes specified through the *exclude* key are excluded from the job processing, e.g. from the generated build output. The class specifiers can include simple wildcards like "qx.util.*" denoting class id's matching this pattern, including sub-name spaces. 
-
-A leading '=' in front of a class specifier (like "=qx.util.*") means 'without dependencies'. That means the classes themselves are exempted, but their dependencies added in. Be aware that this requires that *all* dependencies have to be calculated upfront, including for those classes specified in this key, resulting in increased compile time and generator logging. It also means that the final class list might contain classes that are not used by any of the remaining classes. Usually, specifying classes without '=' is what you want.
+Classes specified through the *exclude* key are excluded from the job processing, e.g. from the generated build output. The class specifiers can include simple wildcards like "qx.util.*" denoting class id's matching this pattern, including those from sub-name spaces. 
 
 .. _pages/tool/generator_config_ref#export:
 
@@ -446,7 +444,7 @@ Include classes to be processed in the job. Takes an array of class specifiers.
 
   "include" : ["qx.util.*"]
 
-The class specifiers can include simple wildcards like 'qx.util.*' denoting a whole set of classes. A leading '=' in front of a class specifier means 'without dependencies' (like '=qx.util.*'). These classes are e.g. included in generated Javascript.
+The class specifiers can include simple wildcards like 'qx.util.*' denoting all classes starting with the 'qx.util' name space. A leading '=' in front of a class specifier (e.g. '=qx.util.*') means 'without dependencies'. In this case, exactly the listed classes are included (wildcards expanded), but not their dependencies. Otherwise, for the given classes their dependencies are calculated recursively, and those classes are also included.
 
 .. _pages/tool/generator_config_ref#include_top-level:
 
@@ -599,8 +597,7 @@ Configure log/reporting features. Takes a map.
         "file"           : "<filename>",
         "radius"         : 5,
         "span-tree-only" : (true|false),
-        "compiled-class-size" : (true|false),
-        "optimize"       : [<optimize-keys>]
+        "compiled-class-size" : (true|false)
       },
       "json"         :
       {
@@ -617,7 +614,7 @@ Configure log/reporting features. Takes a map.
 
 .. note::
 
-  peer-keys: :ref:`pages/tool/generator_config_ref#cache`, :ref:`pages/tool/generator_config_ref#include`, :ref:`pages/tool/generator_config_ref#library`, :ref:`pages/tool/generator_config_ref#variants`
+  peer-keys: :ref:`pages/tool/generator_config_ref#cache`, :ref:`pages/tool/generator_config_ref#include`, :ref:`pages/tool/generator_config_ref#library`, :ref:`pages/tool/generator_config_ref#variants`, :ref:`pages/tool/generator_config_ref#compile-options` 
 
 This key allows you to enable logging features along various axes. 
 
@@ -654,8 +651,7 @@ This key allows you to enable logging features along various axes.
     * **root** : the root class for the ``dot`` format output; only dependencies starting off of this class are included
     * **file** : output file path (default *deps.dot*)
     * **radius** : include only nodes that are within the given radius (or graph distance) to the root node
-    * **compiled-class-size** : use compiled class size to highlight graph nodes, rather than source file sizes; if true classes might have to be compiled to determine their compiled size, which could cause the log job to run longer (default *true*)
-    * **optimize** : if **compiled-class-size** is true, provide optimization settings here so classes are compiled with the correct optimizations; see :ref:`compile-options/code/optimize <pages/tool/generator_config_ref#compile-options>` for possible values (default [])
+    * **compiled-class-size** : use compiled class size to highlight graph nodes, rather than source file sizes; if true classes might have to be compiled to determine their compiled size, which could cause the log job to run longer; compile optimization settings are searched for in :ref:`compile-options/code/optimize <pages/tool/generator_config_ref#compile-options>`, defaulting to none;  (default *true*)
 
   * **json**:  
 

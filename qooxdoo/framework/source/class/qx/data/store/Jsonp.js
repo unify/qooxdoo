@@ -31,7 +31,7 @@ qx.Class.define("qx.data.store.Jsonp",
   /**
    * @param url {String?} URL of the web service.
    * @param delegate {Object?null} The delegate containing one of the methods
-   *   specified in {@link qx.data.store.IStoreDelegate}.
+   *   specified in {@link qx.data.marshal.IStoreDelegate}.
    * @param callbackParam {String} The name of the callback param for JSON-P.
    *   This is *not* the name of a static function. It is the name of the URL
    *   parameter where the server expects the name of the statif cuntion used
@@ -83,8 +83,11 @@ qx.Class.define("qx.data.store.Jsonp",
 
       qx.data.store.Jsonp[id] = this;
       url += 'qx.data.store.Jsonp[' + id + '].callback';
-      this.__loader.load(url, function(data) {
+      this.__loader.load(url, function(status) {
         delete this[id];
+        if (status === "fail") {
+          this.fireEvent("error");
+        }
       }, this);
     },
 
@@ -112,6 +115,7 @@ qx.Class.define("qx.data.store.Jsonp",
     __loaded: function(data) {
       if (data == undefined) {
         this.setState("failed");
+        this.fireEvent("error");
         return;
       }
 

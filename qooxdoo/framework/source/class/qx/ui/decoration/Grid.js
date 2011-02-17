@@ -52,17 +52,7 @@ qx.Class.define("qx.ui.decoration.Grid",
   {
     this.base(arguments);
 
-    if (false && qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
-    {
-      this.__impl = new qx.ui.decoration.css3.BorderImage();
-      if (baseImage) {
-        this.__setBorderImage(baseImage);
-      }
-    }
-    else
-    {
-      this.__impl = new qx.ui.decoration.GridDiv(baseImage);
-    }
+    this.__impl = new qx.ui.decoration.GridDiv(baseImage);
 
     if (insets != null) {
       this.__impl.setInsets(insets);

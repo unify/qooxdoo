@@ -1,6 +1,6 @@
-Version: 1.7.1
+Version: 1.9
 
 We only use this part: core.zip:common/main
 
 Official CLDR page:
-http://www.unicode.org/cldr
+http://cldr.unicode.org/

@@ -28,7 +28,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     {
       check : "String",
       nullable : true,
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -37,7 +37,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     {
       check : ["repeat", "repeat-x", "repeat-y", "no-repeat", "scale"],
       init : "repeat",
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -52,7 +52,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     backgroundPositionX :
     {
       nullable : true,
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -67,7 +67,7 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
     backgroundPositionY :
     {
       nullable : true,
-      apply : "_applyBackground"
+      apply : "_applyBackgroundImage"
     },
 
 
@@ -84,14 +84,21 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
   members :
   {
     /**
+     * Mapping for the dynamic decorator.
+     */
+    _generateMarkup : this._generateBackgroundMarkup,
+
+
+    /**
      * Responsible for generating the markup for the background.
      * This method just uses the settings in the properties to generate
      * the markup.
      *
      * @param styles {Map} CSS styles as map
+     * @param content {String?null} The content of the created div as HTML
      * @return {String} The generated HTML fragment
      */
-    _generateBackgroundMarkup: function(styles)
+    _generateBackgroundMarkup: function(styles, content)
     {
       var markup = "";
 
@@ -118,42 +125,37 @@ qx.Mixin.define("qx.ui.decoration.MBackgroundImage",
       }
       else
       {
-        if (styles)
+        if (qx.core.Variant.isSet("qx.client", "mshtml"))
         {
-          if (qx.core.Variant.isSet("qx.client", "mshtml"))
+          /*
+           * Internet Explorer as of version 6 for quirks and standards mode,
+           * or version 7 in quirks mode adds an empty string to the "div"
+           * node. This behavior causes rendering problems, because the node
+           * would then have a minimum size determined by the font size.
+           * To be able to set the "div" node height to a certain (small)
+           * value independent of the minimum font size, an "overflow:hidden"
+           * style is added.
+           * */
+          if (qx.bom.client.Engine.VERSION < 7 || qx.bom.client.Feature.QUIRKS_MODE)
           {
-            /*
-             * Internet Explorer as of version 6 for quirks and standards mode,
-             * or version 7 in quirks mode adds an empty string to the "div"
-             * node. This behavior causes rendering problems, because the node
-             * would then have a minimum size determined by the font size.
-             * To be able to set the "div" node height to a certain (small)
-             * value independent of the minimum font size, an "overflow:hidden"
-             * style is added.
-             * */
-            if (qx.bom.client.Engine.VERSION < 7 || qx.bom.client.Feature.QUIRKS_MODE)
-            {
-              // Add additionally style
-              styles.overflow = "hidden";
-            }
+            // Add additionally style
+            styles.overflow = "hidden";
           }
-
-          markup = '<div style="' + qx.bom.element.Style.compile(styles) + '"></div>';
         }
+        
+        if (!content) {
+          content = "";
+        }
+
+        markup = '<div style="' + qx.bom.element.Style.compile(styles) + '">' + content + '</div>';
       }
 
       return markup;
     },
 
 
-    /*
-    ---------------------------------------------------------------------------
-      PROPERTY APPLY ROUTINES
-    ---------------------------------------------------------------------------
-    */
-
     // property apply
-    _applyBackground : function()
+    _applyBackgroundImage : function()
     {
       if (qx.core.Variant.isSet("qx.debug", "on"))
       {

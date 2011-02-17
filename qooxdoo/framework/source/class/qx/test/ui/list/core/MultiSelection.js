@@ -50,12 +50,12 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
 
       // check selection on list
       this.assertEquals(3, this._list.getSelection().getLength(), "On List");
-      this.assertTrue(selection.equals(new qx.data.Array(
+      this.assertDataArrayEquals(selection, new qx.data.Array(
       [
         this._model.getItem(1),
         this._model.getItem(2),
         this._model.getItem(3)
-      ])), "On List");
+      ]), "On List");
 
       // check selection on manager
       var selectionFromManager = this._list._manager.getSelection();
@@ -138,6 +138,52 @@ qx.Class.define("qx.test.ui.list.core.MultiSelection",
       });
 
       this.testSelection();
+    },
+
+    testOneSelection : function()
+    {
+      var selection = this._list.getSelection();
+
+      this.assertEquals(0, selection.getLength());
+
+      this._list.setSelectionMode("one");
+
+      this.assertEquals(1, selection.getLength());
+      this.assertEquals(this._model.getItem(0), selection.getItem(0));
+    },
+
+    testOneSelectionByChangingyModel : function()
+    {
+      var selection = this._list.getSelection();
+
+      this.assertEquals(0, selection.getLength());
+
+      var oldModel = this._model.copy();
+      this._model.removeAll();
+
+      this._list.setSelectionMode("one");
+      this.assertEquals(0, selection.getLength());
+
+      this._model = oldModel;
+      this._list.setModel(this._model);
+
+      this.assertEquals(1, selection.getLength());
+      this.assertEquals(this._model.getItem(0), selection.getItem(0));
+    },
+
+    testOneSelectionWithEmptyModel : function()
+    {
+      var selection = this._list.getSelection();
+      var oldModel = this._model.copy();
+      this._model.removeAll();
+      this._list.setSelectionMode("one");
+
+      this.assertEquals(0, selection.getLength());
+
+      this._model.push(oldModel.getItem(2));
+
+      this.assertEquals(1, selection.getLength());
+      this.assertEquals(this._model.getItem(0), selection.getItem(0));
     }
   }
 });

@@ -46,7 +46,7 @@ qx.Theme.define("qx.theme.classic.Decoration",
 
     "main" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -279,7 +279,7 @@ qx.Theme.define("qx.theme.classic.Decoration",
 
     "lead-item" :
     {
-      decorator : qx.ui.decoration.Uniform,
+      decorator : qx.ui.decoration.Single,
 
       style :
       {
@@ -300,7 +300,7 @@ qx.Theme.define("qx.theme.classic.Decoration",
 
     "tooltip" :
     {
-      decorator: qx.ui.decoration.Uniform,
+      decorator: qx.ui.decoration.Single,
 
       style :
       {
@@ -312,7 +312,7 @@ qx.Theme.define("qx.theme.classic.Decoration",
 
     "tooltip-error" :
     {
-      decorator : qx.ui.decoration.Uniform,
+      decorator : qx.ui.decoration.Single,
 
       style : {
         width : 1,

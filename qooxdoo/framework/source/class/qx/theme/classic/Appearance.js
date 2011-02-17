@@ -625,10 +625,7 @@ qx.Theme.define("qx.theme.classic.Appearance",
         return {
           backgroundColor : "background",
           textColor : states.invalid ? "invalid" : undefined,
-          paddingRight    : 4,
-          paddingLeft     : 4,
-          marginRight     : 10,
-          marginLeft      : 10
+          padding   : [1, 0, 1, 4]
         };
       }
     },
@@ -639,6 +636,7 @@ qx.Theme.define("qx.theme.classic.Appearance",
       {
         return {
           padding : [ 12, 9 ],
+          marginTop: 10,
           decorator  : "groove"
         };
       }
@@ -656,10 +654,7 @@ qx.Theme.define("qx.theme.classic.Appearance",
         return {
           backgroundColor : "background",
           textColor : states.invalid ? "invalid" : undefined,
-          paddingRight    : 3,
-          paddingLeft     : 3,
-          marginRight     : 10,
-          marginLeft      : 10
+          padding   : [1, 0, 1, 4]
         };
       }
     },
@@ -676,10 +671,7 @@ qx.Theme.define("qx.theme.classic.Appearance",
         return {
           backgroundColor : "background",
           textColor : states.invalid ? "invalid" : undefined,
-          paddingRight    : 3,
-          paddingLeft     : 3,
-          marginRight     : 10,
-          marginLeft      : 10
+          padding   : [1, 0, 1, 4]
         };
       }
     },
@@ -2528,6 +2520,18 @@ qx.Theme.define("qx.theme.classic.Appearance",
       }
     },
 
+    "virtual-selectbox" : "selectbox",
+    "virtual-selectbox/dropdown" : "popup",
+    "virtual-selectbox/dropdown/list" : {
+      alias : "virtual-list"
+    },
+    
+    "virtual-combobox" : "combobox",
+    "virtual-combobox/dropdown" : "popup",
+    "virtual-combobox/dropdown/list" : {
+      alias : "virtual-list"
+    },
+
     "cell" :
     {
       style : function(states)
@@ -2601,6 +2605,28 @@ qx.Theme.define("qx.theme.classic.Appearance",
           backgroundColor: "background-selected"
         }
       }
-    }
+    },
+
+
+
+    /*
+    ---------------------------------------------------------------------------
+      APPLICATION
+    ---------------------------------------------------------------------------
+    */
+
+    "app-header":
+    {
+      style : function(states)
+      {
+        return {
+          textColor : "text-selected",
+          backgroundColor: "background-selected",
+          padding : [8, 12]
+        };
+      }
+    },
+
+    "app-header-label": "label"
   }
 });

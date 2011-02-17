@@ -19,6 +19,7 @@
 #
 ################################################################################
 
+#from xml.etree import cElementTree as ElementTree
 from elementtree import ElementTree
 
 def getLocale(calendarElement):
@@ -35,8 +36,7 @@ def extractMonth(calendarElement):
     for monthContext in calendarElement.findall(".//monthContext"):
         for monthWidth in monthContext.findall("monthWidth"):
             for month in monthWidth.findall("month"):
-                if month.attrib.has_key("alt"): continue
-                #data["cldr_month_%s_%s" % (monthWidth.attrib["type"], month.attrib["type"])] = month.text
+                if "alt" in month.attrib: continue
                 cldr_key = "cldr_month_%s_%s_%s" % (monthContext.attrib["type"], monthWidth.attrib["type"], month.attrib["type"])
                 data[cldr_key] = month.text
     return data
@@ -45,10 +45,9 @@ def extractMonth(calendarElement):
 def extractDay(calendarElement):
     data = {}
     for dayContext in calendarElement.findall(".//dayContext"):
-        for dayWidth in calendarElement.findall(".//dayWidth"):
+        for dayWidth in dayContext.findall(".//dayWidth"):
             for day in dayWidth.findall("day"):
-                if day.attrib.has_key("alt"): continue
-                #data['cldr_day_%s_%s' % (dayWidth.attrib["type"], day.attrib["type"])] = day.text
+                if "alt" in day.attrib: continue
                 cldr_key = "cldr_day_%s_%s_%s" % (dayContext.attrib["type"], dayWidth.attrib["type"], day.attrib["type"])
                 data[cldr_key] = day.text
     return data
@@ -61,11 +60,28 @@ def extractQuarter(calendarElement):
 def extractAmPm(calendarElement):
     data = {}
 
-    amNode = calendarElement.find(".//am")
+    amNode = calendarElement.find(".//dayPeriods/dayPeriodContext[@type='format']/dayPeriodWidth[@type='wide']/dayPeriod[@type='am']")
+
+    # 1.2.6 version:
+    # This is an approximation, as attribute filters don't work in elementtree
+    # before 1.3, so path expressions like 'node[@attrib=value]' do not work
+    #amNode  = None
+    #dayPeriods = calendarElement.findall(".//dayPeriod")
+    #for node in dayPeriods:
+    #    if node.attrib["type"] == "am":
+    #        amNode = node
+    #        break
     if amNode != None:
         data['cldr_am'] = amNode.text
 
-    pmNode = calendarElement.find(".//pm")
+    pmNode = calendarElement.find(".//dayPeriods/dayPeriodContext[@type='format']/dayPeriodWidth[@type='wide']/dayPeriod[@type='pm']")
+
+    # 1.2.6 version:
+    #pmNode = None
+    #for node in dayPeriods:
+    #    if node.attrib["type"] == "pm":
+    #        pmNode = node
+    #        break
     if pmNode != None:
         data["cldr_pm"] = pmNode.text
 
@@ -77,7 +93,7 @@ def extractDateFormat(calendarElement):
     for dateFormatLength in calendarElement.findall(".//dateFormatLength"):
         dateType = dateFormatLength.attrib["type"]
         for dateFormat in dateFormatLength.findall("dateFormat/pattern"):
-            if dateFormat.attrib.has_key("alt"): continue
+            if "alt" in dateFormat.attrib: continue
             data['cldr_date_format_%s'% dateType] = dateFormat.text
     return data
 
@@ -87,7 +103,7 @@ def extractTimeFormat(calendarElement):
     for timeFormatLength in calendarElement.findall(".//timeFormatLength"):
         timeType = timeFormatLength.attrib["type"]
         for timeFormat in timeFormatLength.findall("timeFormat/pattern"):
-            if timeFormat.attrib.has_key("alt"): continue
+            if "alt" in timeFormat.attrib: continue
             data['cldr_time_format_%s' % timeType] = timeFormat.text
     return data
 
@@ -102,7 +118,7 @@ def extractDateTimeFormat(calendarElement):
 def extractFields(calendarElement):
     fields = {}
     for field in calendarElement.findall(".//fields/field"):
-        if not field.find("displayName"): break
+        if field.find("displayName") is None: break
         fields[field.attrib["type"]] = field.find("displayName").text
 
     return fields
@@ -142,7 +158,7 @@ def parseCldrFile(filename, outputDirectory=None):
     data = {}
 
     for cal in tree.findall('dates/calendars/calendar'):
-        if not cal.attrib.has_key("type"): continue
+        if not "type" in cal.attrib: continue
         if cal.attrib["type"] != "gregorian": continue
 
         data.update(extractMonth(cal))

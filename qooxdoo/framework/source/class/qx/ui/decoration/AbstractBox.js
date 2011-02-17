@@ -46,22 +46,7 @@ qx.Class.define("qx.ui.decoration.AbstractBox",
     this.base(arguments);
     this._setOrientation(orientation);
 
-    if (false && qx.ui.decoration.css3.BorderImage.IS_SUPPORTED)
-    {
-      this.__impl = new qx.ui.decoration.css3.BorderImage();
-      if (baseImage) {
-        this.__setBorderImage(baseImage, orientation);
-      }
-
-      // Initialize properties
-      if (insets != null) {
-        this.__impl.setInsets(insets);
-      }
-    }
-    else
-    {
-      this.__impl = new qx.ui.decoration.BoxDiv(baseImage, insets, orientation);
-    }
+    this.__impl = new qx.ui.decoration.BoxDiv(baseImage, insets, orientation);
   },
 
 

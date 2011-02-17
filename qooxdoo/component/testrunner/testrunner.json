@@ -9,6 +9,7 @@
     "TESTRUNNER_ROOT" : ".",
     "TESTRUNNER"   : "testrunner",
     "TEST_INCLUDE" : "${APPLICATION}.test.*",
+    "TEST_EXCLUDE" : "",
     "TESTS_SCRIPT" : "tests.js",         // output script name
     "BUILD_PATH"   : "build",
     "CACHE"        : "${TMPDIR}/qx${QOOXDOO_VERSION}/cache",
@@ -48,6 +49,7 @@
         "qx.application"   : "testrunner.runner.Application",
         "qx.theme"         : "${THEME}",
         "qx.version"       : "${QOOXDOO_VERSION}",
+        "qx.revision"      : "${QOOXDOO_REVISION}",
         //"qx.testPageUri"   : "html/tests.html",
         "qx.testNameSpace" : "${APPLICATION}.test",  // this is common, but not mandatory
         "testrunner.title" : "${APPLICATION}"
@@ -90,6 +92,8 @@
 
       "include" : ["testrunner.TestLoader", "${TEST_INCLUDE}", "${QXTHEME}"],
 
+      "exclude" : ["${TEST_EXCLUDE}"],
+      
       "settings" :
       {
         "qx.theme" : "${QXTHEME}",

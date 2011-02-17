@@ -609,14 +609,14 @@ qx.Class.define("qx.data.controller.List",
      */
     bindDefaultProperties : function(item, index)
     {
-      // label
-      this.bindProperty(
-        this.getLabelPath(), "label", this.getLabelOptions(), item, index
-      );
-
       // model
       this.bindProperty(
         "", "model", null, item, index
+      );
+
+      // label
+      this.bindProperty(
+        this.getLabelPath(), "label", this.getLabelOptions(), item, index
       );
 
       // if the iconPath is set
