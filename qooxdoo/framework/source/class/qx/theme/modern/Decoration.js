@@ -67,21 +67,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
 
-    "selected-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
-
-      style :
-      {
-        startColorPosition : 0,
-        endColorPosition : 100,
-        startColor : "selected-start",
-        endColor : "selected-end"
-      }
-    },
-
     "selected-dragover" :
     {
       decorator : qx.ui.decoration.Single,
@@ -115,25 +100,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
 
-    "pane-css" : {
-      decorator : [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MBoxShadow,
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
-      style : {
-        width: 1,
-        color: "tabview-background",
-        radius : 3,
-        shadowColor : "shadow",
-        shadowBlurRadius : 2,
-        shadowLength : 0,
-        gradientStart : ["pane-start", 0],
-        gradientEnd : ["pane-end", 100]
-      }
-    },
-
     "group" :
     {
       decorator : qx.ui.decoration.Grid,
@@ -143,22 +109,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
     
-    "group-css" : 
-    {
-      decorator : [
-        qx.ui.decoration.MBackgroundColor,
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MSingleBorder
-      ],
-      
-      style : {
-        backgroundColor : "group-background",
-        radius : 4,
-        color : "group-border",
-        width: 1
-      }
-    },
-
     "border-invalid" :
     {
       decorator : qx.ui.decoration.Beveled,
@@ -184,131 +134,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
         width : 1,
         color : "keyboard-focus",
         style : "dotted"
-      }
-    },
-
-    /*
-    ---------------------------------------------------------------------------
-      CSS RADIO BUTTON 
-    ---------------------------------------------------------------------------
-    */
-    "radiobutton" : {
-      decorator : [
-        qx.ui.decoration.MDoubleBorder,
-        qx.ui.decoration.MBackgroundColor,
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MBoxShadow
-      ],
-      style : {
-        backgroundColor : "radiobutton-background",
-        radius : 5,
-        width: 1,
-        innerWidth : 2,
-        color : "checkbox-border",
-        innerColor : "radiobutton-background",
-        shadowLength : 0,
-        shadowBlurRadius : 0, 
-        shadowColor : "checkbox-focus",
-        insetLeft: 5 // used for the shadow (3 border + 2 extra for the shadow)
-      }
-    },
-
-    "radiobutton-checked" : {
-      include : "radiobutton",
-      style : {
-        backgroundColor : "radiobutton-checked"
-      }
-    },
-        
-    "radiobutton-checked-focused" : {
-      include  : "radiobutton-checked",
-      style : {
-        shadowBlurRadius : 4
-      }
-    },
-
-    "radiobutton-checked-hovered" : {
-      include : "radiobutton-checked",
-      style : {
-        innerColor : "checkbox-hovered"
-      }
-    },
-    
-    "radiobutton-focused" : {
-      include : "radiobutton",
-      style : {
-        shadowBlurRadius : 4
-      }
-    },
-
-    "radiobutton-hovered" : {
-      include : "radiobutton",
-      style : {
-        backgroundColor : "checkbox-hovered",
-        innerColor : "checkbox-hovered"
-      }
-    },
-
-    "radiobutton-disabled" : {
-      include : "radiobutton",
-      style : {
-        innerColor : "radiobutton-disabled",
-        backgroundColor : "radiobutton-disabled",
-        color : "checkbox-disabled-border"
-      }
-    },
-
-    "radiobutton-checked-disabled" : {
-      include : "radiobutton-disabled",
-      style : {
-        backgroundColor : "radiobutton-checked-disabled"
-      }
-    },
-
-    "radiobutton-invalid" : {
-      include : "radiobutton",
-      style : {
-        color : "invalid"
-      }
-    },
-
-    "radiobutton-checked-invalid" : {
-      include : "radiobutton-checked",
-      style : {
-        color : "invalid"
-      }
-    },
-        
-    "radiobutton-checked-focused-invalid" : {
-      include  : "radiobutton-checked-focused",
-      style : {
-        color : "invalid",
-        shadowColor : "invalid"
-      }
-    },
-
-    "radiobutton-checked-hovered-invalid" : {
-      include : "radiobutton-checked-hovered",
-      style : {
-        color : "invalid",
-        innerColor : "radiobutton-hovered-invalid"
-      }
-    },
-    
-    "radiobutton-focused-invalid" : {
-      include : "radiobutton-focused",
-      style : {
-        color : "invalid",
-        shadowColor : "invalid"
-      }
-    },
-
-    "radiobutton-hovered-invalid" : {
-      include : "radiobutton-hovered",
-      style : {
-        color : "invalid",
-        innerColor : "radiobutton-hovered-invalid",
-        backgroundColor : "radiobutton-hovered-invalid"
       }
     },
 
@@ -359,24 +184,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
 
-    "tooltip-error-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MBackgroundColor,
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MBoxShadow
-      ],
-
-      style : {
-        backgroundColor : "tooltip-error",
-        radius : 4,
-        shadowColor : "shadow",
-        shadowBlurRadius : 2,
-        shadowLength : 1
-      }
-    },
-
-
     "tooltip-error-arrow" :
     {
       decorator: qx.ui.decoration.Background,
@@ -406,20 +213,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
     
-    "shadow-window-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MBoxShadow,
-        qx.ui.decoration.MBackgroundColor
-      ],
-
-      style : {
-        shadowColor : "shadow",
-        shadowBlurRadius : 2,
-        shadowLength : 1
-      }
-    },
-
     "shadow-popup" :
     {
       decorator : qx.ui.decoration.Grid,
@@ -427,24 +220,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       style : {
         baseImage : "decoration/shadow/shadow-small.png",
         insets    : [ 0, 3, 3, 0 ]
-      }
-    },
-
-    "popup-css" :
-    {
-      decorator: [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MBoxShadow,
-        qx.ui.decoration.MBackgroundColor
-      ],
-
-      style :
-      {
-        width : 1,
-        color : "border-main",
-        shadowColor : "shadow",
-        shadowBlurRadius : 3,
-        shadowLength : 1
       }
     },
 
@@ -530,211 +305,8 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
 
-    // PLAIN CSS SCROLLBAR
-    "scrollbar-horizontal-css" : {
-      decorator : [qx.ui.decoration.MLinearBackgroundGradient],
-      style : {
-        gradientStart : ["scrollbar-start", 0],
-        gradientEnd : ["scrollbar-end", 100]
-      }
-    },
-
-    "scrollbar-vertical-css" : {
-      include : "scrollbar-horizontal-css",
-      style : {
-        orientation : "horizontal"
-      }
-    },
-
-    "scrollbar-slider-horizontal-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
-
-      style : {
-        gradientStart : ["scrollbar-slider-start", 0],
-        gradientEnd : ["scrollbar-slider-end", 100],
-        
-        color : "border-main",
-        width: 1
-      }
-    },
-
-    "scrollbar-slider-vertical-css" :
-    {
-      include : "scrollbar-slider-horizontal-css",
-      style : {
-        orientation : "horizontal"
-      }
-    },
-
-    "scrollbar-slider-horizontal-disabled-css" :
-    {
-      include : "scrollbar-slider-horizontal-css",
-      style : {
-        color : "button-border-disabeld"
-      }
-    },
-
-    "scrollbar-slider-vertical-disabled-css" :
-    {
-      include : "scrollbar-slider-vertical-css",
-      style : {
-        color : "button-border-disabeld"
-      }
-    },
 
 
-
-    /*
-    ---------------------------------------------------------------------------
-      PLAIN CSS BUTTON
-    ---------------------------------------------------------------------------
-    */
-    "button-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient,
-        qx.ui.decoration.MBorderRadius
-      ],
-
-      style :
-      {
-        radius: 3,
-        color: "button-border",
-        width: 1,
-        startColor: "button-start",
-        endColor: "button-end",
-        startColorPosition: 35,
-        endColorPosition: 100
-      }
-    },
-
-    "button-disabled-css" : 
-    {
-      include : "button-css",
-      style : {
-        color : "button-border-disabeld",
-        startColor: "button-disabled-start",
-        endColor: "button-disabled-end"
-      }
-    },
-    
-    "button-hovered-css" : 
-    {
-      include : "button-css",
-      style : {
-        startColor : "button-hovered-start",
-        endColor : "button-hovered-end"
-      }
-    },
-
-    "button-checked-css" : 
-    {
-      include : "button-css",
-      style : {
-        endColor: "button-start",
-        startColor: "button-end"
-      }
-    },
-
-    "button-pressed-css" : 
-    {
-      include : "button-css",
-      style : {
-        endColor : "button-hovered-start",
-        startColor : "button-hovered-end"
-      }
-    },
-    
-    "button-focused-css" : {
-      decorator : [
-        qx.ui.decoration.MDoubleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient,
-        qx.ui.decoration.MBorderRadius
-      ],
-
-      style :
-      {
-        radius: 3,
-        color: "button-border",
-        width: 1,
-        innerColor: "button-focused",
-        innerWidth: 2,
-        startColor: "button-start",
-        endColor: "button-end",
-        startColorPosition: 30,
-        endColorPosition: 100
-      }
-    },
-    
-    "button-checked-focused-css" : {
-      include : "button-focused-css",
-      style : {
-        endColor: "button-start",
-        startColor: "button-end"
-      }
-    },
-    
-    // invalid
-    "button-invalid-css" : {
-      include : "button-css",
-      style : {
-        color: "border-invalid"
-      }
-    },
-    
-    "button-disabled-invalid-css" : 
-    {
-      include : "button-disabled-css",
-      style : {
-        color : "border-invalid"
-      }
-    },
-    
-    "button-hovered-invalid-css" : 
-    {
-      include : "button-hovered-css",
-      style : {
-        color : "border-invalid"
-      }
-    },
-
-    "button-checked-invalid-css" : 
-    {
-      include : "button-checked-css",
-      style : {
-        color : "border-invalid"
-      }
-    },
-
-    "button-pressed-invalid-css" : 
-    {
-      include : "button-pressed-css",
-      style : {
-        color : "border-invalid"
-      }
-    },
-    
-    "button-focused-invalid-css" : {
-      include : "button-focused-css",
-      style : {
-        color : "border-invalid"
-      }
-    },
-    
-    "button-checked-focused-invalid-css" : {
-      include : "button-checked-focused-css",
-      style : {
-        color : "border-invalid"
-      }
-    },    
-    
-    
-    
     /*
     ---------------------------------------------------------------------------
       BUTTON
@@ -933,65 +505,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
 
 
 
-    /*
-    ---------------------------------------------------------------------------
-      PLAIN CSS TEXT FIELD
-    ---------------------------------------------------------------------------
-    */
 
-    "input-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MDoubleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient,
-        qx.ui.decoration.MBackgroundColor
-      ],
-
-      style :
-      {
-        color : "border-input",
-        innerColor : "border-inner-input",
-        innerWidth: 1,
-        width : 1,
-        backgroundColor : "background-light",
-        startColor : "input-start",
-        endColor : "input-end",
-        startColorPosition : 0,
-        endColorPosition : 12,
-        colorPositionUnit : "px"
-      }
-    },
-    
-    "border-invalid-css" : {
-      include : "input-css",
-      style : {
-        color : "border-invalid"
-      }
-    },
-
-    "input-focused-css" : {
-      include : "input-css",
-      style : {
-        startColor : "input-focused-start",
-        innerColor : "input-focused-end",
-        endColorPosition : 4
-      }
-    },
-    
-    "input-focused-invalid-css" : {
-      include : "input-focused-css",
-      style : {
-        innerColor : "input-focused-inner-invalid",
-        color : "border-invalid"
-      }
-    },
-
-    "input-disabled-css" : {
-      include : "input-css",
-      style : {
-        color: "input-border-disabled"
-      }
-    },
 
 
 
@@ -1082,17 +596,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
     
-    "toolbar-css" : 
-    {
-      decorator : [qx.ui.decoration.MLinearBackgroundGradient],
-      style : {
-        startColorPosition : 40,
-        endColorPosition : 60,
-        startColor : "toolbar-start",
-        endColor : "toolbar-end"
-      }
-    },
-
     "toolbar-button-hovered" :
     {
       decorator : qx.ui.decoration.Beveled,
@@ -1119,37 +622,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
     
-    "toolbar-button-hovered-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MDoubleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient,
-        qx.ui.decoration.MBorderRadius
-      ],
-
-      style :
-      {
-        color : "broder-toolbar-button-outer",
-        width: 1,
-        innerWidth: 1,
-        innerColor : "broder-toolbar-broder-inner",
-        radius : 2,    
-        gradientStart : ["button-start", 30],
-        gradientEnd : ["button-end", 100]
-      }
-    },
-
-    "toolbar-button-checked-css" :
-    {
-      include : "toolbar-button-hovered-css",
-
-      style :
-      {
-        gradientStart : ["button-end", 30],
-        gradientEnd : ["button-start", 100]
-      }
-    },    
-
     "toolbar-separator" :
     {
       decorator : qx.ui.decoration.Single,
@@ -1198,23 +670,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
     
-    "tabview-pane-css" : 
-    {
-      decorator : [
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MLinearBackgroundGradient,
-        qx.ui.decoration.MSingleBorder
-      ],
-      
-      style : {
-        width: 1,
-        color: "window-border",
-        radius : 3,
-        gradientStart : ["tabview-start", 90],
-        gradientEnd : ["tabview-end", 100]
-      }
-    },
-
     "tabview-page-button-top-active" :
     {
       decorator : qx.ui.decoration.Grid,
@@ -1288,118 +743,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
     },
 
 
-    // CSS TABVIEW BUTTONS
-    "tabview-page-button-top-active-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MBackgroundColor,
-        qx.ui.decoration.MBoxShadow
-      ],
-
-      style : {
-        radius : [3, 3, 0, 0],
-        width: [1, 1, 0, 1],
-        color: "tabview-background",
-        backgroundColor : "tabview-start",
-        shadowLength: 1,
-        shadowColor: "shadow",
-        shadowBlurRadius: 2        
-      }
-    },
-
-    "tabview-page-button-top-inactive-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
-
-      style : {
-        radius : [3, 3, 0, 0],
-        color: "tabview-inactive",
-        colorBottom : "tabview-background",
-        width: 1,
-        gradientStart : ["tabview-inactive-start", 0],
-        gradientEnd : ["tabview-inactive-end", 100]
-      }
-    },
-
-    "tabview-page-button-bottom-active-css" :
-    {
-      include : "tabview-page-button-top-active-css",
-
-      style : {
-        radius : [0, 0, 3, 3],
-        width: [0, 1, 1, 1],
-        backgroundColor : "tabview-inactive-start"
-      }
-    },
-
-    "tabview-page-button-bottom-inactive-css" :
-    {
-      include : "tabview-page-button-top-inactive-css",
-
-      style : {
-        radius : [0, 0, 3, 3],
-        width: [0, 1, 1, 1],
-        colorBottom : "tabview-inactive",
-        colorTop : "tabview-background"
-      }
-    },
-
-    "tabview-page-button-left-active-css" :
-    {
-      include : "tabview-page-button-top-active-css",
-
-      style : {
-        radius : [3, 0, 0, 3],
-        width: [1, 0, 1, 1],
-        shadowLength: 0,
-        shadowBlurRadius: 0
-      }
-    },
-
-    "tabview-page-button-left-inactive-css" :
-    {
-      include : "tabview-page-button-top-inactive-css",
-
-      style : {
-        radius : [3, 0, 0, 3],
-        width: [1, 0, 1, 1],
-        colorBottom : "tabview-inactive",
-        colorRight : "tabview-background"
-      }
-    },
-
-    "tabview-page-button-right-active-css" :
-    {
-      include : "tabview-page-button-top-active-css",
-
-      style : {
-        radius : [0, 3, 3, 0],
-        width: [1, 1, 1, 0],
-        shadowLength: 0,
-        shadowBlurRadius: 0
-      }
-    },
-
-    "tabview-page-button-right-inactive-css" :
-    {
-      include : "tabview-page-button-top-inactive-css",
-
-      style : {
-        radius : [0, 3, 3, 0],
-        width: [1, 1, 1, 0],
-        colorBottom : "tabview-inactive",
-        colorLeft : "tabview-background"
-      }
-    },    
-    
-    
-    
 
 
     /*
@@ -1474,77 +817,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
     },
     
     
-    // CSS WINDOW
-    "window-captionbar-active-css" : {
-      decorator : [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MLinearBackgroundGradient,
-        qx.ui.decoration.MBoxShadow
-      ],
-      style : {
-        width : 1,
-        color : "window-border",
-        colorBottom : "window-border-caption",
-        radius : [5, 5, 0, 0],
-        gradientStart : ["window-caption-active-start", 30],
-        gradientEnd : ["window-caption-active-end", 70],
-        shadowBlurRadius : 4,
-        shadowLength : 2,
-        shadowColor : "shadow"
-      }
-    },
-    
-    "window-captionbar-inactive-css" : {
-      include : "window-captionbar-active-css",
-      style : {
-        gradientStart : ["window-caption-inactive-start", 30],
-        gradientEnd : ["window-caption-inactive-end", 70]
-      }
-    },    
-
-    "window-statusbar-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MBackgroundColor,
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MBorderRadius,
-        qx.ui.decoration.MBoxShadow
-      ],
-
-      style : {
-        backgroundColor : "window-statusbar-background",
-        width: [0, 1, 1, 1],
-        color: "window-border",
-        radius : [0, 0, 5, 5],
-        shadowBlurRadius : 4,
-        shadowLength : 2,
-        shadowColor : "shadow"
-      }
-    },
-
-    "window-css" :
-    {
-      decorator: [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MBoxShadow,
-        qx.ui.decoration.MBackgroundColor
-      ],
-
-      style :
-      {
-        backgroundColor : "background-pane",
-
-        width : 1,
-        color : "window-border",
-        widthTop : 0,
-        
-        shadowBlurRadius : 4,
-        shadowLength : 2,
-        shadowColor : "shadow"
-      }
-    },
-
 
 
     /*
@@ -1589,23 +861,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
         widthBottom : 1,
         colorBottom : "border-main",
         style       : "solid"
-      }
-    },
-
-    "table-scroller-header-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
-
-      style :
-      {
-        gradientStart : ["table-header-start", 10],
-        gradientEnd : ["table-header-end", 90],
-
-        widthBottom : 1,
-        colorBottom : "border-main"
       }
     },
 
@@ -1687,22 +942,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
 
-    "progressive-table-header-cell-css" :
-    {
-      decorator :  [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
 
-      style :
-      {
-        gradientStart : ["table-header-start", 10],
-        gradientEnd : ["table-header-end", 90],
-
-        widthRight : 1,
-        colorRight : "progressive-table-header-border-right"
-      }
-    },
 
 
     /*
@@ -1726,23 +966,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
     
-    "menu-css" : {
-      decorator : [
-        qx.ui.decoration.MLinearBackgroundGradient,
-        qx.ui.decoration.MBoxShadow,
-        qx.ui.decoration.MSingleBorder
-      ],
-      style : {
-        gradientStart : ["menu-start", 0],
-        gradientEnd : ["menu-end", 100],
-        shadowColor : "shadow",
-        shadowBlurRadius : 2,
-        shadowLength : 1,
-        width : 1,
-        color : "border-main"
-      }
-    },
-
     "menu-separator" :
     {
       decorator :  qx.ui.decoration.Single,
@@ -1779,22 +1002,7 @@ qx.Theme.define("qx.theme.modern.Decoration",
       }
     },
 
-    "menubar-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MSingleBorder,
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
 
-      style :
-      {
-        gradientStart : ["menubar-start", 0],
-        gradientEnd : ["menu-end", 100],
-
-        width : 1,
-        color : "border-separator"
-      }
-    },
 
     /*
     ---------------------------------------------------------------------------
@@ -1846,21 +1054,6 @@ qx.Theme.define("qx.theme.modern.Decoration",
         backgroundImage  : "decoration/group-item.png",
         backgroundRepeat : "scale"
       }
-    },
-    
-    "group-item-css" :
-    {
-      decorator : [
-        qx.ui.decoration.MLinearBackgroundGradient
-      ],
-
-      style :
-      {
-        startColorPosition : 0,
-        endColorPosition : 100,
-        startColor : "groupitem-start",
-        endColor : "groupitem-end"
-      }
-    }    
+    }  
   }
 });
