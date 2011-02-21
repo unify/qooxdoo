@@ -515,10 +515,8 @@ qx.Class.define("qx.ui.basic.Image",
       // only try to load the image if it not already failed
       if(!ImageLoader.isFailed(source)) {
         ImageLoader.load(source, this.__loaderCallback, this);
-      } else {
-        if (el != null) {
-          el.resetSource();
-        }
+      } else if (el != null) {
+        el.resetSource();
       }
     },
 
