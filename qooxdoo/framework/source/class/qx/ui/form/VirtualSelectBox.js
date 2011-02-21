@@ -44,7 +44,7 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
     this.addListener("mouseover", this._onMouseOver, this);
     this.addListener("mouseout", this._onMouseOut, this);
 
-    this.initSelection(this.getChildControl("dropdown").getSelection());
+    this.setSelection(this.getChildControl("dropdown").getSelection());
 
     this.__searchTimer = new qx.event.Timer(500);
     this.__searchTimer.addListener("interval", this.__preselect, this);
@@ -75,8 +75,7 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
       check : "qx.data.Array",
       event : "changeSelection",
       apply : "_applySelection",
-      nullable : false,
-      deferredInit : true
+      nullable : false
     }
   },
 

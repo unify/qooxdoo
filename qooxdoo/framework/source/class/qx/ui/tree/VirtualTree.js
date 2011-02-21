@@ -55,7 +55,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     }
 
     if(model != null) {
-      this.initModel(model);
+      this.setModel(model);
     }
 
     this.initItemHeight();
@@ -189,8 +189,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       check : "qx.core.Object",
       apply : "_applyModel",
       event: "changeModel",
-      nullable : true,
-      deferredInit : true
+      nullable : true
     }
   },
 

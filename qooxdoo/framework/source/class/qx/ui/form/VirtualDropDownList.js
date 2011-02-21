@@ -54,7 +54,7 @@ qx.Class.define("qx.ui.form.VirtualDropDownList",
 
     this.addListener("changeVisibility", this.__onChangeVisibility, this);
 
-    this.initSelection(new qx.data.Array());
+    this.setSelection(new qx.data.Array());
   },
 
 
@@ -82,8 +82,7 @@ qx.Class.define("qx.ui.form.VirtualDropDownList",
       check : "qx.data.Array",
       event : "changeSelection",
       apply : "_applySelection",
-      nullable : false,
-      deferredInit : true
+      nullable : false
     }
   },
 

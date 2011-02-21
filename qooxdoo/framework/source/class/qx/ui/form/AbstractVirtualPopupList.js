@@ -57,9 +57,9 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
     this._createChildControl("dropdown");
 
     if (model != null) {
-      this.initModel(model);
+      this.setModel(model);
     } else {
-      this.initModel(new qx.data.Array());
+      this.setModel(new qx.data.Array());
     }
   },
 
@@ -88,8 +88,7 @@ qx.Class.define("qx.ui.form.AbstractVirtualPopupList",
       check : "qx.data.Array",
       apply : "_applyModel",
       event: "changeModel",
-      nullable : false,
-      deferredInit : true
+      nullable : false
     },
 
 

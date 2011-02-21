@@ -80,9 +80,9 @@ qx.Class.define("qx.ui.list.List",
     this._init();
 
     if(model != null) {
-      this.initModel(model);
+      this.setModel(model);
     } else {
-      this.initModel(new qx.data.Array());
+      this.setModel(new qx.data.Array());
     }
 
     this.initItemHeight();
@@ -129,8 +129,7 @@ qx.Class.define("qx.ui.list.List",
       check : "qx.data.Array",
       apply : "_applyModel",
       event: "changeModel",
-      nullable : false,
-      deferredInit : true
+      nullable : false
     },
 
 
