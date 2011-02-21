@@ -1018,14 +1018,15 @@ qx.Class.define("qx.ui.core.Widget",
       var container = this.getContainerElement();
       var old = this.$$parent;
 
-      // Update inheritable properties
-      qx.core.property.Multi.moveObject(this, parent, old);
-
       if (this.$$parent && !this.$$parent.$$disposed) {
         this.$$parent.getContentElement().remove(container);
       }
 
       this.$$parent = parent || null;
+
+      // Update inheritable properties
+      // Note: Parent flag needs to be updated before calling this method
+      qx.core.property.Multi.moveObject(this, parent, old);
 
       if (parent && !parent.$$disposed) {
         this.$$parent.getContentElement().add(container);
@@ -3059,6 +3060,14 @@ qx.Class.define("qx.ui.core.Widget",
       if (inheritables[prop])
       {
         var parent = this.$$parent;
+        
+        if (qx.core.Variant.isSet("qx.debug", "on"))
+        {
+          if (!parent) {
+            this.warn("Has no parent to access inheritable value for \"" + prop + "\"");
+          }
+        }
+        
         return parent && parent.get(prop);
       }
     },
@@ -3067,7 +3076,7 @@ qx.Class.define("qx.ui.core.Widget",
     // property apply
     _applyAppearance : function(value, old) 
     {
-      this.debug("Appearance changed: " + old + " => " + value);
+      // this.debug("Appearance changed: " + old + " => " + value);
       this.updateAppearance();
     },
 
