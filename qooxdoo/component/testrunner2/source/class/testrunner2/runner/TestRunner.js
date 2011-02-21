@@ -183,9 +183,14 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       testRep = qx.lang.Json.parse(testRep);
       
       this.testList = [];
+      this.testPackageList = [];
       
       for (var i=0,l=testRep.length; i<l; i++) {
         var testClassName = testRep[i].classname;
+        var testPackageName = /(.*?)\.[A-Z]/.exec(testClassName)[1];
+        if (!qx.lang.Array.contains(this.testPackageList, testPackageName)) {
+          this.testPackageList.push(testPackageName);
+        }
         for (var j=0,m=testRep[i].tests.length; j<m; j++) {
           this.testList.push(testClassName + ":" + testRep[i].tests[j]);
         }
@@ -218,7 +223,8 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       var win = autWindow || window;
       var tCase = win.qx.dev.unit.TestCase.prototype;
       for (var prop in tCase) {
-        if (prop.indexOf("assert") == 0 && typeof tCase[prop] == "function") {
+        if ((prop.indexOf("assert") == 0 || prop === "fail") && 
+            typeof tCase[prop] == "function") {
           // store original assertion func
           var originalName = "__" + prop;
           tCase[originalName] = tCase[prop];
@@ -315,6 +321,11 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       
       testResult.addListener("startTest", function(e) {
         var test = e.getData();
+        
+        if (this.currentTestData && this.currentTestData.getName() === test.getFullName()
+          && this.currentTestData.getState() !== "wait") {
+          return;
+        }
         
         /* EXPERIMENTAL: Check if the test polluted the DOM
         if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {

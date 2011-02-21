@@ -1005,7 +1005,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
         
         if (qx.bom.client.Feature.CSS_GRADIENTS) {
           decorator += "-css";
-        }        
+        }
 
         return {
           backgroundColor : "background-light",
@@ -1842,7 +1842,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
         
         return {
           decorator    : decorator,
-          textColor    : states.active ? "white" : "text-gray",
+          textColor    : states.active ? "window-caption-active-text" : "text-gray",
           minHeight    : 26,
           paddingRight : 2,
           margin : useCSS ? [0, 5, 0, 0] : undefined // necessary for the shadow
@@ -2124,6 +2124,10 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = "input";
         }
 
+        if (qx.bom.client.Feature.CSS_GRADIENTS) {
+          decorator += "-css";
+        }
+
         return {
           padding : 2,
           decorator : decorator,
@@ -2271,6 +2275,10 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = "border-invalid";
         } else {
           decorator = "input";
+        }
+
+        if (qx.bom.client.Feature.CSS_GRADIENTS) {
+          decorator += "-css";
         }
 
         return {
@@ -3018,8 +3026,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         return {
-          colorEven : "white",
-          colorOdd : "white"
+          colorEven : "virtual-row-layer-background-even",
+          colorOdd : "virtual-row-layer-background-odd"
         };
       }
     },
@@ -3034,7 +3042,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
         return {
           padding : 4,
           decorator : qx.bom.client.Feature.CSS_GRADIENTS ? "group-item-css" : "group-item",
-          textColor : "white",
+          textColor : "groupitem-text",
           font: "bold"
         };
       }
@@ -3051,6 +3059,96 @@ qx.Theme.define("qx.theme.modern.Appearance",
     "virtual-combobox/dropdown/list" : {
       alias : "virtual-list"
     },
+    
+    "virtual-tree" : "list",
+    
+    "virtual-tree-item" :
+    {
+      style : function(states)
+      {
+        return {
+          padding: [2, 6],
+          textColor: states.selected ? "text-selected" : undefined,
+          decorator: states.selected ? "selected" : undefined
+        };
+      }
+    },
+
+    "virtual-tree-item/icon" :
+    {
+      include : "image",
+
+      style : function(states)
+      {
+        return {
+          paddingRight: 5,
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-item/label" : 
+    {
+      include : "label",
+      
+      style : function(states)
+      {
+        return {
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-folder" :
+    {
+      include : "virtual-tree-item",
+      alias : "virtual-tree-item",
+
+      style : function(states)
+      {
+        return {
+          icon: states.opened ? "icon/22/places/folder-open.png" : "icon/22/places/folder.png"
+        };
+      }
+    },
+    
+    "virtual-tree-folder/open" :
+    {
+      include : "image",
+
+      style : function(states)
+      {
+        var icon;
+        if (states.selected && states.opened) {
+          icon = "decoration/tree/open-selected.png";
+        } else if (states.selected && !states.opened) {
+          icon = "decoration/tree/closed-selected.png";
+        } else if (states.opened) {
+          icon = "decoration/tree/open.png";
+        } else {
+          icon = "decoration/tree/closed.png";
+        }
+
+        return {
+          padding: [0, 5, 0, 2],
+          source: icon,
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-file" :
+    {
+      include : "virtual-tree-item",
+      alias : "virtual-tree-item",
+
+      style : function(states)
+      {
+        return {
+          icon: "icon/22/mimetypes/office-document.png"
+        };
+      }
+    },    
         
     "column-layer" : "widget",
 
@@ -3108,7 +3206,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         return {
-          backgroundColor : "white"
+          backgroundColor : "htmlarea-background"
         };
       }
     },
@@ -3125,7 +3223,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
         return {
           decorator: "progressbar",
           padding: [1],
-          backgroundColor: "white"
+          backgroundColor: "progressbar-background"
         }
       }
     },
