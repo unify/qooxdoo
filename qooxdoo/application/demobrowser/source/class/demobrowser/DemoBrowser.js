@@ -520,6 +520,9 @@ qx.Class.define("demobrowser.DemoBrowser",
       // DEBUG MENU
       // -----------------------------------------------------
 
+      var menuPart = new qx.ui.toolbar.Part();
+      bar.add(menuPart);
+
       var menu = new qx.ui.menu.Menu;
 
       if (qx.core.Variant.isSet("qx.contrib", "off"))
