@@ -76,7 +76,6 @@ qx.Class.define("demobrowser.DemoBrowser",
     // Data
     this.widgets = {};
     this.tests = {};
-    this.__currentTheme = "qx.theme.Modern";
 
 
     // Commands & Menu Bar
@@ -206,8 +205,7 @@ qx.Class.define("demobrowser.DemoBrowser",
     this.__menuElements =
     [
       this.__sobutt,
-      this.__viewPart,
-      this.__themePart
+      this.__viewPart
     ];
 
     if (qx.core.Variant.isSet("qx.contrib", "off")) {
@@ -250,7 +248,6 @@ qx.Class.define("demobrowser.DemoBrowser",
     // ------------------------------------------------------------------------
 
     _iframe : null,
-    __currentTheme : null,
     __logSync : null,
     __logDone : null,
     _tree : null,
@@ -262,8 +259,6 @@ qx.Class.define("demobrowser.DemoBrowser",
     _versionFilter : null,
     __sobutt : null,
     __viewPart : null,
-    __themePart : null,
-    __themeMenu : null,
     __menuBar : null,
     _leftComposite : null,
     _infosplit : null,
@@ -518,42 +513,6 @@ qx.Class.define("demobrowser.DemoBrowser",
         helpButton.setToolTipText(this.tr("Open the qooxdoo Manual"));
         helpButton.addListener("execute", this.__onManualOpen, this);
         
-      }
-
-
-
-      // THEME MENU
-      // -----------------------------------------------------
-
-      var menuPart = new qx.ui.toolbar.Part;
-      this.__themePart = menuPart;
-      bar.add(menuPart);
-
-      if (qx.core.Variant.isSet("qx.contrib", "off"))
-      {
-        var themeMenu = new qx.ui.menu.Menu;
-
-        this.__themeMenu = themeMenu;
-
-        var t1 = new qx.ui.menu.RadioButton("Modern Theme");
-        var t2 = new qx.ui.menu.RadioButton("Classic Theme");
-        var t3 = new qx.ui.menu.RadioButton("Simple Theme");
-
-        t1.setUserData("value", "qx.theme.Modern");
-        t1.setValue(true);
-        t2.setUserData("value", "qx.theme.Classic");
-        t3.setUserData("value", "qx.theme.Simple");
-        
-        var group = new qx.ui.form.RadioGroup(t1, t2, t3);
-        group.addListener("changeSelection", this.__onChangeTheme, this);
-
-        themeMenu.add(t1);
-        themeMenu.add(t2);
-        themeMenu.add(t3);
-
-        var themeButton = new qx.ui.toolbar.MenuButton(this.tr("Theme"), "icon/22/apps/utilities-color-chooser.png", themeMenu);
-        themeButton.setToolTipText("Choose theme");
-        menuPart.add(themeButton);
       }
 
 
@@ -987,9 +946,6 @@ qx.Class.define("demobrowser.DemoBrowser",
       {
         treeNode.getTree().setSelection([treeNode]);
         url = 'demo/' + value;
-        if (qx.core.Variant.isSet("qx.contrib", "off")) {
-          url += "?qx.theme=" + this.__currentTheme;
-        }
         
         var currentTags = treeNode.getUserData("tags");
         if (currentTags) {
@@ -1616,13 +1572,6 @@ qx.Class.define("demobrowser.DemoBrowser",
       }
     },
 
-    __onChangeTheme : function(e)
-    {
-      this.__currentTheme = e.getData()[0].getUserData("value");
-      this.runSample();
-    },
-
-
     /**
      * Creates the application header.
      */
@@ -1660,7 +1609,7 @@ qx.Class.define("demobrowser.DemoBrowser",
       "f1", "f2", "_history", "logappender", '_cmdObjectSummary',
       '_cmdRunSample', '_cmdPrevSample', '_cmdNextSample',
       '_cmdSampleInOwnWindow', '_cmdDisposeSample', '_cmdNamespacePollution',
-      "_navPart", "_runbutton", "_stopbutton", "__sobutt", "__themePart",
+      "_navPart", "_runbutton", "_stopbutton", "__sobutt",
       "__viewPart", "viewGroup", "__menuBar", "_infosplit", "_searchTextField",
       "_status", "_tree", "_iframe", "_demoView", "__menuElements",
       "__logSync", "_leftComposite", "_urlWindow");
