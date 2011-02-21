@@ -258,11 +258,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "button",
       include : "button",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         return {
           icon : "decoration/arrows/down.png",
-          padding : [superStyles.padding[0], superStyles.padding[1] - 6],
+          padding : [2, 2],
           marginLeft : 1
         };
       }
@@ -489,11 +489,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "button-frame",
       include : "button-frame",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         return {
           icon : "decoration/arrows/up-small.png",
-          padding : [superStyles.padding[0] - 1, superStyles.padding[1] - 5],
+          padding : [1, 3],
           shadow: undefined
         };
       }
@@ -504,11 +504,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "button-frame",
       include : "button-frame",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         return {
           icon : "decoration/arrows/down-small.png",
-          padding : [superStyles.padding[0] - 1, superStyles.padding[1] - 5],
+          padding : [1, 3],
           shadow: undefined
         };
       }
@@ -2092,11 +2092,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       include : "button-frame",
       alias   : "button-frame",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         var ret = {
           icon : "decoration/arrows/down.png",
-          padding : [superStyles.padding[0], superStyles.padding[1] - 6],
+          padding : [2, 2],
           shadow : undefined
         };
 
