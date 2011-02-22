@@ -3038,12 +3038,18 @@ qx.Class.define("qx.ui.core.Widget",
      * Returns the appearance value for the given property.
      * 
      * @param prop {String} Name of any supported themable property
-     * @return {var} Currently stored value.
+     * @return {var} Currently stored value. Returns <code>undefined</code> when no value is available.
      */
     getThemedValue : function(prop)
     {
       var selector = this.__appearanceSelector;
-      return selector ? qx.ui.core.Widget.__styleCache[selector][prop] : undefined;
+      if (selector)
+      {
+        var entry = qx.ui.core.Widget.__styleCache[selector];
+        if (entry) {
+          return entry[prop];
+        }
+      }
     },
 
 

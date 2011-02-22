@@ -219,29 +219,16 @@ qx.Class.define("qx.ui.core.Blocker",
      */
     _restoreActiveWidget : function()
     {
-      var activeElementsLength = this.__activeElements.length;
-      if (activeElementsLength > 0)
-      {
-        var widget = this.__activeElements[activeElementsLength - 1];
+      var focusHandler = qx.event.Registration.getManager(window).getHandler(qx.event.handler.Focus);
 
-        if (widget) {
-          qx.bom.Element.activate(widget);
-        }
-
-        this.__activeElements.pop();
+      var focusElement = this.__focusElements.pop();
+      if (focusElement) {
+        focusHandler.setFocus(focusElement);
       }
-
-      var focusElementsLength = this.__focusElements.length;
-
-      if (focusElementsLength > 0)
-      {
-        var widget = this.__focusElements[focusElementsLength - 1];
-
-        if (widget) {
-          qx.bom.Element.focus(this.__focusElements[focusElementsLength - 1]);
-        }
-
-        this.__focusElements.pop();
+      
+      var activeElement = this.__activeElements.pop();
+      if (activeElement) {
+        focusHandler.setActive(activeElement);
       }
     },
 
@@ -525,7 +512,6 @@ qx.Class.define("qx.ui.core.Blocker",
       this._widget.removeListener("resize", this.__onResize, this);
     }
     this._disposeObjects("__contentBlocker", "__blocker", "__timer");
-    this.__oldAnonymous = this.__activeElements = this.__focusElements =
-      this._widget = this.__contentBlockerCount = null;
+    this.__oldAnonymous = this.__activeElements = this.__focusElements = this._widget = this.__contentBlockerCount = null;
   }
 });
