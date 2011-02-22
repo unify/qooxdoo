@@ -65,7 +65,7 @@
 qx.Class.define("qx.ui.list.List",
 {
   extend : qx.ui.virtual.core.Scroller,
-  include : [qx.ui.list.core.MSelectionHandling],
+  include : [qx.data.MBinding, qx.ui.list.core.MSelectionHandling],
 
 
   /**
@@ -80,9 +80,9 @@ qx.Class.define("qx.ui.list.List",
     this._init();
 
     if(model != null) {
-      this.initModel(model);
+      this.setModel(model);
     } else {
-      this.initModel(new qx.data.Array());
+      this.setModel(new qx.data.Array());
     }
 
     this.initItemHeight();
@@ -129,8 +129,7 @@ qx.Class.define("qx.ui.list.List",
       check : "qx.data.Array",
       apply : "_applyModel",
       event: "changeModel",
-      nullable : false,
-      deferredInit : true
+      nullable : false
     },
 
 
@@ -457,8 +456,7 @@ qx.Class.define("qx.ui.list.List",
       }
 
       this._provider.removeBindings();
-      this.__buildUpLookupTable();
-      this._applyDefaultSelection();
+      this._onModelChange();
     },
 
 

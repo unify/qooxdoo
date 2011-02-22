@@ -110,7 +110,7 @@ qx.Class.define("qx.bom.Flash",
         qx.core.Assert.assertString(attributes.movie, "Invalid attribute 'movie'.");
         qx.core.Assert.assertString(attributes.id, "Invalid attribute 'id'.");
 
-        if (!qx.dom.Element.isRendered(element, win)) {
+        if (!qx.dom.Hierarchy.isRendered(element, win)) {
           qx.log.Logger.warn(this, "The parent DOM element isn't in DOM! The External Interface doesn't work in IE!");
         }
       }

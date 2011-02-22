@@ -1,9 +1,32 @@
+/* ************************************************************************
+
+   qooxdoo - the new era of web development
+
+   http://qooxdoo.org
+
+   Copyright:
+     2004-2010 1&1 Internet AG, Germany, http://www.1und1.de
+
+   License:
+     LGPL: http://www.gnu.org/licenses/lgpl.html
+     EPL: http://www.eclipse.org/org/documents/epl-v10.php
+     See the LICENSE file in the project's top-level directory for details.
+
+************************************************************************ */
+
+/**
+ * View for performance tests.
+ */
 qx.Class.define("testrunner2.view.Performance", {
 
   extend : testrunner2.view.Console,
   
   properties :
   {
+    /** 
+     * Use the browser's built-in profiling capabilities (console.profile)
+     * if true 
+     */
     profile :
     {
       check : "Boolean",
@@ -50,6 +73,15 @@ qx.Class.define("testrunner2.view.Performance", {
     
     __measurements : null,
     
+    /**
+     * Adds an entry to the stored results 
+     * 
+     * @param clazz {String} Name of the test class
+     * @param msg {String} Test description
+     * @param iterations {Integer} Number of iterations
+     * @param ownTime {Integer} JavaScript execution time
+     * @param renderTime {Integer} browser rendering time
+     */
     logMeasurement : function(clazz, msg, iterations, ownTime, renderTime) {
       this.__measurements.push([clazz, msg, iterations, ownTime, renderTime].join("; "));
     },
@@ -80,6 +112,10 @@ qx.Class.define("testrunner2.view.Performance", {
     
     __logElem : null,
     
+    /**
+     * Returns an HTML element to be used for the AUT's log output
+     * @return {Element} The log appender element
+     */
     getLogAppenderElement : function()
     {
       return this.__logElem;

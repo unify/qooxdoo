@@ -168,7 +168,7 @@ qx.Class.define("qx.ui.form.Spinner",
     /** The value of the spinner. */
     value:
     {
-      check : "this._checkValue(value)",
+      check : function(value) { return typeof value === "number" && value >= this.getMinimum() && value <= this.getMaximum(); },
       nullable : true,
       apply : "_applyValue",
       init : 0,
@@ -391,26 +391,6 @@ qx.Class.define("qx.ui.form.Spinner",
       this.base(arguments, value, old);
 
       this._updateButtons();
-    },
-
-
-    /**
-     * Check whether the value being applied is allowed.
-     *
-     * If you override this to change the allowed type, you will also
-     * want to override {@link #_applyValue}, {@link #_applyMinimum},
-     * {@link #_applyMaximum}, {@link #_countUp}, {@link #_countDown}, and
-     * {@link #_onTextChange} methods as those cater specifically to numeric
-     * values.
-     *
-     * @param value {Any}
-     *   The value being set
-     * @return {Boolean}
-     *   <i>true</i> if the value is allowed;
-     *   <i>false> otherwise.
-     */
-    _checkValue : function(value) {
-      return typeof value === "number" && value >= this.getMinimum() && value <= this.getMaximum();
     },
 
 

@@ -28,7 +28,10 @@ qx.Class.define("qx.ui.decoration.Single",
   include : [
     qx.ui.decoration.MBackgroundImage, 
     qx.ui.decoration.MBackgroundColor,
-    qx.ui.decoration.MSingleBorder
+    qx.ui.decoration.MSingleBorder,
+    qx.ui.decoration.MLinearBackgroundGradient, 
+    qx.ui.decoration.MBorderRadius,
+    qx.ui.decoration.MBoxShadow
   ],
 
 
@@ -89,8 +92,10 @@ qx.Class.define("qx.ui.decoration.Single",
       
       var styles = {};
 
-      // get the single border styles
       this._styleBorder(styles, element);
+      this._styleLinearBackgroundGradient(styles);
+      this._styleBorderRadius(styles);
+      this._styleBoxShadow(styles);
       
       var html = this._generateBackgroundMarkup(styles);
 

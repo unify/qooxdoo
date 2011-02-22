@@ -18,7 +18,6 @@
 ************************************************************************ */
 /**
  * A basic decorator featuring simple borders based on CSS styles.
- * This mixin is usually used by {@link qx.ui.decoration.DynamicDecorator}.
  */
 qx.Mixin.define("qx.ui.decoration.MSingleBorder", 
 {
@@ -204,8 +203,7 @@ qx.Mixin.define("qx.ui.decoration.MSingleBorder",
   {
     /**
      * Takes a styles map and adds the border styles styles in place 
-     * to the given map. This is the needed behavior for 
-     * {@link qx.ui.decoration.DynamicDecorator}.
+     * to the given map.
      * 
      * @param styles {Map} A map to add the styles.
      */
@@ -249,8 +247,7 @@ qx.Mixin.define("qx.ui.decoration.MSingleBorder",
 
 
     /**
-     * Resize function for the decorator. This is suitable for the
-     * {@link qx.ui.decoration.DynamicDecorator}.
+     * Resize function for the decorator.
      * 
      * @param element {Element} The element which could be resized.
      * @param width {Number} The new width.

@@ -20,7 +20,51 @@
 
 /**
  * A formatter and parser for dates, see
- * http://search.cpan.org/~drolsky/DateTime/lib/DateTime.pm#CLDR_Patterns
+ * http://www.unicode.org/reports/tr35/#Date_Format_Patterns
+ *
+ * Here is a quick overview of the format pattern keys:
+ * <table>
+ * <tr><th>Key &nbsp;<th>Description
+ * <tr><td><code> G </code><td> era, e.g. "AD"
+ * <tr><td><code> y </code><td> year
+ * <tr><td><code> Y </code><td> year
+ * <tr><td><code> u </code><td> extended year
+ * <tr><td><code> Q </code><td> quater
+ * <tr><td><code> q </code><td> stand-alone quater
+ * <tr><td><code> M </code><td> month
+ * <tr><td><code> L </code><td> stand-alone month
+ * <tr><td><code> I </code><td> chinese leap month
+ * <tr><td><code> w </code><td> week of year
+ * <tr><td><code> W </code><td> week of month
+ * <tr><td><code> d </code><td> day of month
+ * <tr><td><code> D </code><td> day of year
+ * <tr><td><code> F </code><td> day of week in month
+ * <tr><td><code> g </code><td> modified Julian day
+ * <tr><td><code> E </code><td> day of week
+ * <tr><td><code> e </code><td> local day of week
+ * <tr><td><code> c </code><td> stand-alone local day of week
+ * <tr><td><code> a </code><td> period of day (am or pm)
+ * <tr><td><code> h </code><td> 12-hour hour
+ * <tr><td><code> H </code><td> 24-hour hour
+ * <tr><td><code> K </code><td> hour [0-11]
+ * <tr><td><code> k </code><td> hour [1-24]
+ * <tr><td><code> j </code><td> special symbol
+ * <tr><td><code> m </code><td> minute
+ * <tr><td><code> s </code><td> second
+ * <tr><td><code> S </code><td> fractal second
+ * <tr><td><code> A </code><td> millisecond in day
+ * <tr><td><code> z </code><td> time zone, specific non-location format
+ * <tr><td><code> Z </code><td> time zone, rfc822/gmt format
+ * <tr><td><code> v </code><td> time zone, generic non-location format
+ * <tr><td><code> V </code><td> time zone, like z except metazone abbreviations
+ * </table>
+ *
+ * (This list is preliminary, not all format keys might be implemented). Most
+ * keys support repetitions that influence the meaning of the format. Parts of the
+ * format string that should not be interpreted as format keys have to be
+ * single-quoted.
+ *
+ * The same format patterns will be used for both parsing and output formatting.
  */
 qx.Class.define("qx.util.format.DateFormat",
 {
@@ -235,10 +279,6 @@ qx.Class.define("qx.util.format.DateFormat",
     /**
      * Formats a date.
      *
-     * Uses the same syntax as
-     * <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/text/SimpleDateFormat.html" target="_blank">
-     * the SimpleDateFormat class in Java</a>.
-     *
      * @param date {Date} The date to format.
      * @return {String} the formatted date.
      */
@@ -319,7 +359,7 @@ qx.Class.define("qx.util.format.DateFormat",
 
             case 'E': // Day in week
               if (wildcardSize == 2) {
-                replacement = qx.locale.Date.getDayName("narrow", dayOfWeek, "format");
+                replacement = qx.locale.Date.getDayName("narrow", dayOfWeek, "stand-alone");
               } else if (wildcardSize == 3) {
                 replacement = qx.locale.Date.getDayName("abbreviated", dayOfWeek, "format");
               } else if (wildcardSize == 4) {
@@ -432,10 +472,6 @@ qx.Class.define("qx.util.format.DateFormat",
 
     /**
      * Parses a date.
-     *
-     * Uses the same syntax as
-     * <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/text/SimpleDateFormat.html" target="_blank">
-     * the SimpleDateFormat class in Java</a>.
      *
      * @param dateStr {String} the date to parse.
      * @return {Date} the parsed date.
@@ -841,7 +877,7 @@ qx.Class.define("qx.util.format.DateFormat",
         dateValues.month = fullMonthNames.indexOf(value);
       }
 
-      var narrowDayNames = qx.locale.Date.getDayNames("narrow", "format");
+      var narrowDayNames = qx.locale.Date.getDayNames("narrow", "stand-alone");
       for (var i=0; i<narrowDayNames.length; i++) {
         narrowDayNames[i] = LString.escapeRegexpChars(narrowDayNames[i].toString());
       }

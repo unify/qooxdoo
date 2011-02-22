@@ -33,8 +33,8 @@
         "qx.dev.Pollution"
       ],
       "asset-let" : {
-        "qx.icontheme" : ["Oxygen", "Tango"],
-        "qx.theme"     : ["Classic", "Modern", "Simple"]
+        "qx.icontheme" : ["Tango"],
+        "qx.theme"     : ["Modern"]
       },
       "cache" : { "compile" : "${TMPDIR}/qx${QOOXDOO_VERSION}/cache" },
       "settings" : {
@@ -65,21 +65,9 @@
 
     // -- generic jobs for *-Classic, *-Modern ----------
 
-    ,"default-Classic" :
-    {
-      "let"     : {"DTHEME" : "qx.theme.Classic"},
-      "compile" : { "type"  : "${BUILDTYPE}" }
-    }
-
     ,"default-Modern" :
     {
       "let"     : {"DTHEME" : "qx.theme.Modern"},
-      "compile" : { "type"  : "${BUILDTYPE}" }
-    }
-    
-    ,"default-Simple" :
-    {
-      "let"     : {"DTHEME" : "qx.theme.Simple"},
       "compile" : { "type"  : "${BUILDTYPE}" }
     }
   }

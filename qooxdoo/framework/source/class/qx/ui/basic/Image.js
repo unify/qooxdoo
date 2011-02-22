@@ -246,7 +246,7 @@ qx.Class.define("qx.ui.basic.Image",
 
     /**
      * Remembers the mode to keep track which contentElement is currently in use.
-     * @param mode {String} internal mode (alphaScaled|scaled|nonScaled)
+     * @param mode {String} internal mode (scaled|nonScaled)
      */
     __setMode : function(mode) {
       this.__mode = mode;
@@ -284,12 +284,7 @@ qx.Class.define("qx.ui.basic.Image",
     {
       var scale;
       var tagName;
-      if (mode == "alphaScaled")
-      {
-        scale = true;
-        tagName = "div";
-      }
-      else if (mode == "nonScaled")
+      if (mode == "nonScaled")
       {
         scale = false;
         tagName = "div";
@@ -359,7 +354,7 @@ qx.Class.define("qx.ui.basic.Image",
 
     /**
      * Checks if the current content element is capable to display the image
-     * with the current settings (scaling, alpha PNG)
+     * with the current settings (scaling)
      *
      * @param source {String} source of the image
      * @return {void}
@@ -514,10 +509,8 @@ qx.Class.define("qx.ui.basic.Image",
       // only try to load the image if it not already failed
       if(!ImageLoader.isFailed(source)) {
         ImageLoader.load(source, this.__loaderCallback, this);
-      } else {
-        if (el != null) {
-          el.resetSource();
-        }
+      } else if (el != null) {
+        el.resetSource();
       }
     },
 

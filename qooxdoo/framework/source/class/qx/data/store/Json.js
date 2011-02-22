@@ -32,6 +32,7 @@
 qx.Class.define("qx.data.store.Json",
 {
   extend : qx.core.Object,
+  include : qx.data.MBinding,
 
 
   /**
@@ -63,7 +64,14 @@ qx.Class.define("qx.data.store.Json",
      * Data event fired after the model has been created. The data will be the
      * created model.
      */
-    "loaded": "qx.event.type.Data"
+    "loaded" : "qx.event.type.Data",
+    
+    /** 
+     * Fired when an error (aborted, timeout or failed) occurred
+     * during the load. If you want more details, use the {@link #changeState}
+     * event.
+     */
+    "error" : "qx.event.type.Event"
   },
 
 
@@ -146,7 +154,11 @@ qx.Class.define("qx.data.store.Json",
 
       // mapp the state to its own state
       this.__request.addListener("changeState", function(ev) {
-        this.setState(ev.getData());
+        var state = ev.getData();
+        this.setState(state);
+        if (state === "failed" || state === "aborted" || state === "timeout") {
+          this.fireEvent("error");
+        }
       }, this);
 
       this.__request.send();

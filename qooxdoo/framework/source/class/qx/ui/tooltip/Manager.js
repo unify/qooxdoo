@@ -140,7 +140,6 @@ qx.Class.define("qx.ui.tooltip.Manager",
         this.__sharedErrorToolTip = new qx.ui.tooltip.ToolTip().set({
           appearance: "tooltip-error"
         });
-        this.__sharedErrorToolTip.syncAppearance();
       }
       return this.__sharedErrorToolTip;
     },

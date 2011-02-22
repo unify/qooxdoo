@@ -46,7 +46,7 @@ qx.Class.define("widgetbrowser.view.Header",
 
     // Build select-box
     var select = new qx.ui.form.SelectBox("Theme");
-    ["Modern", "Simple", "Classic"].forEach(function(name) {
+    ["Modern", "Simple"].forEach(function(name) {
       var item = new qx.ui.form.ListItem(name + " Theme");
       item.setUserData("value", "qx.theme." + name);
       select.add(item);
@@ -65,8 +65,6 @@ qx.Class.define("widgetbrowser.view.Header",
       select.setSelection([currentThemeItem]);
     }
 
-    select.setPaddingTop(0);
-    select.setPaddingBottom(0);
     select.setTextColor("black");
 
     select.addListener("changeSelection", function(evt) {

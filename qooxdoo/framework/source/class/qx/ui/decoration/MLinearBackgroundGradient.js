@@ -18,7 +18,6 @@
 ************************************************************************ */
 /**
  * Mixin for the linear background gradient CSS property.
- * This mixin is usually used by {@link qx.ui.decoration.DynamicDecorator}.
  * 
  * Keep in mind that this is not supported by all browsers:
  *
@@ -70,6 +69,14 @@ qx.Mixin.define("qx.ui.decoration.MLinearBackgroundGradient",
       apply : "_applyLinearBackgroundGradient"
     },
     
+    /** Defines if the given positions are in % or px.*/
+    colorPositionUnit : 
+    {
+      check : ["px", "%"],
+      init : "%",
+      apply : "_applyLinearBackgroundGradient"
+    },
+    
     
     /** Property group to set the start color inluding its start position. */
     gradientStart :
@@ -89,40 +96,65 @@ qx.Mixin.define("qx.ui.decoration.MLinearBackgroundGradient",
   {
     /**
      * Takes a styles map and adds the linear background styles in place to the 
-     * given map. This is the needed behavior for 
-     * {@link qx.ui.decoration.DynamicDecorator}.
+     * given map.
      * 
      * @param styles {Map} A map to add the styles.
      */
     _styleLinearBackgroundGradient : function(styles) {
       var Color = qx.theme.manager.Color.getInstance();
+      var unit = this.getColorPositionUnit();
 
       if (qx.bom.client.Engine.WEBKIT) {
+        // webkit uses px values if non are given
+        unit = unit === "px" ? "" : unit;
         
         if (this.getOrientation() == "horizontal") {
-          var startPos = this.getStartColorPosition() + "% 0%";
-          var endPos = this.getEndColorPosition() + "% 0%";
+          var startPos = this.getStartColorPosition() + unit +" 0" + unit;
+          var endPos = this.getEndColorPosition() + unit + " 0" + unit;
         } else {
-          var startPos = "0% " + this.getStartColorPosition() + "%";
-          var endPos = "0% " + this.getEndColorPosition() + "%";
+          var startPos = "0" + unit + " " + this.getStartColorPosition() + unit;
+          var endPos = "0" + unit +" " + this.getEndColorPosition() + unit;
         }
 
         var color = 
           "from(" + Color.resolve(this.getStartColor()) + 
-          "), to(" + Color.resolve(this.getEndColor()) + ")";
+          "),to(" + Color.resolve(this.getEndColor()) + ")";
 
         var value = "-webkit-gradient(linear," + startPos + "," + endPos + "," + color + ")";
         styles["background"] = value;
 
       } else {
         var deg = this.getOrientation() == "horizontal" ? 0 : 270;
-        var start = Color.resolve(this.getStartColor()) + " " + this.getStartColorPosition() + "%";
-        var end = Color.resolve(this.getEndColor()) + " " + this.getEndColorPosition() + "%";
+        var start = Color.resolve(this.getStartColor()) + " " + this.getStartColorPosition() + unit;
+        var end = Color.resolve(this.getEndColor()) + " " + this.getEndColorPosition() + unit;
 
         var prefix = qx.bom.client.Engine.GECKO ? "-moz-" : "";
         styles["background"] = 
           prefix + "linear-gradient(" + deg + "deg, " + start + "," + end + ")";
       }
+    },
+    
+    
+    /**
+     * Resize function for the background color. This is suitable for the
+     * {@link qx.ui.decoration.DynamicDecorator}.
+     * 
+     * @param element {Element} The element which could be resized.
+     * @param width {Number} The new width.
+     * @param height {Number} The new height.
+     * @return {Map} A map containing the desired position and dimension 
+     *   (width, height, top, left).
+     */
+    _resizeLinearBackgroundGradient : function(element, width, height) {
+      var insets = this.getInsets();
+      width -= insets.left + insets.right;
+      height -= insets.top + insets.bottom;
+      return {
+        left : insets.left,
+        top : insets.top,
+        width : width,
+        height : height
+      };
     },
 
 

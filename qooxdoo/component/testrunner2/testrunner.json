@@ -14,7 +14,8 @@
     "TESTS_SCRIPT" : "tests.js",         // output script name
     "BUILD_PATH"   : "build",
     "CACHE"        : "${TMPDIR}/qx${QOOXDOO_VERSION}/cache",
-    "THEME"        : "qx.theme.Modern"
+    "THEME"        : "qx.theme.Modern",
+    "APPLICATION_MAIN_CLASS" : "testrunner2.Application"
   },
 
   "jobs" :
@@ -139,7 +140,8 @@
       {
         "paths" :
         {
-          "file" : "${BUILD_PATH}/script/testrunner.js"
+          "file" : "${TESTRUNNER_ROOT}/source/script/testrunner.js",
+          "app-root" : "source"
         },
         "uris" : 
         {
@@ -175,14 +177,16 @@
 
       "include" :
       [
-        "testrunner2.Application",
-        "${TESTRUNNER_VIEW}"
+        "${APPLICATION_MAIN_CLASS}",
+        "${TESTRUNNER_VIEW}",
+        "${THEME}"
       ],
 
       "settings" :
       {
-        "qx.application"   : "testrunner2.Application",
+        "qx.application"   : "${APPLICATION_MAIN_CLASS}",
         "qx.version"       : "${QOOXDOO_VERSION}",
+        "qx.revision"      : "${QOOXDOO_REVISION}",
         "qx.testNameSpace" : "${APPLICATION}.test",
         "testrunner2.title" : "${APPLICATION}",
         "testrunner2.reportServer" : "${REPORT_SERVER}"
@@ -338,6 +342,7 @@
           "file"    : "${BUILD_PATH}/script/tests-source.js",
           "app-root"    : "${BUILD_PATH}/html"
         },
+        
         "code" :
         {
           "locales" : "${LOCALES}"
@@ -345,6 +350,60 @@
       },
       
       "compile" : { "type" : "source" }
+    },
+    
+    "build-widget" :
+    {
+      "let" :
+      {
+        "TESTRUNNER_VIEW" : "testrunner2.view.widget.Widget",
+        "TESTRUNNER_ORIGIN" : "iframe",
+        "APPLICATION_MAIN_CLASS" : "testrunner2.GuiApplication"
+      },
+      
+      "run" : [
+        "build-widget-resources",
+        "build-files",
+        "build-script",
+        "build-tests-script"
+      ],
+        
+      "variants" :
+      {
+        "testrunner2.view" : ["${TESTRUNNER_VIEW}"],
+        "testrunner2.testOrigin" : ["${TESTRUNNER_ORIGIN}"]
+      }
+    },
+    
+    "build-widget-resources" :
+    {
+      "extend" : ["build-resources"],
+      
+      "include" :
+      [
+        "${APPLICATION_MAIN_CLASS}",
+        "${THEME}",
+        "${TESTRUNNER_VIEW}"
+      ]
+    },
+    
+    "source-widget" :
+    {
+      "let" :
+      {
+        "TESTRUNNER_VIEW" : "testrunner2.view.widget.Widget",
+        "TESTRUNNER_ORIGIN" : "iframe",
+        "APPLICATION_MAIN_CLASS" : "testrunner2.GuiApplication"
+      },
+      
+      "run" : ["source-script",
+        "source-tests-script"],
+        
+      "variants" :
+      {
+        "testrunner2.view" : ["${TESTRUNNER_VIEW}"],
+        "testrunner2.testOrigin" : ["${TESTRUNNER_ORIGIN}"]
+      }
     }
   }
 }

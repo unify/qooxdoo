@@ -183,9 +183,14 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       testRep = qx.lang.Json.parse(testRep);
       
       this.testList = [];
+      this.testPackageList = [];
       
       for (var i=0,l=testRep.length; i<l; i++) {
         var testClassName = testRep[i].classname;
+        var testPackageName = /(.*?)\.[A-Z]/.exec(testClassName)[1];
+        if (!qx.lang.Array.contains(this.testPackageList, testPackageName)) {
+          this.testPackageList.push(testPackageName);
+        }
         for (var j=0,m=testRep[i].tests.length; j<m; j++) {
           this.testList.push(testClassName + ":" + testRep[i].tests[j]);
         }
@@ -198,10 +203,12 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     
     /**
      * Wraps all assert* methods included in qx.dev.unit.TestCase in try/catch
-     * blocks. Caught exceptions are stored in an Array and attached to the test
-     * function. The idea here is that exceptions shouldn't abort the test 
-     * execution (this has caused some extremely hard to debug problems in the
-     * qooxdoo framework unit tests in the past).
+     * blocks. For each caught exception, a data event containing the Error 
+     * object will be fired on the test class. This allows the Testrunner to 
+     * mark the test as failed while any code following an assertion call will 
+     * still be executed. Aborting the test execution whenever an assertion 
+     * fails has caused some extremely hard to debug problems in the qooxdoo 
+     * framework unit tests in the past.
      * 
      * Doing this in the Testrunner application is a temporary solution: It 
      * really should be done in qx.dev.unit.TestCase, but that would break 
@@ -216,7 +223,8 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       var win = autWindow || window;
       var tCase = win.qx.dev.unit.TestCase.prototype;
       for (var prop in tCase) {
-        if (prop.indexOf("assert") == 0 && typeof tCase[prop] == "function") {
+        if ((prop.indexOf("assert") == 0 || prop === "fail") && 
+            typeof tCase[prop] == "function") {
           // store original assertion func
           var originalName = "__" + prop;
           tCase[originalName] = tCase[prop];
@@ -226,13 +234,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
             try {
               this[arguments.callee.originalName].apply(self, argumentsArray);
             } catch(ex) {
-              var testFunction = arguments.callee.caller;
-              // attach any exceptions to the test function that called the
-              // assertion
-              if (!testFunction._exceptions) {
-                testFunction._exceptions = [];
-              }
-              testFunction._exceptions.push(ex);
+              this.fireDataEvent("assertionFailed", ex);
             }
           };
           tCase[prop].originalName = originalName;
@@ -319,6 +321,11 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       
       testResult.addListener("startTest", function(e) {
         var test = e.getData();
+        
+        if (this.currentTestData && this.currentTestData.getName() === test.getFullName()
+          && this.currentTestData.getState() !== "wait") {
+          return;
+        }
         
         /* EXPERIMENTAL: Check if the test polluted the DOM
         if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
@@ -520,7 +527,9 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       if (w.qx && w.qx.log && w.qx.log.Logger)
       {
         logger = w.qx.log.Logger;
-        //logger.setLevel(this.getLogLevel());
+        if (this.view.getLogLevel) {
+          logger.setLevel(this.view.getLogLevel());
+        }
         // Register to flush the log queue into the appender.
         logger.register(this.__logAppender);
         logger.clear();
