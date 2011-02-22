@@ -107,10 +107,9 @@ qx.Class.define("qx.test.lang.Function",
       var obj = new qx.core.Object();
       obj.dispose();
       var callback = function() {};
-
-      var bound = qx.lang.Function.bind(callback, obj);
+      
       this.assertException(function() {
-        bound()
+        var bound = qx.lang.Function.bind(callback, obj);
       }, qx.core.AssertionError);
     },
 
