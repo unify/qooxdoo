@@ -27,7 +27,7 @@
 qx.Class.define("qx.data.Array",
 {
   extend : qx.core.Object,
-  include : qx.data.marshal.MEventBubbling,
+  include : [qx.data.MBinding, qx.data.marshal.MEventBubbling],
   implement : [qx.data.IListData],
 
   /**
