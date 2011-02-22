@@ -449,9 +449,11 @@ qx.Class.define("qx.ui.list.List",
     // apply method
     _applyModel : function(value, old)
     {
-      value.addListener("change", this._onModelChange, this);
+      if (value) {
+        value.addListener("change", this._onModelChange, this);
+      }
 
-      if (old != null) {
+      if (old) {
         old.removeListener("change", this._onModelChange, this);
       }
 
