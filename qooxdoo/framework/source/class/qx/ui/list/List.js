@@ -369,7 +369,8 @@ qx.Class.define("qx.ui.list.List",
       if (this._isGroup(row)) {
         data = this._groups.getItem(this._lookupGroup(row));
       } else {
-        data = this.getModel().getItem(this._lookup(row));
+        var model = this.getModel();
+        data = model ? model.getItem(this._lookup(row)) : null;
       }
 
       if (data != null) {
