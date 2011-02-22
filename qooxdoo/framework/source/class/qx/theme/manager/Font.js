@@ -155,16 +155,22 @@ qx.Class.define("qx.theme.manager.Font",
      */
     __resolveInclude : function(fonts, fontName)
     {
-      if (fonts[fontName].include)
+      var entry = fonts[fontName];
+      
+      if (entry.include)
       {
         // get font infos out of the font theme
-        var fontToInclude = fonts[fonts[fontName].include];
+        var fontToInclude = fonts[entry.include];
 
         // delete 'include' key - not part of the merge
-        fonts[fontName].include = null;
-        delete fonts[fontName].include;
+        delete entry.include;
 
-        fonts[fontName] = qx.lang.Object.mergeWith(fonts[fontName], fontToInclude, false);
+        for (var key in fontToInclude) 
+        {
+          if (!(key in entry)) {
+            entry[key] = fontToInclude[key];
+          } 
+        }
 
         this.__resolveInclude(fonts, fontName);
       }
