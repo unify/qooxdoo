@@ -78,12 +78,6 @@ qx.Class.define("widgetbrowser.view.TabView",
       var control = new widgetbrowser.view.TabPage("Control", classname, controls);
       this.add(control);
 
-      // TreeVirtual
-      classname = "widgetbrowser.pages.TreeVirtual";
-      controls = {};
-      var treeVirtual = new widgetbrowser.view.TabPage("TreeVirtual", classname, controls);
-      this.add(treeVirtual);
-
       // Embed
       classname = "widgetbrowser.pages.Embed";
       controls = {};
