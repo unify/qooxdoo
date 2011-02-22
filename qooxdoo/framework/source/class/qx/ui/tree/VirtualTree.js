@@ -346,7 +346,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
      *   </code>false</code> when item is a leaf.
      */
     isNode : function(item) {
-      return qx.Class.hasProperty(item.constructor, this.getChildProperty());
+      return qx.core.property.Util.hasProperty(item.constructor, this.getChildProperty());
     },
 
 

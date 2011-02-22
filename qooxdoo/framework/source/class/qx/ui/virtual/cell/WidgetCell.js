@@ -85,14 +85,7 @@ qx.Class.define("qx.ui.virtual.cell.WidgetCell",
 
     // overridden
     updateData : function(widget, data) {
-      for (var key in data)
-      {
-        if (qx.Class.hasProperty(widget.constructor, key)) {
-          qx.util.PropertyUtil.setUserValue(widget, key, data[key]);
-        } else {
-          throw new Error("Can't update data! The key '" + key + "' is not a Property!")
-        }
-      }
+      widget.set(data);
     }
   }
 });
