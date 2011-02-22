@@ -220,10 +220,10 @@ qx.Class.define("qx.data.marshal.Json",
      * the properties.
      */
     __disposeProperties : function() {
-      var properties = qx.util.PropertyUtil.getAllProperties(this.constructor);
-      for (var desc in properties) {
-        this.__disposeItem(this.get(properties[desc].name));
-      };
+      var properties = qx.core.property.Util.getProperties(this.constructor);
+      for (var i=0, l=properties.length; i<l; i++) {
+        this.__disposeItem(this.get(properties[i]));
+      }
     },
 
 

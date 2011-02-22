@@ -258,11 +258,11 @@ qx.Class.define("qx.test.ui.tree.TreeFolder",
     //
 
     __themeValueIcon : function(item) {
-      return qx.util.PropertyUtil.getThemeValue(item, "icon");
+      return item.get("icon");
     },
 
     __themeValueIconOpened : function(item) {
-      return qx.util.PropertyUtil.getThemeValue(item, "iconOpened");
+      return item.get("iconOpened");
     },
 
     __assertIcon : function(item, expected) {

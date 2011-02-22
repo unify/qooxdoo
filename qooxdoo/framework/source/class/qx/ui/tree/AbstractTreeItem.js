@@ -468,7 +468,7 @@ qx.Class.define("qx.ui.tree.AbstractTreeItem",
     * @return {var} The user value of the property "icon"
     */
     __getUserValueIcon : function() {
-      return qx.util.PropertyUtil.getUserValue(this, "icon");
+      return qx.core.property.Multi.getSingleValue(this, "icon", "user");
     },
 
     /**
@@ -477,7 +477,7 @@ qx.Class.define("qx.ui.tree.AbstractTreeItem",
     * @return {var} The user value of the property "iconOpened"
     */
     __getUserValueIconOpened : function() {
-      return qx.util.PropertyUtil.getUserValue(this, "iconOpened");
+      return qx.core.property.Multi.getSingleValue(this, "iconOpened", "user");
     },
 
     /**
