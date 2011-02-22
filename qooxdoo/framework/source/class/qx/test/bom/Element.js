@@ -23,7 +23,6 @@ qx.Class.define("qx.test.bom.Element",
 
   members :
   {
-
     setUp : function()
     {
       var div = document.createElement("div");
@@ -33,11 +32,9 @@ qx.Class.define("qx.test.bom.Element",
       document.body.appendChild(div);
     },
 
-
     tearDown : function() {
       document.body.removeChild(this._el);
     },
-
 
     testCreate : function()
     {
@@ -53,82 +50,6 @@ qx.Class.define("qx.test.bom.Element",
       this.assertEquals("", this._el.innerHTML);
     },
 
-    testAddListener : function()
-    {
-      var listener = function() {};
-      qx.bom.Element.addListener(this._el, "click", listener, this, false);
-      this.assertTrue(qx.bom.Element.hasListener(this._el, "click", false));
-      qx.bom.Element.removeListener(this._el, "click", listener, this, false);
-      this.assertFalse(qx.bom.Element.hasListener(this._el, "click", false));
-    },
-
-
-    testRemoveListenerById : function()
-    {
-      var id = qx.bom.Element.addListener(this._el, "click", function() {}, this, false);
-      this.assertTrue(qx.bom.Element.hasListener(this._el, "click", false));
-      qx.bom.Element.removeListenerById(this._el, id);
-      this.assertFalse(qx.bom.Element.hasListener(this._el, "click", false));
-    },
-
-
-    testFocus : function()
-    {
-      qx.event.Registration.addListener(this._el, "focus", function() {
-        this.resume(function() {
-          this.info("Element focused.");
-        }, this);
-      },this);
-
-      var self = this;
-      window.setTimeout(function(){
-        qx.bom.Element.focus(self._el);
-      }, 100);
-
-      this.wait();
-    },
-
-    testBlur : function()
-    {
-      qx.event.Registration.addListener(this._el, "blur", function() {
-        this.resume(function() {
-          this.info("Element blurred.");
-        }, this);
-      },this);
-
-      var self = this;
-      window.setTimeout(function(){
-        qx.bom.Element.focus(self._el);
-        qx.bom.Element.blur(self._el);
-      }, 100);
-
-      this.wait();
-    },
-
-    testActivate : function()
-    {
-      qx.bom.Element.activate(this._el);
-      this.warn("needs better test!");
-    },
-
-    testDeactivate : function()
-    {
-      qx.bom.Element.deactivate(this._el);
-      this.warn("needs better test!");
-    },
-
-    testCapture : function()
-    {
-      qx.bom.Element.capture(this._el);
-      this.warn("needs better test!");
-    },
-
-    testReleaseCapture : function()
-    {
-      qx.bom.Element.releaseCapture(this._el);
-      this.warn("needs better test!");
-    },
-
     testGetCommonParent : function()
     {
       if (qx.core.Variant.isSet("qx.client", "opera")) {
@@ -139,7 +60,5 @@ qx.Class.define("qx.test.bom.Element",
         this.assertIdentical(document, qx.dom.Hierarchy.getCommonParent(this._el, document));
       }
     }
-
   }
-
 });

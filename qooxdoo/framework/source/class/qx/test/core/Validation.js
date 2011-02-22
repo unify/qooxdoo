@@ -35,7 +35,12 @@ qx.Class.define("qx.test.core.Validation",
           custom : {
               init:  "Some String",
               check: "String",
-              validate: "__validateCustom"
+              validate: function(value) {
+                  // if the length is lower than 4
+                  if (value.length < 4) {
+                      throw new qx.core.ValidationError("Validation Error: String must be longer than three characters. (" + value + ")");
+                  }
+              }
           },
 
           number : {
@@ -77,17 +82,7 @@ qx.Class.define("qx.test.core.Validation",
             init : "test",
             validate: qx.util.Validate.regExp(/^abc/)
           }
-      },
-
-      members : {
-        __validateCustom : function(value) {
-            // if the length is lower than 4
-            if (value.length < 4) {
-                throw new qx.core.ValidationError("Validation Error: String must be longer than three characters. (" + value + ")");
-            }
-        }
       }
-
     });
 
     this.__model = new qx.Model();
