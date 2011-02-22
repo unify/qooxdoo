@@ -28,25 +28,13 @@
   {
     "source" :
     {
-      "=run" : ["source-script-classic", "source-script-modern",  "source-script-simple"],
+      "=run" : ["source-script-modern",  "source-script-simple"],
 
       "copy-files" :
       {
         "files" :  ["helper.js"],
         "source" : "source/resource/widgetbrowser",
         "target" : "source/script"
-      }
-    },
-
-    "source-script-classic" :
-    {
-      "let"     : {"QXTHEME" : "qx.theme.Classic"},
-      "extend"  : ["source-script"],
-      "compile-options" : {
-        "paths" :
-        {
-          "file"  : "source/script/${APPLICATION}.classic.js"
-        }
       }
     },
 
@@ -79,7 +67,6 @@
       "=run" : [
         "copy-helper",
         "build-resources",
-        "build-script-classic",
         "build-script-modern",
         "build-script-simple",
         "build-files"
@@ -102,7 +89,6 @@
 
       "include" :
       [
-        "qx.theme.Classic",
         "qx.theme.Simple",
         "qx.theme.Modern",
         "widgetbrowser.*"
@@ -111,18 +97,6 @@
       "copy-resources" :
       {
         "target" : "build"
-      }
-    },
-
-    "build-script-classic" :
-    {
-      "let"     : {"QXTHEME" : "qx.theme.Classic"},
-      "extend"  : ["build-script"],
-      "compile-options" : {
-        "paths" :
-        {
-          "file": "./build/script/${APPLICATION}.classic.js"
-        }
       }
     },
 
