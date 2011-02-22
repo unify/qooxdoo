@@ -624,7 +624,7 @@ qx.Class.define("qx.bom.Selection",
           
           try{
             node.blur();
-          } catch(ex)
+          } catch(ex) {}
         }
         // if the given node is the body/document node -> collapse the selection
         else if (qx.dom.Node.isDocument(node) || nodeName == "body")
