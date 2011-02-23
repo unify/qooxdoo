@@ -33,20 +33,8 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
   {
     this.base(arguments);
 
-    this.__stylesheet = qx.ui.virtual.cell.CellStylesheet.getInstance();
-
-    this.__userStyles = {};
-    this.__themeStyles = {};
-
-    this.__userPaddings = {};
-    this.__themePaddings = {};
-
-    this.__states = {};
-
-    this.__themeValues = {};
-
-    this.initAppearance();
-    this.__initializeThemableProperties();
+    this.__styleSheet = qx.ui.virtual.cell.CellStylesheet.getInstance();
+    this.__styles = {};
   },
 
 
@@ -70,6 +58,13 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
     },
 
 
+
+    /*
+    ---------------------------------------------------------------------------
+      THEMEABLES
+    ---------------------------------------------------------------------------
+    */
+    
     /** The cell's background color */
     backgroundColor :
     {
@@ -133,7 +128,7 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
     paddingRight :
     {
       check : "Integer",
-      nullable : true,
+      init : 0,
       apply : "_applyPadding",
       themeable : true
     },
@@ -143,7 +138,7 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
     paddingBottom :
     {
       check : "Integer",
-      nullable : true,
+      init : 0,
       apply : "_applyPadding",
       themeable : true
     },
@@ -153,7 +148,7 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
     paddingLeft :
     {
       check : "Integer",
-      nullable : true,
+      init : 0,
       apply : "_applyPadding",
       themeable : true
     },
@@ -183,189 +178,86 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
   *****************************************************************************
   */
 
-
   members :
   {
-    /** {Array} List of all non CSS themable properties */
-    __themableProperties : null,
-
-    /** {String} Unique key over the current set of states */
-    __statesKey : null,
-
-    __states : null,
-
-    __themeValues : null,
-    __themeStyles : null,
-    __userStyles : null,
-
-    __userPaddings : null,
-    __themePaddings : null,
-
-    __isThemed : false,
-    __stylesheet : null,
-
-
-    /**
-     * Collect all themable properties, which are not CSS properties
-     */
-    __initializeThemableProperties : function()
-    {
-      var PropertyUtil = qx.util.PropertyUtil;
-
-      var cssProperties = qx.lang.Object.fromArray(this._getCssProperties());
-      this.__themableProperties = [];
-
-      var clazz = this.constructor;
-      while(clazz)
-      {
-        var properties = PropertyUtil.getProperties(clazz);
-        for (var prop in properties) {
-          if (!cssProperties[prop]) {
-            this.__themableProperties.push(prop);
-          }
-        }
-        clazz = clazz.superclass;
-      }
-    },
-
-
-    /**
-     * Get a list of all properties, which should be applied as CSS styles.
-     *
-     * @return {Array} List of property names
-     */
-    _getCssProperties : function()
-    {
-      return [
-        "backgroundColor", "textColor", "font", "textAlign",
-        "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"
-      ];
-    },
-
-
-    // property apply
-    _applyAppearance : function(value, old)
-    {
-      if (old) {
-        this.__themeStyles = {};
-      }
-    },
-
-
-    /**
-     * Compute the value of the given property
-     *
-     * @param propertyName {String} Name of the property
-     * @return {var} The Property value
-     */
-    _getValue : function(propertyName)
-    {
-      if (this.__isThemed) {
-        return qx.util.PropertyUtil.getThemeValue(this, propertyName);
-      } else {
-        return qx.util.PropertyUtil.getUserValue(this, propertyName);
-      }
-    },
-
-
-    /**
-     * Store a properties computed style string either in the user or in the
-     * theme values. User values will be applied as inline styles, while theme
-     * values are stored in a stylesheet.
-     *
-     * @param propertyName {String} The property name
-     * @param styles {String} String with computed CSS styles
-     */
-    _storeStyle : function(propertyName, styles)
-    {
-      var store;
-
-      if (this.__isThemed) {
-        store = this.__themeStyles;
-      } else {
-        store = this.__userStyles;
-      }
-
-      if (styles === null) {
-        delete store[propertyName];
-      } else {
-        store[propertyName] = styles;
-      }
-    },
-
-
+    /** {Map} Map of styles to compile */
+    __styles : null,
+    
+    /** {String} Compiled CSS string from style properties */
+    __compiledStyles : null,
+    
+    
     // property apply
     _applyBackgroundColor : function(value, old, name)
     {
-      var value = this._getValue(name);
-      if (!value) {
-        this._storeStyle(name, null);
+      var styles = this.__styles;
+      if (value == null) {
+        delete styles.backgroundColor;
       } else {
-        this._storeStyle(name, "background-color:" + qx.theme.manager.Color.getInstance().resolve(value));
+        styles.backgroundColor = qx.theme.manager.Color.getInstance().resolve(value);
       }
+      
+      this.__compiledStyles = null;
     },
 
 
     // property apply
     _applyTextColor : function(value, old, name)
     {
-      var value = this._getValue(name);
-      if (!value) {
-        this._storeStyle(name, null);
+      var styles = this.__styles;
+      if (value == null) {
+        delete styles.color;
       } else {
-        this._storeStyle(name, "color:" + qx.theme.manager.Color.getInstance().resolve(value));
+        styles.color = qx.theme.manager.Color.getInstance().resolve(value);
       }
+      
+      this.__compiledStyles = null;
     },
 
 
     // property apply
     _applyTextAlign : function(value, old, name)
     {
-      var value = this._getValue(name);
-      if (!value) {
-        this._storeStyle(name, null);
+      var styles = this.__styles;
+      if (value == null) {
+        delete styles.textAlign;
       } else {
-        this._storeStyle(name, "text-align:" + value);
+        styles.textAlign = value;
       }
+      
+      this.__compiledStyles = null;
     },
 
 
     // property apply
     _applyFont : function(value, old, name)
     {
-      var value = this._getValue(name);
-      if (!value) {
-        this._storeStyle(name, null);
-      } else {
-        var font = qx.theme.manager.Font.getInstance().resolve(value)
-        this._storeStyle(name, qx.bom.element.Style.compile(font.getStyles()));
+      var styles = this.__styles;
+      if (value == null) 
+      {
+        delete styles.font;
+      } 
+      else 
+      {
+        var font = qx.theme.manager.Font.getInstance().resolve(value);
+        styles.font = qx.bom.element.Style.compile(font.getStyles());
       }
+      
+      this.__compiledStyles = null;
     },
 
 
     // property apply
-    _applyPadding : function(value, old, name)
+    _applyPadding : function(value, old, name) 
     {
-      var value = this._getValue(name);
-
-      if (this.__isThemed) {
-        var paddingStore = this.__themePaddings;
+      var styles = this.__styles;
+      if (value == null) {
+        delete styles[name];
       } else {
-        paddingStore = this.__userPaddings;
+        styles[name] = value + "px";
       }
-
-      if (value === null) {
-        delete paddingStore[name];
-      } else {
-        paddingStore[name] = value;
-      }
-
-      if (value === null) {
-        this._storeStyle(name, null)
-      } else {
-        var cssKey = qx.lang.String.hyphenate(name);
-        this._storeStyle(name, cssKey + ":" + value + "px");
-      }
+      
+      this.__compiledStyles = null;
     },
 
 
@@ -379,7 +271,6 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
     // overridden
     getCellProperties : function(value, states)
     {
-      this.__setStates(states);
       return {
         classes : this.getCssClasses(value, states),
         style : this.getStyles(value, states),
@@ -405,154 +296,32 @@ qx.Class.define("qx.ui.virtual.cell.Cell",
     // overridden
     getCssClasses : function(value, states)
     {
-      var cssClass = this.__stylesheet.getCssClass(this.__statesKey) || "";
+      var cssClass = this.__styleSheet.getCssClass(this.__statesKey) || "";
       return "qx-cell " + cssClass;
     },
 
-
-    /**
-     * Set the cell states and set the correct CSS class for the given state
-     * combination
-     *
-     * @param states {Object} A map containing the cell's state names as map keys.
-     */
-    __setStates : function(states)
+    
+    // overridden
+    getStyles: function(value, states) 
     {
-      // Avoid errors if no states are set
-      if (!states) {
-        states = {};
-      }
-
-      var appearance = this.getAppearance();
-      var statesKey = appearance + "-" + qx.lang.Object.getKeys(states).sort().join(" ");
-      if (this.__statesKey == statesKey) {
-        return;
-      }
-      this.__statesKey = statesKey;
-
-      var themeStyles = this.__states[this.__statesKey];
-      if (!themeStyles)
+      var compiled = this.__compiledStyles;
+      if (compiled == null) 
       {
-        this.__clearThemedPropertyValues();
-        this.__updateThemeableProperties(states);
-        this.__computeCssClassForStates(states);
-        this.__cacheThemedValues();
-
-        this.__states[this.__statesKey] = 1;
-      }
-      this.__applyThemeValues();
-    },
-
-
-    /**
-     * Remove the themed value from all CSS properties
-     */
-    __clearThemedPropertyValues : function()
-    {
-      var PropertyUtil = qx.util.PropertyUtil;
-      var themableProperties = this._getCssProperties();
-      for (var i=0; i<themableProperties.length; i++) {
-        PropertyUtil.deleteThemeValue(this, themableProperties[i]);
-      }
-    },
-
-
-    /**
-     * Set the new themed value for all CSS properties given the set of states
-     *
-     * @param states {Object} A map containing the cell's state names as map keys.
-     */
-    __updateThemeableProperties : function(states)
-    {
-      this.__themeStyles = {};
-
-      this.__isThemed = true;
-
-      var appearance = this.getAppearance();
-      var PropertyUtil = qx.util.PropertyUtil;
-
-      var styles = qx.theme.manager.Appearance.getInstance().styleFrom(appearance, states);
-      for (var prop in styles)
-      {
-        if (styles[prop] !== undefined) {
-          PropertyUtil.setThemed(this, prop, styles[prop]);
+        var list = [];
+        var styles = this.__styles;
+        for (var key in styles) {
+          list.push(key + ":" + styles[key]);
         }
+        compiled = list.join(";");
       }
-
-      this.__isThemed = false;
+      
+      return compiled;
     },
-
-
-    /**
-     * Compute a CSS class for the current values of all CSS properties
-     */
-    __computeCssClassForStates : function()
-    {
-      var styleString = qx.lang.Object.getValues(this.__themeStyles).join(";");
-      this.__stylesheet.computeClassForStyles(this.__statesKey, styleString);
-    },
-
-
-    /**
-     * Cache the themed values for the current state combination
-     */
-    __cacheThemedValues : function()
-    {
-      var properties = this.__themableProperties;
-      var PropertyUtil = qx.util.PropertyUtil;
-
-      var themeValues = {};
-      for (var i=0; i<properties.length; i++)
-      {
-        var key = properties[i];
-        var value = PropertyUtil.getThemeValue(this, key);
-        if (value !== undefined) {
-          themeValues[key] = value;
-        }
-      }
-      this.__themeValues[this.__statesKey] = themeValues;
-    },
-
-
-    /**
-     * Apply the themed values to the properties
-     */
-    __applyThemeValues : function()
-    {
-      var PropertyUtil = qx.util.PropertyUtil;
-      var themeValues = this.__themeValues[this.__statesKey] || {};
-      for (var key in themeValues) {
-        PropertyUtil.setThemed(this, key, themeValues[key]);
-      }
-    },
-
+    
 
     // overridden
-    getStyles: function(value, states) {
-      return qx.lang.Object.getValues(this.__userStyles).join(";");
-    },
-
-
-    // overridden
-    getInsets : function(value, states)
-    {
-      var user = this.__userPaddings;
-      var theme = this.__themePaddings;
-
-      var top = (user.paddingTop !== undefined ? user.paddingTop : theme.paddingTop) || 0;
-      var right = (user.paddingRight !== undefined ? user.paddingRight : theme.paddingRight) || 0;
-      var bottom = (user.paddingBottom !== undefined ? user.paddingBottom : theme.paddingBottom) || 0;
-      var left = (user.paddingLeft !== undefined ? user.paddingLeft : theme.paddingLeft) || 0;
-
-      return [left + right, top + bottom];
+    getInsets : function(value, states) {
+      return [this.getPaddingLeft() + this.getPaddingRight(), this.getPaddingTop() + this.getPaddingBottom()];
     }
-  },
-
-
-  destruct : function()
-  {
-    this.__stylesheet = this.__userStyles = this.__themeStyles =
-      this.__userPaddings = this.__themePaddings = this.__states =
-      this.__themeValues = this.__themableProperties = null;
   }
 });
