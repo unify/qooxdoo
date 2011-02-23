@@ -86,7 +86,6 @@ qx.Class.define("apiviewer.Viewer",
   members :
   {
     __firstPartHash : null,
-    __overflowMenu : null,
     __menuItemStore : null,
 
     __toggleGroup : null,
@@ -200,89 +199,11 @@ qx.Class.define("apiviewer.Viewer",
       privateBtn.setId("btn_private");
       privateBtn.setToolTipText(this.tr("Show/hide private members of the current class."));
       part.add(privateBtn);
-      
-      // overflow handling
-      toolbar.setOverflowHandling(true);
-      
-      // add a button for overflow handling
-      var chevron = new qx.ui.toolbar.MenuButton(null, "icon/22/actions/media-seek-forward.png");
-      chevron.setAppearance("toolbar-button");  // hide the down arrow icon
-      toolbar.add(chevron);
-      toolbar.setOverflowIndicator(chevron);
 
-      // add the overflow menu
-      this.__overflowMenu = new qx.ui.menu.Menu();
-      chevron.setMenu(this.__overflowMenu);
-
-      // add the listener
-      toolbar.addListener("hideItem", function(e) {
-        var item = e.getData();
-        var menuItems = this._getMenuItems(item);
-        for (var i = 0; i < menuItems.length; i++) {
-          menuItems[i].setVisibility("visible");
-        };
-      }, this);
-      
-      toolbar.addListener("showItem", function(e) {
-        var item = e.getData();
-        var menuItems = this._getMenuItems(item);
-        for (var i = 0; i < menuItems.length; i++) {
-          menuItems[i].setVisibility("excluded");
-        };
-      }, this);
-      
       return toolbar;
     },
 
 
-    /**
-     * Helper for the overflow handling. It is responsible for returning a 
-     * corresponding menu item for the given toolbar item.
-     * 
-     * @param toolbarPart {qx.ui.toolbar.Part} The toolbar part to look for.
-     * @return {qx.ui.core.Widget[]} The coresponding menu items.
-     */
-    _getMenuItems : function(toolbarPart) {
-      var partChildren = toolbarPart.getChildren();
-      var menuItems = [];
-      
-      // only add a separator if the first part pops in
-      if (toolbarPart.toHashCode() === this.__firstPartHash) {
-        var cachedItem = this.__menuItemStore[toolbarPart.toHashCode()];
-        if (!cachedItem) {
-          cachedItem = new qx.ui.menu.Separator();
-          this.__overflowMenu.addAt(cachedItem, 0);
-          this.__menuItemStore[toolbarPart.toHashCode()] = cachedItem;
-        }
-        menuItems.push(cachedItem);
-      }
-      
-      // take every item in the part
-      for (var i = partChildren.length -1; i >= 0; i--) {
-        var toolbarItem = partChildren[i];
-        cachedItem = this.__menuItemStore[toolbarItem.toHashCode()];
-
-        if (!cachedItem) {
-          if (toolbarItem instanceof qx.ui.toolbar.RadioButton) {
-            var cachedItem = new qx.ui.menu.RadioButton(toolbarItem.getLabel());
-          } else {
-            cachedItem = new qx.ui.menu.CheckBox(toolbarItem.getLabel());
-          }
-          // bidirectional binding takes care of everything
-          toolbarItem.bind("value", cachedItem, "value");
-          cachedItem.bind("value", toolbarItem, "value");
-
-          this.__overflowMenu.addAt(cachedItem, 0);
-          this.__menuItemStore[toolbarItem.toHashCode()] = cachedItem;
-        }
-        
-        menuItems.push(cachedItem);
-      };
-      
-      return menuItems;
-    },
-    
-    
     /**
      * Create the detail Frame and adds the Class-, Package and Loader-views to it.
      *
