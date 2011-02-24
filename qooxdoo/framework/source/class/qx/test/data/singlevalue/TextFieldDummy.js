@@ -20,6 +20,7 @@
 qx.Class.define("qx.test.data.singlevalue.TextFieldDummy",
 {
   extend : qx.core.Object,
+  include : qx.data.MBinding,
 
   construct : function(value) {
     this.base(arguments);
