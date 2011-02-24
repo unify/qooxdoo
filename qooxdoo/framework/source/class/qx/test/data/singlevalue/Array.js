@@ -30,6 +30,7 @@ qx.Class.define("qx.test.data.singlevalue.Array",
     qx.Class.define("qx.test.data.singlevalue.Array_MultiBinding",
     {
       extend : qx.core.Object,
+      include : qx.data.MBinding,
 
       construct : function() {
         this.setArray(new qx.data.Array(["one", "two", "three"]));

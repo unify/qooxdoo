@@ -30,6 +30,7 @@ qx.Class.define("qx.test.data.singlevalue.Deep",
     qx.Class.define("qx.test.MultiBinding",
     {
       extend : qx.core.Object,
+      include : qx.data.MBinding,
 
       properties :
       {

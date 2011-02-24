@@ -370,6 +370,7 @@ qx.Class.define("qx.test.data.singlevalue.Simple",
       // create a test class
       qx.Class.define("qx.Test", {
         extend : qx.core.Object,
+        include : qx.data.MBinding,
         members : {
           __a : null,
           setA : function(data) {
@@ -413,6 +414,7 @@ qx.Class.define("qx.test.data.singlevalue.Simple",
       qx.Class.define("qx.Target",
       {
         extend : qx.core.Object,
+        include : qx.data.MBinding,
 
         properties :
         {
@@ -469,6 +471,7 @@ qx.Class.define("qx.test.data.singlevalue.Simple",
     {
       qx.Class.define("qx.test.TwoProperties", {
         extend : qx.core.Object,
+        include : qx.data.MBinding,
         properties :
         {
           a : { event : "changeA", nullable : true },
@@ -531,6 +534,7 @@ qx.Class.define("qx.test.data.singlevalue.Simple",
     testResetNotNull : function() {
       qx.Class.define("qx.test.SVB", {
         extend : qx.core.Object,
+        include : qx.data.MBinding,
         properties : {
           x : {
             nullable: true,
@@ -559,6 +563,7 @@ qx.Class.define("qx.test.data.singlevalue.Simple",
     testResetNotNullInit : function() {
       qx.Class.define("qx.test.SVB", {
         extend : qx.core.Object,
+        include : qx.data.MBinding,
         properties : {
           x : {
             nullable: true,
@@ -586,6 +591,7 @@ qx.Class.define("qx.test.data.singlevalue.Simple",
     testChangeEventMissing : function() {
       qx.Class.define("qx.test.SVB", {
         extend : qx.core.Object,
+        include : qx.data.MBinding,
         properties : {
           x : {
             nullable: true,
