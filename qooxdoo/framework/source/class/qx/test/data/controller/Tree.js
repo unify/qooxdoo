@@ -28,6 +28,7 @@ qx.Class.define("qx.test.data.controller.Tree",
     qx.Class.define("qx.test.TreeNode",
     {
       extend : qx.core.Object,
+      include : qx.data.MBinding,
 
       construct : function() {
         this.base(arguments);
@@ -564,6 +565,7 @@ qx.Class.define("qx.test.data.controller.Tree",
       qx.Class.define("qx.test.TreeEndNode",
       {
         extend : qx.core.Object,
+        include : qx.data.MBinding,
 
         properties :
         {
@@ -936,7 +938,8 @@ qx.Class.define("qx.test.data.controller.Tree",
     testInheritedChildren : function()
     {
       qx.Class.define("qx.test.MyTreeNode", {
-        extend : qx.test.TreeNode
+        extend : qx.test.TreeNode,
+        include : qx.data.MBinding
       });
 
       // init (copy of setUp)
