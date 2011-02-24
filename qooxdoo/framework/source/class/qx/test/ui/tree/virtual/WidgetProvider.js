@@ -21,6 +21,7 @@ qx.Class.define("qx.test.ui.tree.virtual.WidgetProvider",
 {
   extend : qx.dev.unit.TestCase,
   implement : qx.ui.tree.core.IVirtualTree,
+  include : qx.dev.unit.MMock,
 
   construct : function()
   {
@@ -59,15 +60,6 @@ qx.Class.define("qx.test.ui.tree.virtual.WidgetProvider",
 
     testCreation : function()
     {
-      this.assertEquals(
-        "dblclick", 
-        this.provider.getOpenMode(), 
-        "Initial 'openMode' property value is wrong!"
-      );
-      this.assertFalse(
-        this.provider.isRootOpenClose(), 
-        "Initial 'rootOpenClose' property value is wrong!"
-      );
       this.assertNull(
         this.provider.getChildProperty(), 
         "Initial 'childProperty' property value is wrong!"
@@ -88,7 +80,7 @@ qx.Class.define("qx.test.ui.tree.virtual.WidgetProvider",
     },
     
     
-    testGetNodeWidget : function()
+    testGetRootNodeWidget : function()
     {
       this.provider.setLabelPath("label");
       this.provider.setChildProperty("kids");
@@ -104,6 +96,22 @@ qx.Class.define("qx.test.ui.tree.virtual.WidgetProvider",
     },
     
     
+    testGetNodeWidget : function()
+    {
+      this.provider.setLabelPath("label");
+      this.provider.setChildProperty("kids");
+      var widget = this.provider.getCellWidget(1,0);
+
+      this.assertInstance(widget, qx.ui.tree.VirtualTreeFolder);
+      this.assertEquals("node", widget.getUserData("cell.type"));
+      this.assertTrue(widget.getUserData("cell.children"));
+      this.assertEquals(1, widget.getUserData("cell.level"));
+      this.assertFalse(widget.isOpen());
+      this.assertTrue(widget.hasListener("changeOpen"));
+      this.assertEquals("Node1", widget.getLabel(name));
+    },
+
+
     testGetLeafWidget : function()
     {
       this.provider.setLabelPath("label");
@@ -118,6 +126,41 @@ qx.Class.define("qx.test.ui.tree.virtual.WidgetProvider",
     },
     
     
+    testPoolNodeWidget : function()
+    {
+      this.provider.setLabelPath("label");
+      this.provider.setChildProperty("kids");
+      var widget = this.provider.getCellWidget(0,0);
+
+      var spyPool = this.spy(this.provider._nodeRenderer, "pool");
+      var spyBinding = this.spy(this.provider, "_removeBindingsFrom");
+
+      this.provider.poolCellWidget(widget);
+      this.assertCalledOnce(spyPool);
+      this.assertCalledWith(spyPool, widget);
+      this.assertCalledOnce(spyBinding);
+      this.assertCalledWith(spyBinding, widget);
+      this.assertFalse(widget.hasListener("changeOpen"));
+    },
+
+
+    testPoolLeafWidget : function()
+    {
+      this.provider.setLabelPath("label");
+      this.provider.setChildProperty("kids");
+      var widget = this.provider.getCellWidget(3,0);
+
+      var spyPool = this.spy(this.provider._leafRenderer, "pool");
+      var spyBinding = this.spy(this.provider, "_removeBindingsFrom");
+
+      this.provider.poolCellWidget(widget);
+      this.assertCalledOnce(spyPool);
+      this.assertCalledWith(spyPool, widget);
+      this.assertCalledOnce(spyBinding);
+      this.assertCalledWith(spyBinding, widget);
+    },
+
+
     /*
     ---------------------------------------------------------------------------
       MOCK API
@@ -161,8 +204,8 @@ qx.Class.define("qx.test.ui.tree.virtual.WidgetProvider",
       }
       return false;
     },
-    
-    
+
+
     getLevel : function(row)
     {
       if (row > this.getLookupTable().length || row < 0) {

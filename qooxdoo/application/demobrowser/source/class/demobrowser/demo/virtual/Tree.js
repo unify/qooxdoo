@@ -32,32 +32,32 @@ qx.Class.define("demobrowser.demo.virtual.Tree",
       this.getRoot().add(container, {top: 20, left: 20});
 
       // creates the tree
-      var tree = new qx.ui.tree.VirtualTree(null, "name", "children").set({
+      tree = new qx.ui.tree.VirtualTree(null, "name", "children").set({
         width : 200,
         height : 400
       });
       container.add(tree);
-      
+
       // loads the tree model
       var url = "json/tree.json";
       var store = new qx.data.store.Json(url);
 
       // connect the store and the tree
       store.bind("model", tree, "model");
-      
+
       // opens the 'Desktop' node
       store.addListener("loaded", function() {
         tree.openNode(tree.getModel().getChildren().getItem(0));
       }, this);
-      
-      
+
+
       /* ***********************************************
        * Controlls:
        * ********************************************* */
       var commandFrame = this.getCommandFrame(tree);
       container.add(commandFrame);
     },
-    
+
     getCommandFrame : function(tree)
     {
       var commandFrame = new qx.ui.groupbox.GroupBox("Control");
@@ -93,29 +93,29 @@ qx.Class.define("demobrowser.demo.virtual.Tree",
 //        }
 //      });
 
-//      commandFrame.add(new qx.ui.core.Spacer(spacerSize, spacerSize), {row: row++, column: 0});
-//      commandFrame.add(new qx.ui.basic.Label("Open mode:"), {row: row, column: 0});
-//      var modes = {
-//        "click": "click",
-//        "dblclick": "double click",
-//        "none": "none"
-//      };
+      commandFrame.add(new qx.ui.core.Spacer(spacerSize, spacerSize), {row: row++, column: 0});
+      commandFrame.add(new qx.ui.basic.Label("Open mode:"), {row: row, column: 0});
+      var modes = {
+        "click": "click",
+        "dblclick": "double click",
+        "none": "none"
+      };
 
-//      var modeMgr = new qx.ui.form.RadioGroup();
-//      for (var mode in modes)
-//      {
-//        var radioButton = new qx.ui.form.RadioButton(modes[mode]).set({
-//          value: mode == tree.getOpenMode()
-//        });
-//        radioButton.setUserData("mode", mode);
-//
-//        modeMgr.add(radioButton);
-//        commandFrame.add(radioButton, {row: row++, column: 1})
-//      }
-//
-//      modeMgr.addListener("changeSelection", function(e) {
-//        tree.setOpenMode(e.getData()[0].getUserData("mode"));
-//      });
+      var modeMgr = new qx.ui.form.RadioGroup();
+      for (var mode in modes)
+      {
+        var radioButton = new qx.ui.form.RadioButton(modes[mode]).set({
+          value: mode == tree.getOpenMode()
+        });
+        radioButton.setUserData("mode", mode);
+
+        modeMgr.add(radioButton);
+        commandFrame.add(radioButton, {row: row++, column: 1})
+      }
+
+      modeMgr.addListener("changeSelection", function(e) {
+        tree.setOpenMode(e.getData()[0].getUserData("mode"));
+      });
 
 
       commandFrame.add(new qx.ui.core.Spacer(spacerSize, spacerSize), {row: row++, column: 0});
@@ -129,13 +129,6 @@ qx.Class.define("demobrowser.demo.virtual.Tree",
       });
 
 
-//      var btnShowRootOpen = new qx.ui.form.CheckBox("Show root open button");
-//      commandFrame.add(btnShowRootOpen, {row: row++, column: 1});
-//
-//      btnShowRootOpen.addListener("changeValue", function(e) {
-//        tree.setRootOpenClose(e.getData());
-//      });
-
       commandFrame.add(new qx.ui.core.Spacer(spacerSize, spacerSize), {row: row++, column: 0});
       commandFrame.add(new qx.ui.basic.Label("Tree:"), {row: row, column: 0});
 
@@ -146,14 +139,14 @@ qx.Class.define("demobrowser.demo.virtual.Tree",
       btnShowLeafs.addListener("changeValue", function(e) {
         tree.setShowLeafs(e.getData());
       });
-      
+
       commandFrame.add(new qx.ui.core.Spacer(spacerSize, spacerSize), {row: row++, column: 0});
 
       var updateModel = new qx.ui.form.Button("Update Model");
       updateModel.addListener("execute", function(e) {
         var desktop = tree.getModel().getChildren().getItem(0);
         var trash = desktop.getChildren().getItem(2);
-        
+
         var rawData = [];
         for (var i = 0; i < 10; i++) {
           rawData.push({"name": "File #" + (trash.getChildren().getLength() + i)});

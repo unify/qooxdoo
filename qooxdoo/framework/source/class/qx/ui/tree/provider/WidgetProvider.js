@@ -18,17 +18,22 @@
 ************************************************************************ */
 
 /**
+ * The provider implements the {@link qx.ui.virtual.core.IWidgetCellProvider}
+ * API, which can be used as delegate for the widget cell rendering and it
+ * provides a API to bind the model with the rendered item.
+ *
  * @internal
  */
 qx.Class.define("qx.ui.tree.provider.WidgetProvider",
 {
   extend : qx.core.Object,
 
-
   implement : [
-   qx.ui.virtual.core.IWidgetCellProvider
+   qx.ui.virtual.core.IWidgetCellProvider,
+   qx.ui.tree.provider.IVirtualTreeProvider
   ],
 
+  include : [qx.ui.tree.core.MWidgetController],
 
   /**
    * @param tree {qx.ui.tree.VirtualTree} tree to provide.
@@ -39,36 +44,19 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
 
     this._tree = tree;
 
-    this._nodeRenderer = this.__createNodeRenderer();
-    this._leafRenderer = this.__createLeafRenderer();
+    this._nodeRenderer = this.createNodeRenderer();
+    this._leafRenderer = this.createLeafRenderer();
   },
 
 
   properties :
   {
-    openMode :
-    {
-      check: ["click", "dblclick", "none"],
-      init: "dblclick",
-      event: "changeOpenMode"
-    },
-
-
-    rootOpenClose :
-    {
-      check: "Boolean",
-      init: false
-    },
-
-
+    /**
+     * The name of the property, where the children are stored in the model.
+     * Instead of the {@link #labelPath} must the child property a direct
+     * property form the model instance.
+     */
     childProperty :
-    {
-      check: "String",
-      nullable: true
-    },
-
-
-    labelPath :
     {
       check: "String",
       nullable: true
@@ -89,6 +77,13 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
     /** {qx.ui.virtual.cell.WidgetCell} the used node renderer. */
     _leafRenderer : null,
 
+    
+    /*
+    ---------------------------------------------------------------------------
+      PUBLIC API
+    ---------------------------------------------------------------------------
+    */
+    
 
     // interface implementation
     getCellWidget : function(row, column)
@@ -104,16 +99,15 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
         widget.setUserData("cell.type", "node");
         widget.setUserData("cell.children", hasChildren);
         widget.addListener("changeOpen", this.__onOpenChanged, this);
+        this._bindNode(widget, row);
       }
       else
       {
         widget = this._leafRenderer.getCellWidget();
         widget.setUserData("cell.type", "leaf");
+        this._bindLeaf(widget, row);
       }
       widget.setUserData("cell.level", this._tree.getLevel(row));
-      var name = qx.data.SingleValueBinding.getValueFromObject(item, 
-        this.getLabelPath()); 
-      widget.setLabel(name);
       qx.ui.core.queue.Widget.add(widget);
 
       return widget;
@@ -124,6 +118,7 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
     poolCellWidget : function(widget)
     {
       var type = widget.getUserData("cell.type");
+      this._removeBindingsFrom(widget);
 
       if (type === "node")
       {
@@ -136,12 +131,14 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
     },
 
 
+    // Interface implementation
     createLayer : function() {
       return new qx.ui.virtual.layer.WidgetCell(this);
     },
 
 
-    __createNodeRenderer : function()
+    // Interface implementation
+    createNodeRenderer : function()
     {
       var renderer = new qx.ui.virtual.cell.WidgetCell();
       renderer.setDelegate({
@@ -154,7 +151,8 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
     },
 
 
-    __createLeafRenderer : function()
+    // Interface implementation
+    createLeafRenderer : function()
     {
       var renderer = new qx.ui.virtual.cell.WidgetCell();
       renderer.setDelegate({
@@ -166,7 +164,18 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
       return renderer;
     },
 
-
+    
+    /*
+    ---------------------------------------------------------------------------
+      EVENT HANDLERS
+    ---------------------------------------------------------------------------
+    */
+    
+    /**
+     * Handler when a node changes opened or closed state.
+     * 
+     * @param event {qx.event.type.Data} The data event.
+     */
     __onOpenChanged : function(event)
     {
       var widget = event.getTarget();

@@ -36,6 +36,12 @@ qx.Class.define("qx.xml.Element",
   statics :
   {
     /**
+     * {Boolean} <code>true</code> if the native XMLSerializer should be used,
+     * <code>false</code> otherwise.
+     */
+    XML_SERIALIZER : false,
+    
+    /**
      * The subtree rooted by the specified element or document is serialized to a string.
      *
      * @param element {Element | Document} The root of the subtree to be serialized. This could be any node, including a Document.
@@ -47,7 +53,7 @@ qx.Class.define("qx.xml.Element",
         element = element.documentElement;
       }
 
-      if (window.XMLSerializer) {
+      if (this.XML_SERIALIZER) {
         return (new XMLSerializer()).serializeToString(element);
       } else {
         return element.xml || element.outerHTML;
@@ -264,6 +270,37 @@ qx.Class.define("qx.xml.Element",
       }
     }),
 
+    /**
+     * Get the value of the attribute with the given namespace and name
+     *
+     * @param element {Element} XML/DOM element to modify
+     * @param namespaceUri {String} Namespace URI
+     * @param name {String} Attribute name
+     * @return {String} the value of the attribute, empty string if not found
+     * @signature function(element, namespaceUri, name)
+     */
+    getAttributeNS : qx.core.Variant.select("qx.client",
+    {
+      "mshtml": function(element, namespaceUri, name) {
+        var attributes = element.attributes;
+        var value = null;
+        if(attributes)
+        {
+          var attribute = attributes.getQualifiedItem(name,namespaceUri);
+          if(attribute)
+          {
+            value = attribute.nodeValue;
+          }
+        }
+        return value === null ? '' : value;
+      },
+
+      "default" : function(element, namespaceUri, name) {
+        var value = element.getAttributeNS(namespaceUri, name);
+        return value === null ? '' : value;
+      }
+    }),
+
 
     /**
      * Creates an element with the given namespace and appends it to an existing
@@ -296,5 +333,18 @@ qx.Class.define("qx.xml.Element",
         return node;
       }
     })
+  },
+
+
+  /*
+  *****************************************************************************
+     DEFER
+  *****************************************************************************
+  */
+
+  defer : function(statics)
+  {
+    statics.XML_SERIALIZER = (window.XMLSerializer && 
+     !( qx.bom.client.Engine.MSHTML && qx.bom.client.Engine.VERSION >= 9)); 
   }
 });

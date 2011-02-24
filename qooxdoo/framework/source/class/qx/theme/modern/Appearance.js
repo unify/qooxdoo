@@ -1074,10 +1074,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
       }
     },
 
-    "tabview-page" : {
-      alias : "widget",
-      include : "widget"
-    },
+    "tabview-page" : "widget",
 
     "tabview-page/button" :
     {
