@@ -171,8 +171,8 @@ qx.Class.define("qx.data.marshal.Json",
         if (this.__delegate && this.__delegate.getValidationRule) {
           var rule = this.__delegate.getValidationRule(hash, key);
           if (rule) {
-            properties[key].validate = "_validate" + key;
-            members["_validate" + key] = rule;
+            properties[key].validate = rule;
+            //members["_validate" + key] = rule;
           }
         }
       }
