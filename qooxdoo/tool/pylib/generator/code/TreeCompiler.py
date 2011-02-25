@@ -39,20 +39,21 @@ class TreeCompiler(object):
         self._console = context.get('console')
         self._jobconf = context.get('jobconf')
         self._optimize   = []
-        #self._privatesCacheId = "privates-%s" % self._context['config']._fname  # use path to main config file for context
-        self._privatesCacheId = "privates"  # use a site-wide privates db
 
-        self._loadFiles()
+        #self._loadPrivateFields()
 
 
-    def _loadFiles(self):
-        #cacheId = "privates-%s" % self._context['config']._fname  # use path to main config file for context
-        #cacheId = "privates"  # use a side-wide privates db
-        cacheId  = self._privatesCacheId
-        privates, _ = self._cache.read(cacheId)
+    def _loadPrivateFields(self):
+        cacheId  = privateoptimizer.privatesCacheId
+        privates, _ = self._cache.read(cacheId, keepLock=True)
+        #privates, _ = self._cache.read(cacheId)
         if privates != None:
-            self._console.info("Loaded %s private fields" % len(privates))
-            privateoptimizer.load(privates)
+            #self._console.info("Loaded %s private fields" % len(privates))
+            #privateoptimizer.load(privates)
+            pass
+        else:
+            privates = {}
+        return privates
 
         #cacheId = "protected-%s" % self._context['config']._fname
         #protected, _ = self._cache.read(cacheId)
@@ -67,10 +68,14 @@ class TreeCompiler(object):
         return self._optimize
 
 
-    def _storePrivateFields(self):
+    def _storePrivateFields(self, _globalprivs=None):
         #cacheId = "privates-%s" % self._context['config']._fname  # use path to main config file for context
-        cacheId  = self._privatesCacheId
-        self._cache.write(cacheId, privateoptimizer.get())
+        cacheId  = privateoptimizer.privatesCacheId
+        if _globalprivs:
+            globalprivs = _globalprivs
+        else:
+            globalprivs = privateoptimizer.get()
+        self._cache.write(cacheId, globalprivs)  # removes lock by default
 
 
     def _storeProtectedFields(self):
@@ -195,33 +200,6 @@ class TreeCompiler(object):
 
         return content
 
-    def compileClassesMT(self, classes, variants, optimize, format):
-        # experimental
-        # multi-threaded version of compileClasses()
-        import threading
-        contA = {}
-        threads = []
-        
-        def compileClass(classId, pos):
-            contA[pos] = (self.getCompiled(classId, variants, optimize, format))
-
-        for pos, classId in enumerate(classes):
-            t = threading.Thread(target=compileClass, args=(classId, pos))
-            threads.append(t)
-            t.start()
-            
-        length = len(threads)
-
-        for pos, t in enumerate(threads):
-            self._console.progress(pos+1, length)
-            t.join()
-            
-        content = u''
-        for i in sorted(contA.keys()):
-            content += contA[i]
-
-        return content
-
     def getCompileCommand(self, fileId, variants, optimize, format):
 
         def getToolBinPath():
@@ -248,7 +226,7 @@ class TreeCompiler(object):
         #m['cache'] = "-c " + self._cache._path  # Cache needs context object, interrupt handler,...
         m['cache'] = ""
         #m['privateskey'] = "--privateskey " + '"privates-' + self._context['config']._fname + '"'
-        m['privateskey'] = "--privateskey " + '"' + self._privatesCacheId + '"'
+        m['privateskey'] = "--privateskey " + '"' + privateoptimizer.privatesCacheId + '"'
 
         cmd = "%(compilePath)s %(optimizations)s %(variants)s %(cache)s %(privateskey)s %(filePath)s" % m
         return cmd
@@ -389,10 +367,12 @@ class TreeCompiler(object):
 
 
     def _privateOptimizeHelper(self, tree, id, variants):
-        privateoptimizer.patch(tree, id)
+        globalprivs = self._loadPrivateFields()
+        #globalprivs = None
+        privateoptimizer.patch(tree, id, globalprivs)
         # the next line also ensures privates consistency across runs, when already
         # optimized classes are re-used in the build
-        self._storePrivateFields()
+        self._storePrivateFields(globalprivs)
 
 
     def _protectedOptimizeHelper(self, tree, id, variants):

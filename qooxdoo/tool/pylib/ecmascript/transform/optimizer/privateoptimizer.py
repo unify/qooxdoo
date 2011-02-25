@@ -15,31 +15,34 @@
 #
 #  Authors:
 #    * Sebastian Werner (wpbasti)
+#    * Thomas Herchenroeder (thron7)
 #
 ################################################################################
 
 import os, sys, re, types
 from misc.util import convert
 
-names = {}  # names = { "<classId>:<private>" : "<repl>", ...}
-used = {}   # used  = { "<private>" : [ "<classId>", ...], ...} -- only maintained for debug() function, not relevant for optimization
+#names = {}  # names = { "<classId>:<private>" : "<repl>", ...}
+#used = {}   # used  = { "<private>" : [ "<classId>", ...], ...} -- only maintained for debug() function, not relevant for optimization
+
+#privatesCacheId = "privates-%s" % self._context['config']._fname  # use path to main config file for context
+privatesCacheId = "privates"  # use a site-wide privates db
+
+#def load(data):
+#    global names
+#    names = data
+#    
+#    # Dynamically fill used data
+#    for name in names:
+#        (id, iden) = name.split(":")
+#        if not iden in used:
+#            used[iden] = [id]
+#        elif not id in used[iden]:
+#            used[iden].append(id)
 
 
-def load(data):
-    global names
-    names = data
-    
-    # Dynamically fill used data
-    for name in names:
-        (id, iden) = name.split(":")
-        if not iden in used:
-            used[iden] = [id]
-        elif not id in used[iden]:
-            used[iden].append(id)
-
-
-def get():
-    return names
+#def get():
+#    return names
 
 
 def debug():
@@ -52,9 +55,13 @@ def debug():
             print
 
 
-def patch(tree, id):
+def patch(tree, id, _globalPrivs=None):
+    if _globalPrivs == None:
+        globalPrivs = names
+    else:
+        globalPrivs = _globalPrivs
     # Look for privates
-    privates = lookup(id, tree, {})
+    privates = lookup(id, tree, {}, globalPrivs)
     
     # Fast path. Return if no privates defined
     if len(privates) == 0:
@@ -65,18 +72,18 @@ def patch(tree, id):
     update(tree, privates)
     
     
-def crypt(id, name):
+def crypt(id, name, privmap):
     combined = "%s:%s" % (id, name)
-    if combined in names:
-        return names[combined]
+    if combined in privmap:
+        return privmap[combined]
 
-    repl = "__%s" % convert(len(names))
-    names[combined] = repl
+    repl = "__%s" % convert(len(privmap))
+    privmap[combined] = repl
 
     return repl
         
     
-def lookup(id, node, privates):
+def lookup(id, node, privates, globalPrivs):
     # privates = { "<private>" : "<repl>", ... }
     name = None
     
@@ -96,16 +103,16 @@ def lookup(id, node, privates):
                     name = last.get("name")
         
     if name and name.startswith("__") and not name in privates:
-        privates[name] = crypt(id, name)
+        privates[name] = crypt(id, name, globalPrivs)
         
-        if not name in used:
-            used[name] = [id]
-        elif not id in used[name]:
-            used[name].append(id)
+        #if not name in used:
+        #    used[name] = [id]
+        #elif not id in used[name]:
+        #    used[name].append(id)
 
     if node.hasChildren():
         for child in node.children:
-            lookup(id, child, privates)
+            lookup(id, child, privates, globalPrivs)
         
     return privates
 

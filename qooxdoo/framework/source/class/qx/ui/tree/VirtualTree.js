@@ -195,7 +195,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
 
     /**
-     * {Array} The internal lookup table data structure to get the model item
+     * {qx.data.Array} The internal lookup table data structure to get the model item
      * from a row.
      */
     __lookupTable : null,
@@ -270,7 +270,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
      */
     _init : function()
     {
-      this.__lookupTable = [];
+      this.__lookupTable = new qx.data.Array();
       this.__openNodes = [];
       this.__nestingLevel = [];
       this._initLayer();
@@ -451,7 +451,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     _onOpen : function(event)
     {
       var row = event.getRow();
-      var item = this.getLookupTable()[row];
+      var item = this.__lookupTable.getItem(row);
       
       if (this.isNode(item))
       {
@@ -504,7 +504,8 @@ qx.Class.define("qx.ui.tree.VirtualTree",
         }
       }
 
-      this.__lookupTable = lookupTable;
+      this.__lookupTable.removeAll();
+      this.__lookupTable.append(lookupTable);
       this.__updateRowCount();
     },
 
@@ -620,7 +621,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
      */
     __updateRowCount : function()
     {
-      this.getPane().getRowConfig().setItemCount(this.getLookupTable().length);
+      this.getPane().getRowConfig().setItemCount(this.__lookupTable.getLength());
       this.getPane().fullUpdate();
     }
   },
@@ -640,6 +641,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
         
     this._layer.destroy();
     this._provider.dispose();
+    this.__lookupTable.dispose();
 
     this._layer = this._provider = this.__lookupTable = this.__openNodes = null;
   }

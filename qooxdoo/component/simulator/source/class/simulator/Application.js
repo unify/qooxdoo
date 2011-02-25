@@ -20,22 +20,9 @@
 qx.Class.define("simulator.Application", {
 
   extend : qx.application.Native,
-    
-  statics :
-  {
-    /**
-     * {Array} Names of optional configuration settings for the 
-     * {@link simulator.QxSimulation} instance to be used for this test. 
-     * Options are defined as settings in the "simulation" job.  
-     */
-    SETTING_NAMES : ["globalTimeout", "stepSpeed", "windowMaximize", 
-                    "globalErrorLogging", "testEvents", "disposerDebug", 
-                    "applicationLog", "threadSafe"]
-  },
   
   members :
   {
-    __optionalSettings : null,
   
     main : function()
     {
@@ -43,25 +30,12 @@ qx.Class.define("simulator.Application", {
         this._argumentsToSettings(window.arguments);
       }
       
-      this.__optionalSettings = this._getOptionalSettings();
-      
       qx.log.Logger.register(qx.log.appender.RhinoConsole);
       
-      var qxSelenium;
-      var threadSafe = false;
-      if (this.__optionalSettings.threadSafe) {
-        threadSafe = true;
-        qxSelenium = this.getThreadSafeQxSeleniumSession();
-      } 
-      else {
-        qxSelenium = this.getQxSelenium();
-      }
-      qxSelenium.setSpeed("1000");
-      
-      this.simulation = this.getSimulation(qxSelenium);
+      this.simulation = new simulator.QxSimulation();
       
       this.runner = new simulator.TestRunner();
-      this.runner.runTests(threadSafe);
+      this.runner.runTests();
     },
     
     /**
@@ -88,74 +62,6 @@ qx.Class.define("simulator.Application", {
           }
         }
       }
-    },
-    
-    /**
-     * Returns a map containing QxSimulation options.
-     * 
-     * @return {Map} Settings map
-     */
-    _getOptionalSettings : function()
-    {
-      var settings = {};
-      var names = simulator.Application.SETTING_NAMES;
-      for (var i=0,l=names.length; i<l; i++) {
-        try {
-          settings[names[i]] = qx.core.Setting.get("simulator." + names[i]);
-        } catch(ex) {
-          settings[names[i]] = null;
-        }
-      }
-      return settings;
-    },
-    
-    /**
-     * Configures and returns a QxSelenium instance.
-     * 
-     * @return {Object} The configured QxSelenium instance
-     */
-    getQxSelenium : function()
-    {
-      var qxSelenium = simulator.QxSelenium.create(
-        qx.core.Setting.get("simulator.selServer"),
-        qx.core.Setting.get("simulator.selPort"),
-        qx.core.Setting.get("simulator.testBrowser"),
-        qx.core.Setting.get("simulator.autHost"));
-      
-      return qxSelenium;
-    },
-    
-    /**
-     * Returns a thread-safe QxSelenium instance.
-     * 
-     * @return {Object} The configured QxSelenium instance
-     */
-    getThreadSafeQxSeleniumSession : function()
-    {
-      var qxSelenium = simulator.ThreadSafeQxSelenium.create(
-        qx.core.Setting.get("simulator.selServer"),
-        qx.core.Setting.get("simulator.selPort"),
-        qx.core.Setting.get("simulator.testBrowser"),
-        qx.core.Setting.get("simulator.autHost"));
-      
-      return qxSelenium;
-    },
-    
-    /**
-     * Configures and returns a QxSimulation instance.
-     * 
-     * @param qxSelenium {simulator.QxSelenium} QxSelenium instance to be used
-     * by this QxSimulation
-     * @return {simulator.QxSimulation}
-     */
-    getSimulation : function(qxSelenium)
-    {
-      var simulation = new simulator.QxSimulation(qxSelenium, 
-        qx.core.Setting.get("simulator.autHost"),
-        qx.core.Setting.get("simulator.autPath"),
-        this.__optionalSettings);
-      
-      return simulation;
     }
   }
   
