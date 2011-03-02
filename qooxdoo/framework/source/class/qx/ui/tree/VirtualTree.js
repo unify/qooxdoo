@@ -30,7 +30,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 {
   extend : qx.ui.virtual.core.Scroller,
   implement : qx.ui.tree.core.IVirtualTree,
-
+  include : qx.ui.tree.core.MSelectionHandling,
 
   /**
    * @param model {qx.core.Object?null} The model structure for the tree, for
@@ -169,6 +169,40 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       nullable: true
     },
 
+    
+    /**
+     * The path to the property which holds the information that should be
+     * shown as a icon.
+     */
+    iconPath :
+    {
+      check: "String",
+      apply: "_applyIconPath",
+      nullable: true
+    },
+    
+    
+    /**
+     * A map containing the options for the label binding. The possible keys
+     * can be found in the {@link qx.data.SingleValueBinding} documentation.
+     */
+    labelOptions :
+    {
+      apply: "_applyLabelOptions",
+      nullable: true
+    },
+
+    
+    /**
+     * A map containing the options for the icon binding. The possible keys
+     * can be found in the {@link qx.data.SingleValueBinding} documentation.
+     */
+    iconOptions :
+    {
+      apply: "_applyIconOptions",
+      nullable: true
+    },
+    
 
     /**
      * The model containing the data (nodes and/or leafs) which should be shown
@@ -180,6 +214,19 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       apply : "_applyModel",
       event: "changeModel",
       nullable : true
+    },
+    
+    
+    /**
+     * Delegation object, which can have one or more functions defined by the
+     * {@link qx.ui.tree.core.IVirtualTreeDelegate} interface.
+     */
+    delegate :
+    {
+      event: "changeDelegate",
+      apply: "_applyDelegate",
+      init: null,
+      nullable: true
     }
   },
 
@@ -274,6 +321,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       this.__openNodes = [];
       this.__nestingLevel = [];
       this._initLayer();
+      this._initSelection();
 
       this.getPane().addListener("resize", this._onResize, this);
     },
@@ -395,6 +443,24 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     _applyLabelPath : function(value, old) {
       this._provider.setLabelPath(value);
     },
+    
+    
+    // property apply
+    _applyIconPath : function(value, old) {
+      this._provider.setIconPath(value);
+    },
+    
+    
+    // property apply
+    _applyLabelOptions : function(value, old) {
+      this._provider.setLabelOptions(value);
+    },
+    
+    
+    // property apply
+    _applyIconOptions : function(value, old) {
+      this._provider.setIconOptions(value);
+    },
 
 
     // property apply
@@ -423,6 +489,14 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       }
 
       this.__buildLookupTable();
+    },
+    
+    
+    // property apply
+    _applyDelegate : function(value, old)
+    {
+      this._provider.setDelegate(value);
+      this.getPane().fullUpdate();
     },
 
 
@@ -476,6 +550,10 @@ qx.Class.define("qx.ui.tree.VirtualTree",
      */
     __buildLookupTable : function()
     {
+      if (this.getModel() == null) {
+        return;
+      }
+      
       if (this.getChildProperty() == null || this.getLabelPath() == null)
       {
         throw new Error("Could not build tree, because 'childProperty' and/" +
@@ -506,6 +584,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
       this.__lookupTable.removeAll();
       this.__lookupTable.append(lookupTable);
+      this.__updateSelection();
       this.__updateRowCount();
     },
 
@@ -615,6 +694,22 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       return false;
     },
 
+    
+    /**
+     * Helper method to remove items form the selection which are not in the
+     * lookup table.
+     */
+    __updateSelection : function() {
+      var selection = this.getSelection();
+      if (selection.getLength() > 0)
+      {
+        var item = selection.getItem(0);
+        if (!this.__lookupTable.contains(item)) {
+          selection.remove(item);
+        } 
+      }
+    },
+    
 
     /**
      * Helper method to update the row count.

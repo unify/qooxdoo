@@ -44,6 +44,17 @@ qx.Mixin.define("qx.ui.tree.core.MWidgetController",
 
 
     /**
+     * The path to the property which holds the information that should be
+     * shown as a icon.
+     */
+    iconPath :
+    {
+      check: "String",
+      nullable: true
+    },
+    
+    
+    /**
      * A map containing the options for the label binding. The possible keys
      * can be found in the {@link qx.data.SingleValueBinding} documentation.
      */
@@ -52,6 +63,16 @@ qx.Mixin.define("qx.ui.tree.core.MWidgetController",
       nullable: true
     },
 
+    
+    /**
+     * A map containing the options for the icon binding. The possible keys
+     * can be found in the {@link qx.data.SingleValueBinding} documentation.
+     */
+    iconOptions :
+    {
+      nullable: true
+    },
+    
 
     /**
      * Delegation object, which can have one or more functions defined by the
@@ -85,9 +106,19 @@ qx.Mixin.define("qx.ui.tree.core.MWidgetController",
      */
     bindDefaultProperties : function(item, index)
     {
+      // bind model first
+      this.bindProperty("", "model", null, item, index);
+      
       this.bindProperty(
         this.getLabelPath(), "label", this.getLabelOptions(), item, index
       );
+      
+      if (this.getIconPath() != null)
+      {
+        this.bindProperty(
+          this.getIconPath(), "icon", this.getIconOptions(), item, index
+        );
+      }
     },
 
 
@@ -121,49 +152,34 @@ qx.Mixin.define("qx.ui.tree.core.MWidgetController",
      * {@link IListDelegate#bindItem} function implemented by the
      * {@link #delegate} property.
      *
-     * @param targetPath {String | null} The name of the property in the target.
-     * @param sourcePath {String} The path to the property in the model.
+     * @param targetPath {String | null} The path to the property in the model.
+     * @param sourceProperty {String} The name of the property in the target.
      * @param options {Map | null} The options to use for the binding.
      * @param sourceWidget {qx.ui.core.Widget} The source widget.
      * @param index {Integer} The index of the current binding.
      */
-    bindPropertyReverse: function(targetPath, sourcePath, options, sourceWidget, index)
+    bindPropertyReverse : function(targetPath, sourceProperty, options, sourceWidget, index)
     {
+      var bindPath = this.__getBindPath(index, targetPath);
+      var bindTarget = this._tree.getLookupTable();
+
+      var id = sourceWidget.bind(sourceProperty, bindTarget, bindPath, options);
+      this.__addBinding(sourceWidget, id);
     },
 
 
     /**
-     * Configure the passed item if a delegate is set and the needed function 
-     * {@link IVirtualTreeDelegate#configureNode} is available.
-     *
-     * @param item {qx.ui.core.Widget} item to configure.
+     * Remove all bindings from all bounded items.
      */
-    _configureItem : function(item)
+    removeBindings : function()
     {
-      var delegate = this.getDelegate();
-
-      if (delegate != null && delegate.configureNode != null) {
-        delegate.configureNode(item);
+      while(this.__boundItems.length > 0) {
+        var item = this.__boundItems.pop();
+        this._removeBindingsFrom(item);
       }
     },
-
-
-    /**
-     * Configure the passed item if a delegate is set and the needed function 
-     * {@link IVirtualTreeDelegate#configurLeaf} is available.
-     *
-     * @param item {qx.ui.core.Widget} item to configure.
-     */
-    _configureLeafItem : function(item)
-    {
-      var delegate = this.getDelegate();
-
-      if (delegate != null && delegate.configurLeaf != null) {
-        delegate.configurLeaf(item);
-      }
-    },
-
-
+    
+    
     /**
      * Sets up the binding for the given node and index.
      *
@@ -172,10 +188,10 @@ qx.Mixin.define("qx.ui.tree.core.MWidgetController",
      */
     _bindNode : function(item, index)
     {
-      var delegate = this.getDelegate();
-
-      if (delegate != null && delegate.bindItem != null) {
-        delegate.bindItem(this, item, index);
+      var bindNode = qx.util.Delegate.getMethod(this.getDelegate(), "bindNode");
+      
+      if (bindNode != null) {
+        bindNode(this, item, index);
       } else {
         this.bindDefaultProperties(item, index);
       }
@@ -190,15 +206,16 @@ qx.Mixin.define("qx.ui.tree.core.MWidgetController",
      */
     _bindLeaf : function(item, index)
     {
-      var delegate = this.getDelegate();
+      var bindLeaf = qx.util.Delegate.getMethod(this.getDelegate(), "bindLeaf");
 
-      if (delegate != null && delegate.bindGroupItem != null) {
-        delegate.bindGroupItem(this, item, index);
+      if (bindLeaf != null) {
+        bindLeaf(this, item, index);
       } else {
         this.bindDefaultProperties(item, index);
       }
     },
 
+    
     /**
      * Removes the binding of the given item.
      *
