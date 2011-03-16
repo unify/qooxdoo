@@ -493,25 +493,6 @@ qx.Class.define("qx.ui.basic.Image",
     {
       var ImageLoader = qx.io.ImageLoader;
 
-      if (qx.core.Variant.isSet("qx.debug", "on"))
-      {
-        // loading external images via HTTP/HTTPS is a common usecase
-        if (!qx.lang.String.startsWith(source.toLowerCase(), "http"))
-        {
-          var self = this.self(arguments);
-
-          if (!self.__warned) {
-            self.__warned = {};
-          }
-
-          if (!self.__warned[source])
-          {
-            this.debug("try to load an unmanaged relative image: " + source);
-            self.__warned[source] = true;
-          }
-        }
-      }
-
       // only try to load the image if it not already failed
       if(!ImageLoader.isFailed(source)) {
         ImageLoader.load(source, this.__loaderCallback, this);
