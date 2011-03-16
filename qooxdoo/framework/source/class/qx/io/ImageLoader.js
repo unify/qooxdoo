@@ -42,8 +42,11 @@ qx.Bootstrap.define("qx.io.ImageLoader",
       height : null
     },
 
-    /** {Array} Known image types */
+    /** {RepExp} Known image types */
     __knownImageTypesRegExp : /\.(png|gif|jpg|jpeg|bmp)\b/i,
+
+    /** {RepExp} Known image types */
+    __knownImageUriRegExp : /image\/(png|gif|jpg|jpeg|bmp)\b/i,
 
 
     /**
@@ -266,6 +269,15 @@ qx.Bootstrap.define("qx.io.ImageLoader",
         if (result != null)
         {
           entry.format = result[1];
+        }
+        else
+        {
+          // Just work on the first few characters for base64 data uris
+          // url('data:image/png; base64...
+          result = this.__knownImageUriRegExp.exec(source.substring(0,20));
+          if (result) {
+            entry.format = result[1];
+          }
         }
       }
       else
