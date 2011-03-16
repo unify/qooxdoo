@@ -33,20 +33,16 @@
 #</pre>
 ##
 
-import sys
-import os
-import glob
-import shutil
-from generator.resource.ImageInfo import ImageInfo
-from misc import filetool
-import tempfile
+import sys, os, glob, shutil, tempfile
+
+from misc                      import filetool
+from generator.resource.Image  import Image
 
 
 class ImageClipping(object):
     def __init__(self, console, cache):
         self._console = console
         self._cache   = cache
-        self._imageInfo = ImageInfo(self._console, self._cache)
 
 
     def slice(self, source, dest_prefix, border, trim_width):
@@ -54,7 +50,7 @@ class ImageClipping(object):
         source_file = source
         dest_file   = os.path.join(os.path.dirname(source), dest_prefix)
 
-        imginf        = self._imageInfo.getImageInfo(source_file, source_file)
+        imginf        = Image(source_file).getInfoMap()
         width, height = imginf['width'], imginf['height']
 
         crop_cmd = "convert %s -crop %sx%s+%s+%s +repage %s"
@@ -108,9 +104,8 @@ class ImageClipping(object):
         shutil.copyfile(source_file, dest_file + ".png")
 
 
-    def combine(self, combined, files, horizontal):
+    def combine(self, combined, files, horizontal, type="extension"):
         self._console.indent()
-        montage_cmd = "montage -geometry +0+0 -gravity NorthWest -tile %s -background None %s %s"
         if horizontal:
             orientation = "x1"
         else:
@@ -130,7 +125,7 @@ class ImageClipping(object):
                 self._console.warn("Non-existing file spec, skipping: %s" % file)
                 continue
             clips.append(file)
-            imginfo = self._imageInfo.getImageInfo(file, file)
+            imginfo = Image(file).getInfoMap()
             width, height = imginfo['width'], imginfo['height']
             config.append({'file':file, 'combined':combined, 'left': -left,
                            'top': -top, 'width':width, 'height':height, 'type':imginfo['type']})
@@ -143,17 +138,35 @@ class ImageClipping(object):
             self._console.warn("No images to combine; skipping")
         else:
             filetool.directory(os.path.dirname(combined))
-            (fileDescriptor, tempPath) = tempfile.mkstemp(text=True, dir=os.curdir)
-            temp = os.fdopen(fileDescriptor, "w")
-            temp.write("\n".join(clips))
-            temp.close()
-            cmd = montage_cmd % (orientation, "@" + os.path.basename(tempPath), combined)
-            rc = os.system(cmd)
-            os.unlink(tempPath)
-            if rc != 0:
-                raise RuntimeError, "The montage command (%s) failed with the following return code: %d" % (cmd, rc)
+            if type == "extension":
+                self.combineImgMagick(clips, combined, orientation)
+            elif type == "base64":
+                self.combineBase64(config)
 
         self._console.outdent()
         return config
 
+
+    def combineImgMagick(self, clips, combined, orientation):
+        montage_cmd = "montage -geometry +0+0 -gravity NorthWest -tile %s -background None %s %s"
+        (fileDescriptor, tempPath) = tempfile.mkstemp(text=True, dir=os.curdir)
+        temp = os.fdopen(fileDescriptor, "w")
+        temp.write("\n".join(clips))
+        temp.close()
+        cmd = montage_cmd % (orientation, "@" + os.path.basename(tempPath), combined)
+        rc = os.system(cmd)
+        os.unlink(tempPath)
+        if rc != 0:
+            raise RuntimeError, "The montage command (%s) failed with the following return code: %d" % (cmd, rc)
+
+
+    ##
+    # Put the base64 data into the imgInfos structures, which will be read
+    # by the caller (Generator) and written to file (as the caller has the
+    # proper resource id's).
+    def combineBase64(self, imgInfos):
+        for imgInfo in imgInfos:
+            base64dat = Image(imgInfo['file']).toBase64()
+            imgInfo['encoding'] =  "base64"
+            imgInfo['data'] = base64dat
 

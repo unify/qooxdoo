@@ -1,6 +1,6 @@
 qx.Class.define("qx.ui.tree.VirtualTreeFolder",
 {
-  extend : qx.ui.tree.core.AbstractTreeItem,
+  extend : qx.ui.tree.core.AbstractVirtualTreeItem,
 
   
   construct : function(label)
@@ -69,7 +69,7 @@ qx.Class.define("qx.ui.tree.VirtualTreeFolder",
       switch(id)
       {
         case "open":
-          control = new qx.ui.tree.FolderOpenButton(this.getOpen());
+          control = new qx.ui.tree.core.FolderOpenButton(this.getOpen());
           control.addListener("changeOpen", this._onChangeOpen, this);
           control.addListener("resize", this._updateIndent, this);
           break;

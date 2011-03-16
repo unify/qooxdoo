@@ -400,7 +400,6 @@ class CodeGenerator(object):
 
         # -- Main - runCompiled ------------------------------------------------
 
-        compileType= script.buildType
         packages   = script.packagesSorted()
         parts      = script.parts
         boot       = script.boot
@@ -411,7 +410,7 @@ class CodeGenerator(object):
         self._variants     = variants
         self._script       = script
 
-        self._console.info("Generate %s version..." % compileType)
+        self._console.info("Generate %s version..." % script.buildType)
         self._console.indent()
 
         # - Evaluate job config ---------------------
@@ -435,11 +434,11 @@ class CodeGenerator(object):
         translationMaps = self.getTranslationMaps(packages, variants, locales)
 
         # Read in base file name
-        fileRelPath = getOutputFile(compileType)
+        fileRelPath = getOutputFile(script.buildType)
         filePath    = self._config.absPath(fileRelPath)
         script.baseScriptPath = filePath
 
-        if compileType == "build":
+        if script.buildType == "build":
             # read in uri prefixes
             scriptUri = compConf.get('uris/script', 'script')
             scriptUri = Path.posifyPath(scriptUri)
@@ -462,7 +461,7 @@ class CodeGenerator(object):
         if scriptUri: out_sourceUri= scriptUri
         else:
             out_sourceUri = self._computeResourceUri({'class': ".", 'path': os.path.dirname(script.baseScriptPath)}, OsPath(""), rType="class", appRoot=self.approot)
-            out_sourceUri = os.path.normpath(out_sourceUri.encodedValue())
+            out_sourceUri = out_sourceUri.encodedValue()
         globalCodes["Libinfo"]['__out__'] = { 'sourceUri': out_sourceUri }
         globalCodes["Resources"]    = self.generateResourceInfoCode(script, settings, libraries, format)
         globalCodes["Translations"],\
@@ -474,7 +473,7 @@ class CodeGenerator(object):
             script = self.generateI18NParts(script, globalCodes)
             self.writePackages([p for p in script.packages if getattr(p, "__localeflag", False)], script)
 
-        if compileType == "build":
+        if script.buildType == "build":
 
             # - Specific job config ---------------------
             # read in compiler options
@@ -519,7 +518,7 @@ class CodeGenerator(object):
             self.writePackages(packages, script)
 
         # ---- 'hybrid' version ------------------------------------------------
-        elif compileType == "hybrid":
+        elif script.buildType == "hybrid":
 
             # - Generating packages ---------------------
             self._console.info("Generating packages...")
@@ -546,7 +545,7 @@ class CodeGenerator(object):
         # ---- 'source' version ------------------------------------------------
         else:
 
-            sourceContent = generateBootScript(globalCodes, script, bootPackage="", compileType=compileType)
+            sourceContent = generateBootScript(globalCodes, script, bootPackage="", compileType=script.buildType)
 
             # Construct file name
             resolvedFilePath = self._resolveFileName(filePath, variants, settings)
@@ -688,6 +687,8 @@ class CodeGenerator(object):
 
         libBaseUri.ensureTrailingSlash()
         uri = libBaseUri.join(uri)
+        # strip dangling "/", e.g. when we have no resourcePath
+        uri.ensureNoTrailingSlash()
 
         return uri
 

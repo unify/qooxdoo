@@ -5,7 +5,7 @@
    http://qooxdoo.org
 
    Copyright:
-     2004-2011 1&1 Internet AG, Germany, http://www.1und1.de
+     2011 1&1 Internet AG, Germany, http://www.1und1.de
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -18,18 +18,18 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL!
- *
  * A form virtual widget which allows a single selection. Looks somewhat like
- * a normal button, but opens a virtual list of items to select when clicking on it.
+ * a normal button, but opens a virtual list of items to select when clicking 
+ * on it.
  *
  * @childControl spacer {qx.ui.core.Spacer} Flexible spacer widget.
  * @childControl atom {qx.ui.basic.Atom} Shows the text and icon of the content.
- * @childControl arrow {qx.ui.basic.Image} Shows the arrow to open the drop-down list.
+ * @childControl arrow {qx.ui.basic.Image} Shows the arrow to open the drop-down
+ *   list.
  */
 qx.Class.define("qx.ui.form.VirtualSelectBox",
 {
-  extend : qx.ui.form.AbstractVirtualPopupList,
+  extend : qx.ui.form.core.AbstractVirtualBox,
 
 
   construct : function(model)
@@ -44,6 +44,7 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
     this.addListener("mouseover", this._onMouseOver, this);
     this.addListener("mouseout", this._onMouseOut, this);
 
+    this.__bindings = [];
     this.setSelection(this.getChildControl("dropdown").getSelection());
 
     this.__searchTimer = new qx.event.Timer(500);
@@ -86,8 +87,21 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
     __searchValue : "",
 
 
-    /** {qx.event.Timer} The time which triggers the search for preselection. */
+    /** 
+     * {qx.event.Timer} The time which triggers the search for pre-selection.
+     */
     __searchTimer : null,
+
+    
+    /** {Array} Contains the id from all bindings. */
+    __bindings : null,
+    
+    
+    /*
+    ---------------------------------------------------------------------------
+      INTERNAl API
+    ---------------------------------------------------------------------------
+    */
 
 
     // overridden
@@ -119,41 +133,54 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
           break;
       }
 
-      return control || this.base(arguments, id);
+      return control || this.base(arguments, id, hash);
     },
 
-
+    
     // overridden
-    _bindWidget : function() {
-      var atom = this.getChildControl("atom");
+    _getAction : function(event)
+    {
+      var keyIdentifier = event.getKeyIdentifier();
+      var isOpen = this.getChildControl("dropdown").isVisible();
 
-      this.removeAllBindings();
-
-      var modelPath = this._getBindPath("selection", "");
-      this.bind(modelPath, atom, "model", null);
-
-      var labelSourcePath = this._getBindPath("selection", this.getLabelPath());
-      this.bind(labelSourcePath, atom, "label", this.getLabelOptions());
-
-      if (this.getIconPath() != null) {
-        var iconSourcePath = this._getBindPath("selection", this.getIconPath());
-        this.bind(iconSourcePath, atom, "icon", this.getIconOptions());
+      if (!isOpen && (keyIdentifier === "Enter" || keyIdentifier === "Space")) {
+        return "open";
+      } else if (isOpen && event.isPrintable()) {
+        return "search";
+      } else {
+        return this.base(arguments, event);
       }
     },
+    
+    
+    // overridden
+    _addBindings : function() {
+      var atom = this.getChildControl("atom");
 
+      var modelPath = this._getBindPath("selection", "");
+      var id = this.bind(modelPath, atom, "model", null);
+      this.__bindings.push(id);
 
-    /*
-    ---------------------------------------------------------------------------
-      APPLY ROUTINES
-    ---------------------------------------------------------------------------
-    */
+      var labelSourcePath = this._getBindPath("selection", this.getLabelPath());
+      id = this.bind(labelSourcePath, atom, "label", this.getLabelOptions());
+      this.__bindings.push(id);
+      
+      if (this.getIconPath() != null) {
+        var iconSourcePath = this._getBindPath("selection", this.getIconPath());
+        id = this.bind(iconSourcePath, atom, "icon", this.getIconOptions());
+        this.__bindings.push(id);
+      }
+    },
+    
 
-
-    // property apply
-    _applySelection : function(value, old)
+    // overridden
+    _removeBindings : function()
     {
-      this.getChildControl("dropdown").setSelection(value);
-      qx.ui.core.queue.Widget.add(this);
+      while (this.__bindings.length > 0)
+      {
+        var id = this.__bindings.pop();
+        this.removeBinding(id);
+      }
     },
 
 
@@ -196,9 +223,11 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
 
     /**
      * Listener method for "mouseover" event.
+     * 
      * <ul>
      * <li>Adds state "hovered"</li>
-     * <li>Removes "abandoned" and adds "pressed" state (if "abandoned" state is set)</li>
+     * <li>Removes "abandoned" and adds "pressed" state (if "abandoned" state 
+     *   is set)</li>
      * </ul>
      *
      * @param event {Event} Mouse event
@@ -221,9 +250,11 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
 
     /**
      * Listener method for "mouseout" event.
+     * 
      * <ul>
      * <li>Removes "hovered" state</li>
-     * <li>Adds "abandoned" and removes "pressed" state (if "pressed" state is set)</li>
+     * <li>Adds "abandoned" and removes "pressed" state (if "pressed" state 
+     *   is set)</li>
      * </ul>
      *
      * @param event {Event} Mouse event
@@ -243,28 +274,27 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
       }
     },
 
+    
+    /*
+    ---------------------------------------------------------------------------
+      APPLY ROUTINES
+    ---------------------------------------------------------------------------
+    */
+
+
+    // property apply
+    _applySelection : function(value, old)
+    {
+      this.getChildControl("dropdown").setSelection(value);
+      qx.ui.core.queue.Widget.add(this);
+    },
+    
 
     /*
     ---------------------------------------------------------------------------
       HELPER METHODS
     ---------------------------------------------------------------------------
     */
-
-
-    // overridden
-    _getAction : function(event)
-    {
-      var keyIdentifier = event.getKeyIdentifier();
-      var isOpen = this.getChildControl("dropdown").isVisible();
-
-      if (!isOpen && (keyIdentifier === "Enter" || keyIdentifier === "Space")) {
-        return "open";
-      } else if (isOpen && event.isPrintable()) {
-        return "search";
-      } else {
-        return this.base(arguments, event);
-      }
-    },
 
 
     /**
@@ -295,12 +325,14 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
 
         if (this.getLabelPath() != null)
         {
-          value = qx.data.SingleValueBinding.getValueFromObject(item, this.getLabelPath());
+          value = qx.data.SingleValueBinding.getValueFromObject(item, 
+            this.getLabelPath());
 
           var labelOptions = this.getLabelOptions(); 
           if (labelOptions != null)
           {
-            var converter = qx.util.Delegate.getMethod(labelOptions, "converter");
+            var converter = qx.util.Delegate.getMethod(labelOptions, 
+              "converter");
 
             if (converter != null) {
               value = converter(value, item);
@@ -308,7 +340,9 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
           }
         }
 
-        if (qx.lang.String.startsWith(value.toLowerCase(), searchValue.toLowerCase()))
+        if (
+          qx.lang.String.startsWith(value.toLowerCase(), searchValue.toLowerCase())
+        )
         {
           selection.push(item);
           break;
@@ -338,8 +372,6 @@ qx.Class.define("qx.ui.form.VirtualSelectBox",
 
   destruct : function()
   {
-    this.removeAllBindings();
-
     this.__searchTimer.removeListener("interval", this.__preselect, this);
     this.__searchTimer.dispose();
     this.__searchTimer == null;

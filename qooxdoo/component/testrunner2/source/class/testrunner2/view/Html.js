@@ -117,6 +117,8 @@ qx.Class.define("testrunner2.view.Html", {
     __domElements : null,
     __testNameToId : null,
     __filterTimer : null,
+    __testModel : null,
+    __testNamesList : null,
     
     /**
      * Creates the header and attaches it to the root node.
@@ -294,8 +296,6 @@ qx.Class.define("testrunner2.view.Html", {
      */
     __reloadAut : function()
     {
-      this.__domElements.filterInput.value = "";
-      this.filterTests("");
       var src = this.__domElements.iframeSourceInput.value;
       this.resetAutUri();
       this.setAutUri(src);
@@ -403,11 +403,11 @@ qx.Class.define("testrunner2.view.Html", {
     filterTests : function(term)
     {
       var searchRegExp = new RegExp("^.*" + term + ".*", "ig");
-      var testList = this.getInitialTestList();
+      
       var matches = [];
-      for (var i=0,l=testList.length; i<l; i++) {
-        if (testList[i].match(searchRegExp)) {
-          matches.push(testList[i]);
+      for (var i=0,l=this.__testNamesList.length; i<l; i++) {
+        if (this.__testNamesList[i].match(searchRegExp)) {
+          matches.push(this.__testNamesList[i]);
         }
       }
       this.toggleAllTests(false, false);
@@ -466,9 +466,10 @@ qx.Class.define("testrunner2.view.Html", {
       this.resetSuccessfulTestCount();
       this.resetSkippedTestCount();
       this.clearResults();
-      var selectedTests = qx.lang.Array.clone(this.getSelectedTests());
-      this.resetSelectedTests();
-      this.setSelectedTests(selectedTests);
+      //var selectedTests = qx.lang.Array.clone(this.getSelectedTests());
+      //var selectedTests = this.getSelectedTests().copy();
+      //this.resetSelectedTests();
+      //this.setSelectedTests(selectedTests);
     },
     
     
@@ -492,11 +493,10 @@ qx.Class.define("testrunner2.view.Html", {
      * Visualizes the status of a single test result as it changes during test
      * execution.
      * 
-     * @param testResultData {testrunner2.runner.TestResultData} test result 
-     * data object
+     * @param testResultData {Object} A test model object
      */
     _onTestChangeState : function(testResultData) {
-      var testName = testResultData.getName();
+      var testName = testResultData.getFullName();
       var state = testResultData.getState();
       
       switch (state) {
@@ -577,20 +577,34 @@ qx.Class.define("testrunner2.view.Html", {
      */
     __toggleTestsSelected : function(tests, selected)
     {
-      var selectedTests = qx.lang.Array.clone(this.getSelectedTests());
+      //var selectedTests = qx.lang.Array.clone(this.getSelectedTests());
+      var selectedTests = this.getSelectedTests().copy();
       
       for (var i=0,l=tests.length; i<l; i++) {
         var testName = tests[i];
-        if (selected && !qx.lang.Array.contains(selectedTests, testName)) {
-          selectedTests.push(testName);
+        var testInSelection = this._listContainsTest(selectedTests, testName);
+        if (selected && !testInSelection) {
+          var testItem = testrunner2.runner.ModelUtil.getItemsByProperty(this.__testModel, "fullName", testName)[0];
+          selectedTests.push(testItem);
         }
-        else if (!selected && qx.lang.Array.contains(selectedTests, testName)) {
-          qx.lang.Array.remove(selectedTests, testName);
+        else if (!selected && testInSelection) {
+          this._removeTestFromList(selectedTests, testName);
         }
       }
       
-      selectedTests.sort();
+      //selectedTests.sort();
       this.setSelectedTests(selectedTests);
+      this._writeCookie();
+    },
+    
+    _writeCookie : function()
+    {
+      var selected = this.getSelectedTests();
+      var names = [];
+      for (var i=0,l=selected.length; i<l; i++) {
+        names.push(selected.getItem(i).getFullName());
+      }
+      qx.bom.Cookie.set("selectedTests", names.join("#"));
     },
     
     
@@ -679,27 +693,110 @@ qx.Class.define("testrunner2.view.Html", {
     },
     
     
-    /**
-     * Creates a list item with a checkbox and label for each test in the 
-     * current suite. Only tests with ticked checkboxes will be run.
-     * 
-     * @param value {Array} Full list of tests
-     * @param old {Array} Previous value
-     */
-    _applyInitialTestList : function(value, old)
+    _applyTestModel : function(value, old)
     {
       if (value == null) {
         return;
       }
-
-      this.setSelectedTests(value);
+      
+      this.__testModel = value;
+      
+      var testList = testrunner2.runner.ModelUtil.getItemsByProperty(value, "type", "test");
+      this.setSelectedTests(new qx.data.Array());
       this.__testNameToId = {};
       this.clearTestList();
       this.clearResults();
       
-      for (var i=0,l=value.length; i<l; i++) {
+      this.__testNamesList = [];
+      for (var i=0,l=testList.length; i<l; i++) {
+        this.__testNamesList.push(testList[i].getFullName());
+      }
+      
+      this._createTestList(this.__testNamesList);
+      
+      this._applyCookieSelection();
+    },
+    
+    
+    _applyCookieSelection : function()
+    {
+      var cookieSelection = qx.bom.Cookie.get("selectedTests");
+      if (cookieSelection) {
+        var cookieSelection = cookieSelection.split("#");
+        var foundTests = [];
+        for (var i=0,l=cookieSelection.length; i<l; i++) {
+          var found = testrunner2.runner.ModelUtil.getItemByFullName(this.__testModel, cookieSelection[i]);
+          if (found) {
+            foundTests.push(found.getFullName());
+          }
+        }
+        
+        if (foundTests.length > 0) {
+          this.toggleAllTests(false);
+          this.__toggleTestsSelected(foundTests, true);
+          
+          for (var i=0,l=foundTests.length; i<l; i++) {
+            this._setTestChecked(foundTests[i], true);
+          }
+        }
+      }
+      else {
+        var testList = testrunner2.runner.ModelUtil.getItemsByProperty(this.__testModel, "type", "test");
+        this.getSelectedTests().append(testList);
+      }
+    },
+    
+    _setTestChecked : function(testName, checked)
+    {
+      var value = checked ? "checked" : "";
+      var target = testName ? "#cb_" + this.__simplifyName(testName) : "input";
+      qx.bom.Collection.query("#qxtestrunner_testlist " + target).setAttribute("checked", value);
+    },
+    
+    /**
+     * Removes a single test item from a qx.data.Array of test items
+     * 
+     * @param list {qx.data.Array} Test array 
+     * @param testName {String} Full name of the test to be removed
+     */
+    _removeTestFromList : function(list, testName)
+    {
+      for (var i=0,l=list.length; i<l; i++) {
+        if (list.getItem(i).getFullName() === testName) {
+          list.remove(list.getItem(i));
+          return;
+        }
+      }
+    },
+    
+    
+    /**
+     * Checks if a list of test items contains an entry with the given name
+     * 
+     * @param list {qx.data.Array} The test list
+     * @param testName {String} Full name of the test to look for
+     * @return {Boolean} True if the test is in the list
+     */
+    _listContainsTest : function(list, testName)
+    {
+      for (var i=0,l=list.length; i<l; i++) {
+        if (list.getItem(i).getFullName() === testName) {
+          return true;
+        }
+      }
+      return false;
+    },
+    
+    
+    /**
+     * Creates an entry in the HTML test list for each test in the given list
+     * @param testList {String[]} Array of test names
+     */
+    _createTestList : function(testList)
+    {
+      for (var i=0,l=testList.length; i<l; i++) {
         var listItem = document.createElement("li");
-        var testName = value[i];
+        var testName = testList[i];
         var key = this.__simplifyName(testName);
         this.__testNameToId[key] = testName;
         var checkboxId = "cb_" + key;
@@ -707,22 +804,10 @@ qx.Class.define("testrunner2.view.Html", {
         listItem.appendChild(cb);
         listItem.innerHTML += '<label for="' + checkboxId + '">' + testName + '</label>';
         this.__domElements.elemTestList.appendChild(listItem);
-        
-        /*
-        var html = "<li>";
-        var testName = value[i];
-        var key = this.__simplifyName(testName);
-        this.__testNameToId[key] = testName;
-        var checkboxId = "cb_" + key;
-        html += '<input checked="checked" type="checkbox" id="' + checkboxId + '" >'
-        html += '<label for="' + checkboxId + '">' + testName + '</label></li>';
-        this.__domElements.elemTestList.innerHTML += html;
-        */
-                
         cb = document.getElementById(checkboxId);
         qx.event.Registration.addListener(cb, "change", this.__onToggleTest, this);
       }
-    },    
+    },
     
     
     /**

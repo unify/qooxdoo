@@ -22,8 +22,11 @@
 /**
  * Cross browser XML Element API
  *
- * http://msdn.microsoft.com/library/default.asp?url=/library/en-us/xmlsdk/html/81f3de54-3b79-46dc-8e01-73ca2d94cdb5.asp
- * http://developer.mozilla.org/en/docs/Parsing_and_serializing_XML
+ * API to select, query and serialize XML elements.
+ *
+ * Further information:
+ *
+ * * <a href="http://developer.mozilla.org/en/docs/Parsing_and_serializing_XML">MDN Parsing and Serializing XML</a>
  *
  * Please note that nodes selected using the <code>selectSingleNode()</code> and
  * <code>selectNodes()</code> methods remain in their document context so
@@ -65,11 +68,10 @@ qx.Class.define("qx.xml.Element",
      * Selects the first XmlNode that matches the XPath expression.
      *
      * <p>Note: XPath queries containing namespace prefixes won't work in
-     * Chromium-based browsers until Chromium bug #671[1] is fixed. Opera
-     * versions < 9.52 do not seem to support namespaces in XPath queries at
-     * all.</p>
-     *
-     * [1]http://code.google.com/p/chromium/issues/detail?id=671
+     * Chromium-based browsers until Chromium bug #671 
+     * [<a href="http://code.google.com/p/chromium/issues/detail?id=671">1</a>] 
+     * is fixed. Opera versions < 9.52 do not seem to support namespaces in
+     * XPath queries at all.</p>
      *
      * @param element {Element | Document} root element for the search
      * @param query {String} XPath query
@@ -132,11 +134,10 @@ qx.Class.define("qx.xml.Element",
      * Selects a list of nodes matching the XPath expression.
      *
      * <p>Note: XPath queries containing namespace prefixes won't work in
-     * Chromium-based browsers until Chromium bug #671[1] is fixed. Opera
-     * versions < 9.52 do not seem to support namespaces in XPath queries at
-     * all.</p>
-     *
-     * [1]http://code.google.com/p/chromium/issues/detail?id=671
+     * Chromium-based browsers until Chromium bug #671
+     * [<a href="http://code.google.com/p/chromium/issues/detail?id=671">1</a>] 
+     * is fixed. Opera versions < 9.52 do not seem to support namespaces in
+     * XPath queries at all.</p>
      *
      * @param element {Element | Document} root element for the search
      * @param query {String} XPath query
@@ -203,7 +204,11 @@ qx.Class.define("qx.xml.Element",
 
 
     /**
-     * Returns a list of elements with the given tag name belonging to the given namespace (http://developer.mozilla.org/en/docs/DOM:element.getElementsByTagNameNS).
+     * Returns a list of elements with the given tag name belonging to the given namespace
+     *
+     * (See 
+     * <a href="http://developer.mozilla.org/en/DOM/element.getElementsByTagNameNS">MDN
+     * Reference</a>).
      *
      * @param element {Element | Document} the element from where the search should start.
      *       Note that only the descendants of this element are included in the search, not the node itself.

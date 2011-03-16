@@ -261,20 +261,27 @@ qx.Class.define("qx.bom.element.Decoration",
      *
      * @param style {Map} style information
      * @param repeat {String} repeat mode
-     * @param source {String} image source
+     * @param sourceid {String} image resource id
      *
      * @return {Map} image URI and style infos
      */
-    __processScaleXScaleY : function(style, repeat, source)
+    __processScaleXScaleY : function(style, repeat, sourceid)
     {
       var ResourceManager = qx.util.ResourceManager.getInstance();
-      var clipped = ResourceManager.isClippedImage(source);
-      var dimension = this.__getDimension(source);
+      var clipped = ResourceManager.isClippedImage(sourceid);
+      var dimension = this.__getDimension(sourceid);
+      var uri;
 
-      if (clipped)
+      if (clipped) 
       {
-        var data = ResourceManager.getData(source);
-        var uri = ResourceManager.toUri(data[4]);
+        var data = ResourceManager.getData(sourceid);
+        var combinedid = data[4];
+        if (clipped == "b64") {
+          uri = ResourceManager.toDataUri(sourceid);
+        }
+        else {
+          uri = ResourceManager.toUri(combinedid);
+        }
 
         if (repeat === "scale-x") {
           style = this.__getStylesForClippedScaleX(style, data, dimension.height);
@@ -292,7 +299,7 @@ qx.Class.define("qx.bom.element.Decoration",
       else
       {
         if (qx.core.Variant.isSet("qx.debug", "on")) {
-          this.__checkForPotentialClippedImage(source);
+          this.__checkForPotentialClippedImage(sourceid);
         }
 
         if (repeat == "scale-x")
@@ -306,7 +313,7 @@ qx.Class.define("qx.bom.element.Decoration",
           // note: height is given by the user
         }
 
-        var uri = ResourceManager.toUri(source);
+        uri = ResourceManager.toUri(sourceid);
         return {
           src : uri,
           style : style
@@ -382,20 +389,35 @@ qx.Class.define("qx.bom.element.Decoration",
      *
      * @param style {Map} style information
      * @param repeat {String} repeat mode
-     * @param source {String} image source
+     * @param sourceid {String} image resource id
      *
      * @return {Map} image URI and style infos
      */
-    __processRepeats : function(style, repeat, source)
+    __processRepeats : function(style, repeat, sourceid)
     {
-      var clipped = qx.util.ResourceManager.getInstance().isClippedImage(source);
-      var dimension = this.__getDimension(source);
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+      var clipped = ResourceManager.isClippedImage(sourceid);
+      var dimension = this.__getDimension(sourceid);
 
       // Double axis repeats cannot be clipped
       if (clipped && repeat !== "repeat")
       {
-        var data = qx.util.ResourceManager.getInstance().getData(source);
-        var bg = qx.bom.element.Background.getStyles(data[4], repeat, data[5], data[6]);
+        // data = [ 8, 5, "png", "qx", "qx/decoration/Modern/arrows-combined.png", -36, 0]
+        var data = ResourceManager.getData(sourceid);
+        var combinedid = data[4];
+        if (clipped == "b64")
+        {
+          var uri = ResourceManager.toDataUri(sourceid);
+          var offx = offy = 0;
+        }
+        else
+        {
+          var uri  = ResourceManager.toUri(combinedid);
+          var offx = data[5];
+          var offy = data[6];
+        }
+
+        var bg = qx.bom.element.Background.getStyles(uri, repeat, offx, offy);
         for (var key in bg) {
           style[key] = bg[key];
         }
@@ -417,12 +439,12 @@ qx.Class.define("qx.bom.element.Decoration",
         if (qx.core.Variant.isSet("qx.debug", "on"))
         {
           if (repeat !== "repeat") {
-            this.__checkForPotentialClippedImage(source);
+            this.__checkForPotentialClippedImage(sourceid);
           }
         }
 
         style = this.__normalizeWidthHeight(style, dimension.width, dimension.height);
-        style = this.__getStylesForSingleRepeat(style, source, repeat);
+        style = this.__getStylesForSingleRepeat(style, sourceid, repeat);
 
         return {
           style : style

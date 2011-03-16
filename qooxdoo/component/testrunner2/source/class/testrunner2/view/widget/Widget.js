@@ -26,6 +26,7 @@
 #asset(qx/icon/Tango/22/actions/media-seek-forward.png)
 
 #asset(testrunner2/view/widget/css/testrunner.css)
+#asset(testrunner2/view/widget/image/*)
 ************************************************************************ */
 /**
  * Widget-based Testrunner view
@@ -89,6 +90,33 @@ qx.Class.define("testrunner2.view.widget.Widget", {
     this._makeCommands();
   },
   
+  statics :
+  {
+    /** Grey icons for items without a result */
+    TREEICONS :
+    {
+      "package" : "testrunner2/view/widget/image/package18_grey.gif",
+      "class" : "testrunner2/view/widget/image/class18_grey.gif",
+      "test" : "testrunner2/view/widget/image/method_public18_grey.gif"
+    },
+
+    /** Green icons for items without failures */
+    TREEICONSOK :
+    {
+      "package" : "testrunner2/view/widget/image/package18.gif",
+      "class" : "testrunner2/view/widget/image/class18.gif",
+      "test" : "testrunner2/view/widget/image/method_public18.gif"
+    },
+
+    /** Red icons for items with failures */
+    TREEICONSERROR :
+    {
+      "package" : "testrunner2/view/widget/image/package_warning18.gif",
+      "class" : "testrunner2/view/widget/image/class_warning18.gif",
+      "test" : "testrunner2/view/widget/image/method_public_error18.gif"
+    }
+  },
+  
   properties :
   {
     /** Controls the display of stack trace information for exceptions */
@@ -137,19 +165,21 @@ qx.Class.define("testrunner2.view.widget.Widget", {
      * Creates the application header.
      */
     
+    __logLevelData : null,
+    
     __app : null,
     __iframe : null,
-    __logLevelData : null,
     __overflowMenu : null,
     __menuItemStore : null,
     __labelDeco : null,
     __logElement : null,
-    __testList : null,
+    __testTree : null,
     __runButton : null,
     __stopButton : null,
     __progressBar : null,
     __testResultView : null,
     __testCountField : null,
+    __selectedTestField : null,
     __statusField : null,
     
     /**
@@ -364,20 +394,78 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       });
       container.add(caption);
       
-      //TODO: Test tree
-      var testList = this.__testList = new qx.ui.list.List();
-      testList.setDecorator("separator-vertical");
-      testList.setSelectionMode("multi");
-      
-      testList.getSelection().bind("change", this, "selectedTests", {
-        converter : qx.lang.Function.bind(function() {
-          return this.__testList.getSelection().toArray();
-        }, this)
+      this.__testTree = new qx.ui.tree.VirtualTree();
+      this.__testTree.set({
+        labelPath : "name",
+        childProperty : "children",
+        delegate : {
+          bindNode : this.__bindTreeItem,
+          bindLeaf : this.__bindTreeItem
+        },
+        decorator : "separator-vertical"
       });
       
-      container.add(testList, {flex : 1});
+      var selection = new qx.data.Array();
+      selection.addListener("change", 
+        this._onChangeTestSelection, this);
+      
+      this.__testTree.setSelection(selection);
+      
+      this.setSelectedTests(this.__testTree.getSelection());
+      
+      container.add(this.__testTree, {flex : 1});
       
       return container;
+    },
+    
+    
+    /**
+     * Open a selected node
+     * 
+     * @param {qx.event.type.Data} Data event containing the selection
+     */
+    _onChangeTestSelection : function(ev)
+    {
+      var selected = this.getSelectedTests();
+      if (selected.length > 0) {
+        var node = selected.getItem(0);
+        if (!this.__testTree.isNodeOpen(node)) {
+          this.__testTree.openNodeAndParents(node);
+        }
+        qx.bom.Cookie.set("selectedTest", node.getFullName());
+      }
+    },
+    
+    /**
+     * Sets the tree icons according to the model item's state and type.
+     * 
+     * @param controller {MWidgetController} The currently used controller.
+     * @param node {qx.ui.core.Widget} The created and used node.
+     * @param id {Integer} The id for the binding.
+     */
+    __bindTreeItem : function(controller, node, id) {
+      controller.bindProperty("", "model", null, node, id);
+      controller.bindProperty("name", "label", null, node, id);
+      controller.bindProperty("state", "icon", {
+        converter : function(data, model) {
+          var state = data;
+          var type = model.getType();          
+          var iconMap;
+          switch (state) {
+            case "success":
+              iconMap = "TREEICONSOK";
+              break;
+            case "error":
+            case "failure":
+              iconMap = "TREEICONSERROR"
+              break;
+            default:
+              iconMap = "TREEICONS";
+            break;
+          }
+          return testrunner2.view.widget.Widget[iconMap][type];
+        }
+      }, node, id);
     },
     
     /**
@@ -644,18 +732,12 @@ qx.Class.define("testrunner2.view.widget.Widget", {
         alignY : "middle"
       }));
       
-      var l1 = new qx.ui.form.TextField("").set({
-        width : 150,
+      var l1 = this.__selectedTestField = new qx.ui.form.TextField("").set({
+        width : 300,
         font : "small",
         readOnly : true
       });
       statuspane.add(l1);
-      //this.__selectedTestField = l1;
-      this.bind("selectedTests", l1, "value", {
-        converter : function(data) {
-          return data[0];
-        }
-      });
 
       statuspane.add(new qx.ui.basic.Label(this.__app.tr("Number of Tests: ")).set({
         alignY : "middle"
@@ -670,6 +752,18 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       this.__testCountField = l2;
 
       statuspane.add(l2);
+      
+      this.getSelectedTests().addListener("change", function(ev) {
+        var selectedName = "";
+        var count = 0;
+        var selectedTests = this.getSelectedTests();
+        if (selectedTests !== null && selectedTests.length > 0) {
+          count = testrunner2.runner.ModelUtil.getItemsByProperty(selectedTests.getItem(0), "type", "test").length;
+          selectedName = this.getSelectedTests().getItem(0).getFullName();
+        }
+        this.__selectedTestField.setValue(selectedName);
+        this.__testCountField.setValue(count.toString());
+      }, this);
 
       // System Info
       statuspane.add(new qx.ui.basic.Label(this.__app.tr("System Status: ")).set({
@@ -690,22 +784,13 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       switch(value) 
       {
         case "loading" :
-          this.__testList.resetModel();
+          this.__testTree.resetModel();
           this.setStatus("Loading tests...");
           break;
         case "ready" :
           this.setStatus("Test suite ready");
           this._setActiveButton(this.__runButton);
-          /*
-          var filterFromCookie = qx.bom.Cookie.get("testFilter");
-          if (filterFromCookie) {
-            this.__domElements.filterInput.value = filterFromCookie;
-            this.filterTests(filterFromCookie);
-          }
-          else {
-          */
-            this._applyTestCount(this.getTestCount());
-          //}
+          this._applyTestCount(this.getTestCount());
           this.setFailedTestCount(0);
           this.setSuccessfulTestCount(0);
           break;
@@ -726,18 +811,27 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       };
     },
     
-    _applyInitialTestList : function(value, old)
+    _applyTestModel : function(value, old)
     {
       if (value && value !== old) {
         var model = qx.data.marshal.Json.createModel(value);
-        this.__testList.setModel(model);
-        var selected = [];
-        model.forEach(function(item) {
-          selected.push(item);
-        }, this);
-        this.__testList.getSelection().append(new qx.data.Array(selected));
+        this.__testTree.setModel(model);
+        this.__testTree.openNode(model.getChildren().getItem(0));
+                
+        var cookieSelection = qx.bom.Cookie.get("selectedTest");
+        if (cookieSelection) {
+          var found = testrunner2.runner.ModelUtil.getItemByFullName(model, cookieSelection);
+          if (found) {
+            this.getSelectedTests().removeAll();
+            this.getSelectedTests().push(found);
+          }
+        }
       }
+    
     },
+    
+    _applyTestCount : function(value, old)
+    {},
     
     _applyStatus : function(value, old)
     {
@@ -746,12 +840,6 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       }
     },
     
-    _applyTestCount : function(value, old)
-    {
-      if (value && value !== old) {
-        this.__testCountField.setValue(value.toString());
-      }
-    },
     
     _onTestChangeState : function(testResultData) 
     {
@@ -830,9 +918,12 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       this.resetSuccessfulTestCount();
       this.resetSkippedTestCount();
       this.__testResultView.clear();
+      /*
+       * TODO
       var selection = qx.lang.Array.clone(this.getSelectedTests());
       this.resetSelectedTests();
       this.setSelectedTests(selection);
+      */
     },
     
     /**
@@ -849,5 +940,24 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       var reloadAut = new qx.ui.core.Command("Ctrl+Shift+R");
       reloadAut.addListener("execute", this.__reloadAut, this);
     }
+  },
+  
+  destruct : function()
+  {
+    this._disposeObjects(
+    "__iframe",
+    "__overflowMenu",
+    "__menuItemStore",
+    "__labelDeco",
+    "__logElement",
+    "__testTree",
+    "__runButton",
+    "__stopButton",
+    "__progressBar",
+    "__testResultView",
+    "__testCountField",
+    "__selectedTestField",
+    "__statusField",
+    "__app");
   }
 });

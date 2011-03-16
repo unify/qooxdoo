@@ -25,7 +25,6 @@ import functools, codecs, operator
 from misc                                   import filetool, textutil, util, Path, PathType, json, copytool
 from misc.PathType                          import PathType
 from generator                              import Context as context
-from generator.resource.ImageInfo           import ImgInfoFmt
 from generator.resource.ResourceHandler     import ResourceHandler
 from generator.config.Config                import ConfigurationError
 from generator.code.Class                   import CompileOptions
@@ -139,14 +138,7 @@ def _handleResources(script, generator, filtered=True):
     else:
         # get the main library
         mainlib = [x for x in script.libraries if x.namespace == script.namespace][0]
-        #reslist = [x.path for x in mainlib.getResources()]
         reslist = mainlib.getResources()
-        #for res in reslist:
-        #    resid, resValue = mainlib.analyseResource(res) 
-        #    if isinstance(resValue, ImgInfoFmt):
-        #        allresources[resid] = resValue.flatten()
-        #    else:
-        #        allresources[resid] = resValue
         allresources = ResourceHandler.createResourceStruct(reslist, updateOnlyExistingSprites = False)
 
     # get resource info

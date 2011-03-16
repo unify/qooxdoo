@@ -39,7 +39,7 @@ qx.Mixin.define("simulator.MGlobalErrorHandling",
      * accessible from the current Selenium instance. Default: The AUT's window.
      * @lint ignoreUndefined(selenium)
      */
-    addGlobalErrorHandler : function(win)
+    _addGlobalErrorHandler : function(win)
     {
       var qxWin = win || "selenium.qxStoredVars['autWindow']";
       simulator.QxSelenium.getInstance().getEval(qxWin + ".qx.Simulation.errorStore = [];");
@@ -79,7 +79,7 @@ qx.Mixin.define("simulator.MGlobalErrorHandling",
         });
       };
       
-      this.addOwnFunction("addGlobalErrorHandler", addHandler);
+      this._addOwnFunction("addGlobalErrorHandler", addHandler);
       simulator.QxSelenium.getInstance().getEval("selenium.qxStoredVars['autWindow'].qx.Simulation.addGlobalErrorHandler(" + qxWin + ");");  
     },
     
@@ -93,7 +93,7 @@ qx.Mixin.define("simulator.MGlobalErrorHandling",
      * 
      * @lint ignoreUndefined(selenium)
      */
-    addGlobalErrorGetter : function(win)
+    _addGlobalErrorGetter : function(win)
     {
       var getGlobalErrors = function(win)
       {
@@ -102,7 +102,7 @@ qx.Mixin.define("simulator.MGlobalErrorHandling",
          var exString = exceptions.join("|");
          return exString;     
       };
-      this.addOwnFunction("getGlobalErrors", getGlobalErrors);
+      this._addOwnFunction("getGlobalErrors", getGlobalErrors);
     },
     
     /**
@@ -150,6 +150,24 @@ qx.Mixin.define("simulator.MGlobalErrorHandling",
     {
       var targetWin = win || "selenium.qxStoredVars['autWindow']";
       simulator.QxSelenium.getInstance().getEval(targetWin + ".qx.Simulation.errorStore = [];");
+    },
+    
+    /**
+     * Retrieves all exceptions caught by the AUT's global error handling and 
+     * logs them.
+     * 
+     * @param win {String?} JavaScript snippet that evaluates as a Window object 
+     * accessible from the current Selenium instance. Default: The AUT's window.
+     */
+    logGlobalErrors : function(win)
+    {
+      var globalErrors = this.getGlobalErrors(win);
+      
+      for (var i=0,l=globalErrors.length; i<l; i++) {
+        if (globalErrors[i].length > 0) {
+          this.error(globalErrors[i]);
+        }
+      }
     }
   }
 });

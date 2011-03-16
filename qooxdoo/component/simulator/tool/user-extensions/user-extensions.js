@@ -589,21 +589,6 @@ Selenium.prototype.isQxInstanceOf = function (object, qxclass) {
 
 /**
  * Uses the standard qx locators to find a table, and then returns a semicolon-
- * separated list of column IDs from the table model
- *
- * @deprecated
- * @param locator {String} an element locator
- * @return {String} A list of column IDs 
- */
-Selenium.prototype.getQxTableColumnIds = function(locator)
-{
-  LOG.warn("getQxTableColumnIds is deprecated, please use either getQxTableVisibleColumnIds or getQxTableModelColumnIds.");
-  return this.getQxTableModelColumnIds(locator);
-};
-
-
-/**
- * Uses the standard qx locators to find a table, and then returns a semicolon-
  * separated list of column IDs from the table model. Note that this can differ
  * from the columns that are actually visible in the table.
  *
@@ -673,7 +658,7 @@ Selenium.prototype.getQxTableVisibleColumnIds = function(locator)
  * @param locator {var} an element locator
  * @return {var} The number of rows in the table.
  */
-Selenium.prototype.getQxTableRows = function(locator)
+Selenium.prototype.getQxTableRowCount = function(locator)
 {
   var qxObject = this.getQxWidgetByLocator(locator);
   
@@ -696,20 +681,7 @@ Selenium.prototype.getQxTableRows = function(locator)
  * @param locator {var} an element locator
  * @return {var} The number of columns in the table.
  */
-Selenium.prototype.getQxTableCols = function(locator)
-{
-  LOG.warn("getQxTableCols is deprecated, please use either getQxTableVisibleCols or getQxTableModelCols.");
-  return this.getQxTableModelCols(locator);
-};
-
-/**
- * Uses the standard qx locators to find a table, and then returns the number of
- * columns from the table model.
- *
- * @param locator {var} an element locator
- * @return {var} The number of columns in the table.
- */
-Selenium.prototype.getQxTableModelCols = function(locator)
+Selenium.prototype.getQxTableModelColCount = function(locator)
 {
   var qxObject = this.getQxWidgetByLocator(locator);
   
@@ -732,7 +704,7 @@ Selenium.prototype.getQxTableModelCols = function(locator)
  * @param locator {var} an element locator
  * @return {var} The number of columns in the table.
  */
-Selenium.prototype.getQxTableVisibleCols = function(locator)
+Selenium.prototype.getQxTableVisibleColCount = function(locator)
 {
   var qxObject = this.getQxWidgetByLocator(locator);
   
@@ -752,7 +724,6 @@ Selenium.prototype.getQxTableVisibleCols = function(locator)
 };
 
 /**
- * EXPERIMENTAL - NOT READY FOR PRODUCTION
  * 
  * Returns a qooxdoo table's selected row data (an array of rows which are 
  * arrays of cell values). Data will be returned as a JSON string if a JSON 
@@ -787,7 +758,6 @@ Selenium.prototype.getQxTableSelectedRowData = function(locator)
 };
 
 /**
- * EXPERIMENTAL - NOT READY FOR PRODUCTION
  * 
  * Uses any available JSON implementation from the browser or qooxdoo to 
  * serialize the given data. Returns the unchanged data if no JSON 
@@ -834,7 +804,6 @@ Selenium.prototype.getQxObjectFunction = function(locator, functionName)
 };
 
 /**
- * EXPERIMENTAL - NOT READY FOR PRODUCTION
  * 
  * Creates a new function with the value of the script parameter as body. This 
  * function is bound to the context of the qooxdoo widget returned by the given
@@ -933,13 +902,15 @@ Selenium.prototype.getQxWidgetByLocator = function(locator)
 };
 
 /**
- * Uses the standard qx locators to find a table, and then returns the text
- * found in the cell at row, column position.
- *
- * @type member
- * @param locator {var} an element locator
- * @param eventParams {var} A text string that should contain "row=Y,col=X"
- * @return {var} The text found at the given table cell.
+ * Uses the standard qx locators to find a table, then returns the value
+ * of the specified cell from the table model.
+ * 
+ * @param locator {String} an element locator that finds a qooxdoo table's 
+ * DOM element
+ * @param params {String} A string that should contain row and column
+ * identifers (see {@link #qxTableClick}
+ * @return {Object} The value of the cell. Primitive types will be returned
+ * as strings, Objects will be serialized using JSON
  */
 Selenium.prototype.getQxTableValue = function(locator, eventParams)
 {
@@ -976,7 +947,12 @@ Selenium.prototype.getQxTableValue = function(locator, eventParams)
   var columnModel = qxObject.getTableColumnModel();
   var visibleColumns = columnModel.getVisibleColumns();
   
-  return String(qxObject.getTableModel().getValue(visibleColumns[col], row));
+  var value = qxObject.getTableModel().getValue(visibleColumns[col], row);
+  if (typeof value === "object") {
+    value = this.toJson(value);
+  }
+  
+  return value;
 };
 
 /**
@@ -1674,8 +1650,8 @@ Selenium.prototype.doQxTypeKeys = function(locator, value)
  * is returned. If not, the element's corresponding qooxdoo widget is checked 
  * and the first text field/text area child node is returned.  
  * 
- * @param {Object} element The DOM element to start with
- * @return {Object} The found input or textarea element
+ * @param {DOMElement} element The DOM element to start with
+ * @return {DOMElement} The found input or textarea element
  */
 Selenium.prototype.getInputElement = function(element)
 {
@@ -1683,32 +1659,45 @@ Selenium.prototype.getInputElement = function(element)
     element = element.wrappedJSObject;
   }
   // If the locator found a text input or textarea element, return it
-  if (element.tagName.toLowerCase() == "textarea" ||
-      (element.tagName == "input" && element.type.toLowerCase() == "text")) {
+  if (this._isVisibleTextInput(element)) {
     return element;
   }
   // Otherwise get the qooxdoo widget the element belongs to
   var qx = this.getQxGlobalObject();
   var qxWidget = qx.ui.core.Widget.getWidgetByElement(element);
   
-  if (this.isQxInstanceOf(qxWidget, "htmlarea.HtmlArea")) {
+  if (qxWidget.getIframeObject) {
     var iframe = qxWidget.getIframeObject();
     try {
       return iframe.contentDocument.body;
-    } catch (ex) {
+    } catch(ex) {
       return iframe.document.body;
     }
   }
   
-  var classNames = ["qx.ui.form.AbstractField", "qx.ui.form.TextField", "qx.ui.form.TextArea", "qx.ui.form.PasswordField"];
-  // Search the widget and its child controls for a text field
-  var fieldWidgets = this.getChildControls(qxWidget, classNames);
-  if (!fieldWidgets.length > 0) {
-    throw new SeleniumError("No input/text area child found in widget " + qxWidget.classname);
+  // Get the DOM input element
+  element = qxWidget.getContentElement().getDomElement();
+  if (this._isVisibleTextInput(element))
+  {
+    return element;
   }
   
-  // Get the DOM input element
-  return fieldWidgets[0].getContentElement().getDomElement();
+  throw new SeleniumError("No input/text area child found in widget " + qxWidget.classname);
+};
+
+
+/**
+ * Checks if a DOM element is either a text area or text input and if it is
+ * visible.
+ * 
+ * @param element {DOMElement} The element to check
+ * @return {Boolean} Whether the given element is a visible text input field
+ */
+Selenium.prototype._isVisibleTextInput = function(element)
+{
+  return (element.style.display !== "none" && element.style.visibility !== "hidden") 
+      && (element.tagName.toLowerCase() == "textarea" ||
+      (element.tagName.toLowerCase() == "input" && element.type.toLowerCase() == "text"));
 };
 
 /** 

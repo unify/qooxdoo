@@ -32,8 +32,6 @@ qx.Class.define("simulator.Application", {
       
       qx.log.Logger.register(qx.log.appender.RhinoConsole);
       
-      this.simulation = new simulator.QxSimulation();
-      
       this.runner = new simulator.TestRunner();
       this.runner.runTests();
     },
@@ -49,6 +47,10 @@ qx.Class.define("simulator.Application", {
       for (var i=0, l=args.length; i<l; i++) {
         if (args[i].indexOf("settings=") == 0) {
           opts = args[i].substr(9);
+          break;
+        }
+        else if (args[i].indexOf("'settings=") == 0) {
+          opts = /'settings\=(.*?)'/.exec(args[i])[1];
           break;
         }
       }

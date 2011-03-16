@@ -30,7 +30,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 {
   extend : qx.ui.virtual.core.Scroller,
   implement : qx.ui.tree.core.IVirtualTree,
-  include : qx.ui.tree.core.MSelectionHandling,
+  include : qx.ui.tree.selection.MSelectionHandling,
 
   /**
    * @param model {qx.core.Object?null} The model structure for the tree, for
@@ -60,6 +60,8 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
     this.initItemHeight();
     this.initOpenMode();
+    
+    this.addListener("keypress", this._onKeyPress, this);
   },
 
 
@@ -257,20 +259,47 @@ qx.Class.define("qx.ui.tree.VirtualTree",
      * row.
      */
     __nestingLevel : null,
+    
+    
+    /**
+     * {qx.util.DeferredCall} Adds this instance to the widget queue on a 
+     * deferred call.
+     */
+    __deferredCall : null,
 
-
+    
+    /** {Integer} Holds the max item width from a rendered widget. */
+    __itemWidth : 0,
+    
+    
     /*
     ---------------------------------------------------------------------------
       PUBLIC API
     ---------------------------------------------------------------------------
     */
 
+    
+    // overridden
+    syncWidget : function()
+    {
+      var firstRow = this._layer.getFirstRow();
+      var rowSize = this._layer.getRowSizes().length;
+      
+      for (var row = firstRow; row < firstRow + rowSize; row++)
+      {
+        var widget = this._layer.getRenderedCellWidget(row, 0);
+        this.__itemWidth = Math.max(this.__itemWidth, widget.getSizeHint().width);
+      }
+      var paneWidth = this.getPane().getBounds().width;
+      this.getPane().getColumnConfig().setItemSize(0, Math.max(this.__itemWidth, paneWidth));
+    },
+    
 
     // Interface implementation
     openNode : function(node)
     {
       this.__openNode(node);
-      this.__buildLookupTable();
+      this.buildLookupTable();
     },
 
 
@@ -284,7 +313,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     openNodeAndParents : function(node)
     {
       this.__openNodeAndAllParents(this.getModel(), node);
-      this.__buildLookupTable();
+      this.buildLookupTable();
     },
 
 
@@ -294,7 +323,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       if (qx.lang.Array.contains(this.__openNodes, node))
       {
         qx.lang.Array.remove(this.__openNodes, node);
-        this.__buildLookupTable();
+        this.buildLookupTable();
       }
     },
 
@@ -322,8 +351,6 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       this.__nestingLevel = [];
       this._initLayer();
       this._initSelection();
-
-      this.getPane().addListener("resize", this._onResize, this);
     },
 
 
@@ -334,6 +361,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     {
       this._provider = new qx.ui.tree.provider.WidgetProvider(this);
       this._layer = this._provider.createLayer();
+      this._layer.addListener("updated", this._onUpdated, this);
       this.getPane().addLayer(this._layer);
     },
 
@@ -423,13 +451,13 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
     // property apply
     _applyHideRoot : function(value, old) {
-      this.__buildLookupTable();
+      this.buildLookupTable();
     },
 
 
     // property apply
     _applyShowLeafs : function(value, old) {
-      this.__buildLookupTable();
+      this.buildLookupTable();
     },
 
 
@@ -480,15 +508,15 @@ qx.Class.define("qx.ui.tree.VirtualTree",
               "the view automatically on model changes.");
           }
         }
-        value.addListener("changeBubble", this.__buildLookupTable, this);
+        value.addListener("changeBubble", this._onChangeBubble, this);
         this.__openNode(value);
       }
 
       if (old != null) {
-        old.removeListener("changeBubble", this.__buildLookupTable, this);
+        old.removeListener("changeBubble", this._onChangeBubble, this);
       }
 
-      this.__buildLookupTable();
+      this.buildLookupTable();
     },
     
     
@@ -508,12 +536,39 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
 
     /**
-     * Event handler for the resize event.
-     *
-     * @param event {qx.event.type.Data} The resize event.
+     * Event handler for the changeBubble event. The handler rebuild the lookup
+     * table when the child structure changed.
+     * 
+     * @param event {qx.event.type.Data} The data event.
      */
-    _onResize : function(event) {
-      this.getPane().getColumnConfig().setItemSize(0, event.getData().width);
+    _onChangeBubble : function(event)
+    {
+      var propertyName = event.getData().name;
+      var index = propertyName.lastIndexOf(".");
+
+      if (index != -1) {
+        propertyName = propertyName.substr(index + 1, propertyName.length);
+      }
+
+      if (qx.lang.String.startsWith(propertyName, this.getChildProperty())) {
+        this.buildLookupTable();
+      }
+    },
+    
+
+    /**
+     * Event handler for the update event.
+     *
+     * @param event {qx.event.type.Event} The event.
+     */
+    _onUpdated : function(event)
+    {
+      if (this.__deferredCall == null) {
+        this.__deferredCall = new qx.util.DeferredCall(function() {
+          qx.ui.core.queue.Widget.add(this);
+        }, this);
+      }
+      this.__deferredCall.schedule();
     },
 
 
@@ -536,6 +591,68 @@ qx.Class.define("qx.ui.tree.VirtualTree",
         }
       }
     },
+    
+    
+    /**
+     * Event handler for key press events. Open and close the current selected
+     * item on key left and right press. Jump to parent on key left if already
+     * closed.
+     *
+     * @param e {qx.event.type.KeySequence} key event.
+     */
+    _onKeyPress : function(e)
+    {
+      var selection = this.getSelection();
+      
+      if (selection.getLength() > 0)
+      {
+        var item = selection.getItem(0);
+        var isNode = this.isNode(item);
+        
+        switch(e.getKeyIdentifier())
+        {
+          case "Left":
+            if (isNode && this.isNodeOpen(item)) {
+              this.closeNode(item);
+            } else {
+              var parent = this.__getParen(item);
+              if (parent != null) {
+                selection.splice(0, 1, parent);
+              }
+            }
+            break;
+
+          case "Right":
+            if (isNode && !this.isNodeOpen(item)) {
+              this.openNode(item);
+            } 
+            else
+            {
+              if (isNode)
+              {
+                var children = item.get(this.getChildProperty());
+                if (children.getLength() > 0) {
+                  selection.splice(0, 1, children.getItem(0));
+                }
+              }
+            }
+            break;
+
+          case "Enter":
+          case "Space":
+            if (!isNode) {
+              return;
+            }
+            if (this.isNodeOpen(item)) {
+              this.closeNode(item);
+            } else {
+              this.openNode(item);
+            }
+            break;
+        }
+      }
+      this.getPane().fullUpdate();
+    },
 
 
     /*
@@ -547,19 +664,21 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
     /**
      * Helper method to build the internal data structure.
+     * 
+     * @internal
      */
-    __buildLookupTable : function()
+    buildLookupTable : function()
     {
-      if (this.getModel() == null) {
-        return;
-      }
-      
-      if (this.getChildProperty() == null || this.getLabelPath() == null)
+      if (
+        this.getModel() != null && 
+        (this.getChildProperty() == null || this.getLabelPath() == null)
+      )
       {
         throw new Error("Could not build tree, because 'childProperty' and/" +
           "or 'labelPath' is 'null'!");
       }
 
+      this.__itemWidth = 0;
       var lookupTable = [];
       this.__nestingLevel = [];
       var nestedLevel = -1;
@@ -718,6 +837,35 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     {
       this.getPane().getRowConfig().setItemCount(this.__lookupTable.getLength());
       this.getPane().fullUpdate();
+    },
+    
+    
+    /**
+     * Helper method to get the parent node. Node! This only works with leaf and
+     * nodes which are in the internal lookup table.
+     * 
+     * @param item {qx.core.Object} Node or leaf to get parent.
+     * @return {qx.core.Object|null} The parent note or <code>null</code> when 
+     *   no parent found.
+     */
+    __getParen : function(item)
+    {
+      var index = this.__lookupTable.indexOf(item);
+      if (index < 0) {
+        return null;
+      }
+      
+      var level = this.__nestingLevel[index];
+      while(index > 0)
+      {
+        index--;
+        var levelBevore = this.__nestingLevel[index];
+        if (levelBevore < level) {
+          return this.__lookupTable.getItem(index);
+        }
+      }
+      
+      return null;
     }
   },
 
@@ -733,7 +881,8 @@ qx.Class.define("qx.ui.tree.VirtualTree",
         pane.removeListener("cellClick", this._onOpen, this);
       }
     }
-        
+    
+    this._layer.removeListener("updated", this._onUpdated, this);
     this._layer.destroy();
     this._provider.dispose();
     this.__lookupTable.dispose();

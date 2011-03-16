@@ -26,6 +26,8 @@
 qx.Class.define("simulator.QxSimulation", {
 
   extend : qx.core.Object,
+  
+  type : "singleton",
 
   /**
    * @param options {Map} Configuration settings 
@@ -71,24 +73,31 @@ qx.Class.define("simulator.QxSimulation", {
       var autUri = this.__options.autHost + "" + this.__options.autPath;
       this.qxOpen(autUri);
       this.waitForQxApplication();
-      
+      this._includeFeatures();
+    },
+    
+    
+    /**
+     * Includes and initializes features as configured by settings
+     */
+    _includeFeatures : function()
+    {
       if (this.__options.globalErrorLogging || this.__options.testEvents) {
         qx.Class.include(simulator.QxSimulation, simulator.MGlobalErrorHandling);
-        this.addGlobalErrorHandler();
-        this.addGlobalErrorGetter();
+        this._addGlobalErrorHandler();
+        this._addGlobalErrorGetter();
       }
       
       if (this.__options.applicationLog || this.__options.disposerDebug) {
         qx.Class.include(simulator.QxSimulation, simulator.MApplicationLogging);
-        this.addRingBuffer();
-        this.addRingBufferGetter();
+        this._addAutLogStore();
+        this._addAutLogGetter();
       }
       
       if (this.__options.testEvents) {
         qx.Class.include(simulator.QxSimulation, simulator.MEventSupport);
         this._addListenerSupport();
       }
-
     },
     
     
@@ -126,7 +135,7 @@ qx.Class.define("simulator.QxSimulation", {
        * selenium.browserbot.getCurrentWindow() repeatedly.
        */
       simulator.QxSelenium.getInstance().getEval('selenium.qxStoredVars = {}');    
-      this.storeEval('selenium.browserbot.getCurrentWindow()', 'autWindow');
+      this._storeEval('selenium.browserbot.getCurrentWindow()', 'autWindow');
       
       this._prepareNameSpace();
     },
@@ -134,7 +143,7 @@ qx.Class.define("simulator.QxSimulation", {
     /**
      * Attaches a "Simulation" namespace object to the specified window's qx 
      * object. This will be used to store custom methods added by the testing
-     * framework using {@see #addOwnFunction}. If no window is specified, the 
+     * framework using {@see #_addOwnFunction}. If no window is specified, the 
      * AUT's window is used.
      * 
      * @param win {String?} JavaScript snippet that evaluates as a Window object 
@@ -159,14 +168,14 @@ qx.Class.define("simulator.QxSimulation", {
      * @param keyName {String} The name for the key the eval result will be 
      * stored under.
      */
-    storeEval : function(code, keyName)
+    _storeEval : function(code, keyName)
     {
       if (!code) {
-        throw new Error("No code specified for storeEval()");
+        throw new Error("No code specified for _storeEval()");
       }
       
       if (!keyName) {
-        throw new Error("No key name specified for storeEval()");
+        throw new Error("No key name specified for _storeEval()");
       }
 
       simulator.QxSelenium.getInstance().getEval('selenium.qxStoredVars["' + keyName + '"] = ' + String(code));
@@ -180,7 +189,7 @@ qx.Class.define("simulator.QxSimulation", {
      * @param funcName {String} name of the function to be added
      * @param func {Function|String} the function to be added
      */
-    addOwnFunction : function(funcName, func)
+    _addOwnFunction : function(funcName, func)
     {
       if (!funcName) {
         throw new Error("Please choose a name for the function to be added.");
@@ -252,36 +261,8 @@ qx.Class.define("simulator.QxSimulation", {
       }
       
       if (this.__options.applicationLog || this.__options.disposerDebug) {
-        this.logRingBufferEntries();
+        this.logAutLogEntries();
       }      
-    },
-
-    /**
-     * Retrieves all messages from the AUT-side logger created by 
-     * {@link simulator.MApplicationLogging#addRingBuffer} and writes them to 
-     * the simulation log.
-     */
-    logRingBufferEntries : function()
-    {
-      var debugLogArray = this.getRingBufferEntries();
-      for (var i=0,l=debugLogArray.length; i<l; i++) {
-        this.info(debugLogArray[i]);
-      }
-    },
-
-    /**
-     * Retrieves all exceptions caught by the AUT's global error handling and 
-     * logs them.
-     */
-    logGlobalErrors : function()
-    {
-      var globalErrors = this.getGlobalErrors();
-      
-      for (var i=0,l=globalErrors.length; i<l; i++) {
-        if (globalErrors[i].length > 0) {
-          this.error(globalErrors[i]);
-        }
-      }
     },
     
     /**
@@ -326,7 +307,8 @@ qx.Class.define("simulator.QxSimulation", {
      * Loads a qooxdoo application in the test browser and prepares 
      * it for testing. If no URI is given, the current AUT is reloaded.
      * 
-     * @param uri {String?} Optional URI of the qooxdoo application to be loaded.
+     * @param uri {String?} Optional URI of the qooxdoo application to be 
+     * loaded. Default: The AUT host/path defined in the settings.
      */
     qxOpen : function(uri)
     {

@@ -39,7 +39,7 @@ from generator.code.CodeGenerator    import CodeGenerator
 from generator.resource.Library      import Library
 from generator.resource.ResourceHandler  import ResourceHandler
 from generator.resource.ImageClipping    import ImageClipping
-from generator.resource.ImageInfo        import ImgInfoFmt
+from generator.resource.Image        import Image
 from generator.action.ApiLoader      import ApiLoader
 from generator.action.Locale         import Locale
 from generator.action.ActionLib      import ActionLib
@@ -433,7 +433,7 @@ class Generator(object):
                 self._console.debug("Including %s items smart, %s items explicit" % (len(includeWithDeps), len(includeNoDeps)))
 
                 if len(includeNoDeps) > 0:
-                    self._console.warn("Explicit included classes may not work")
+                    self._console.warn("Explicitly included classes may not work")  # ?!
 
                 # Resolve regexps
                 self._console.debug("Expanding expressions...")
@@ -1360,7 +1360,7 @@ class Generator(object):
             self._config.resolveMacros(expandedjobs)
             console.outdent()
         except Exception:
-            pass
+            expandedjobs = []
         
         if expandedjobs:
           
@@ -1489,8 +1489,9 @@ class Generator(object):
             self._imageClipper.slice(image, prefix, border_width, trim_width)
 
 
+    ##
+    # Go through a list of images and create them as combination of other images
     def runImageCombining(self):
-        """Go through a list of images and create them as combination of other images"""
 
         def extractFromPrefixSpec(prefixSpec):
             prefix = altprefix = ""
@@ -1503,8 +1504,9 @@ class Generator(object):
                 altprefix         = ""
             return prefix, altprefix
                 
+        ##
+        # strip prefix - if available - from imagePath, and replace by altprefix
         def getImageId(imagePath, prefixSpec):
-            "strip prefix - if available - from imagePath, and replace by altprefix"
             prefix, altprefix = extractFromPrefixSpec(prefixSpec)
             imageId = imagePath # init
             _, imageId, _ = Path.getCommonPrefix(imagePath, prefix) # assume: imagePath = prefix "/" imageId
@@ -1514,8 +1516,9 @@ class Generator(object):
             imageId = Path.posifyPath(imageId)
             return imageId
 
+        ##
+        # create a dict with the clipped image file path as key, and prefix elements as value
         def getClippedImagesDict(imageSpec):
-            "create a dict with the clipped image file path as key, and an ImgInfoFmt object as value"
             imgDict = {}
             inputStruct = imageSpec['input']
             for group in inputStruct:
@@ -1526,14 +1529,11 @@ class Generator(object):
                 for filepatt in group['files']:
                     num_files = 0
                     for file in glob.glob(self._config.absPath(filepatt)):  # resolve file globs - TODO: can be removed in generator.action.ImageClipping
-                        imgObject        = ImgInfoFmt()
-                        imgObject.prefix = [prefix, altprefix]
                         self._console.debug("adding image %s" % file)
-                        imgDict[file]    = imgObject
+                        imgDict[file]    = [prefix, altprefix] 
                         num_files       += 1
                     if num_files == 0:
                         raise ValueError("Non-existing file spec: %s" % filepatt)
-                        #self._console.warn("Non-existing file spec: %s" % filepatt)
 
             return imgDict
 
@@ -1557,7 +1557,7 @@ class Generator(object):
             # create a dict of clipped image objects - for later look-up
             clippedImages = getClippedImagesDict(imgspec)
 
-            # collect list of all input files, no matter where the come from
+            # collect list of all input files, no matter where they come from
             input = sorted(clippedImages.keys())
 
             # collect layout property
@@ -1565,19 +1565,20 @@ class Generator(object):
                 layout = imgspec['layout'] == "horizontal"
             else:
                 layout = "horizontal" == "horizontal" # default horizontal=True
+
+            # get type of combined image (png, base64, ...)
+            combtype = imgspec['type'] if 'type' in imgspec else "extension"
             
             # create the combined image
-            subconfigs = self._imageClipper.combine(image, input, layout)
+            subconfigs = self._imageClipper.combine(image, input, layout, combtype)
 
             # for the meta information, go through the list of returned subconfigs (one per clipped image)
             for sub in subconfigs:
-                x = ImgInfoFmt()
-                x.mappedId, x.left, x.top, x.width, x.height, x.type = (
-                   #Path.posifyPath(sub['combined']), sub['left'], sub['top'], sub['width'], sub['height'], sub['type'])
+                x = Image()
+                x.combId, x.left, x.top, x.width, x.height, x.format = (
                    imageId, sub['left'], sub['top'], sub['width'], sub['height'], sub['type'])
-                #config[Path.posifyPath(sub['file'])] = x.meta_format()  # this could use 'flatten()' eventually!
-                subId         = getImageId(sub['file'], getattr(clippedImages[sub['file']], 'prefix', None))
-                config[subId] = x.meta_format()  # this could use 'flatten()' eventually!
+                subId = getImageId(sub['file'], clippedImages[sub['file']])
+                config[subId] = x.toMeta()
 
             # store meta data for this combined image
             bname = os.path.basename(image)
@@ -1589,6 +1590,20 @@ class Generator(object):
             self._console.debug("writing meta file %s" % meta_fname)
             filetool.save(meta_fname, json.dumps(config, ensure_ascii=False, sort_keys=True))
             self._console.outdent()
+
+            # handle base64 type, need to write "combined image" to file
+            if combtype == "base64":
+                combinedMap = {}
+                for sub in subconfigs:
+                    subMap = {}
+                    subId  = getImageId(sub['file'], clippedImages[sub['file']])
+                    subMap['width']    = sub['width']
+                    subMap['height']   = sub['height']
+                    subMap['type']     = sub['type']
+                    subMap['encoding'] = sub['encoding']
+                    subMap['data']     = sub['data']
+                    combinedMap[subId] = subMap
+                filetool.save(image, json.dumpsCode(combinedMap))
             
         self._console.outdent()
 
@@ -1804,6 +1819,8 @@ class Generator(object):
         settings = self._job.get("settings", None)
         if settings:
             settings = json.dumps(settings)
+            if sys.platform[0:3] == "win":
+                settings = settings.replace(" ", "").replace('"','\\"')
             settings = "'settings=" + settings + "'"
             cmd += " " + settings
         
