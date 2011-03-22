@@ -26,6 +26,7 @@
 #asset(qx/icon/Tango/22/actions/media-seek-forward.png)
 
 #asset(testrunner2/view/widget/css/testrunner.css)
+#asset(testrunner2/view/widget/image/*)
 ************************************************************************ */
 /**
  * Widget-based Testrunner view
@@ -85,6 +86,35 @@ qx.Class.define("testrunner2.view.widget.Widget", {
 
     var statuspane = this.__createStatusBar();
     mainContainer.add(statuspane);
+    
+    this._makeCommands();
+  },
+  
+  statics :
+  {
+    /** Grey icons for items without a result */
+    TREEICONS :
+    {
+      "package" : "testrunner2/view/widget/image/package18_grey.gif",
+      "class" : "testrunner2/view/widget/image/class18_grey.gif",
+      "test" : "testrunner2/view/widget/image/method_public18_grey.gif"
+    },
+
+    /** Green icons for items without failures */
+    TREEICONSOK :
+    {
+      "package" : "testrunner2/view/widget/image/package18.gif",
+      "class" : "testrunner2/view/widget/image/class18.gif",
+      "test" : "testrunner2/view/widget/image/method_public18.gif"
+    },
+
+    /** Red icons for items with failures */
+    TREEICONSERROR :
+    {
+      "package" : "testrunner2/view/widget/image/package_warning18.gif",
+      "class" : "testrunner2/view/widget/image/class_warning18.gif",
+      "test" : "testrunner2/view/widget/image/method_public_error18.gif"
+    }
   },
   
   properties :
@@ -135,19 +165,21 @@ qx.Class.define("testrunner2.view.widget.Widget", {
      * Creates the application header.
      */
     
+    __logLevelData : null,
+    
     __app : null,
     __iframe : null,
-    __logLevelData : null,
     __overflowMenu : null,
     __menuItemStore : null,
     __labelDeco : null,
     __logElement : null,
-    __testList : null,
+    __testTree : null,
     __runButton : null,
     __stopButton : null,
     __progressBar : null,
     __testResultView : null,
     __testCountField : null,
+    __selectedTestField : null,
     __statusField : null,
     
     /**
@@ -173,6 +205,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return this.__logElement;
     },
     
+    /**
+     * Returns the application header
+     * 
+     * @return {qx.ui.container.Composite} The application header
+     */
     __createHeader : function()
     {
       var layout = new qx.ui.layout.HBox();
@@ -189,6 +226,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return header;
     },
     
+    /**
+     * Returns the tool bar with the main test suite controls
+     * 
+     * @return {qx.ui.toolbar.ToolBar} The tool bar
+     */
     __createToolbar : function()
     {
       var toolbar = new qx.ui.toolbar.ToolBar;
@@ -213,14 +255,12 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       runButton.set({
         textColor : "#36a618",
         rich : true,
-        visibility : "excluded"
+        visibility : "excluded",
+        toolTipText : this.__app.tr("Run selected tests (Ctrl+R)")
       });
       runButton.setUserData("value", "run");
 
-      runButton.addListener("execute", function(ev) {
-        this.reset();
-        this.fireEvent("runTests");
-      }, this);
+      runButton.addListener("execute", this.__runTests, this);
 
       part1.add(runButton);
       
@@ -228,25 +268,20 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       var stopButton = this.__stopButton = new qx.ui.toolbar.Button(this.__app.tr('<b>Stop&nbsp;Tests</b>'), "icon/22/actions/media-playback-stop.png");
       stopButton.set({
         textColor : "#ff0000",
-        rich : true
+        rich : true,
+        toolTipText : this.__app.tr("Stop the test suite (Ctrl+S)")
       });
       stopButton.setUserData("value", "stop");
       
-      stopButton.addListener("execute", function(ev) {
-        this.fireEvent("stopTests");
-      }, this);
+      stopButton.addListener("execute", this.__stopTests, this);
       
       part1.add(stopButton);
       
       // Reload button
       var reloadButton = new qx.ui.toolbar.Button(this.__app.tr("Reload"), "icon/22/actions/view-refresh.png");
       part1.add(reloadButton);
-      reloadButton.setToolTipText(this.__app.tr("Reload application under test"));
-      reloadButton.addListener("execute", function(ev) {
-        var src = this.getAutUri();
-        this.resetAutUri();
-        this.setAutUri(src);
-      }, this);
+      reloadButton.setToolTipText(this.__app.tr("Reload the test suite (Ctrl+Shift+R)"));
+      reloadButton.addListener("execute", this.__reloadAut, this);
       
       var part2 = new qx.ui.toolbar.Part();
       toolbar.add(part2);
@@ -281,149 +316,15 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       stacktoggle.setValue(true);
       stacktoggle.bind("value", this, "showStackTrace");
       
-      // enable overflow handling
-      toolbar.setOverflowHandling(true);
-    
-      // add a button for overflow handling
-      var chevron = new qx.ui.toolbar.MenuButton(null, "icon/22/actions/media-seek-forward.png");
-      chevron.setAppearance("toolbar-button");  // hide the down arrow icon
-      toolbar.add(chevron);
-      toolbar.setOverflowIndicator(chevron);
-    
-      // set priorities for overflow handling
-      toolbar.setRemovePriority(part1, 2);
-      toolbar.setRemovePriority(part3, 3);
-      toolbar.setRemovePriority(part2, 1);
-      
-      // add the overflow menu
-      this.__overflowMenu = new qx.ui.menu.Menu();
-      chevron.setMenu(this.__overflowMenu);
-    
-      // add the listener
-      toolbar.addListener("hideItem", this._onHideItem, this);
-      toolbar.addListener("showItem", this._onShowItem, this);
-      
       return toolbar;
     },
     
-    /**
-     * Handler for the overflow handling which will be called on hide.
-     * @param e {qx.event.type.Data} The event.
-     */
-    _onHideItem : function(e) {
-      var partItem = e.getData();
-      var menuItems = this._getMenuItems(partItem);
-      for(var i=0,l=menuItems.length;i<l;i++){
-        menuItems[i].setVisibility("visible");
-      }
-    },
-    
-    
-    /**
-     * Handler for the overflow handling which will be called on show.
-     * @param e {qx.event.type.Data} The event.
-     */    
-    _onShowItem : function(e) {
-      var partItem = e.getData();
-      var menuItems = this._getMenuItems(partItem);
-      for(var i=0,l=menuItems.length;i<l;i++){
-        menuItems[i].setVisibility("excluded");
-      }
-    },
-    
-        
-    /**
-     * Helper for the overflow handling. It is responsible for returning a 
-     * corresponding menu item for the given toolbar item.
-     * 
-     * @param toolbarItem {qx.ui.core.Widget} The toolbar item to look for.
-     * @return {qx.ui.core.Widget} The coresponding menu items.
-     */
-    _getMenuItems : function(partItem) {
-      var cachedItems = [];
-      if (partItem instanceof qx.ui.toolbar.Part)
-      {
-        var partButtons = partItem.getChildren();
-        for(var i=0,l=partButtons.length;i<l;i++)
-        {
-          if(partButtons[i].getVisibility()=='excluded'){
-            continue;
-          }
-          var cachedItem = this.__menuItemStore[partButtons[i].toHashCode()];
-      
-          if (!cachedItem)
-          {
-            if(partButtons[i] instanceof qx.ui.toolbar.Button)
-            {
-              cachedItem = new qx.ui.menu.Button(
-                partButtons[i].getLabel().translate(),
-                partButtons[i].getIcon()
-                );
-              cachedItem.getChildControl('label',false).setRich(true);
-              cachedItem.setTextColor(partButtons[i].getTextColor());
-              cachedItem.setToolTipText(partButtons[i].getToolTipText());
-              partButtons[i].bind("enabled",cachedItem,"enabled");
-              cachedItem.setEnabled(partButtons[i].getEnabled());
-            }
-            else if(partButtons[i] instanceof qx.ui.toolbar.CheckBox)
-            {
-              cachedItem = new qx.ui.menu.CheckBox(
-                partButtons[i].getLabel().translate()
-                );
-              cachedItem.setIcon(partButtons[i].getIcon());
-              cachedItem.setToolTipText(partButtons[i].getToolTipText());
-              partButtons[i].bind("value",cachedItem,"value");
-              partButtons[i].bind("enabled",cachedItem,"enabled");
-              cachedItem.setEnabled(partButtons[i].getEnabled());
-              cachedItem.setValue(partButtons[i].getValue());
-            }
-             else if(partButtons[i] instanceof qx.ui.toolbar.MenuButton)
-             {
-              cachedItem = new qx.ui.menu.Button(
-                partButtons[i].getLabel().translate(),
-                partButtons[i].getIcon(),
-                partButtons[i].getCommand(),
-                partButtons[i].getMenu()
-                );
-              cachedItem.setToolTipText(partButtons[i].getToolTipText());
-              var logLevelController = new qx.data.controller.Object(this);
-              logLevelController.addTarget(cachedItem, "icon", "logLevel", false, {converter: qx.lang.Function.bind(this.__logLevelIconConverter,this)});
-            }
-            else
-            {
-              cachedItem = new qx.ui.menu.Separator();
-            }
-            var listeners = qx.event.Registration.getManager(partButtons[i]).getListeners(partButtons[i],'execute');
-            if(listeners && listeners.length>0)
-            {
-              for(var j=0,k=listeners.length;j<k;j++) {
-                cachedItem.addListener('execute',qx.lang.Function.bind(listeners[j].handler,listeners[j].context));
-              }
-            }
-            listeners = qx.event.Registration.getManager(partButtons[i]).getListeners(partButtons[i],'changeValue');
-            if(listeners && listeners.length>0)
-            {
-              for(var j=0,k=listeners.length;j<k;j++) {
-                cachedItem.addListener('changeValue',qx.lang.Function.bind(listeners[j].handler,listeners[j].context));
-              }
-            }
-            listeners = qx.event.Registration.getManager(partButtons[i]).getListeners(partButtons[i],'click');
-            if(listeners && listeners.length>0)
-            {
-              for(var j=0,k=listeners.length;j<k;j++) {
-                cachedItem.addListener('click',qx.lang.Function.bind(listeners[j].handler,listeners[j].context));
-              }
-            }
-            this.__overflowMenu.addAt(cachedItem, 0);
-            this.__menuItemStore[partButtons[i].toHashCode()] = cachedItem;
-            cachedItems.push(cachedItem);
-          }
-        }
-      }
 
-      return cachedItems;
-    },
-    
+    /**
+     * Returns the icon for a given log level
+     * @param data {String} The log level
+     * @return {String} The icon's resource id
+     */
     __logLevelIconConverter: function(data) {
         for (var i=0,l=this.__logLevelData.length; i<l; i++) {
           if (this.__logLevelData[i][0] == data) {
@@ -433,6 +334,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
         return null;
       },
     
+    /**
+     * Returns the menu button used to select the AUT's log level
+     * 
+     * @return {qx.ui.toolbar.MenuButton}
+     */
     __createLogLevelMenu : function()
     {
       var logLevelMenu = new qx.ui.menu.Menu();
@@ -454,6 +360,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return logLevelMenuButton;
     },
     
+    /**
+     * Returns a container with the list of available tests
+     * 
+     * @return {qx.ui.container.Composite} 
+     */
     __createTestList : function()
     {
       var layout = new qx.ui.layout.VBox();
@@ -483,20 +394,78 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       });
       container.add(caption);
       
-      //TODO: Test tree
-      var testList = this.__testList = new qx.ui.list.List();
-      testList.setDecorator("separator-vertical");
-      testList.setSelectionMode("multi");
-      
-      testList.getSelection().bind("change", this, "selectedTests", {
-        converter : qx.lang.Function.bind(function() {
-          return this.__testList.getSelection().toArray();
-        }, this)
+      this.__testTree = new qx.ui.tree.VirtualTree();
+      this.__testTree.set({
+        labelPath : "name",
+        childProperty : "children",
+        delegate : {
+          bindNode : this.__bindTreeItem,
+          bindLeaf : this.__bindTreeItem
+        },
+        decorator : "separator-vertical"
       });
       
-      container.add(testList, {flex : 1});
+      var selection = new qx.data.Array();
+      selection.addListener("change", 
+        this._onChangeTestSelection, this);
+      
+      this.__testTree.setSelection(selection);
+      
+      this.setSelectedTests(this.__testTree.getSelection());
+      
+      container.add(this.__testTree, {flex : 1});
       
       return container;
+    },
+    
+    
+    /**
+     * Open a selected node
+     * 
+     * @param {qx.event.type.Data} Data event containing the selection
+     */
+    _onChangeTestSelection : function(ev)
+    {
+      var selected = this.getSelectedTests();
+      if (selected.length > 0) {
+        var node = selected.getItem(0);
+        if (!this.__testTree.isNodeOpen(node)) {
+          this.__testTree.openNodeAndParents(node);
+        }
+        qx.bom.Cookie.set("selectedTest", node.getFullName());
+      }
+    },
+    
+    /**
+     * Sets the tree icons according to the model item's state and type.
+     * 
+     * @param controller {MWidgetController} The currently used controller.
+     * @param node {qx.ui.core.Widget} The created and used node.
+     * @param id {Integer} The id for the binding.
+     */
+    __bindTreeItem : function(controller, node, id) {
+      controller.bindProperty("", "model", null, node, id);
+      controller.bindProperty("name", "label", null, node, id);
+      controller.bindProperty("state", "icon", {
+        converter : function(data, model) {
+          var state = data;
+          var type = model.getType();          
+          var iconMap;
+          switch (state) {
+            case "success":
+              iconMap = "TREEICONSOK";
+              break;
+            case "error":
+            case "failure":
+              iconMap = "TREEICONSERROR"
+              break;
+            default:
+              iconMap = "TREEICONS";
+            break;
+          }
+          return testrunner2.view.widget.Widget[iconMap][type];
+        }
+      }, node, id);
     },
     
     /**
@@ -511,6 +480,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       qx.bom.Cookie.set(pane + "PaneWidth", e.getData().width, 365);
     },
     
+    /**
+     * Returns a container with the progress bar and test results view
+     * 
+     * @return {qx.ui.container.Composite} The center pane's content
+     */
     __createCenterPane : function()
     {
       var layout = new qx.ui.layout.VBox();
@@ -550,6 +524,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return p1;
     },
     
+    /**
+     * Returns the rightmost pane containing the AUT iframe and log
+     * 
+     * @return {qx.ui.splitpane.Pane} The configured pane
+     */
     __createAutPane : function()
     {
       // Second Page
@@ -562,6 +541,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return pane2;
     },
     
+    /**
+     * Returns a container with the AUT iframe widget
+     * 
+     * @return {qx.ui.container.Composite} Iframe container
+     */
     __createIframeContainer : function()
     {
       var layout2 = new qx.ui.layout.VBox();
@@ -595,6 +579,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return pp3;
     },
     
+    /**
+     * Returns a container with the AUT log element
+     * 
+     * @return {qx.ui.container.Composite} The log container
+     */
     __createLogContainer : function()
     {
       var layout3 = new qx.ui.layout.VBox();
@@ -630,6 +619,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return pp2;
     },
     
+    /**
+     * Returns a container with the progress bar
+     * 
+     * @return {qx.ui.container.Composite} The progressbar container
+     */
     __createProgressBar : function()
     {
       var container = new qx.ui.container.Composite(new qx.ui.layout.VBox());
@@ -720,6 +714,11 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       return container;
     },
     
+    /**
+     * Returns a container with the status bar
+     * 
+     * @return {qx.ui.container.Composite} Status bar container
+     */
     __createStatusBar : function()
     {
       var layout = new qx.ui.layout.HBox(10);
@@ -733,18 +732,12 @@ qx.Class.define("testrunner2.view.widget.Widget", {
         alignY : "middle"
       }));
       
-      var l1 = new qx.ui.form.TextField("").set({
-        width : 150,
+      var l1 = this.__selectedTestField = new qx.ui.form.TextField("").set({
+        width : 300,
         font : "small",
         readOnly : true
       });
       statuspane.add(l1);
-      //this.__selectedTestField = l1;
-      this.bind("selectedTests", l1, "value", {
-        converter : function(data) {
-          return data[0];
-        }
-      });
 
       statuspane.add(new qx.ui.basic.Label(this.__app.tr("Number of Tests: ")).set({
         alignY : "middle"
@@ -759,6 +752,18 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       this.__testCountField = l2;
 
       statuspane.add(l2);
+      
+      this.getSelectedTests().addListener("change", function(ev) {
+        var selectedName = "";
+        var count = 0;
+        var selectedTests = this.getSelectedTests();
+        if (selectedTests !== null && selectedTests.length > 0) {
+          count = testrunner2.runner.ModelUtil.getItemsByProperty(selectedTests.getItem(0), "type", "test").length;
+          selectedName = this.getSelectedTests().getItem(0).getFullName();
+        }
+        this.__selectedTestField.setValue(selectedName);
+        this.__testCountField.setValue(count.toString());
+      }, this);
 
       // System Info
       statuspane.add(new qx.ui.basic.Label(this.__app.tr("System Status: ")).set({
@@ -779,22 +784,13 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       switch(value) 
       {
         case "loading" :
-          this.__testList.resetModel();
+          this.__testTree.resetModel();
           this.setStatus("Loading tests...");
           break;
         case "ready" :
           this.setStatus("Test suite ready");
-          this._setActiveButton("run");
-          /*
-          var filterFromCookie = qx.bom.Cookie.get("testFilter");
-          if (filterFromCookie) {
-            this.__domElements.filterInput.value = filterFromCookie;
-            this.filterTests(filterFromCookie);
-          }
-          else {
-          */
-            this._applyTestCount(this.getTestCount());
-          //}
+          this._setActiveButton(this.__runButton);
+          this._applyTestCount(this.getTestCount());
           this.setFailedTestCount(0);
           this.setSuccessfulTestCount(0);
           break;
@@ -802,31 +798,40 @@ qx.Class.define("testrunner2.view.widget.Widget", {
           this.__progressBar.setValue(0);
           this.__progressBar.setMaximum(this.getSelectedTests().length);
           this.setStatus("Running tests...");
-          this._setActiveButton("stop");
+          this._setActiveButton(this.__stopButton);
           break;
         case "finished" :
           this.setStatus("Test suite finished.");
-          this._setActiveButton("run");
+          this._setActiveButton(this.__runButton);
           break;
         case "aborted" :
           this.setStatus("Test run stopped");
-          this._setActiveButton("run");
+          this._setActiveButton(this.__runButton);
           break;
       };
     },
     
-    _applyInitialTestList : function(value, old)
+    _applyTestModel : function(value, old)
     {
       if (value && value !== old) {
         var model = qx.data.marshal.Json.createModel(value);
-        this.__testList.setModel(model);
-        var selected = [];
-        model.forEach(function(item) {
-          selected.push(item);
-        }, this);
-        this.__testList.getSelection().append(new qx.data.Array(selected));
+        this.__testTree.setModel(model);
+        this.__testTree.openNode(model.getChildren().getItem(0));
+                
+        var cookieSelection = qx.bom.Cookie.get("selectedTest");
+        if (cookieSelection) {
+          var found = testrunner2.runner.ModelUtil.getItemByFullName(model, cookieSelection);
+          if (found) {
+            this.getSelectedTests().removeAll();
+            this.getSelectedTests().push(found);
+          }
+        }
       }
+    
     },
+    
+    _applyTestCount : function(value, old)
+    {},
     
     _applyStatus : function(value, old)
     {
@@ -835,12 +840,6 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       }
     },
     
-    _applyTestCount : function(value, old)
-    {
-      if (value && value !== old) {
-        this.__testCountField.setValue(value.toString());
-      }
-    },
     
     _onTestChangeState : function(testResultData) 
     {
@@ -859,16 +858,47 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       }
     },
     
-    _setActiveButton : function(buttonName)
+    /**
+     * Toggle the visibility of the run/stop buttons
+     * 
+     * @param button {qx.ui.core.Widget} The button that should be visible
+     */
+    _setActiveButton : function(button)
     {
-      if (buttonName == "run") {
+      button.setVisibility("visible");
+      if (button == this.__runButton) {
         this.__stopButton.setVisibility("excluded");
-        this.__runButton.setVisibility("visible");
       }
-      else if (buttonName == "stop") {
+      else if (button == this.__stopButton) {
         this.__runButton.setVisibility("excluded");
-        this.__stopButton.setVisibility("visible");
       }
+    },
+    
+    /**
+     * Run the selected tests
+     */
+    __runTests : function()
+    {
+      this.reset();
+      this.fireEvent("runTests");
+    },
+    
+    /**
+     * Stop a running test suite
+     */
+    __stopTests : function()
+    {
+      this.fireEvent("stopTests");
+    },
+    
+    /**
+     * Reload the test suite
+     */
+    __reloadAut : function()
+    {
+      var src = this.getAutUri();
+      this.resetAutUri();
+      this.setAutUri(src);
     },
     
     // overridden
@@ -888,9 +918,46 @@ qx.Class.define("testrunner2.view.widget.Widget", {
       this.resetSuccessfulTestCount();
       this.resetSkippedTestCount();
       this.__testResultView.clear();
+      /*
+       * TODO
       var selection = qx.lang.Array.clone(this.getSelectedTests());
       this.resetSelectedTests();
       this.setSelectedTests(selection);
+      */
+    },
+    
+    /**
+     * Create keyboard shortcuts for the main controls.
+     */
+    _makeCommands : function()
+    {
+      var runTests = new qx.ui.core.Command("Ctrl+R");
+      runTests.addListener("execute", this.__runTests, this);
+      
+      var stopTests = new qx.ui.core.Command("Ctrl+S");
+      stopTests.addListener("execute", this.__stopTests, this);
+      
+      var reloadAut = new qx.ui.core.Command("Ctrl+Shift+R");
+      reloadAut.addListener("execute", this.__reloadAut, this);
     }
+  },
+  
+  destruct : function()
+  {
+    this._disposeObjects(
+    "__iframe",
+    "__overflowMenu",
+    "__menuItemStore",
+    "__labelDeco",
+    "__logElement",
+    "__testTree",
+    "__runButton",
+    "__stopButton",
+    "__progressBar",
+    "__testResultView",
+    "__testCountField",
+    "__selectedTestField",
+    "__statusField",
+    "__app");
   }
 });

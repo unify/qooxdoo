@@ -38,7 +38,7 @@ qx.Mixin.define("simulator.MSeleniumUtil", {
       var snippet = 'selenium.getQxWidgetByLocator("' + locator +'")';
       var widget;
       try {
-        widget = String(this.getSimulation().qxSelenium.getEval(snippet));
+        widget = String(simulator.QxSelenium.getInstance().getEval(snippet));
       } catch(ex) {
         widget = null;
       }
@@ -61,11 +61,49 @@ qx.Mixin.define("simulator.MSeleniumUtil", {
       var snippet = 'selenium.getQxObjectFunction("' + locator +'", "get' + propertyName + '")';
       var propertyValue;
       try {
-        propertyValue = String(this.getSimulation().qxSelenium.getEval(snippet));
+        propertyValue = String(simulator.QxSelenium.getInstance().getEval(snippet));
       } catch(ex) {
         propertyValue = null;
       }
       return propertyValue;
+    },
+    
+    /**
+     * Repeatedly tries to find a visible widget using the given locator until
+     * the timeout is reached.
+     * 
+     * @throws an Error if no visible widget is found before the timeout is 
+     * reached
+     * @param locator {String} (Qx)Selenium locator string
+     * @param timeout {Integer?} Timeout in milliseconds. Default: 5000
+     */
+    waitForWidget : function(locator, timeout)
+    {
+      locator = locator.replace(/\"/g, '\\"');
+
+      var snippet = '(function() {\
+        try {\
+          var widget = selenium.getQxWidgetByLocator("' + locator +'");\
+        } catch(ex) {\
+          return false;\
+        }\
+        return widget.isVisible();\
+      })()';
+      
+      var timeout = timeout || 5000;
+      try {
+        simulator.QxSelenium.getInstance().waitForCondition(snippet, timeout.toString());
+      }
+      catch(ex) {
+        if (ex.toString().match(/Timed out after/)) {
+          // Use a more meaningful error message
+          throw new Error("waitForWidget: No visible widget found for locator " + locator 
+          + " in " + timeout + "ms!");
+        } else {
+          //something else went wrong
+          throw ex;
+        }
+      }
     }
   }
 });

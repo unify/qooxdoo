@@ -23,8 +23,6 @@
  * a {@link Pane} and the needed scroll bars. This class handles the
  * virtual scrolling and does all the mouse event handling.
  *
- * @appearance table-focus-indicator {qx.ui.core.Widget}
- *
  * @childControl header {qx.ui.table.pane.Header} header pane
  * @childControl pane {qx.ui.table.pane.Pane} table pane to show the data
  * @childControl focus-indicator {qx.ui.table.pane.FocusIndicator} shows the current focused cell
@@ -527,7 +525,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     {
       this.__verScrollBar.scrollTo(scrollY);
       if (renderSync) {
-        this._updateContent()
+        this._updateContent();
       }
     },
 
@@ -1784,6 +1782,9 @@ qx.Class.define("qx.ui.table.pane.Scroller",
         var row = this.__focusedRow;
         var xPos = this.getTablePaneModel().getX(col);
         var value = tableModel.getValue(col, row);
+
+        // scroll cell into view
+        this.scrollCellVisible(xPos, row);
 
         this.__cellEditorFactory = table.getTableColumnModel().getCellEditorFactory(col);
 

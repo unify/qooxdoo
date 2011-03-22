@@ -29,6 +29,17 @@ qx.Class.define("qx.util.ResourceManager",
 
   /*
   *****************************************************************************
+     CONSTRUCTOR
+  *****************************************************************************
+  */
+
+  construct : function()
+  {
+    this.base(arguments);
+  },
+
+  /*
+  *****************************************************************************
      STATICS
   *****************************************************************************
   */
@@ -128,7 +139,13 @@ qx.Class.define("qx.util.ResourceManager",
     isClippedImage : function(id)
     {
       var entry = this.self(arguments).__registry[id];
-      return entry && entry.length > 4;
+      var isClipped = entry && entry.length > 4;
+      if (isClipped){
+        var combId  = entry[4];
+        var combImg = this.self(arguments).__registry[combId];
+        isClipped = combImg[2];  // return combined image type
+      }
+      return isClipped;
     },
 
 
@@ -170,6 +187,34 @@ qx.Class.define("qx.util.ResourceManager",
       }
 
       return urlPrefix + qx.$$libraries[lib].resourceUri + "/" + id;
+    },
+
+    /**
+     * Construct a data: URI for an image resource.
+     *
+     * Constructs a data: URI for a given resource id, if this resource is
+     * contained in a base64 combined image. If this is not the case (e.g.
+     * because the combined image has not been loaded yet), returns the direct
+     * URI to the image file itself.
+     *
+     * @param resid {String} resource id of the image
+     * @return {String} "data:" or "http:" URI
+     */
+    toDataUri : function (resid) 
+    {
+      var resentry = this.constructor.__registry[resid];
+      var combined = this.constructor.__registry[resentry[4]];
+      var uri;
+      if (combined) {
+        var resstruct = combined[4][resid];
+        uri = "data:image/" + resstruct["type"] + ";" + resstruct["encoding"] +
+              "," + resstruct["data"];
+      }
+      else {
+        console.log("Falling back for", resid);
+        uri = this.toUri(resid);
+      }
+      return uri;
     }
   },
 

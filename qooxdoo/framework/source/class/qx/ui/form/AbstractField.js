@@ -65,10 +65,6 @@ qx.Class.define("qx.ui.form.AbstractField",
       "change", this._onChangeContent, this
     );
 
-    // TODO: Fix Placeholder. There should be an alternative to this!
-    // assign the placeholder text after the appearance has been applied
-    // this.addListener("syncAppearance", this._syncPlaceholder, this);
-
     // translation support
     if (qx.core.Variant.isSet("qx.dynlocale", "on")) {
       qx.locale.Manager.getInstance().addListener(

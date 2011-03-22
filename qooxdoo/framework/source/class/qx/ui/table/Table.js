@@ -416,7 +416,8 @@ qx.Class.define("qx.ui.table.Table",
     {
       check : "Boolean",
       init : true,
-      apply : "_applyHeaderCellsVisible"
+      apply : "_applyHeaderCellsVisible",
+      themeable : true
     },
 
 
@@ -427,7 +428,8 @@ qx.Class.define("qx.ui.table.Table",
       init : 16,
       apply : "_applyHeaderCellHeight",
       event : "changeHeaderCellHeight",
-      nullable : true
+      nullable : true,
+      themeable : true
     },
 
 
@@ -454,7 +456,8 @@ qx.Class.define("qx.ui.table.Table",
     {
       check : "Boolean",
       init : true,
-      apply : "_applyColumnVisibilityButtonVisible"
+      apply : "_applyColumnVisibilityButtonVisible",
+      themeable : true
     },
 
 
@@ -1724,7 +1727,8 @@ qx.Class.define("qx.ui.table.Table",
       var col = this.__focusedCol;
       var row = this.__focusedRow;
 
-      if (col === null || row === null) {
+      // could also be undefined [BUG #4676]
+      if (col == null || row == null) {
         return;
       }
 
@@ -1756,6 +1760,16 @@ qx.Class.define("qx.ui.table.Table",
      */
     scrollCellVisible : function(col, row)
     {
+      // get the dom element
+      var elem = this.getContentElement().getDomElement();
+      // if the dom element is not available, the table hasn't been rendered
+      if (!elem) {
+        // postpone the scroll until the table has appeared
+        this.addListenerOnce("appear", function() {
+          this.scrollCellVisible(col, row);
+        }, this);
+      }
+
       var columnModel = this.getTableColumnModel();
       var x = columnModel.getVisibleX(col);
 

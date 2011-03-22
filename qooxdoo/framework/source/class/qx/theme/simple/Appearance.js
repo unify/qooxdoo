@@ -239,7 +239,7 @@ qx.Theme.define("qx.theme.simple.Appearance",
       style : function(states)
       {
         return {
-          decorator : "table-header",
+          decorator : "table-header-column-button",
           padding : 3,
           icon : qx.theme.simple.Image.URLS["select-column-order"]
         };
@@ -302,7 +302,7 @@ qx.Theme.define("qx.theme.simple.Appearance",
       style : function(states)
       {
         return {
-          decorator : "table-header-cell",
+          decorator : states.first ? "table-header-cell-first" : "table-header-cell",
           minWidth: 13,
           font : "bold",
           paddingTop: 3,
@@ -881,6 +881,98 @@ qx.Theme.define("qx.theme.simple.Appearance",
     "virtual-combobox/dropdown" : "popup",
     "virtual-combobox/dropdown/list" : {
       alias : "virtual-list"
+    },
+    
+    "virtual-tree" : 
+    {
+      include : "list",
+      alias : "list",
+
+      style : function(states)
+      {
+        return {
+          padding: states.focused ? 0 : 1
+        };
+      }
+    },
+    
+    "virtual-tree-item" :
+    {
+      style : function(states)
+      {
+        return {
+          padding: [1, 2],
+          textColor: states.selected ? "text-selected" : undefined
+        };
+      }
+    },
+
+    "virtual-tree-item/icon" :
+    {
+      include : "image",
+
+      style : function(states)
+      {
+        return {
+          padding: [0, 4, 0, 0],
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-item/label" : 
+    {
+      include : "label",
+      
+      style : function(states)
+      {
+        return {
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-folder" :
+    {
+      include : "virtual-tree-item",
+      alias : "virtual-tree-item",
+
+      style : function(states)
+      {
+        return {
+          padding: [2, 8, 2, 5],
+          icon: states.opened ? "icon/16/places/folder-open.png" : "icon/16/places/folder.png",
+          backgroundColor: states.selected ? "background-selected" : undefined
+        };
+      }
+    },
+    
+    "virtual-tree-folder/open" :
+    {
+      include : "image",
+
+      style : function(states)
+      {
+        return {
+          source: states.opened ? 
+            qx.theme.simple.Image.URLS["tree-minus"] : 
+            qx.theme.simple.Image.URLS["tree-plus"],
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-file" :
+    {
+      include : "virtual-tree-item",
+      alias : "virtual-tree-item",
+
+      style : function(states)
+      {
+        return {
+          icon: "icon/16/mimetypes/text-plain.png"
+        };
+      }
     },
 
     "cell" :

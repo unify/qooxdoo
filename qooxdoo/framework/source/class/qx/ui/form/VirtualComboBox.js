@@ -5,7 +5,7 @@
    http://qooxdoo.org
 
    Copyright:
-     2004-2011 1&1 Internet AG, Germany, http://www.1und1.de
+     2011 1&1 Internet AG, Germany, http://www.1und1.de
 
    License:
      LGPL: http://www.gnu.org/licenses/lgpl.html
@@ -15,21 +15,21 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL!
- *
  * A virtual form widget that allows text entry as well as selection from a
- * list.
+ * drop-down.
  *
  * @childControl textfield {qx.ui.form.TextField} Field for text entry.
- * @childControl button {qx.ui.form.Button} Opens the list popup.
+ * @childControl button {qx.ui.form.Button} Opens the drop-down.
  */
-qx.Class.define("qx.ui.form.VirtualComboBox", {
-
-  extend : qx.ui.form.AbstractVirtualPopupList,
+qx.Class.define("qx.ui.form.VirtualComboBox",
+{
+  extend : qx.ui.form.core.AbstractVirtualBox,
 
   implement : [qx.ui.form.IStringForm],
 
-  construct : function(model) {
+  
+  construct : function(model)
+  {
     this.base(arguments, model);
 
     this._createChildControl("textfield");
@@ -37,28 +37,33 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
     this.getChildControl("dropdown").getChildControl("list").setSelectionMode("single");
   },
 
-  properties : {
-
+  properties :
+  {
     // overridden
-    appearance : {
-      refine : true,
-      init : "virtual-combobox"
+    appearance :
+    {
+      refine: true,
+      init: "virtual-combobox"
     },
 
     // overridden
-    width : {
-      refine : true,
-      init : 120
+    width :
+    {
+      refine: true,
+      init: 120
     },
 
+    
     /**
      * The currently selected or entered value. 
      */
-    value : {
-      nullable : true,
-      event : "changeValue",
-      apply : "_applyValue"
+    value :
+    {
+      nullable: true,
+      event: "changeValue",
+      apply: "_applyValue"
     },
+    
     
     /**
      * Formatting function that will be applied to the value of a selected model
@@ -68,25 +73,122 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
      * strip HTML tags from rich-formatted item labels. The function will be 
      * called with the item's label (String) as the only parameter.
      */
-    defaultFormat : {
-      check : "Function",
-      init : null,
-      nullable : true
+    defaultFormat :
+    {
+      check: "Function",
+      init: null,
+      nullable: true
     }
   },
 
   members :
   {
-
-    __selection : null,
+    /** {var} The current binding id form the selection. */
     __selectionBindingId : null,
 
+    
+    /*
+    ---------------------------------------------------------------------------
+      PUBLIC API
+    ---------------------------------------------------------------------------
+    */
+
+    
+    /**
+     * Returns the current selection. This method only works if the widget is 
+     * already created and added to the document.
+     *
+     * @return {String|null} The current text selection.
+     */
+    getTextSelection : function() {
+      return this.getChildControl("textfield").getTextSelection();
+    },
+
+    
+    /**
+     * Returns the current selection length. This method only works if the 
+     * widget is already created and added to the document.
+     *
+     * @return {Integer|null} The current text selection length.
+     */
+    getTextSelectionLength : function() {
+      return this.getChildControl("textfield").getTextSelectionLength();
+    },
+
+    
+    /**
+     * Set the selection to the given start and end (zero-based). If no end 
+     * value is given the selection will extend to the end of the textfield's 
+     * content. This method only works if the widget is already created and
+     * added to the document.
+     *
+     * @param start {Integer} Start of the selection (zero-based).
+     * @param end {Integer} End of the selection.
+     */
+    setTextSelection : function(start, end) {
+      this.getChildControl("textfield").setTextSelection(start,  end);
+    },
+
+    
+    /**
+     * Clears the current selection. This method only works if the widget is 
+     * already created and added to the document.
+     */
+    clearTextSelection : function() {
+      this.getChildControl("textfield").clearTextSelection();
+    },
+
+    
+    /**
+     * Selects the whole content.
+     */
+    selectAllText : function() {
+      this.getChildControl("textfield").selectAllText();
+    },
+
+    
+    /**
+     * Clear any text selection, then select all text.
+     */
+    resetAllTextSelection : function()
+    {
+      this.clearTextSelection();
+      this.selectAllText();
+    },
+    
+    
+    // overridden
+    tabFocus : function()
+    {
+      var field = this.getChildControl("textfield");
+
+      field.getFocusElement().focus();
+      field.selectAllText();
+    },
+
+    
+    // overridden
+    focus : function()
+    {
+      this.base(arguments);
+      this.getChildControl("textfield").getFocusElement().focus();
+    },
+    
+    
+    /*
+    ---------------------------------------------------------------------------
+      INTERNAL API
+    ---------------------------------------------------------------------------
+    */
+    
+    
     // overridden
     _createChildControlImpl : function(id, hash)
     {
       var control;
 
-      switch (id) {
+      switch (id)
+      {
         case "textfield" :
           control = new qx.ui.form.TextField();
           control.addListener("changeValue", function(ev) {
@@ -94,9 +196,7 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
           }, this);
           control.setFocusable(false);
           control.addState("inner");
-          this._add(control, {
-                flex : 1
-              });
+          this._add(control, {flex : 1});
           break;
 
         case "button" :
@@ -108,31 +208,16 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
           break;
       }
 
-      return control || this.base(arguments, id);
+      return control || this.base(arguments, id, hash);
     },
+
 
     // overridden
-    tabFocus : function()
-    {
-      var field = this.getChildControl("textfield");
-
-      field.getFocusElement().focus();
-      field.selectAllText();
+    _beforeOpen : function() {
+      this.__selectFirstMatch();
     },
 
-    // overridden
-    focus : function()
-    {
-      this.base(arguments);
-      this.getChildControl("textfield").getFocusElement().focus();
-    },
-
-    // overridden
-    _beforeOpen : function()
-    {
-      this._selectFirstMatch();
-    },
-
+    
     // overridden
     _handleKeyboard : function(event)
     {
@@ -144,17 +229,12 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
           this.setValue(this.getChildControl("textfield").getValue());
           break;
           
-       /*
-       case "none":
-          return;
-          break;
-       */
-
         default:
           this.base(arguments, event);
           break;
       }
     },
+    
     
     // overridden
     _getAction : function(event)
@@ -166,26 +246,41 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
         return "select";
       } else {
         return this.base(arguments, event);
-        
-        /*
-        var action = this.base(arguments, event);
-        switch(action)
-        {
-          case "selectPrevious":
-          case "selectNext":
-          case "selectFirst":
-          case "selectLast":
-            var value = this.getChildControl("textfield").getValue();
-            if (value !== "") {
-              return "none";
-            }
-          default:
-            return action;
-        }
-        */
       }
     },
       
+    
+    // overridden
+    _addBindings : function()
+    {
+      var selection = this.getChildControl("dropdown").getSelection();
+
+      var labelSourcePath = this._getBindPath("", this.getLabelPath());
+      this.__selectionBindingId = selection.bind(labelSourcePath, 
+        this, "value", this.__getLabelFilterOptions());
+    },
+    
+    
+    // overridden
+    _removeBindings : function()
+    {
+      var selection = this.getChildControl("dropdown").getSelection();
+      
+      if (this.__selectionBindingId != null)
+      {
+        selection.removeBinding(this.__selectionBindingId);
+        this.__selectionBindingId = null;
+      }
+    },
+    
+    
+    /*
+    ---------------------------------------------------------------------------
+      EVENT LISTENERS
+    ---------------------------------------------------------------------------
+    */
+    
+    
     // overridden
     _handleMouse : function(event)
     {
@@ -198,27 +293,38 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
       }
     },
 
-    // overridden
-    _bindWidget : function()
+    
+    /*
+    ---------------------------------------------------------------------------
+      APPLY ROUTINES
+    ---------------------------------------------------------------------------
+    */
+    
+    
+    // property apply
+    _applyValue : function(value, old)
     {
-      if (this.__selectionBindingId) {
-        this.__selection.removeBinding(this.__selectionBindingId);
-        this.__selectionBindingId = null;
+      if (value && value !== old)
+      {
+        var textfield = this.getChildControl("textfield");
+        textfield.setValue(value);
       }
-
-      this.__selection = this.getChildControl("dropdown").getSelection();
-
-      var labelSourcePath = this._getBindPath("", this.getLabelPath());
-      this.__selectionBindingId = this.__selection.bind(labelSourcePath, 
-        this, "value", this.__getLabelFilterOptions());
     },
-
+    
+    
+    /*
+    ---------------------------------------------------------------------------
+      HELPER METHODS
+    ---------------------------------------------------------------------------
+    */
+    
+    
     /**
      * Returns an options map used for binding the selected item's label to
      * the {@link #value} property. If {@link #stripTags} is set, a converter 
      * that strips HTML tags from the label string is added.
      * 
-     * @return {Map} Options map
+     * @return {Map} Options map.
      */
     __getLabelFilterOptions : function()
     {
@@ -226,17 +332,23 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
       var options = null;
       var formatter = this.getDefaultFormat();
       
-      if (labelOptions != null) {
+      if (labelOptions != null)
+      {
         options = qx.lang.Object.clone(labelOptions);
         
-        if (formatter) {
-          options.converter = function(data, model) {
+        if (formatter)
+        {
+          options.converter = function(data, model)
+          {
             data = labelOptions.converter(data, model);
             return formatter(data);
           }
         }
-      } else {
-        if (formatter) {
+      } 
+      else
+      {
+        if (formatter)
+        {
           options = {
             converter : formatter
           }
@@ -246,113 +358,48 @@ qx.Class.define("qx.ui.form.VirtualComboBox", {
       return options;
     },
 
+
     /**
-     * Selects the first list item that starts with the text field's
-     * value.
+     * Selects the first list item that starts with the text field's value.
      */
-    _selectFirstMatch : function()
+    __selectFirstMatch : function()
     {
       var value = this.getChildControl("textfield").getValue();
       var labelPath = this.getLabelPath();
-      if (this.__selection.getItem(0) !== value) {
+      var selection = this.getChildControl("dropdown").getSelection();
+      
+      if (selection.getItem(0) !== value)
+      {
         var model = this.getModel();
         var lookupTable = this.getChildControl("dropdown").getChildControl("list")._getLookupTable();
-        for (var i = 0, l = lookupTable.length; i < l; i++) {
+        
+        for (var i = 0, l = lookupTable.length; i < l; i++)
+        {
           var modelItem = model.getItem(lookupTable[i]);
           var itemLabel = null;
+          
           if (labelPath) {
             itemLabel = qx.data.SingleValueBinding.getValueFromObject(modelItem, labelPath);
           }
           else if (typeof(modelItem) == "string") {
             itemLabel = modelItem;
           }
+          
           if (itemLabel && this.getDefaultFormat()) {
             itemLabel = this.getDefaultFormat()(qx.lang.String.stripTags(itemLabel));
           }
+          
           if (itemLabel && itemLabel.indexOf(value) == 0) {
             this.getChildControl("dropdown").setPreselected(modelItem);
             break;
           }
         }
       }
-    },
-
-    _applyValue : function(value, old)
-    {
-      if (value && value !== old) {
-        var textfield = this.getChildControl("textfield");
-        textfield.setValue(value);
-      }
-    },
-
-    /*
-     * ---------------------------------------------------------------------------
-     * TEXTFIELD SELECTION API
-     * ---------------------------------------------------------------------------
-     */
-
-    /**
-     * Returns the current selection. This method only works if the
-     * widget is already created and added to the document.
-     *
-     * @return {String|null}
-     */
-    getTextSelection : function()
-    {
-      return this.getChildControl("textfield").getTextSelection();
-    },
-
-    /**
-     * Returns the current selection length. This method only works
-     * if the widget is already created and added to the document.
-     *
-     * @return {Integer|null}
-     */
-    getTextSelectionLength : function()
-    {
-      return this.getChildControl("textfield").getTextSelectionLength();
-    },
-
-    /**
-     * Set the selection to the given start and end (zero-based). If
-     * no end value is given the selection will extend to the end of
-     * the textfield's content. This method only works if the widget
-     * is already created and added to the document.
-     *
-     * @param start
-     *            {Integer} start of the selection (zero-based)
-     * @param end
-     *            {Integer} end of the selection
-     */
-    setTextSelection : function(start, end)
-    {
-      this.getChildControl("textfield").setTextSelection(start,  end);
-    },
-
-    /**
-     * Clears the current selection. This method only works if the
-     * widget is already created and added to the document.
-     */
-    clearTextSelection : function()
-    {
-      this.getChildControl("textfield").clearTextSelection();
-    },
-
-    /**
-     * Selects the whole content
-     */
-    selectAllText : function()
-    {
-      this.getChildControl("textfield").selectAllText();
-    },
-
-    /**
-     * Clear any text selection, then select all text
-     */
-    resetAllTextSelection : function()
-    {
-      this.clearTextSelection();
-      this.selectAllText();
     }
+  },
+  
+  
+  destruct : function() {
+    this.__selection = null;
   }
 });

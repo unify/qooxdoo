@@ -22,8 +22,11 @@
 /**
  * Cross browser XML Element API
  *
- * http://msdn.microsoft.com/library/default.asp?url=/library/en-us/xmlsdk/html/81f3de54-3b79-46dc-8e01-73ca2d94cdb5.asp
- * http://developer.mozilla.org/en/docs/Parsing_and_serializing_XML
+ * API to select, query and serialize XML elements.
+ *
+ * Further information:
+ *
+ * * <a href="http://developer.mozilla.org/en/docs/Parsing_and_serializing_XML">MDN Parsing and Serializing XML</a>
  *
  * Please note that nodes selected using the <code>selectSingleNode()</code> and
  * <code>selectNodes()</code> methods remain in their document context so
@@ -36,6 +39,12 @@ qx.Class.define("qx.xml.Element",
   statics :
   {
     /**
+     * {Boolean} <code>true</code> if the native XMLSerializer should be used,
+     * <code>false</code> otherwise.
+     */
+    XML_SERIALIZER : false,
+    
+    /**
      * The subtree rooted by the specified element or document is serialized to a string.
      *
      * @param element {Element | Document} The root of the subtree to be serialized. This could be any node, including a Document.
@@ -47,7 +56,7 @@ qx.Class.define("qx.xml.Element",
         element = element.documentElement;
       }
 
-      if (window.XMLSerializer) {
+      if (this.XML_SERIALIZER) {
         return (new XMLSerializer()).serializeToString(element);
       } else {
         return element.xml || element.outerHTML;
@@ -59,11 +68,10 @@ qx.Class.define("qx.xml.Element",
      * Selects the first XmlNode that matches the XPath expression.
      *
      * <p>Note: XPath queries containing namespace prefixes won't work in
-     * Chromium-based browsers until Chromium bug #671[1] is fixed. Opera
-     * versions < 9.52 do not seem to support namespaces in XPath queries at
-     * all.</p>
-     *
-     * [1]http://code.google.com/p/chromium/issues/detail?id=671
+     * Chromium-based browsers until Chromium bug #671 
+     * [<a href="http://code.google.com/p/chromium/issues/detail?id=671">1</a>] 
+     * is fixed. Opera versions < 9.52 do not seem to support namespaces in
+     * XPath queries at all.</p>
      *
      * @param element {Element | Document} root element for the search
      * @param query {String} XPath query
@@ -126,11 +134,10 @@ qx.Class.define("qx.xml.Element",
      * Selects a list of nodes matching the XPath expression.
      *
      * <p>Note: XPath queries containing namespace prefixes won't work in
-     * Chromium-based browsers until Chromium bug #671[1] is fixed. Opera
-     * versions < 9.52 do not seem to support namespaces in XPath queries at
-     * all.</p>
-     *
-     * [1]http://code.google.com/p/chromium/issues/detail?id=671
+     * Chromium-based browsers until Chromium bug #671
+     * [<a href="http://code.google.com/p/chromium/issues/detail?id=671">1</a>] 
+     * is fixed. Opera versions < 9.52 do not seem to support namespaces in
+     * XPath queries at all.</p>
      *
      * @param element {Element | Document} root element for the search
      * @param query {String} XPath query
@@ -197,7 +204,11 @@ qx.Class.define("qx.xml.Element",
 
 
     /**
-     * Returns a list of elements with the given tag name belonging to the given namespace (http://developer.mozilla.org/en/docs/DOM:element.getElementsByTagNameNS).
+     * Returns a list of elements with the given tag name belonging to the given namespace
+     *
+     * (See 
+     * <a href="http://developer.mozilla.org/en/DOM/element.getElementsByTagNameNS">MDN
+     * Reference</a>).
      *
      * @param element {Element | Document} the element from where the search should start.
      *       Note that only the descendants of this element are included in the search, not the node itself.
@@ -264,6 +275,37 @@ qx.Class.define("qx.xml.Element",
       }
     }),
 
+    /**
+     * Get the value of the attribute with the given namespace and name
+     *
+     * @param element {Element} XML/DOM element to modify
+     * @param namespaceUri {String} Namespace URI
+     * @param name {String} Attribute name
+     * @return {String} the value of the attribute, empty string if not found
+     * @signature function(element, namespaceUri, name)
+     */
+    getAttributeNS : qx.core.Variant.select("qx.client",
+    {
+      "mshtml": function(element, namespaceUri, name) {
+        var attributes = element.attributes;
+        var value = null;
+        if(attributes)
+        {
+          var attribute = attributes.getQualifiedItem(name,namespaceUri);
+          if(attribute)
+          {
+            value = attribute.nodeValue;
+          }
+        }
+        return value === null ? '' : value;
+      },
+
+      "default" : function(element, namespaceUri, name) {
+        var value = element.getAttributeNS(namespaceUri, name);
+        return value === null ? '' : value;
+      }
+    }),
+
 
     /**
      * Creates an element with the given namespace and appends it to an existing
@@ -296,5 +338,18 @@ qx.Class.define("qx.xml.Element",
         return node;
       }
     })
+  },
+
+
+  /*
+  *****************************************************************************
+     DEFER
+  *****************************************************************************
+  */
+
+  defer : function(statics)
+  {
+    statics.XML_SERIALIZER = (window.XMLSerializer && 
+     !( qx.bom.client.Engine.MSHTML && qx.bom.client.Engine.VERSION >= 9)); 
   }
 });

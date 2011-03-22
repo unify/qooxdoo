@@ -52,7 +52,8 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     }, this);
     this.bind("testSuiteState", this.view, "testSuiteState");
     this.bind("testCount", this.view, "testCount");
-    this.bind("initialTestList", this.view, "initialTestList");
+    //this.bind("initialTestList", this.view, "initialTestList");
+    this.bind("testModel", this.view, "testModel");
     qx.data.SingleValueBinding.bind(this.view, "selectedTests", this, "selectedTests");
     
     // Get log appender element from view
@@ -119,6 +120,14 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       event : "changeTestCount"
     },
     
+    /** Model object representing the test namespace. */
+    testModel :
+    {
+      init : null,
+      nullable : true,
+      event : "changeTestModel"
+    },
+    
     /** Flat list of all tests in the current suite */
     initialTestList :
     {
@@ -171,27 +180,71 @@ qx.Class.define("testrunner2.runner.TestRunner", {
     
     
     /**
-     * Stores test names in a list.
+     * Returns the loader's test representation object
+     * 
+     * @return {Object} Test representation
      */
-    __getTestData : function()
+    __getTestRep : function()
     {
       var testRep = this.loader.getTestDescriptions();
       if (!testRep) {
         this.error("Couldn't get test descriptions from loader!");
+        return null;
+      }
+      return qx.lang.Json.parse(testRep);
+    },
+    
+    
+    /**
+     * Stores test names in a list.
+     */
+    __getTestData : function()
+    {
+      var testRep = this.__getTestRep();
+      if (!testRep) {
         return;
       }
-      testRep = qx.lang.Json.parse(testRep);
       
       this.testList = [];
+      this.testPackageList = [];
       
       for (var i=0,l=testRep.length; i<l; i++) {
         var testClassName = testRep[i].classname;
+        var testPackageName = /(.*?)\.[A-Z]/.exec(testClassName)[1];
+        if (!qx.lang.Array.contains(this.testPackageList, testPackageName)) {
+          this.testPackageList.push(testPackageName);
+        }
         for (var j=0,m=testRep[i].tests.length; j<m; j++) {
           this.testList.push(testClassName + ":" + testRep[i].tests[j]);
         }
       }
       this.testList.sort();
       this.setInitialTestList(this.testList);
+      this.setTestSuiteState("ready");
+    },
+    
+    
+    /**
+     * Constructs a model of the test suite from the loader's test 
+     * representation data
+     */
+    __getTestModel : function()
+    {
+      var oldModel = this.getTestModel();
+      if (oldModel) {
+        testrunner2.runner.ModelUtil.disposeModel(oldModel);
+      }
+      this.setTestModel(null);
+      
+      var testRep = this.__getTestRep();
+      if (!testRep) {
+        return;
+      }
+      
+      var modelData = testrunner2.runner.ModelUtil.createModelData(testRep);
+      var model = qx.data.marshal.Json.createModel(modelData.children[0], true);
+      testrunner2.runner.ModelUtil.addDataFields(model);
+      this.setTestModel(model);
       this.setTestSuiteState("ready");
     },
     
@@ -218,7 +271,8 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       var win = autWindow || window;
       var tCase = win.qx.dev.unit.TestCase.prototype;
       for (var prop in tCase) {
-        if (prop.indexOf("assert") == 0 && typeof tCase[prop] == "function") {
+        if ((prop.indexOf("assert") == 0 || prop === "fail") && 
+            typeof tCase[prop] == "function") {
           // store original assertion func
           var originalName = "__" + prop;
           tCase[originalName] = tCase[prop];
@@ -281,11 +335,11 @@ qx.Class.define("testrunner2.runner.TestRunner", {
         }
       }
       
-      var currentTestFull = this.testList.shift();
+      var currentTest = this.currentTestData = this.testList.shift();
       this.setTestCount(this.testList.length);
-      var className = currentTestFull.substr(0, currentTestFull.indexOf(":"));
-      var functionName = currentTestFull.substr(currentTestFull.indexOf(":") + 1); 
-      var testResult = this.__initTestResult();
+      var className = currentTest.parent.getFullName();
+      var functionName = currentTest.getName();
+      var testResult = this.__initTestResult(currentTest);
       
       var self = this;
       window.setTimeout(function() {
@@ -316,6 +370,12 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       testResult.addListener("startTest", function(e) {
         var test = e.getData();
         
+        if (this.currentTestData && this.currentTestData.getFullName() === test.getFullName()
+          && this.currentTestData.getState() == "wait") {
+          this.currentTestData.setState("start");
+          return;
+        }
+        
         /* EXPERIMENTAL: Check if the test polluted the DOM
         if (qx.core.Variant.isSet("testrunner2.testOrigin", "iframe")) {
           if (this.frameWindow.qx.test && this.frameWindow.qx.test.ui &&
@@ -328,7 +388,7 @@ qx.Class.define("testrunner2.runner.TestRunner", {
         }
         */
         
-        this.currentTestData = new testrunner2.runner.TestResultData(test.getFullName());
+        //this.currentTestData = new testrunner2.runner.TestResultData(test.getFullName());
         this.view.addTestResult(this.currentTestData);
       }, this);
       
@@ -470,7 +530,8 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       }
       
       this.__wrapAssertions(this.frameWindow);
-      this.__getTestData();
+      //this.__getTestData();
+      this.__getTestModel();
     },
     
     
@@ -485,13 +546,48 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       if (!value) {
         return;
       }
-      this.testList = qx.lang.Array.clone(value);
+      if (old) {
+        old.removeListener("change", this._onChangeTestSelection, this);
+      }
+      value.addListener("change", this._onChangeTestSelection, this);
+      this._onChangeTestSelection();
+    },
+    
+    
+    /**
+     * Sets the pending test list and count according to the selection
+     */
+    _onChangeTestSelection : function() {
+      this.testList = this._getFlatTestList();
       // Make sure the value is applied even if it didn't change so the view is
       // updated
-      if (value.length == this.getTestCount()) {
+      if (this.testList.length == this.getTestCount()) {
         this.resetTestCount();
       }
-      this.setTestCount(value.length);
+      this.setTestCount(this.testList.length);
+    },
+    
+    
+    /**
+     * Returns an array containing all "test" children of the current test 
+     * selection  
+     * 
+     * @return {Object[]} Test array
+     */
+    _getFlatTestList : function()
+    {
+      var selection = this.getSelectedTests();
+      if (selection.length == 0) {
+        return new qx.data.Array();
+      }
+      
+      var testList = [];
+      for (var i=0,l=selection.length; i<l; i++) {
+        var item = selection.getItem(i);
+        var testsFromItem = testrunner2.runner.ModelUtil.getItemsByProperty(item, "type", "test");
+        testList = testList.concat(testsFromItem);
+      }
+      return testList;
     },
     
     
@@ -526,6 +622,11 @@ qx.Class.define("testrunner2.runner.TestRunner", {
       }
     }
     
+  },
+  
+  destruct : function()
+  {
+    testrunner2.runner.ModelUtil.disposeModel(this.getTestModel());
   }
     
 });

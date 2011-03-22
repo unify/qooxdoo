@@ -299,9 +299,9 @@
         ---------------------------------------------------------------------------
         */
 
-        var setter = function(modifyPriority)
+        var generateSetter = function(modifyPriority)
         {
-          return function(newValue)
+          var setMethod = function propertySet(newValue)
           {
             var context = this;
 
@@ -374,7 +374,10 @@
             }
           
             return newValue;
-          };      
+          };
+          
+          setMethod.self = clazz;
+          return setMethod;
         };
 
 
@@ -385,9 +388,9 @@
         ---------------------------------------------------------------------------
         */
           
-        var resetter = function(modifyPriority)
+        var generateResetter = function(modifyPriority)
         {
-          return function(value)
+          var resetMethod = function propertyReset(value)
           {
             var context = this;
 
@@ -468,6 +471,9 @@
               }            
             }
           };
+          
+          resetMethod.self = clazz;
+          return resetMethod;
         };      
       
       
@@ -479,7 +485,7 @@
         ---------------------------------------------------------------------------
         */
 
-        var getter = function()
+        var getMethod = function propertyGet()
         {
           var context = this;
 
@@ -536,6 +542,8 @@
             return data[propertyId+currentPriority];
           }
         };
+        
+        getMethod.self = clazz;
       
       
       
@@ -545,7 +553,7 @@
         ---------------------------------------------------------------------------
         */
       
-        members["get" + up] = getter;
+        members["get" + up] = getMethod;
 
         // There are exactly two types of init methods:
         // 1. Initializing the value given in the property configuration (calling apply methods, firing events, etc.)
@@ -583,13 +591,13 @@
           };
         }
       
-        members["set" + up] = setter(3);
-        members["reset" + up] = resetter(3);
+        members["set" + up] = generateSetter(3);
+        members["reset" + up] = generateResetter(3);
       
         if (this.RUNTIME_OVERRIDE)
         {
-          members["setRuntime" + up] = setter(4);
-          members["resetRuntime" + up] = resetter(4);
+          members["setRuntime" + up] = generateSetter(4);
+          members["resetRuntime" + up] = generateResetter(4);
         }
       
       
@@ -602,11 +610,13 @@
             
         if (config.check === "Boolean") 
         {
-          members["toggle" + up] = function() {
+          var toggleMethod = members["toggle" + up] = function() {
             this["set" + up](!this["get" + up]());
           }
+          
+          toggleMethod.self = clazz;
 
-          members["is" + up] = getter;
+          members["is" + up] = getMethod;
         }
       },    
     

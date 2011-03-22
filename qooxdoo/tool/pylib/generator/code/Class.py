@@ -27,12 +27,13 @@ import os, sys, re, types, copy
 import codecs, optparse, functools
 from operator import attrgetter
 
-from misc                           import util, filetool
+from misc                           import util, filetool, textutil
+from misc.NameSpace                 import NameSpace
 from ecmascript                     import compiler
 from ecmascript.frontend            import treeutil, tokenizer, treegenerator, lang
 from ecmascript.frontend.Script     import Script
 from ecmascript.frontend.tree       import Node
-from ecmascript.transform.optimizer import variantoptimizer, variableoptimizer, stringoptimizer, basecalloptimizer
+from ecmascript.transform.optimizer import variantoptimizer, variableoptimizer, stringoptimizer, basecalloptimizer, privateoptimizer
 from generator.resource.AssetHint   import AssetHint
 from generator.resource.Resource    import Resource
 
@@ -237,13 +238,24 @@ class Class(Resource):
     #   Compile Interface
     # --------------------------------------------------------------------------
 
-    def getCode(self, optimize=None, variants={}, format=False, source_with_comments=False):
+    def getCode(self, compOptions):
+        def strip_comments(buffer):
+            #TODO:
+            return buffer
+
+        optimize = compOptions.optimize
+        variants = compOptions.variantset
+        format = compOptions.format
+        source_with_comments = compOptions.source_with_comments
         result = u''
         # source versions
         if not optimize:
             result = filetool.read(self.path)
             if not source_with_comments:
                 result = strip_comments(result)
+            # make sure it terminates with an empty line - better for cat'ing
+            if result[-1:] != "\n":
+                result += '\n'
         # compiled versions
         else:
             result = self._getCompiled(optimize, variants, format)
@@ -290,6 +302,20 @@ class Class(Resource):
 
 
     def optimize(self, tree, optimize=[], featureMap={}):
+
+        def load_privates():
+            cacheId  = privateoptimizer.privatesCacheId
+            privates, _ = cache.read(cacheId, keepLock=True)
+            if privates == None:
+                privates = {}
+            return privates
+
+        def write_privates(globalprivs):
+            cacheId  = privateoptimizer.privatesCacheId
+            cache.write(cacheId, globalprivs)  # removes lock by default
+
+        # -----------------------------------------------------------------------------
+
         if not optimize:
             return tree
         
@@ -304,8 +330,9 @@ class Class(Resource):
             basecalloptimizer.patch(tree)
 
         if "privates" in optimize:
-            console.warn("Cannot optimize private fields on individual class; skipping")
-            pass
+            privatesMap = load_privates()
+            privateoptimizer.patch(tree, id, privatesMap)
+            write_privates(privatesMap)
 
         if "strings" in optimize:
             tree = self._stringOptimizer(tree)
@@ -1483,6 +1510,44 @@ class ClassDependencies(object):
                         break
         return res
         
+
+##
+# Class to represent ["qx.util.*", "qx.core.Object"] et al.
+# (like used in "include" and "exclude" config keys), to provide an
+# encapsulated "match" method
+class ClassMatchList(object):
+    def __init__(self, matchlist):
+        assert isinstance(matchlist, types.ListType)
+        self.matchlist = matchlist   # ["a.b.c.*", "d.e.Foo"]
+        elems = []
+        for elem in matchlist:
+            assert isinstance(elem, types.StringTypes)
+            if elem != "":
+                regexp = textutil.toRegExpS(elem)
+                elems.append(regexp)
+        if elems:
+            self.__regexp = re.compile("|".join(elems))
+        else:
+            self.__regexp = r".\A"  # match none
+
+    def isEmpty(self):
+        return len(self.matchlist) == 0
+
+    def match(self, classId):
+        return self.__regexp.search(classId)
+
+
+##
+# Class to collect various options which influence the compilation process
+# (optimizations, format, variants, ...)
+class CompileOptions(object):
+    def __init__(self, optimize=[], variants={}, _format=False, source_with_comments=False):
+        self.optimize   = optimize
+        self.variantset = variants
+        self.format     = _format
+        self.source_with_comments = source_with_comments
+        self.privateMap = {} # {"<classId>:<private>":"<repl>"}
+
 
 # -- temp. module helper functions ---------------------------------------------
 

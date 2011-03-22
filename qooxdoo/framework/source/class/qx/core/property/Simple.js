@@ -120,7 +120,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       ---------------------------------------------------------------------------
       */      
       
-      members["get" + up] = function() 
+      var getMethod = members["get" + up] = function propertyGet() 
       {
         var context, data, value;
         context = this;    
@@ -153,6 +153,8 @@ qx.Bootstrap.define("qx.core.property.Simple",
         return value;          
       };
       
+      getMethod.self = clazz;
+      
       
       
       /*
@@ -163,7 +165,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
             
       if (initKey)
       {
-        members["init" + up] = function()
+        var initMethod = members["init" + up] = function propertyInit()
         {
           var context=this, data=context[dataStore];
           
@@ -181,6 +183,8 @@ qx.Bootstrap.define("qx.core.property.Simple",
             }          
           }
         };
+        
+        initMethod.self = clazz;
       }      
       
       
@@ -191,7 +195,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       ---------------------------------------------------------------------------
       */      
       
-      members["set" + up] = function(value)
+      var setMethod = members["set" + up] = function propertySet(value)
       {
         var context, data, old;
         context = this;
@@ -231,6 +235,8 @@ qx.Bootstrap.define("qx.core.property.Simple",
         return value;        
       };
       
+      setMethod.self = clazz;
+      
       
       
       /*
@@ -239,7 +245,7 @@ qx.Bootstrap.define("qx.core.property.Simple",
       ---------------------------------------------------------------------------
       */      
       
-      members["reset" + up] = function()
+      var resetMethod = members["reset" + up] = function propertyReset()
       {
         var context, data, old, value;
         context = this;
@@ -281,6 +287,8 @@ qx.Bootstrap.define("qx.core.property.Simple",
         }             
       };   
       
+      resetMethod.self = clazz;
+      
       
       
       /*
@@ -291,9 +299,11 @@ qx.Bootstrap.define("qx.core.property.Simple",
       
       if (config.check === "Boolean") 
       {
-        members["toggle" + up] = function() {
+        var toggleMethod = members["toggle" + up] = function() {
           this["set" + up](!this["get" + up]());
         }
+        
+        toggleMethod.self = clazz;
 
         members["is" + up] = members["get" + up];
       }       

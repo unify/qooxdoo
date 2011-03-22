@@ -138,12 +138,10 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BOX_SHADOW;
-        
         return {
-          decorator : useCSS ? "popup-css" : "main",
+          decorator : "main",
           backgroundColor : "background-light",
-          shadow : useCSS ? undefined : "shadow-popup"
+          shadow : "shadow-popup"
         };
       }
     },
@@ -165,13 +163,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         var decorator, textColor;
-        var padding = [3, 9]; // default padding css-case
 
         if (states.checked && states.focused && !states.inner)
         {
           decorator = "button-checked-focused";
           textColor = undefined;
-          padding = [1, 7];
         }
         else if (states.disabled)
         {
@@ -197,7 +193,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
         {
           decorator = "button-focused";
           textColor = undefined;
-          padding = [1, 7];
         }
         else
         {
@@ -205,19 +200,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
           textColor = undefined;
         }
         
-        var shadow;
-        // feature detect if we should use the CSS decorators
-        if (qx.bom.client.Feature.CSS_BORDER_RADIUS &&
-            qx.bom.client.Feature.CSS_GRADIENTS) {
-          if (states.invalid && !states.disabled) {
-            decorator += "-invalid-css";            
-          } else {
-            decorator += "-css";
-          }
-        } else {
-          shadow = states.invalid && !states.disabled ? "button-invalid-shadow" : undefined;
-          padding = [2, 8];
-        }
+        var shadow = states.invalid && !states.disabled ? "button-invalid-shadow" : undefined;
+        var padding = [2, 8];
 
         return {
           decorator : decorator,
@@ -259,9 +243,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         var decorator = states.hovered ? "selected" : undefined;
-        if (decorator && qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
+
         return {
           decorator : decorator,
           textColor : states.hovered ? "text-selected" : undefined
@@ -276,11 +258,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "button",
       include : "button",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         return {
           icon : "decoration/arrows/down.png",
-          padding : [superStyles.padding[0], superStyles.padding[1] - 6],
+          padding : [2, 2],
           marginLeft : 1
         };
       }
@@ -302,115 +284,65 @@ qx.Theme.define("qx.theme.modern.Appearance",
 
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
-        
         var icon;
-        if (useCSS) {
-          if (states.checked) {
-            icon = "decoration/form/checked.png";
-          } else if (states.undetermined) {
-            icon = "decoration/form/undetermined.png";
+
+        // The "disabled" icon is set to an icon **without** the -disabled
+        // suffix on purpose. This is because the Image widget handles this
+        // already by replacing the current image with a disabled version
+        // (if available). If no disabled image is found, the opacity style
+        // is used.
+        
+        // Checked
+        if (states.checked) {
+          if (states.disabled) {
+            icon = "checkbox-checked";
+          } else if (states.focused) {
+            icon = "checkbox-checked-focused";
+          } else if (states.pressed) {
+            icon = "checkbox-checked-pressed";
+          } else if (states.hovered) {
+            icon = "checkbox-checked-hovered";
           } else {
-            icon = "qx/static/blank.gif";            
+            icon = "checkbox-checked";
           }
-
-        } else {
-          // The "disabled" icon is set to an icon **without** the -disabled
-          // suffix on purpose. This is because the Image widget handles this
-          // already by replacing the current image with a disabled version
-          // (if available). If no disabled image is found, the opacity style
-          // is used.
-          
-          // Checked
-          if (states.checked) {
-            if (states.disabled) {
-              icon = "checkbox-checked";
-            } else if (states.focused) {
-              icon = "checkbox-checked-focused";
-            } else if (states.pressed) {
-              icon = "checkbox-checked-pressed";
-            } else if (states.hovered) {
-              icon = "checkbox-checked-hovered";
-            } else {
-              icon = "checkbox-checked";
-            }
-          
-          // Undetermined
-          } else if (states.undetermined) {
-            if (states.disabled) {
-              icon = "checkbox-undetermined";
-            } else if (states.focused) {
-              icon = "checkbox-undetermined-focused";
-            } else if (states.hovered) {
-              icon = "checkbox-undetermined-hovered";
-            } else {
-              icon = "checkbox-undetermined";
-            }
-          
-          // Focused & Pressed & Hovered (when enabled)
-          } else if (!states.disabled) {
-            if (states.focused) {
-              icon = "checkbox-focused";
-            } else if (states.pressed) {
-              icon = "checkbox-pressed";
-            } else if (states.hovered ) {
-              icon = "checkbox-hovered";
-            }
+        
+        // Undetermined
+        } else if (states.undetermined) {
+          if (states.disabled) {
+            icon = "checkbox-undetermined";
+          } else if (states.focused) {
+            icon = "checkbox-undetermined-focused";
+          } else if (states.hovered) {
+            icon = "checkbox-undetermined-hovered";
+          } else {
+            icon = "checkbox-undetermined";
           }
-          
-          // Unchecked
-          icon = icon || "checkbox";
-
-          var invalid = states.invalid && !states.disabled ? "-invalid" : "";
-          icon = "decoration/form/" + icon + invalid + ".png";
+        
+        // Focused & Pressed & Hovered (when enabled)
+        } else if (!states.disabled) {
+          if (states.focused) {
+            icon = "checkbox-focused";
+          } else if (states.pressed) {
+            icon = "checkbox-pressed";
+          } else if (states.hovered ) {
+            icon = "checkbox-hovered";
+          }
         }
+        
+        // Unchecked
+        icon = icon || "checkbox";
+
+        var invalid = states.invalid && !states.disabled ? "-invalid" : "";
+        icon = "decoration/form/" + icon + invalid + ".png";
         
         return {
           icon: icon,
-          gap: useCSS ? 8 : 6 // use a bigger gap because of the shadow (glow)
+          gap: 6
         };
       }
     },
 
-    "checkbox/icon" : {
-      style : function(states) 
-      {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
-        if (!useCSS) {
-          // same as image
-          return {opacity : !states.replacement && states.disabled ? 0.3 : 1};
-        }
-
-        var decorator;
-
-        if (states.disabled) {
-          decorator = "checkbox-disabled";
-        } else if (states.focused) {
-          decorator = "checkbox-focused";
-        } else if (states.hovered) {
-          decorator = "checkbox-hovered";       
-        } else {
-          decorator = "checkbox";
-        }
-        
-        decorator += states.invalid && !states.disabled ? "-invalid" : "";
-        
-        var padding;
-        // Undetermined
-        if (states.undetermined) {
-          padding = [2, 0];
-        }
-        
-        return {
-          decorator : decorator,
-          padding : padding,
-          width: 12, // use 12 to allow the inset of the decorator to be applied
-          height: 10
-        }
-      }      
-    },
+    "checkbox/icon" : "image",
 
     "radiobutton":
     {
@@ -418,82 +350,39 @@ qx.Theme.define("qx.theme.modern.Appearance",
 
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
-
         var icon;
-        if (useCSS) {
-          icon = "qx/static/blank.gif";
+
+        // "disabled" state is not handled here with purpose. The image widget
+        // does handle this already by replacing the current image with a
+        // disabled version (if available). If no disabled image is found the
+        // opacity style is used.
+        if (states.checked && states.focused) {
+          icon = "radiobutton-checked-focused";
+        } else if (states.checked && states.disabled) {
+          icon = "radiobutton-checked-disabled";
+        } else if (states.checked && states.hovered) {
+          icon = "radiobutton-checked-hovered";
+        } else if (states.checked) {
+          icon = "radiobutton-checked";
+        } else if (states.focused) {
+          icon = "radiobutton-focused";
+        } else if (states.hovered) {
+          icon = "radiobutton-hovered";
         } else {
-          // "disabled" state is not handled here with purpose. The image widget
-          // does handle this already by replacing the current image with a
-          // disabled version (if available). If no disabled image is found the
-          // opacity style is used.
-          if (states.checked && states.focused) {
-            icon = "radiobutton-checked-focused";
-          } else if (states.checked && states.disabled) {
-            icon = "radiobutton-checked-disabled";
-          } else if (states.checked && states.hovered) {
-            icon = "radiobutton-checked-hovered";
-          } else if (states.checked) {
-            icon = "radiobutton-checked";
-          } else if (states.focused) {
-            icon = "radiobutton-focused";
-          } else if (states.hovered) {
-            icon = "radiobutton-hovered";
-          } else {
-            icon = "radiobutton";
-          }
-          
-          var invalid = states.invalid && !states.disabled ? "-invalid" : "";
-          icon = "decoration/form/" + icon + invalid + ".png";
+          icon = "radiobutton";
         }
+        
+        var invalid = states.invalid && !states.disabled ? "-invalid" : "";
+        icon = "decoration/form/" + icon + invalid + ".png";
+
         return {
           icon: icon,
-          gap : useCSS ? 8 : 6 // use a bigger gap because of the shadow (glow)
+          gap : 6
         };
       }
     },
     
-    "radiobutton/icon" : {
-      style : function(states) 
-      {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
-        if (!useCSS) {
-          // same as image
-          return {opacity : !states.replacement && states.disabled ? 0.3 : 1};
-        }
-
-        var decorator;
-
-        if (states.disabled && !states.checked) {
-          decorator = "radiobutton-disabled";
-        } else if (states.checked && states.focused) {
-          decorator = "radiobutton-checked-focused";
-        } else if (states.checked && states.disabled) {
-          decorator = "radiobutton-checked-disabled";
-        } else if (states.checked && states.hovered) {
-          decorator = "radiobutton-checked-hovered";
-        } else if (states.checked) {
-          decorator = "radiobutton-checked";
-        } else if (states.focused) {
-          decorator = "radiobutton-focused";
-        } else if (states.hovered) {
-          decorator = "radiobutton-hovered";          
-        } else {
-          decorator = "radiobutton";
-        }
-        
-        decorator += states.invalid && !states.disabled ? "-invalid" : "";
-        
-        return {
-          decorator : decorator,
-          width: 12, // use 12 to allow the inset of the decorator to be applied
-          height: 10
-        }
-      }      
-    },
+    "radiobutton/icon" : "image",
 
     "textfield" :
     {
@@ -517,10 +406,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = "input";
         }
         
-        if (qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
-
         var textColor;
         if (states.disabled) {
           textColor = "text-disabled";
@@ -581,10 +466,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = "input";
         }
 
-        if (qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
-
         return {
           decorator : decorator
         };
@@ -608,11 +489,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "button-frame",
       include : "button-frame",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         return {
           icon : "decoration/arrows/up-small.png",
-          padding : [superStyles.padding[0] - 1, superStyles.padding[1] - 5],
+          padding : [1, 3],
           shadow: undefined
         };
       }
@@ -623,11 +504,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "button-frame",
       include : "button-frame",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         return {
           icon : "decoration/arrows/down-small.png",
-          padding : [superStyles.padding[0] - 1, superStyles.padding[1] - 5],
+          padding : [1, 3],
           shadow: undefined
         };
       }
@@ -713,11 +594,10 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS;
         return {
-          padding : useCSS ? 10 : 12,
-          margin : useCSS ? 1 : undefined,
-          decorator : useCSS ? "group-css" : "group"
+          padding : 12,
+          margin : undefined,
+          decorator : "group"
         };
       }
     },
@@ -815,11 +695,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           return {};
         }
         
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS;
         var decorator = states.horizontal ? "scrollbar-horizontal" : "scrollbar-vertical";
-        if (useCSS) {
-          decorator += "-css";
-        }
 
         return {
           width     : states.horizontal ? undefined : 16,
@@ -848,15 +724,10 @@ qx.Theme.define("qx.theme.modern.Appearance",
 
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS;
-        
         var decorator = states.horizontal ? "scrollbar-slider-horizontal" :
                                             "scrollbar-slider-vertical";
         if (states.disabled) {
           decorator += "-disabled";
-        }
-        if (useCSS) {
-          decorator += "-css";
         }
 
         return {
@@ -942,10 +813,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = "input";
         }
         
-        if (qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
-
         return {
           decorator : decorator
         };
@@ -1003,10 +870,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = "input";
         }
         
-        if (qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }        
-
         return {
           backgroundColor : "background-light",
           decorator : decorator
@@ -1027,9 +890,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = states.selected ? "selected-dragover" : "dragover";
         } else {
           decorator = states.selected ? "selected" : undefined;
-          if (decorator && qx.bom.client.Feature.CSS_GRADIENTS) {
-            decorator += "-css";
-          }          
         }
 
         return {
@@ -1202,10 +1062,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BORDER_RADIUS
         return {
-          decorator : useCSS ? "tabview-pane-css" : "tabview-pane",
+          decorator : "tabview-pane",
           minHeight : 100,
 
           marginBottom : states.barBottom ? -1 : 0,
@@ -1216,19 +1074,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
       }
     },
 
-    "tabview-page" : {
-      alias : "widget",
-      include : "widget",
-      
-      style : function(states) {
-        // is used for the padding of the pane
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BORDER_RADIUS
-        return {
-          padding : useCSS ? [4, 3] : undefined
-        }
-      }
-    },
+    "tabview-page" : "widget",
 
     "tabview-page/button" :
     {
@@ -1239,23 +1085,19 @@ qx.Theme.define("qx.theme.modern.Appearance",
         var decorator, padding=0;
         var marginTop=0, marginBottom=0, marginLeft=0, marginRight=0;
 
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW &&
-          qx.bom.client.Feature.CSS_GRADIENTS;
-
         if (states.checked)
         {
           if (states.barTop)
           {
             decorator = "tabview-page-button-top-active";
-            padding = useCSS ? [5, 11] : [ 6, 14 ];
+            padding = [ 6, 14 ];
             marginLeft = states.firstTab ? 0 : -5;
             marginRight = states.lastTab ? 0 : -5;
           }
           else if (states.barBottom)
           {
             decorator = "tabview-page-button-bottom-active";
-            padding = useCSS ? [5, 11] : [ 6, 14 ];
+            padding = [ 6, 14 ];
             marginLeft = states.firstTab ? 0 : -5;
             marginRight = states.lastTab ? 0 : -5;
             marginTop = 3;
@@ -1263,7 +1105,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           else if (states.barRight)
           {
             decorator = "tabview-page-button-right-active";
-            padding = useCSS ? [5, 10] : [ 6, 13 ];
+            padding = [ 6, 13 ];
             marginTop = states.firstTab ? 0 : -5;
             marginBottom = states.lastTab ? 0 : -5;
             marginLeft = 2;
@@ -1271,7 +1113,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           else
           {
             decorator = "tabview-page-button-left-active";
-            padding = useCSS ? [5, 10] : [ 6, 13 ];
+            padding = [ 6, 13 ];
             marginTop = states.firstTab ? 0 : -5;
             marginBottom = states.lastTab ? 0 : -5;
           }
@@ -1281,7 +1123,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           if (states.barTop)
           {
             decorator = "tabview-page-button-top-inactive";
-            padding = useCSS ? [3, 9] : [ 4, 10 ];
+            padding = [ 4, 10 ];
             marginTop = 4;
             marginLeft = states.firstTab ? 5 : 1;
             marginRight = 1;
@@ -1289,7 +1131,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           else if (states.barBottom)
           {
             decorator = "tabview-page-button-bottom-inactive";
-            padding = useCSS ? [3, 9] : [ 4, 10 ];
+            padding = [ 4, 10 ];
             marginBottom = 4;
             marginLeft = states.firstTab ? 5 : 1;
             marginRight = 1;
@@ -1298,7 +1140,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           else if (states.barRight)
           {
             decorator = "tabview-page-button-right-inactive";
-            padding = useCSS ? [3, 9] : [ 4, 10 ];
+            padding = [ 4, 10 ];
             marginRight = 5;
             marginTop = states.firstTab ? 5 : 1;
             marginBottom = 1;
@@ -1307,7 +1149,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           else
           {
             decorator = "tabview-page-button-left-inactive";
-            padding = useCSS ? [3, 9] : [ 4, 10 ];
+            padding = [ 4, 10 ];
             marginLeft = 5;
             marginTop = states.firstTab ? 5 : 1;
             marginBottom = 1;
@@ -1315,10 +1157,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
           }
         }
         
-        if (decorator && useCSS) {
-          decorator += "-css";
-        }
-
         return {
           zIndex : states.checked ? 10 : 5,
           decorator : decorator,
@@ -1365,9 +1203,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS;
         return {
-          decorator : useCSS ? "toolbar-css" : "toolbar",
+          decorator : "toolbar",
           spacing : 2
         };
       }
@@ -1424,12 +1261,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator = "toolbar-button-hovered";
         }
         
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BORDER_RADIUS;
-        if (useCSS && decorator) {
-          decorator += "-css";
-        }
-
         return {
           marginTop : 2,
           marginBottom : 2,
@@ -1541,9 +1372,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         var decorator = states.selected ? "selected" : undefined;
-        if (decorator && qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
         
         return {
           padding    : [ 2, 6 ],
@@ -1772,8 +1600,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
 
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
         return {
           textColor: "text-selected",
           backgroundColor : undefined,
@@ -1783,10 +1609,9 @@ qx.Theme.define("qx.theme.modern.Appearance",
           position: "right-top",
           showTimeout: 100,
           hideTimeout: 10000,
-          decorator: useCSS ? "tooltip-error-css" : "tooltip-error",
+          decorator: "tooltip-error",
           shadow: "tooltip-error-arrow",
-          font: "bold",
-          padding: useCSS ? 3 : undefined
+          font: "bold"
         };
       }
     },
@@ -1803,11 +1628,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS &&
-          qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
         return {
-          decorator : useCSS ? undefined : "shadow-window",
+          decorator : "shadow-window",
           contentPadding : [ 10, 10, 10, 10 ]
         };
       }
@@ -1817,12 +1639,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS &&
-          qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
         return {
-          decorator : useCSS ? "window-css" : "window",
-          margin : useCSS ? [0, 5, states.showStatusbar ? 0 : 5, 0] : undefined // necessary for the shadow
+          decorator : "window"
         };
       }
     },
@@ -1831,21 +1649,13 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS &&
-          qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
-
         var decorator = states.active ? "window-captionbar-active" : "window-captionbar-inactive";
-        if (useCSS) {
-          decorator += "-css";
-        }
-        
+
         return {
           decorator    : decorator,
-          textColor    : states.active ? "white" : "text-gray",
+          textColor    : states.active ? "window-caption-active-text" : "text-gray",
           minHeight    : 26,
-          paddingRight : 2,
-          margin : useCSS ? [0, 5, 0, 0] : undefined // necessary for the shadow
+          paddingRight : 2
         };
       }
     },
@@ -1937,14 +1747,10 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BORDER_RADIUS &&
-          qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
         return {
           padding   : [ 2, 6 ],
-          decorator : useCSS ? "window-statusbar-css" : "window-statusbar",
-          minHeight : 18,
-          margin : useCSS ? [0, 5, 5, 0] : undefined // necessary for the shadow
+          decorator : "window-statusbar",
+          minHeight : 18
         };
       }
     },
@@ -1996,12 +1802,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_BOX_SHADOW &&
-          qx.bom.client.Feature.CSS_BORDER_RADIUS &&
-          qx.bom.client.Feature.CSS_GRADIENTS;
-
         return {
-          decorator : useCSS ? "pane-css" : "pane"
+          decorator : "pane"
         };
       }
     },
@@ -2225,9 +2027,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         var decorator = states.disabled ? undefined : states.selected ? "selected" : undefined;
-        if (decorator && qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
         
         return {
           textAlign : "center",
@@ -2290,11 +2089,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       include : "button-frame",
       alias   : "button-frame",
 
-      style : function(states, superStyles)
+      style : function(states)
       {
         var ret = {
           icon : "decoration/arrows/down.png",
-          padding : [superStyles.padding[0], superStyles.padding[1] - 6],
+          padding : [2, 2],
           shadow : undefined
         };
 
@@ -2333,13 +2132,10 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS && 
-          qx.bom.client.Feature.CSS_BOX_SHADOW;
-        
         var result =
         {
-          decorator : useCSS ? "menu-css" : "menu",
-          shadow : useCSS ? undefined : "shadow-popup",
+          decorator : "menu",
+          shadow : "shadow-popup",
           spacingX : 6,
           spacingY : 1,
           iconColumnWidth : 16,
@@ -2366,9 +2162,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         var decorator = states.hovered  ? "selected" : undefined;
-        if (decorator && qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
         
         return {
           decorator : decorator,
@@ -2421,9 +2214,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         var decorator = states.selected ? "selected" : undefined;
-        if (decorator && qx.bom.client.Feature.CSS_GRADIENTS) {
-          decorator += "-css";
-        }
         
         return {
           decorator : decorator,
@@ -2528,9 +2318,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
    {
      style : function(states)
      {
-       var useCSS = qx.bom.client.Feature.CSS_GRADIENTS;
        return {
-         decorator : useCSS ? "menubar-css" : "menubar"
+         decorator : "menubar"
        };
      }
    },
@@ -2542,9 +2331,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
      style : function(states)
      {
        var decorator = (states.pressed || states.hovered) && !states.disabled ? "selected" : undefined;
-       if (decorator && qx.bom.client.Feature.CSS_GRADIENTS) {
-         decorator += "-css";
-       }
        
        return {
          decorator : decorator,
@@ -2763,8 +2549,6 @@ qx.Theme.define("qx.theme.modern.Appearance",
       }
     },
 
-    "table-header": {},
-
     "table/statusbar" :
     {
       style : function(states)
@@ -2782,9 +2566,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
 
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS;
         return {
-          decorator : useCSS ? "table-scroller-header-css" : "table-scroller-header",
+          decorator : "table-scroller-header",
           padding   : 3,
           icon      : "decoration/table/select-column-order.png"
         };
@@ -2813,9 +2596,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS;
         return {
-          decorator : useCSS ? "table-scroller-header-css" : "table-scroller-header"
+          decorator : "table-scroller-header"
         };
       }
     },
@@ -2972,12 +2754,11 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "atom",
       style : function(states)
       {
-        var useCSS = qx.bom.client.Feature.CSS_GRADIENTS;
         return {
           minWidth : 40,
           minHeight : 25,
           paddingLeft : 6,
-          decorator : useCSS ? "progressive-table-header-cell-css" : "progressive-table-header-cell"
+          decorator : "progressive-table-header-cell"
         };
       }
     },
@@ -3018,8 +2799,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         return {
-          colorEven : "white",
-          colorOdd : "white"
+          colorEven : "virtual-row-layer-background-even",
+          colorOdd : "virtual-row-layer-background-odd"
         };
       }
     },
@@ -3033,8 +2814,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
       {
         return {
           padding : 4,
-          decorator : qx.bom.client.Feature.CSS_GRADIENTS ? "group-item-css" : "group-item",
-          textColor : "white",
+          decorator : "group-item",
+          textColor : "groupitem-text",
           font: "bold"
         };
       }
@@ -3051,6 +2832,96 @@ qx.Theme.define("qx.theme.modern.Appearance",
     "virtual-combobox/dropdown/list" : {
       alias : "virtual-list"
     },
+    
+    "virtual-tree" : "list",
+    
+    "virtual-tree-item" :
+    {
+      style : function(states)
+      {
+        return {
+          padding: [2, 6],
+          textColor: states.selected ? "text-selected" : undefined,
+          decorator: states.selected ? "selected" : undefined
+        };
+      }
+    },
+
+    "virtual-tree-item/icon" :
+    {
+      include : "image",
+
+      style : function(states)
+      {
+        return {
+          paddingRight: 5,
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-item/label" : 
+    {
+      include : "label",
+      
+      style : function(states)
+      {
+        return {
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-folder" :
+    {
+      include : "virtual-tree-item",
+      alias : "virtual-tree-item",
+
+      style : function(states)
+      {
+        return {
+          icon: states.opened ? "icon/22/places/folder-open.png" : "icon/22/places/folder.png"
+        };
+      }
+    },
+    
+    "virtual-tree-folder/open" :
+    {
+      include : "image",
+
+      style : function(states)
+      {
+        var icon;
+        if (states.selected && states.opened) {
+          icon = "decoration/tree/open-selected.png";
+        } else if (states.selected && !states.opened) {
+          icon = "decoration/tree/closed-selected.png";
+        } else if (states.opened) {
+          icon = "decoration/tree/open.png";
+        } else {
+          icon = "decoration/tree/closed.png";
+        }
+
+        return {
+          padding: [0, 5, 0, 2],
+          source: icon,
+          alignY: "middle"
+        };
+      }
+    },
+
+    "virtual-tree-file" :
+    {
+      include : "virtual-tree-item",
+      alias : "virtual-tree-item",
+
+      style : function(states)
+      {
+        return {
+          icon: "icon/22/mimetypes/office-document.png"
+        };
+      }
+    },    
         
     "column-layer" : "widget",
 
@@ -3108,7 +2979,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
       style : function(states)
       {
         return {
-          backgroundColor : "white"
+          backgroundColor : "htmlarea-background"
         };
       }
     },
@@ -3125,7 +2996,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
         return {
           decorator: "progressbar",
           padding: [1],
-          backgroundColor: "white"
+          backgroundColor: "progressbar-background"
         }
       }
     },
@@ -3134,7 +3005,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
     {
       style: function(states) {
         return {
-          decorator: qx.bom.client.Feature.CSS_GRADIENTS ? "selected-css" : "selected"
+          decorator: "selected"
         }
       }
     }

@@ -92,7 +92,6 @@ qx.Class.define("demobrowser.demo.widget.ToolBar",
       // add a widget which signals that something has been removed
       var overflow = new qx.ui.toolbar.MenuButton("More...");
       toolbar.add(overflow);
-      toolbar.setOverflowIndicator(overflow);      
 
       // create Help Button and add it to the toolbar      
       var helpButton = new qx.ui.toolbar.Button("Help", "icon/22/actions/help-contents.png");
@@ -137,28 +136,6 @@ qx.Class.define("demobrowser.demo.widget.ToolBar",
         menuItem[i].setVisibility("excluded");
       };
       
-      var showHideHandler = function(item, visibility) {
-        var items = [];
-        if (item == part1) {
-          items.push(newButton, sep1, copyButton, cutButton, pasteButton);
-        } else if (item == part3) {
-          items.push(sep2, radioButton1, radioButton2, radioButton3);
-        }
-        
-        for (var i = 0; i < items.length; i++) {
-          items[i].setVisibility(visibility)
-        };
-      }
-      
-      // handler for showind and hiding toobar items
-      toolbar.addListener("showItem", function(e) {
-        showHideHandler(e.getData(), "excluded");
-      }, this);
-      
-      toolbar.addListener("hideItem", function(e) {
-        showHideHandler(e.getData(), "visible");
-      }, this);
-
 
       ///////////////////////////////////////////////////////////////
       // Control stuff

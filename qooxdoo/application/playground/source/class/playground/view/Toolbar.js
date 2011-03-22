@@ -143,53 +143,6 @@ qx.Class.define("playground.view.Toolbar",
     demoBrowserButton.addListener("execute", function() {
       this.fireEvent("openDemoBrowser");
     }, this);
-    
-    // enable doverflow handling
-    this.setOverflowHandling(true);
-    
-    // remove priority for overflow handling
-    this.setRemovePriority(helpButton, 7);
-    this.setRemovePriority(apiButton, 6);
-    this.setRemovePriority(this.__logCheckButton, 5);
-    this.setRemovePriority(selectSampleButton, 4);
-    this.setRemovePriority(this.__highlightButton, 3);
-    this.setRemovePriority(gistButton, 2);
-    this.setRemovePriority(urlShortButton, 1);
-    
-    // add a button for overflow handling
-    var chevron = new qx.ui.toolbar.MenuButton(null, "icon/22/actions/media-seek-forward.png");
-    chevron.setAppearance("toolbar-button");  // hide the down arrow icon
-    this.add(chevron);
-    this.setOverflowIndicator(chevron);
-    
-    // add the overflow menu
-    this.__overflowMenu = new qx.ui.menu.Menu();
-    chevron.setMenu(this.__overflowMenu);
-    
-    // add the listener
-    this.addListener("hideItem", function(e) {
-      var item = e.getData();
-      var menuItem = this._getMenuItem(item);
-      menuItem.setVisibility("visible");
-      // menus
-      if (item.getMenu && item.getMenu()) {
-        var menu = item.getMenu();
-        item.setMenu(null);
-        menuItem.setMenu(menu);
-      }
-    }, this);
-    
-    this.addListener("showItem", function(e) {
-      var item = e.getData();
-      var menuItem = this._getMenuItem(item);
-      menuItem.setVisibility("excluded");
-      // menus
-      if (menuItem.getMenu()) {
-        var menu = menuItem.getMenu();
-        menuItem.setMenu(null);
-        item.setMenu(menu);
-      }
-    }, this);
   },
 
 
@@ -335,42 +288,7 @@ qx.Class.define("playground.view.Toolbar",
      */
     invalidGist : function(invalid, message) {
       this.__gistMenu.invalidUser(invalid, message);
-    },
-    
-    
-    /**
-     * Helper for the overflow handling. It is responsible for returning a 
-     * corresponding menu item for the given toolbar item.
-     * 
-     * @param toolbarItem {qx.ui.core.Widget} The toolbar item to look for.
-     * @return {qx.ui.core.Widget} The coresponding menu item.
-     */
-    _getMenuItem : function(toolbarItem) {
-      var cachedItem = this.__menuItemStore[toolbarItem.toHashCode()];
-      
-      if (!cachedItem) {
-        if (toolbarItem instanceof qx.ui.toolbar.CheckBox) {
-          cachedItem = new qx.ui.menu.CheckBox(toolbarItem.getLabel());
-        } else {
-          cachedItem = new qx.ui.menu.Button(toolbarItem.getLabel(), toolbarItem.getIcon());
-          // special case for the gist button
-          if (toolbarItem.getLabel() == null) {
-            cachedItem.setLabel("gist");
-            cachedItem.setIcon(null);
-          }
-        }
-        
-        // connect the execute
-        cachedItem.addListener("execute", function() {
-          toolbarItem.execute();
-        });
-
-        this.__overflowMenu.addAt(cachedItem, 0);
-        this.__menuItemStore[toolbarItem.toHashCode()] = cachedItem;
-      }
-      
-      return cachedItem;
-    }    
+    }
   },
 
 

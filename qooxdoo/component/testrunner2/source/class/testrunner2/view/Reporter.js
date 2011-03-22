@@ -165,14 +165,6 @@ qx.Class.define("testrunner2.view.Reporter", {
     },
     
     
-    _applyInitialTestList : function(value, old)
-    {
-      if (value) {
-        this.setSelectedTests(value);
-      }
-    },
-    
-    
     /**
      * Reports any tests that change state to "failure" or "error"
      * 
@@ -185,7 +177,7 @@ qx.Class.define("testrunner2.view.Reporter", {
       var state = testResultData.getState();
       
       if (state == "failure" || state == "error") {
-        var testName = testResultData.getName();
+        var testName = testResultData.getFullName();
         var exceptions = testResultData.getExceptions();
         
         var autUri = qx.bom.Iframe.queryCurrentUrl(this.getIframe());

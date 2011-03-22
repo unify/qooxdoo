@@ -200,7 +200,7 @@ qx.Class.define("qx.bom.element.Dimension",
      * and even scrollbars.
      *
      * Please note that with visible scrollbars the content height returned
-     * may be larger than the box width returned via {@link #getWidth}.
+     * may be larger than the box height returned via {@link #getHeight}.
      *
      * @param element {Element} element to query
      * @return {Integer} Computed content height
@@ -227,10 +227,10 @@ qx.Class.define("qx.bom.element.Dimension",
         else
         {
           // Scrollbars visible and needed. We just remove the top padding,
-          // as the right padding is not respected in rendering.
+          // as the bottom padding is not respected in rendering.
           var height = element.scrollHeight - paddingTop;
 
-          // IE renders the paddingRight as well with scrollbars on
+          // IE renders the paddingBottom as well with scrollbars on
           var Engine = qx.bom.client.Engine;
           if (Engine.NAME === "mshtml" && Engine.VERSION == 6) {
             height -= paddingBottom;

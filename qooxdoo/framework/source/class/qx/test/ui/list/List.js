@@ -84,26 +84,6 @@ qx.Class.define("qx.test.ui.list.List",
     },
 
 
-    testResetModel : function()
-    {
-      var model = new qx.data.Array();
-      model.push("item");
-
-      this._list.setModel(model);
-      this.flush();
-
-      this.assertModelEqualsRowData(model, this._list);
-
-      this._list.resetModel();
-      this.flush();
-
-      this.assertModelEqualsRowData(this._model, this._list);
-
-      this.assertEquals(this._model, this._list.getModel());
-      this.assertEquals(this._list.getModel().getLength(), this._list.getPane().getRowConfig().getItemCount(), "b");
-    },
-
-
     testComplexModel : function()
     {
       var rawData = [];

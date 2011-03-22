@@ -1018,14 +1018,15 @@ qx.Class.define("qx.ui.core.Widget",
       var container = this.getContainerElement();
       var old = this.$$parent;
 
-      // Update inheritable properties
-      qx.core.property.Multi.moveObject(this, parent, old);
-
       if (this.$$parent && !this.$$parent.$$disposed) {
         this.$$parent.getContentElement().remove(container);
       }
 
       this.$$parent = parent || null;
+
+      // Update inheritable properties
+      // Note: Parent flag needs to be updated before calling this method
+      qx.core.property.Multi.moveObject(this, parent, old);
 
       if (parent && !parent.$$disposed) {
         this.$$parent.getContentElement().add(container);
@@ -2606,18 +2607,6 @@ qx.Class.define("qx.ui.core.Widget",
       }
       
       this.getContainerElement().setStyle("opacity", value == 1 ? null : value);
-
-      // Fix for AlphaImageLoader - see Bug #1894 for details
-      if (qx.core.Variant.isSet("qx.client", "mshtml") && qx.bom.element.Decoration.isAlphaImageLoaderEnabled())
-      {
-        // Do not apply this fix on images - see Bug #2748
-        if (!qx.Class.isSubClassOf(this.getContentElement().constructor, qx.html.Image))
-        {
-          // 0.99 is necessary since 1.0 is ignored and not being applied
-          var contentElementOpacity = (value == 1 || value == null) ? null : 0.99;
-          this.getContentElement().setStyle("opacity", contentElementOpacity);
-        }
-      }
     },    
     
     
@@ -3049,12 +3038,18 @@ qx.Class.define("qx.ui.core.Widget",
      * Returns the appearance value for the given property.
      * 
      * @param prop {String} Name of any supported themable property
-     * @return {var} Currently stored value.
+     * @return {var} Currently stored value. Returns <code>undefined</code> when no value is available.
      */
     getThemedValue : function(prop)
     {
       var selector = this.__appearanceSelector;
-      return selector ? qx.ui.core.Widget.__styleCache[selector][prop] : undefined;
+      if (selector)
+      {
+        var entry = qx.ui.core.Widget.__styleCache[selector];
+        if (entry) {
+          return entry[prop];
+        }
+      }
     },
 
 
@@ -3071,6 +3066,14 @@ qx.Class.define("qx.ui.core.Widget",
       if (inheritables[prop])
       {
         var parent = this.$$parent;
+        
+        if (qx.core.Variant.isSet("qx.debug", "on"))
+        {
+          if (!parent) {
+            this.warn("Has no parent to access inheritable value for \"" + prop + "\"");
+          }
+        }
+        
         return parent && parent.get(prop);
       }
     },
@@ -3079,7 +3082,7 @@ qx.Class.define("qx.ui.core.Widget",
     // property apply
     _applyAppearance : function(value, old) 
     {
-      this.debug("Appearance changed: " + old + " => " + value);
+      // this.debug("Appearance changed: " + old + " => " + value);
       this.updateAppearance();
     },
 

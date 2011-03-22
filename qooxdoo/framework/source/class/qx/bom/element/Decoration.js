@@ -22,7 +22,7 @@
  * Powerful creation and update features for images used for decoration
  * purposes like for rounded borders, icons, etc.
  *
- * Includes support for image clipping, PNG alpha channel support, additional
+ * Includes support for image clipping, additional
  * repeat options like <code>scale-x</code> or <code>scale-y</code>.
  */
 qx.Class.define("qx.bom.element.Decoration",
@@ -40,42 +40,6 @@ qx.Class.define("qx.bom.element.Decoration",
 
     /** {Map} Collect warnings for potential clipped images */
     __warnings : {},
-
-    /**
-     * {Boolean} Whether the alpha image loader is needed.
-     * We enable this for all IE browser because of issues reported by Maria
-     * Siebert and others in combination with the opacity filter applied
-     * to e.g. disabled icons. Thanks Maria.
-     *
-     * To prevent these issues use the "disabled" images. This is done by adding
-     * a special second image which is already in a disabled state. In order to
-     * make use of this feature the image has to follow the convention "-disabled".
-     * (e.g. "button.png" -> "button-disabled.png")
-     *
-     * The situation for IE8 is that running in "IE8 Standards Mode" IE8 has a
-     * runtime performance issue. The updates are compared to IE7 really slow.
-     * The cause for this is the dynamic adding/removing of the IMG elements
-     * which are part of the decorator. Using the alpha image loader does change
-     * this DOM structure to only use DIV elements which do not have a negative
-     * performance impact. See Bug #2185 for details.
-     */
-    __enableAlphaFix : qx.core.Variant.isSet("qx.client", "mshtml") && qx.bom.client.Engine.VERSION < 9,
-
-
-    /** {Map} List of repeat modes which supports the IE AlphaImageLoader */
-    __alphaFixRepeats : qx.core.Variant.select("qx.client",
-    {
-      "mshtml" :
-      {
-        "scale-x" : true,
-        "scale-y" : true,
-        "scale" : true,
-        "no-repeat" : true
-      },
-
-      "default" : null
-    }),
-
 
     /** {Map} Mapping between background repeat and the tag to create */
     __repeatToTagname :
@@ -127,15 +91,6 @@ qx.Class.define("qx.bom.element.Decoration",
       // Apply new styles
       var Style = qx.bom.element.Style;
       Style.setStyles(element, ret.style);
-
-      // we need to apply the filter to prevent black rendering artifacts
-      // http://blog.hackedbrain.com/archive/2007/05/21/6110.aspx
-      if (this.__enableAlphaFix)
-      {
-        try {
-          element.filters["DXImageTransform.Microsoft.AlphaImageLoader"].apply();
-        } catch(e) {}
-      }
     },
 
 
@@ -173,15 +128,7 @@ qx.Class.define("qx.bom.element.Decoration",
      * @param source {String?null} Source used to identify the image format
      * @return {String} The tag name: <code>div</code> or <code>img</code>
      */
-    getTagName : function(repeat, source)
-    {
-      if (qx.core.Variant.isSet("qx.client", "mshtml"))
-      {
-        if (source && this.__enableAlphaFix && this.__alphaFixRepeats[repeat] && qx.lang.String.endsWith(source, ".png")) {
-          return "div";
-        }
-      }
-
+    getTagName : function(repeat, source) {
       return this.__repeatToTagname[repeat];
     },
 
@@ -229,20 +176,13 @@ qx.Class.define("qx.bom.element.Decoration",
 
       var result;
 
-      // Enable AlphaImageLoader in IE6/IE7/IE8
-      if (this.__enableAlphaFix && this.__alphaFixRepeats[repeat] && format === "png") {
-        result = this.__processAlphaFix(style, repeat, source);
-      }
-      else
-      {
-        if (repeat === "scale") {
-          result = this.__processScale(style, repeat, source);
-        } else  if (repeat === "scale-x" || repeat === "scale-y") {
-          result = this.__processScaleXScaleY(style, repeat, source);
-        } else {
-          // Native repeats or "no-repeat"
-          result = this.__processRepeats(style, repeat, source);
-        }
+      if (repeat === "scale") {
+        result = this.__processScale(style, repeat, source);
+      } else  if (repeat === "scale-x" || repeat === "scale-y") {
+        result = this.__processScaleXScaleY(style, repeat, source);
+      } else {
+        // Native repeats or "no-repeat"
+        result = this.__processRepeats(style, repeat, source);
       }
 
       return result;
@@ -293,35 +233,6 @@ qx.Class.define("qx.bom.element.Decoration",
 
 
     /**
-     * Get all styles for IE browser which need to load the image
-     * with the help of the AlphaImageLoader
-     *
-     * @param style {Map} style information
-     * @param repeat {String} repeat mode
-     * @param source {String} image source
-     *
-     * @return {Map} style infos
-     */
-    __processAlphaFix : function(style, repeat, source)
-    {
-      var dimension = this.__getDimension(source);
-      style = this.__normalizeWidthHeight(style, dimension.width, dimension.height);
-
-      var sizingMethod = repeat == "no-repeat" ? "crop" : "scale";
-      var filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='" +
-                   qx.util.ResourceManager.getInstance().toUri(source) +
-                   "', sizingMethod='" + sizingMethod + "')";
-
-      style.filter = filter;
-      style.backgroundImage = style.backgroundRepeat = "";
-
-      return {
-        style : style
-      };
-    },
-
-
-    /**
      * Process scaled images.
      *
      * @param style {Map} style information
@@ -350,20 +261,27 @@ qx.Class.define("qx.bom.element.Decoration",
      *
      * @param style {Map} style information
      * @param repeat {String} repeat mode
-     * @param source {String} image source
+     * @param sourceid {String} image resource id
      *
      * @return {Map} image URI and style infos
      */
-    __processScaleXScaleY : function(style, repeat, source)
+    __processScaleXScaleY : function(style, repeat, sourceid)
     {
       var ResourceManager = qx.util.ResourceManager.getInstance();
-      var clipped = ResourceManager.isClippedImage(source);
-      var dimension = this.__getDimension(source);
+      var clipped = ResourceManager.isClippedImage(sourceid);
+      var dimension = this.__getDimension(sourceid);
+      var uri;
 
-      if (clipped)
+      if (clipped) 
       {
-        var data = ResourceManager.getData(source);
-        var uri = ResourceManager.toUri(data[4]);
+        var data = ResourceManager.getData(sourceid);
+        var combinedid = data[4];
+        if (clipped == "b64") {
+          uri = ResourceManager.toDataUri(sourceid);
+        }
+        else {
+          uri = ResourceManager.toUri(combinedid);
+        }
 
         if (repeat === "scale-x") {
           style = this.__getStylesForClippedScaleX(style, data, dimension.height);
@@ -381,7 +299,7 @@ qx.Class.define("qx.bom.element.Decoration",
       else
       {
         if (qx.core.Variant.isSet("qx.debug", "on")) {
-          this.__checkForPotentialClippedImage(source);
+          this.__checkForPotentialClippedImage(sourceid);
         }
 
         if (repeat == "scale-x")
@@ -395,7 +313,7 @@ qx.Class.define("qx.bom.element.Decoration",
           // note: height is given by the user
         }
 
-        var uri = ResourceManager.toUri(source);
+        uri = ResourceManager.toUri(sourceid);
         return {
           src : uri,
           style : style
@@ -471,20 +389,35 @@ qx.Class.define("qx.bom.element.Decoration",
      *
      * @param style {Map} style information
      * @param repeat {String} repeat mode
-     * @param source {String} image source
+     * @param sourceid {String} image resource id
      *
      * @return {Map} image URI and style infos
      */
-    __processRepeats : function(style, repeat, source)
+    __processRepeats : function(style, repeat, sourceid)
     {
-      var clipped = qx.util.ResourceManager.getInstance().isClippedImage(source);
-      var dimension = this.__getDimension(source);
+      var ResourceManager = qx.util.ResourceManager.getInstance();
+      var clipped = ResourceManager.isClippedImage(sourceid);
+      var dimension = this.__getDimension(sourceid);
 
       // Double axis repeats cannot be clipped
       if (clipped && repeat !== "repeat")
       {
-        var data = qx.util.ResourceManager.getInstance().getData(source);
-        var bg = qx.bom.element.Background.getStyles(data[4], repeat, data[5], data[6]);
+        // data = [ 8, 5, "png", "qx", "qx/decoration/Modern/arrows-combined.png", -36, 0]
+        var data = ResourceManager.getData(sourceid);
+        var combinedid = data[4];
+        if (clipped == "b64")
+        {
+          var uri = ResourceManager.toDataUri(sourceid);
+          var offx = offy = 0;
+        }
+        else
+        {
+          var uri  = ResourceManager.toUri(combinedid);
+          var offx = data[5];
+          var offy = data[6];
+        }
+
+        var bg = qx.bom.element.Background.getStyles(uri, repeat, offx, offy);
         for (var key in bg) {
           style[key] = bg[key];
         }
@@ -506,12 +439,12 @@ qx.Class.define("qx.bom.element.Decoration",
         if (qx.core.Variant.isSet("qx.debug", "on"))
         {
           if (repeat !== "repeat") {
-            this.__checkForPotentialClippedImage(source);
+            this.__checkForPotentialClippedImage(sourceid);
           }
         }
 
         style = this.__normalizeWidthHeight(style, dimension.width, dimension.height);
-        style = this.__getStylesForSingleRepeat(style, source, repeat);
+        style = this.__getStylesForSingleRepeat(style, sourceid, repeat);
 
         return {
           style : style
@@ -555,14 +488,6 @@ qx.Class.define("qx.bom.element.Decoration",
         style[key] = bg[key];
       }
 
-      // Reset the AlphaImageLoader filter if applied
-      // This prevents IE from setting BOTH CSS filter AND backgroundImage
-      // This is only a fallback if the image is not recognized as PNG
-      // If it's a Alpha-PNG file it *may* result in display problems
-      if (style.filter) {
-        style.filter = "";
-      }
-
       return style;
     },
 
@@ -582,26 +507,6 @@ qx.Class.define("qx.bom.element.Decoration",
           this.__warnings[source] = true;
         }
       }
-    },
-
-
-    /**
-     * For IE browsers the alpha image loader might be necessary. This accessor
-     * method provides an API for high-level classes to check if the alpha image
-     * loader is enabled.
-     *
-     * @signature function()
-     * @return {Boolean} <code>true</code> when the AlphaImageLoader is used, <code>false</code> otherwise.
-     */
-    isAlphaImageLoaderEnabled : qx.core.Variant.select("qx.client",
-    {
-      "mshtml" : function() {
-        return qx.bom.element.Decoration.__enableAlphaFix;
-      },
-
-      "default" : function() {
-        return false;
-      }
-    })
+    }
   }
 });

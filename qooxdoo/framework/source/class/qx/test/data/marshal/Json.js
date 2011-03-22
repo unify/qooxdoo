@@ -508,14 +508,10 @@ qx.Class.define("qx.test.data.marshal.Json",
       model.setFonts(new qx.data.Array());
       model.getFonts().push("one", "two", "three");
 
-      var i = 0;
-      var names = ["fonts[0]", "fonts[1]", "fonts[2]"];
-      var olds = ["one", "two", "three"];
       model.addListener("changeBubble", function(e) {
-        this.assertEquals(names[i], e.getData().name, "Wrong name in " + i);
-        this.assertEquals(olds[i], e.getData().old, "Wrong old data in " + i);
-        this.assertNull(e.getData().value, "Wrong data in " + i);
-        i++;
+        this.assertEquals("fonts[0-2]", e.getData().name, "Wrong name");
+        this.assertArrayEquals(["one", "two", "three"], e.getData().old, "Wrong old data");
+        this.assertEquals(0, e.getData().value.length, "Wrong data");
       }, this);
 
       // remove all
@@ -598,7 +594,42 @@ qx.Class.define("qx.test.data.marshal.Json",
       this.assertTrue(a.isDisposed(), "array");
       this.assertTrue(c0.isDisposed(), "array item");
       this.assertTrue(c1.isDisposed(), "array item");
-    }
+    },
+    
+    
+    testValidIdentifier: function() {
+      // its a debug warning so only check on debug
+      if (qx.core.Variant.isSet("qx.debug", "on")) {
+        var data = {"#affe" : 1};
+        this.assertException(function() {
+          // just check if the creation worked
+          qx.data.marshal.Json.createModel(data).dispose();
+        }, null, "The key '#affe' is not a valid JavaScript identifier.", "1");
 
+        data = {"12affen" : 1};
+        this.assertException(function() {
+          // just check if the creation worked
+          qx.data.marshal.Json.createModel(data).dispose();
+        }, null, "The key '12affen' is not a valid JavaScript identifier.", "2");
+
+        data = {"''''" : 1};
+        this.assertException(function() {
+          // just check if the creation worked
+          qx.data.marshal.Json.createModel(data).dispose();
+        }, null, "The key '''''' is not a valid JavaScript identifier.", "3");
+
+        data = {"§AFFE" : 1};
+        this.assertException(function() {
+          // just check if the creation worked
+          qx.data.marshal.Json.createModel(data).dispose();
+        }, null, "The key '§AFFE' is not a valid JavaScript identifier.", "4");
+        
+        data = {"ja!" : 1};
+        this.assertException(function() {
+          // just check if the creation worked
+          qx.data.marshal.Json.createModel(data).dispose();
+        }, null, "The key 'ja!' is not a valid JavaScript identifier.", "5");
+      }
+    }
   }
 });

@@ -21,12 +21,14 @@
 
 import os, sys, string, types, re, zlib, time
 import urllib, urlparse, optparse, pprint
+
 from generator.config.Lang      import Key
 from generator.code.Part        import Part
 from generator.code.Package     import Package
+from generator.code.Class       import ClassMatchList, CompileOptions
 from generator.resource.ResourceHandler import ResourceHandler
 from ecmascript                 import compiler
-from misc                       import filetool, json, Path
+from misc                       import filetool, json, Path, securehash as sha
 from misc.ExtMap                import ExtMap
 from misc.Path                  import OsPath, Uri
 from misc.NameSpace             import NameSpace
@@ -130,6 +132,8 @@ class CodeGenerator(object):
                         relpath    = OsPath(fileId)
                         shortUri   = Uri(relpath.toUri())
                         packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
+                    elif package.files:  # hybrid
+                        packageUris = package.files
                     else: # "source" :
                         for clazz in package.classes:
                             namespace  = self._classes[clazz]["namespace"]
@@ -311,6 +315,69 @@ class CodeGenerator(object):
             return compiledContent
 
 
+
+        def compileClasses(classList, compConf):
+            result = []
+            for clazz in classList:
+                result.append(clazz.getCode(compConf))
+            return u''.join(result)
+
+        ##
+        # Go through a set of classes, and either compile some of them into
+        # a common .js file, constructing the URI to this file, or just construct
+        # the URI to the source file directly if the class matches a filter.
+        # Return the list of constructed URIs.
+        def compileAndWritePackage(package, compConf):
+
+            def compiledFilename(compiled):
+                hash_ = sha.getHash(compiled)[:12]
+                fname = self._fileNameWithHash(script.baseScriptPath, hash_)
+                return fname
+
+            def compileAndAdd(compiledClasses, packageUris):
+                compiled = compileClasses(compiledClasses, compOptions)
+                filename = compiledFilename(compiled)
+                self.writePackage(compiled, filename, script)
+                filename = OsPath(os.path.basename(filename))
+                shortUri = Uri(filename.toUri())
+                packageUris.append("%s:%s" % ("__out__", shortUri.encodedValue()))
+
+                return packageUris
+
+            # ------------------------------------
+            packageUris = []
+            compiledClasses = []
+            optimize = compConf.get("code/optimize", [])
+            sourceFilter = ClassMatchList(compConf.get("code/except", []))
+            compOptions  = CompileOptions(optimize=optimize)
+
+            ##
+            # This somewhat overlaps with packageUrisToJS
+            package_classes = [y for x in package.classes for y in script.classesObj if y.id == x] # TODO: i need to make package.classes [Class]!
+            for clazz in package_classes:
+                if sourceFilter.match(clazz.id):
+                    if compiledClasses:
+                        # treat compiled classes so far
+                        packageUris = compileAndAdd(compiledClasses, packageUris)
+                        compiledClasses = []  # reset the collection
+                    # for a source class, just include the file uri
+                    clazzRelpath = clazz.id.replace(".", "/") + ".js"
+                    relpath  = OsPath(clazzRelpath)
+                    shortUri = Uri(relpath.toUri())
+                    packageUris.append("%s:%s" % (clazz.library.namespace, shortUri.encodedValue()))
+                else:
+                    compiledClasses.append(clazz)
+            else:
+                # treat remaining to-be-compiled classes
+                if compiledClasses:
+                    packageUris = compileAndAdd(compiledClasses, packageUris)
+
+            package.files = packageUris
+
+            return package
+            
+
+
         ##
         # takes an array of (po-data, locale-data) dict pairs
         # merge all po data and all cldr data in a single dict each
@@ -333,11 +400,6 @@ class CodeGenerator(object):
 
         # -- Main - runCompiled ------------------------------------------------
 
-        # Early return
-        compileType = self._job.get("compile/type", "")
-        if compileType not in ("build", "source"):
-            return
-
         packages   = script.packagesSorted()
         parts      = script.parts
         boot       = script.boot
@@ -348,7 +410,7 @@ class CodeGenerator(object):
         self._variants     = variants
         self._script       = script
 
-        self._console.info("Generate %s version..." % compileType)
+        self._console.info("Generate %s version..." % script.buildType)
         self._console.indent()
 
         # - Evaluate job config ---------------------
@@ -372,11 +434,11 @@ class CodeGenerator(object):
         translationMaps = self.getTranslationMaps(packages, variants, locales)
 
         # Read in base file name
-        fileRelPath = getOutputFile(compileType)
+        fileRelPath = getOutputFile(script.buildType)
         filePath    = self._config.absPath(fileRelPath)
         script.baseScriptPath = filePath
 
-        if compileType == "build":
+        if script.buildType == "build":
             # read in uri prefixes
             scriptUri = compConf.get('uris/script', 'script')
             scriptUri = Path.posifyPath(scriptUri)
@@ -399,7 +461,7 @@ class CodeGenerator(object):
         if scriptUri: out_sourceUri= scriptUri
         else:
             out_sourceUri = self._computeResourceUri({'class': ".", 'path': os.path.dirname(script.baseScriptPath)}, OsPath(""), rType="class", appRoot=self.approot)
-            out_sourceUri = os.path.normpath(out_sourceUri.encodedValue())
+            out_sourceUri = out_sourceUri.encodedValue()
         globalCodes["Libinfo"]['__out__'] = { 'sourceUri': out_sourceUri }
         globalCodes["Resources"]    = self.generateResourceInfoCode(script, settings, libraries, format)
         globalCodes["Translations"],\
@@ -411,7 +473,7 @@ class CodeGenerator(object):
             script = self.generateI18NParts(script, globalCodes)
             self.writePackages([p for p in script.packages if getattr(p, "__localeflag", False)], script)
 
-        if compileType == "build":
+        if script.buildType == "build":
 
             # - Specific job config ---------------------
             # read in compiler options
@@ -455,10 +517,35 @@ class CodeGenerator(object):
             # write packages
             self.writePackages(packages, script)
 
+        # ---- 'hybrid' version ------------------------------------------------
+        elif script.buildType == "hybrid":
+
+            # - Generating packages ---------------------
+            self._console.info("Generating packages...")
+            self._console.indent()
+
+            if not len(packages):
+                raise RuntimeError("No valid boot package generated.")
+
+            for packageIndex, package in enumerate(packages):
+                package = compileAndWritePackage(package, compConf)
+
+            self._console.outdent()
+
+            # - Put loader in dedicated package  -------
+            loadPackage = Package(0)            # make a dummy Package for the loader
+            packages.insert(0, loadPackage)
+
+            # generate boot code
+            loaderCode = generateBootScript(globalCodes, script, bootPackage="", compileType='source')
+            packages[0].compiled = loaderCode
+            self.writePackage(loaderCode, script.baseScriptPath, script)
+
+
         # ---- 'source' version ------------------------------------------------
         else:
 
-            sourceContent = generateBootScript(globalCodes, script, bootPackage="", compileType=compileType)
+            sourceContent = generateBootScript(globalCodes, script, bootPackage="", compileType=script.buildType)
 
             # Construct file name
             resolvedFilePath = self._resolveFileName(filePath, variants, settings)
@@ -600,6 +687,8 @@ class CodeGenerator(object):
 
         libBaseUri.ensureTrailingSlash()
         uri = libBaseUri.join(uri)
+        # strip dangling "/", e.g. when we have no resourcePath
+        uri.ensureNoTrailingSlash()
 
         return uri
 

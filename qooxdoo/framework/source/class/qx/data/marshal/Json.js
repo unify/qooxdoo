@@ -94,6 +94,10 @@ qx.Class.define("qx.data.marshal.Json",
      * {@link #__jsonToHash}. Two objects containing the same keys will not
      * create two different classes. The class creation process also supports
      * the functions provided by its delegate.
+     * 
+     * Important, please keep in mind that only valid JavaScript identifiers 
+     * can be used as keys in the data map. For convenience '-' in keys will 
+     * be removed (a-b will be ab in the end).
      *
      * @see qx.data.store.IStoreDelegate
      *
@@ -150,6 +154,12 @@ qx.Class.define("qx.data.marshal.Json",
       for (var key in data) {
         // stip the unwanted characters
         key = key.replace(/-/g, "");
+        // check for valid JavaScript identifier
+        if (qx.core.Variant.isSet("qx.debug", "on")) {
+          this.assertTrue((/^[$A-Za-z_][0-9A-Za-z_]*$/).test(key), 
+          "The key '" + key + "' is not a valid JavaScript identifier.")
+        }
+
         properties[key] = {};
         properties[key].nullable = true;
         properties[key].event = "change" + qx.lang.String.firstUp(key);
@@ -161,8 +171,8 @@ qx.Class.define("qx.data.marshal.Json",
         if (this.__delegate && this.__delegate.getValidationRule) {
           var rule = this.__delegate.getValidationRule(hash, key);
           if (rule) {
-            properties[key].validate = "_validate" + key;
-            members["_validate" + key] = rule;
+            properties[key].validate = rule;
+            //members["_validate" + key] = rule;
           }
         }
       }
@@ -210,10 +220,10 @@ qx.Class.define("qx.data.marshal.Json",
      * the properties.
      */
     __disposeProperties : function() {
-      var properties = qx.util.PropertyUtil.getAllProperties(this.constructor);
-      for (var desc in properties) {
-        this.__disposeItem(this.get(properties[desc].name));
-      };
+      var properties = qx.core.property.Util.getProperties(this.constructor);
+      for (var i=0, l=properties.length; i<l; i++) {
+        this.__disposeItem(this.get(properties[i]));
+      }
     },
 
 

@@ -2,12 +2,13 @@
     {
       "extend" : ["default-demo"],
       "let" : { "DPACKAGE" : "ZZZ", "DSNAME" : "YYY", "BUILDTYPE" : "source" },
-      "run" : ["default-Classic", "default-Modern",  "default-Simple"]
+      "run" : ["default-Modern"]
     },
 
     "build-XXX" :
     {
       "extend" : ["default-demo"],
       "let" : { "DPACKAGE" : "ZZZ", "DSNAME" : "YYY", "BUILDTYPE" : "build" },
-      "run" : ["default-Classic", "default-Modern", "default-Simple"]
+      "compile-options" : { "code" : { "optimize" : [ "variables", "basecalls", "strings", "privates" ] }},
+      "run" : ["default-Modern"]
     }

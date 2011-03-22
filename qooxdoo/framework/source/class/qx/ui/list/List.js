@@ -65,7 +65,7 @@
 qx.Class.define("qx.ui.list.List",
 {
   extend : qx.ui.virtual.core.Scroller,
-  include : [qx.ui.list.core.MSelectionHandling],
+  include : [qx.data.MBinding, qx.ui.list.core.MSelectionHandling],
 
 
   /**
@@ -80,9 +80,9 @@ qx.Class.define("qx.ui.list.List",
     this._init();
 
     if(model != null) {
-      this.initModel(model);
+      this.setModel(model);
     } else {
-      this.initModel(new qx.data.Array());
+      this.setModel(new qx.data.Array());
     }
 
     this.initItemHeight();
@@ -129,8 +129,7 @@ qx.Class.define("qx.ui.list.List",
       check : "qx.data.Array",
       apply : "_applyModel",
       event: "changeModel",
-      nullable : false,
-      deferredInit : true
+      nullable : false
     },
 
 
@@ -370,7 +369,8 @@ qx.Class.define("qx.ui.list.List",
       if (this._isGroup(row)) {
         data = this._groups.getItem(this._lookupGroup(row));
       } else {
-        data = this.getModel().getItem(this._lookup(row));
+        var model = this.getModel();
+        data = model ? model.getItem(this._lookup(row)) : null;
       }
 
       if (data != null) {
@@ -450,9 +450,11 @@ qx.Class.define("qx.ui.list.List",
     // apply method
     _applyModel : function(value, old)
     {
-      value.addListener("change", this._onModelChange, this);
+      if (value) {
+        value.addListener("change", this._onModelChange, this);
+      }
 
-      if (old != null) {
+      if (old) {
         old.removeListener("change", this._onModelChange, this);
       }
 

@@ -206,7 +206,7 @@ qx.Class.define("qx.ui.embed.Flash",
     variables :
     {
       init : {},
-      check : "Map",
+      check : "Object",
       apply : "_applyVariables"
     }
   },

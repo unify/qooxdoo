@@ -22,11 +22,10 @@
 
 import re, os, sys, zlib, optparse, types, string, glob
 import functools, codecs, operator
+import graph
 
-from misc import filetool, textutil, util, Path, PathType, json, copytool
-from misc.PathType import PathType
-from misc.Trie     import Trie
-from ecmascript import compiler
+from misc                            import filetool, textutil, util, Path, json, copytool
+from ecmascript                      import compiler
 from ecmascript.transform.optimizer  import privateoptimizer
 from misc.ExtMap                     import ExtMap
 from generator.code.Class            import Class
@@ -40,7 +39,7 @@ from generator.code.CodeGenerator    import CodeGenerator
 from generator.resource.Library      import Library
 from generator.resource.ResourceHandler  import ResourceHandler
 from generator.resource.ImageClipping    import ImageClipping
-from generator.resource.ImageInfo        import ImgInfoFmt
+from generator.resource.Image        import Image
 from generator.action.ApiLoader      import ApiLoader
 from generator.action.Locale         import Locale
 from generator.action.ActionLib      import ActionLib
@@ -48,7 +47,6 @@ from generator.action                import CodeProvider
 from generator.runtime.Cache         import Cache
 from generator.runtime.ShellCmd      import ShellCmd
 from generator                       import Context
-import graph
 
 
 class Generator(object):
@@ -435,7 +433,7 @@ class Generator(object):
                 self._console.debug("Including %s items smart, %s items explicit" % (len(includeWithDeps), len(includeNoDeps)))
 
                 if len(includeNoDeps) > 0:
-                    self._console.warn("Explicit included classes may not work")
+                    self._console.warn("Explicitly included classes may not work")  # ?!
 
                 # Resolve regexps
                 self._console.debug("Expanding expressions...")
@@ -498,7 +496,7 @@ class Generator(object):
              self._classesObj,
              self._docs,
              self._translations,
-             self._libraries)     = scanLibrary(config.get("library"))
+             self._libraries)     = scanLibrary(config.get("library", []))
 
 
             # create tool chain instances
@@ -506,6 +504,17 @@ class Generator(object):
             self._locale         = Locale(self._context, self._classes, self._classesObj, self._translations, self._cache, self._console, )
             self._depLoader      = DependencyLoader(self._classesObj, self._cache, self._console, require, use, self._context)
             self._codeGenerator  = CodeGenerator(self._cache, self._console, self._config, self._job, self._settings, self._locale, self._classes)
+
+
+        ##
+        # Safely take out a member from a set. Returns the member if it could
+        # be removed, None otherwise.
+        def takeout(s, m):
+            try:
+                s.remove(m)
+            except KeyError:
+                return None
+            return m
 
         # -- Main --------------------------------------------------------------
 
@@ -517,107 +526,70 @@ class Generator(object):
         # Apply output log filter, if any
         self._console.setFilter(config.get("log/filter/debug", []))
 
-        # We use some sets of Job keys, both well-known and actual, to determin
-        # which actions have to be run, and in which order.
-
-        # Known job trigger keys
-        triggersSet         = listJobTriggers()
-
-        # some interesting categories
-        triggersSimpleSet   = set((x for x in triggersSet if triggersSet[x]['type']=="JSimpleJob"))
-        triggersClassDepSet = set((x for x in triggersSet if triggersSet[x]['type']=="JClassDepJob"))
-        triggersCompileSet  = set((x for x in triggersSet if triggersSet[x]['type']=="JCompileJob"))
-
         # This job's triggers
+        triggersSet         = listJobTriggers()
         jobKeySet           = set(job.getData().keys())
         jobTriggers         = jobKeySet.intersection(triggersSet)
-
-        # let's check for presence of certain triggers
-        simpleTriggers   = jobTriggers.intersection(triggersSimpleSet) # we have simple job triggers
-        classdepTriggers = jobTriggers.intersection(triggersClassDepSet) # we have classdep. triggers
-        compileTriggers  = jobTriggers.intersection(triggersCompileSet)
 
         # Create tool chain instances
         self._actionLib     = ActionLib(self._config, self._console)
 
-        # -- Process simple job triggers
-        if simpleTriggers:
-            for trigger in simpleTriggers:
-                if trigger == "collect-environment-info":
-                    self.runCollectEnvironmentInfo()
-                elif trigger == "copy-files":
-                    self.runCopyFiles()
-                elif trigger == "combine-images":
-                    self.runImageCombining()
-                elif trigger == "clean-files":
-                    self.runClean()
-                elif trigger == "migrate-files":
-                    self.runMigration(config.get("library"))
-                elif trigger == "shell":
-                    self.runShellCommands()
-                elif trigger == "simulate":
-                    self.runSimulation()
-                elif trigger == "slice-images":
-                    self.runImageSlicing()
-                else:
-                    pass # there cannot be exceptions, due to the way simpleTriggers is constructed
-
-        # remove the keys we have processed
-        jobTriggers = jobTriggers.difference(simpleTriggers)
-
-        # use early returns to avoid setting up costly, but unnecessary infrastructure
-        if not jobTriggers:
-            self._console.info("Done")
-            return
+        # process simple triggers
+        if takeout(jobTriggers, "collect-environment-info"):
+            self.runCollectEnvironmentInfo()
+        if takeout(jobTriggers, "copy-files"):
+            self.runCopyFiles()
+        if takeout(jobTriggers, "combine-images"):
+            self.runImageCombining()
+        if takeout(jobTriggers, "clean-files"):
+            self.runClean()
+        if takeout(jobTriggers, "migrate-files"):
+            self.runMigration(config.get("library"))
+        if takeout(jobTriggers, "shell"):
+            self.runShellCommands()
+        if takeout(jobTriggers, "simulate"):
+            self.runSimulation()
+        if takeout(jobTriggers, "slice-images"):
+            self.runImageSlicing()
+         
+        if not jobTriggers: return
 
         # -- Process job triggers that require a class list (and some)
-
         prepareGenerator1()
 
         # Preprocess include/exclude lists
         includeWithDeps, includeNoDeps = getIncludes(self._job.get("include", []))
         excludeWithDeps, excludeNoDeps = getExcludes(self._job.get("exclude", []))
         
-        # process job triggers
-        if classdepTriggers:
-            for trigger in classdepTriggers:
-                if trigger == "api":
-                    # class list with no variants (all-encompassing)
-                    classListProducer = functools.partial(#args are complete, but invocation shall be later
-                               computeClassList, includeWithDeps, excludeWithDeps, includeNoDeps, 
-                               excludeNoDeps, {}, verifyDeps=True, script=None)
-                    self.runApiData(classListProducer)
-                #elif trigger == "copy-resources":
-                #    self.runResources(classList)
-                elif trigger == "fix-files":
-                    self.runFix(self._classes)
-                elif trigger == "lint-check":
-                    self.runLint(self._classes)
-                elif trigger == "translate":
-                    self.runUpdateTranslation()
-                elif trigger == "pretty-print":
-                    self._codeGenerator.runPrettyPrinting(self._classes, self._classesObj)
-                elif trigger == "provider":
-                    script = Script()
-                    script.classesObj = self._classesObj.values()
-                    variantData = getVariants()
-                    variantSets = util.computeCombinations(variantData)
-                    script.variants = variantSets[0] 
-                    script.libraries = self._libraries
-                    script.namespace = self.getAppName()
-                    script.locales = config.get("compile-options/code/locales", [])
-                    CodeProvider.runProvider(script, self)
-                else:
-                    pass
+        # process classdep triggers
+        if takeout(jobTriggers, "api"):
+            # class list with no variants (all-encompassing)
+            classListProducer = functools.partial(#args are complete, but invocation shall be later
+                       computeClassList, includeWithDeps, excludeWithDeps, includeNoDeps, 
+                       excludeNoDeps, {}, verifyDeps=True, script=None)
+            self.runApiData(classListProducer)
+        if takeout(jobTriggers, "fix-files"):
+            self.runFix(self._classes)
+        if takeout(jobTriggers, "lint-check"):
+            self.runLint(self._classes)
+        if takeout(jobTriggers, "translate"):
+            self.runUpdateTranslation()
+        if takeout(jobTriggers, "pretty-print"):
+            self._codeGenerator.runPrettyPrinting(self._classes, self._classesObj)
+        if takeout(jobTriggers, "provider"):
+            script = Script()
+            script.classesObj = self._classesObj.values()
+            variantData = getVariants()
+            variantSets = util.computeCombinations(variantData)
+            script.variants = variantSets[0] 
+            script.libraries = self._libraries
+            script.namespace = self.getAppName()
+            script.locales = config.get("compile-options/code/locales", [])
+            CodeProvider.runProvider(script, self)
 
-        # remove the keys we have processed, and check return
-        jobTriggers = jobTriggers.difference(classdepTriggers)
-        if not jobTriggers:
-            self._console.info("Done")
-            return
+        if not jobTriggers: return
 
         # -- Process job triggers that require the full tool chain
-
         # Create tool chain instances
         self._treeCompiler   = TreeCompiler(self._classes, self._classesObj, self._context)
 
@@ -636,18 +608,15 @@ class Generator(object):
             script.jobconfig = self._job
             # set source/build version
             if "compile" in jobTriggers:
-                if config.get("compile/type", "") == "source":
-                    script.buildType = "source"
-                elif config.get("compile/type", "") == "build":
-                    script.buildType = "build"
+                script.buildType = config.get("compile/type", "")
+                if script.buildType not in ("source","build","hybrid"):
+                    raise ValueError("Unknown compile type '%s'" % script.buildType)
 
             # get current class list
             script.classes = computeClassList(includeWithDeps, excludeWithDeps, 
                                includeNoDeps, excludeNoDeps, variants, script=script, verifyDeps=True)
               # keep the list of class objects in sync
             script.classesObj = [self._classesObj[id] for id in script.classes]
-
-            script.namespaces = script.createTrie(script.classesObj)  # TODO: experimental
 
             featureMap = self._depLoader.registerDependeeFeatures(script.classesObj, variants, script.buildType)
             self._treeCompiler._featureMap = featureMap
@@ -661,18 +630,12 @@ class Generator(object):
                 self.runResources(script)
             if "compile" in jobTriggers:
                 self._codeGenerator.runCompiled(script, self._treeCompiler)
-
-            #if "provider" in jobTriggers:
-            #    script.locales = config.get("compile-options/code/locales", [])
-            #    CodeProvider.runProvider(script, self)
-
-            # debug tasks
-            self.runLogDependencies(script)
-            self.runPrivateDebug()
-            self.runLogUnusedClasses(script)
-            self.runLogResources(script)
-            #self.runClassOrderingDebug(partPackages, packageClasses, variants)
-
+            if "log" in jobTriggers:
+                self.runLogDependencies(script)
+                self.runPrivateDebug()
+                self.runLogUnusedClasses(script)
+                self.runLogResources(script)
+                
         self._console.info("Done")
 
         return
@@ -1397,7 +1360,7 @@ class Generator(object):
             self._config.resolveMacros(expandedjobs)
             console.outdent()
         except Exception:
-            pass
+            expandedjobs = []
         
         if expandedjobs:
           
@@ -1526,8 +1489,9 @@ class Generator(object):
             self._imageClipper.slice(image, prefix, border_width, trim_width)
 
 
+    ##
+    # Go through a list of images and create them as combination of other images
     def runImageCombining(self):
-        """Go through a list of images and create them as combination of other images"""
 
         def extractFromPrefixSpec(prefixSpec):
             prefix = altprefix = ""
@@ -1540,8 +1504,9 @@ class Generator(object):
                 altprefix         = ""
             return prefix, altprefix
                 
+        ##
+        # strip prefix - if available - from imagePath, and replace by altprefix
         def getImageId(imagePath, prefixSpec):
-            "strip prefix - if available - from imagePath, and replace by altprefix"
             prefix, altprefix = extractFromPrefixSpec(prefixSpec)
             imageId = imagePath # init
             _, imageId, _ = Path.getCommonPrefix(imagePath, prefix) # assume: imagePath = prefix "/" imageId
@@ -1551,8 +1516,9 @@ class Generator(object):
             imageId = Path.posifyPath(imageId)
             return imageId
 
+        ##
+        # create a dict with the clipped image file path as key, and prefix elements as value
         def getClippedImagesDict(imageSpec):
-            "create a dict with the clipped image file path as key, and an ImgInfoFmt object as value"
             imgDict = {}
             inputStruct = imageSpec['input']
             for group in inputStruct:
@@ -1563,14 +1529,11 @@ class Generator(object):
                 for filepatt in group['files']:
                     num_files = 0
                     for file in glob.glob(self._config.absPath(filepatt)):  # resolve file globs - TODO: can be removed in generator.action.ImageClipping
-                        imgObject        = ImgInfoFmt()
-                        imgObject.prefix = [prefix, altprefix]
                         self._console.debug("adding image %s" % file)
-                        imgDict[file]    = imgObject
+                        imgDict[file]    = [prefix, altprefix] 
                         num_files       += 1
                     if num_files == 0:
                         raise ValueError("Non-existing file spec: %s" % filepatt)
-                        #self._console.warn("Non-existing file spec: %s" % filepatt)
 
             return imgDict
 
@@ -1594,7 +1557,7 @@ class Generator(object):
             # create a dict of clipped image objects - for later look-up
             clippedImages = getClippedImagesDict(imgspec)
 
-            # collect list of all input files, no matter where the come from
+            # collect list of all input files, no matter where they come from
             input = sorted(clippedImages.keys())
 
             # collect layout property
@@ -1602,19 +1565,20 @@ class Generator(object):
                 layout = imgspec['layout'] == "horizontal"
             else:
                 layout = "horizontal" == "horizontal" # default horizontal=True
+
+            # get type of combined image (png, base64, ...)
+            combtype = imgspec['type'] if 'type' in imgspec else "extension"
             
             # create the combined image
-            subconfigs = self._imageClipper.combine(image, input, layout)
+            subconfigs = self._imageClipper.combine(image, input, layout, combtype)
 
             # for the meta information, go through the list of returned subconfigs (one per clipped image)
             for sub in subconfigs:
-                x = ImgInfoFmt()
-                x.mappedId, x.left, x.top, x.width, x.height, x.type = (
-                   #Path.posifyPath(sub['combined']), sub['left'], sub['top'], sub['width'], sub['height'], sub['type'])
+                x = Image()
+                x.combId, x.left, x.top, x.width, x.height, x.format = (
                    imageId, sub['left'], sub['top'], sub['width'], sub['height'], sub['type'])
-                #config[Path.posifyPath(sub['file'])] = x.meta_format()  # this could use 'flatten()' eventually!
-                subId         = getImageId(sub['file'], getattr(clippedImages[sub['file']], 'prefix', None))
-                config[subId] = x.meta_format()  # this could use 'flatten()' eventually!
+                subId = getImageId(sub['file'], clippedImages[sub['file']])
+                config[subId] = x.toMeta()
 
             # store meta data for this combined image
             bname = os.path.basename(image)
@@ -1626,6 +1590,20 @@ class Generator(object):
             self._console.debug("writing meta file %s" % meta_fname)
             filetool.save(meta_fname, json.dumps(config, ensure_ascii=False, sort_keys=True))
             self._console.outdent()
+
+            # handle base64 type, need to write "combined image" to file
+            if combtype == "base64":
+                combinedMap = {}
+                for sub in subconfigs:
+                    subMap = {}
+                    subId  = getImageId(sub['file'], clippedImages[sub['file']])
+                    subMap['width']    = sub['width']
+                    subMap['height']   = sub['height']
+                    subMap['type']     = sub['type']
+                    subMap['encoding'] = sub['encoding']
+                    subMap['data']     = sub['data']
+                    combinedMap[subId] = subMap
+                filetool.save(image, json.dumpsCode(combinedMap))
             
         self._console.outdent()
 
@@ -1841,6 +1819,8 @@ class Generator(object):
         settings = self._job.get("settings", None)
         if settings:
             settings = json.dumps(settings)
+            if sys.platform[0:3] == "win":
+                settings = settings.replace(" ", "").replace('"','\\"')
             settings = "'settings=" + settings + "'"
             cmd += " " + settings
         

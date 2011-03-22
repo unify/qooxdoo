@@ -27,7 +27,8 @@ qx.Class.define("simulator.TestRunner", {
     this.base(arguments);
     
     this._initLogFile();
-    this.simulation = simulator.Init.getApplication().simulation;
+    this.qxSelenium = simulator.QxSelenium.getInstance();
+    this.simulation = simulator.Simulation.getInstance();
     var testNameSpace = qx.core.Setting.get("simulator.nameSpace");
     var loader = new simulator.unit.TestLoader(testNameSpace);
     this.suite = loader.getSuite();
@@ -61,11 +62,9 @@ qx.Class.define("simulator.TestRunner", {
     /**
      * Runs all tests in the current suite.
      */
-    runTests : function(threadSafe)
+    runTests : function()
     {
-      if (!threadSafe) {
-        this.simulation.startSession();
-      }
+      this.simulation.startSession();
       this.simulation.logEnvironment();
       this.simulation.logUserAgent();
       
@@ -73,7 +72,7 @@ qx.Class.define("simulator.TestRunner", {
       this.suite.run(testResult);
       
       this.simulation.logRunTime();
-      this.simulation.qxSelenium.stop();
+      this.qxSelenium.stop();
     },
     
     /**

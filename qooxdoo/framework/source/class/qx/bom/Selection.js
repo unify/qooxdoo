@@ -621,7 +621,10 @@ qx.Class.define("qx.bom.Selection",
           // Webkit bugzilla: https://bugs.webkit.org/show_bug.cgi?id=15903
           // qooxdoo bugzilla: http://bugzilla.qooxdoo.org/show_bug.cgi?id=1087
           node.setSelectionRange(0, 0);
-          qx.bom.Element.blur(node);
+          
+          try{
+            node.blur();
+          } catch(ex) {}
         }
         // if the given node is the body/document node -> collapse the selection
         else if (qx.dom.Node.isDocument(node) || nodeName == "body")

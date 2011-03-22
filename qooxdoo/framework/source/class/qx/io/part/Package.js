@@ -18,6 +18,10 @@
 
 ************************************************************************ */
 
+/*
+ #optional(qx.util.ResourceManager)
+ */
+
 /**
  * The Package wraps a list of related script URLs, which are required by one
  * or more parts.
@@ -121,6 +125,8 @@ qx.Bootstrap.define("qx.io.part.Package",
      */
     execute : function()
     {
+      var callback;
+
       if (this.__closure)
       {
         this.__closure();

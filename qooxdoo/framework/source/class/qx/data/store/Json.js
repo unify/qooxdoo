@@ -32,6 +32,7 @@
 qx.Class.define("qx.data.store.Json",
 {
   extend : qx.core.Object,
+  include : qx.data.MBinding,
 
 
   /**

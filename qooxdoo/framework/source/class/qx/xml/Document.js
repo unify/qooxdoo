@@ -20,11 +20,20 @@
 ************************************************************************ */
 
 /**
- * Cross browser XML Document API
+ * Cross browser XML document creation API
  *
- * * http://msdn2.microsoft.com/en-us/library/ms535918.aspx
- * * http://msdn2.microsoft.com/en-us/library/ms764622.aspx
- * * http://developer.mozilla.org/en/docs/Parsing_and_serializing_XML
+ * The main purpose of this class is to allow you to create XML document objects in a
+ * cross-browser fashion. Use <code>create</code> to create an empty document,
+ * <code>fromString</code> to create one from an existing XML text. Both methods
+ * return a *native DOM object*. That means you use standard DOM methods on such
+ * an object (e.g. <code>createElement</code>).
+ *
+ * The following links provide further information on XML documents:
+ *
+ * * <a href="http://www.w3.org/TR/DOM-Level-2-Core/core.html#i-Document">W3C Interface Specification</a>
+ * * <a href="http://msdn2.microsoft.com/en-us/library/ms535918.aspx">MS xml Object</a>
+ * * <a href="http://msdn2.microsoft.com/en-us/library/ms764622.aspx">MSXML GUIDs and ProgIDs</a>
+ * * <a href="http://developer.mozilla.org/en/docs/Parsing_and_serializing_XML">MDN Parsing and Serializing XML</a>
  */
 qx.Class.define("qx.xml.Document",
 {
@@ -58,19 +67,24 @@ qx.Class.define("qx.xml.Document",
 
     /**
      * Create an XML document.
-     * http://www.w3.org/TR/DOM-Level-2-Core/core.html#i-Document
+     *
+     * Returns a native DOM document object, set up for XML.
      *
      * @signature function(namespaceUri, qualifiedName)
      * @param namespaceUri {String ? null} The namespace URI of the document element to create or null.
      * @param qualifiedName {String ? null} The qualified name of the document element to be created or null.
-     * @return {Document} empty XML document
+     * @return {Document} empty XML object
      */
     create : qx.core.Variant.select("qx.client",
     {
       "mshtml": function(namespaceUri, qualifiedName)
       {
         var obj = new ActiveXObject(this.DOMDOC);
-        obj.setProperty("SelectionLanguage", "XPath");
+        //The SelectionLanguage property is no longer needed in MSXML 6; trying
+        // to set it causes an exception in IE9.
+        if (this.DOMDOC == "MSXML2.DOMDocument.3.0") {
+          obj.setProperty("SelectionLanguage", "XPath");
+        }
 
         if (qualifiedName)
         {

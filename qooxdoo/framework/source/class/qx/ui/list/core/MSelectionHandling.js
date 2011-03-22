@@ -47,7 +47,7 @@ qx.Mixin.define("qx.ui.list.core.MSelectionHandling",
   construct : function() {
     this._initSelectionManager();
 
-    this.initSelection(new qx.data.Array());
+    this.setSelection(new qx.data.Array());
   },
 
 
@@ -59,8 +59,7 @@ qx.Mixin.define("qx.ui.list.core.MSelectionHandling",
       check : "qx.data.Array",
       event : "changeSelection",
       apply : "_applySelection",
-      nullable : false,
-      deferredInit : true
+      nullable : false
     },
 
 

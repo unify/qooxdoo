@@ -26,21 +26,25 @@
 qx.Class.define("simulator.QxSimulation", {
 
   extend : qx.core.Object,
+  
+  type : "singleton",
 
   /**
-   * @param qxSelenium {QxSelenium} Configured QxSelenium instance
-   * @param host {String} Host name of the AUT including protocol, e.g. 
-   * "http://demo.qooxdoo.org"
-   * @param path {String} URI path of the AUT, e.g. "/current/feedreader"
    * @param options {Map} Configuration settings 
    */
-  construct : function(qxSelenium, host, path, options)
+  construct : function()
   {
-    this.qxSelenium = qxSelenium;
-    this.__autHost = host;
-    this.__autPath = path;
-    this._options = options || {};
+    this.__options = {
+      autHost : qx.core.Setting.get("simulator.autHost"),
+      autPath : qx.core.Setting.get("simulator.autPath"),
+      threadSafe : qx.core.Setting.get("simulator.threadSafe"),
+      applicationLog : qx.core.Setting.get("simulator.applicationLog"),
+      globalErrorLogging : qx.core.Setting.get("simulator.globalErrorLogging"),
+      testEvents : qx.core.Setting.get("simulator.testEvents")
+    };
     this.startDate = new Date();
+    // for backwards compatibility:
+    this.qxSelenium = simulator.QxSelenium.getInstance();
   },
   
   statics :
@@ -51,9 +55,7 @@ qx.Class.define("simulator.QxSimulation", {
 
   members :
   {
-    
-    __autHost : null,
-    __autPath : null,
+    __options : null,
 
     /**
      * Starts the QxSelenium session, opens the AUT in the browser and waits 
@@ -63,33 +65,39 @@ qx.Class.define("simulator.QxSimulation", {
      */
     startSession : function()
     {
-      if (!this._options.threadSafe) {
+      if (!this.__options.threadSafe) {
         // Using Selenium Grid's ThreadSafeSeleniumSessionStorage, session
         // should already be started.
-        this.qxSelenium.start();
+        simulator.QxSelenium.getInstance().start();
       }
-      var autUri = this.__autHost + "" + this.__autPath;
+      var autUri = this.__options.autHost + "" + this.__options.autPath;
       this.qxOpen(autUri);
       this.waitForQxApplication();
-      
-      if (this._options.globalErrorLogging || this._options.testEvents) {
+      this._includeFeatures();
+    },
+    
+    
+    /**
+     * Includes and initializes features as configured by settings
+     */
+    _includeFeatures : function()
+    {
+      if (this.__options.globalErrorLogging || this.__options.testEvents) {
         qx.Class.include(simulator.QxSimulation, simulator.MGlobalErrorHandling);
-        this.addGlobalErrorHandler();
-        this.addGlobalErrorGetter();
+        this._addGlobalErrorHandler();
+        this._addGlobalErrorGetter();
       }
       
-      if (this._options.applicationLog || this._options.disposerDebug) {
+      if (this.__options.applicationLog || this.__options.disposerDebug) {
         qx.Class.include(simulator.QxSimulation, simulator.MApplicationLogging);
-        this.addRingBuffer();
-        this.addRingBufferGetter();
+        this._addAutLogStore();
+        this._addAutLogGetter();
       }
       
-      if (this._options.testEvents) {
+      if (this.__options.testEvents) {
         qx.Class.include(simulator.QxSimulation, simulator.MEventSupport);
         this._addListenerSupport();
-        this.qxSelenium.getEval('selenium.qxStoredVars["eventStore"] = [];');
       }
-
     },
     
     
@@ -109,7 +117,7 @@ qx.Class.define("simulator.QxSimulation", {
                   simulator.QxSimulation.QXAPPLICATION + 
                   ') { qxReady = true; } } catch(e) {} qxReady;';
                             
-      this.qxSelenium.waitForCondition(qxAppReady, timeout || 30000);
+      simulator.QxSelenium.getInstance().waitForCondition(qxAppReady, timeout || 30000);
     },
     
     
@@ -126,8 +134,8 @@ qx.Class.define("simulator.QxSimulation", {
        * Store the AUT window object to avoid calling 
        * selenium.browserbot.getCurrentWindow() repeatedly.
        */
-      this.qxSelenium.getEval('selenium.qxStoredVars = {}');    
-      this.storeEval('selenium.browserbot.getCurrentWindow()', 'autWindow');
+      simulator.QxSelenium.getInstance().getEval('selenium.qxStoredVars = {}');    
+      this._storeEval('selenium.browserbot.getCurrentWindow()', 'autWindow');
       
       this._prepareNameSpace();
     },
@@ -135,7 +143,7 @@ qx.Class.define("simulator.QxSimulation", {
     /**
      * Attaches a "Simulation" namespace object to the specified window's qx 
      * object. This will be used to store custom methods added by the testing
-     * framework using {@see #addOwnFunction}. If no window is specified, the 
+     * framework using {@see #_addOwnFunction}. If no window is specified, the 
      * AUT's window is used.
      * 
      * @param win {String?} JavaScript snippet that evaluates as a Window object 
@@ -144,9 +152,9 @@ qx.Class.define("simulator.QxSimulation", {
     _prepareNameSpace : function(win)
     {
       var targetWin = win || 'selenium.qxStoredVars["autWindow"]';
-      var ns = String(this.qxSelenium.getEval(targetWin + '.qx.Simulation'));
+      var ns = String(simulator.QxSelenium.getInstance().getEval(targetWin + '.qx.Simulation'));
       if (ns == "null" || ns == "undefined") {
-        this.qxSelenium.getEval(targetWin + '.qx.Simulation = {};');
+        simulator.QxSelenium.getInstance().getEval(targetWin + '.qx.Simulation = {};');
       }
     },
 
@@ -160,17 +168,17 @@ qx.Class.define("simulator.QxSimulation", {
      * @param keyName {String} The name for the key the eval result will be 
      * stored under.
      */
-    storeEval : function(code, keyName)
+    _storeEval : function(code, keyName)
     {
       if (!code) {
-        throw new Error("No code specified for storeEval()");
+        throw new Error("No code specified for _storeEval()");
       }
       
       if (!keyName) {
-        throw new Error("No key name specified for storeEval()");
+        throw new Error("No key name specified for _storeEval()");
       }
 
-      this.qxSelenium.getEval('selenium.qxStoredVars["' + keyName + '"] = ' + String(code));
+      simulator.QxSelenium.getInstance().getEval('selenium.qxStoredVars["' + keyName + '"] = ' + String(code));
     },
 
     /**
@@ -181,7 +189,7 @@ qx.Class.define("simulator.QxSimulation", {
      * @param funcName {String} name of the function to be added
      * @param func {Function|String} the function to be added
      */
-    addOwnFunction : function(funcName, func)
+    _addOwnFunction : function(funcName, func)
     {
       if (!funcName) {
         throw new Error("Please choose a name for the function to be added.");
@@ -198,7 +206,7 @@ qx.Class.define("simulator.QxSimulation", {
       func = func.replace(/\n/,'');
       func = func.replace(/\r/,'');
       
-      this.qxSelenium.getEval('selenium.browserbot.getCurrentWindow().qx.Simulation.' + funcName + ' = ' + func);
+      simulator.QxSelenium.getInstance().getEval('selenium.browserbot.getCurrentWindow().qx.Simulation.' + funcName + ' = ' + func);
     },
     
     
@@ -212,8 +220,8 @@ qx.Class.define("simulator.QxSimulation", {
     {
       this.info("Simulator run on " + this.startDate.toUTCString());
       this.info("Application under test: " 
-                + this.__autHost 
-                + unescape(this.__autPath));
+                + this.__options.autHost 
+                + unescape(this.__options.autPath));
       this.info("Platform: " + environment["os.name"]);
     },
     
@@ -221,7 +229,7 @@ qx.Class.define("simulator.QxSimulation", {
      * Logs the test browser's user agent string.
      */
     logUserAgent : function(){
-      var agent = this.qxSelenium.getEval('navigator.userAgent');
+      var agent = simulator.QxSelenium.getInstance().getEval('navigator.userAgent');
       this.info("User agent: " + agent);
     },
 
@@ -235,10 +243,10 @@ qx.Class.define("simulator.QxSimulation", {
      */
     logResults : function()
     {
-      if (this._options.disposerDebug) {
+      if (this.__options.disposerDebug) {
         var getDisposerDebugLevel = simulator.QxSimulation.AUTWINDOW 
           + ".qx.core.Setting.get('qx.disposerDebugLevel')";
-        var disposerDebugLevel = this.qxSelenium.getEval(getDisposerDebugLevel);
+        var disposerDebugLevel = simulator.QxSelenium.getInstance().getEval(getDisposerDebugLevel);
         
         if (parseInt(disposerDebugLevel, 10) > 0 ) {
           this.qxShutdown();
@@ -248,41 +256,13 @@ qx.Class.define("simulator.QxSimulation", {
         }
       }
       
-      if (this._options.globalErrorLogging) {
+      if (this.__options.globalErrorLogging) {
         this.logGlobalErrors();
       }
       
-      if (this._options.applicationLog || this._options.disposerDebug) {
-        this.logRingBufferEntries();
+      if (this.__options.applicationLog || this.__options.disposerDebug) {
+        this.logAutLogEntries();
       }      
-    },
-
-    /**
-     * Retrieves all messages from the AUT-side logger created by 
-     * {@link simulator.MApplicationLogging#addRingBuffer} and writes them to 
-     * the simulation log.
-     */
-    logRingBufferEntries : function()
-    {
-      var debugLogArray = this.getRingBufferEntries();
-      for (var i=0,l=debugLogArray.length; i<l; i++) {
-        this.info(debugLogArray[i]);
-      }
-    },
-
-    /**
-     * Retrieves all exceptions caught by the AUT's global error handling and 
-     * logs them.
-     */
-    logGlobalErrors : function()
-    {
-      var globalErrors = this.getGlobalErrors();
-      
-      for (var i=0,l=globalErrors.length; i<l; i++) {
-        if (globalErrors[i].length > 0) {
-          this.error(globalErrors[i]);
-        }
-      }
     },
     
     /**
@@ -318,7 +298,7 @@ qx.Class.define("simulator.QxSimulation", {
      */
     qxShutdown : function()
     {
-      this.qxSelenium.getEval(simulator.QxSimulation.AUTWINDOW 
+      simulator.QxSelenium.getInstance().getEval(simulator.QxSimulation.AUTWINDOW 
                               + '.qx.core.ObjectRegistry.shutdown()', 
                               "Shutting down qooxdoo application");
     },
@@ -327,12 +307,13 @@ qx.Class.define("simulator.QxSimulation", {
      * Loads a qooxdoo application in the test browser and prepares 
      * it for testing. If no URI is given, the current AUT is reloaded.
      * 
-     * @param uri {String?} Optional URI of the qooxdoo application to be loaded.
+     * @param uri {String?} Optional URI of the qooxdoo application to be 
+     * loaded. Default: The AUT host/path defined in the settings.
      */
     qxOpen : function(uri)
     {
-      var openUri = uri || this.__autHost + "" + this.__autPath;
-      this.qxSelenium.open(openUri);
+      var openUri = uri || this.__options.autHost + "" + this.__options.autPath;
+      simulator.QxSelenium.getInstance().open(openUri);
       this._setupEnvironment();
     }
 

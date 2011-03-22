@@ -176,9 +176,7 @@ qx.Class.define("qx.test.ui.form.Form",
     },
 
     testValidSelectBox: function() {
-      var testShadow = qx.bom.client.Feature.CSS_BORDER_RADIUS &&
-          qx.bom.client.Feature.CSS_GRADIENTS;
-      this.__testValid(new qx.ui.form.SelectBox(), testShadow ? undefined : "shadow");
+      this.__testValid(new qx.ui.form.SelectBox(), "shadow");
     },
 
     testRequiredCheckBox: function() {
