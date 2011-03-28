@@ -52,7 +52,7 @@ qx.Class.define("qx.bom.element2.Dimension",
       var paddingTop = Style.get(elem, "paddingTop", true);
       var paddingBottom = Style.get(elem, "paddingBottom", true);
 
-      return elem.clientWidth - (paddingTop ? parseInt(paddingTop, 10) : 0) - (paddingBottom ? parseInt(paddingBottom, 10) : 0);
+      return elem.clientHeight - (paddingTop ? parseInt(paddingTop, 10) : 0) - (paddingBottom ? parseInt(paddingBottom, 10) : 0);
     },
 
 
