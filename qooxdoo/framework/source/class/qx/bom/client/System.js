@@ -121,6 +121,9 @@ qx.Bootstrap.define("qx.bom.client.System",
     /** {Boolean} Flag to detect if the client system is an iPad */
     IPAD : false,
 
+    /** {Boolean} Flag to detect if the client system is an RIM BlackBerry PlayBook */
+    RIM_TABLET_OS : false,
+
     /** {Boolean} Flag to detect if the client system is assumed */
     UNKNOWN_SYSTEM : false,
 
@@ -165,7 +168,9 @@ qx.Bootstrap.define("qx.bom.client.System",
       "Mac OS X 10_0" : "osx0",
       "Mac OS X 10.0" : "osx0",
       "Mac OS X" : "osx",
-      "Mac OS 9" : "os9"
+      "Mac OS 9" : "os9",
+
+      "RIM Tablet OS" : "rim_tablet_os"
     },
 
 

@@ -293,6 +293,10 @@ qx.Class.define("qx.bom.Viewport",
       // See http://developer.apple.com/library/safari/#documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html%23//apple_ref/doc/uid/TP40006511-SW16
       // for more information.
       var orientation = (win||window).orientation;
+      if (qx.bom.client.System.RIM_TABLET_OS) {
+        // RIM PlayBook gives 0 for landscape and 90 for portrait
+        orientation = 90 - orientation;
+      } else
       if (orientation == null) {
         orientation = this.getWidth(win) > this.getHeight(win) ? 90 : 0;
       }
