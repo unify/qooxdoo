@@ -845,6 +845,12 @@ qx.Bootstrap.define("qx.core.Environment",
       if (this.useCheck("device.name")) {
         this._checks["device.name"] = qx.bom.client.Device.getName;
       }
+      if (this.useCheck("device.runtime.name")) {
+        this._checks["device.runtime.name"] = qx.bom.client.DeviceRuntime.getName;
+      }
+      if (this.useCheck("device.runtime.version")) {
+        this._checks["device.runtime.version"] = qx.bom.client.DeviceRuntime.getVersion;
+      }
 
       // /////////////////////////////////////////
       // LOCALE
