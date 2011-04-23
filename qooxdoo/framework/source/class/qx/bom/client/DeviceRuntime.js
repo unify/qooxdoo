@@ -70,6 +70,8 @@ qx.Bootstrap.define("qx.bom.client.DeviceRuntime",
       if (runtime == "ios") {
         // Example agent strings:
         // Mozilla/5.0(iPad; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B314 Safari/531.21.10
+        // Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420 (KHTML, like Gecko) Version/3.0 Mobile/1C28 Safari/419.3
+        // Mozilla/5.0 (iPod; U; CPU like Mac OS X; en) AppleWebKit/420.1 (KHTML, like Geckto) Version/3.0 Mobile/3A101a Safari/419.3
         agent = agent.replace(/_/g, ".");
         var match=/OS (\d+(?:\.\d+)*) like/.exec(agent);
         if (match) {
