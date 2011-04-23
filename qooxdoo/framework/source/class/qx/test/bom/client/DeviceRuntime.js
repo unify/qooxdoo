@@ -17,7 +17,7 @@
 
 ************************************************************************ */
 
-qx.Class.define("qx.test.bom.element.Class",
+qx.Class.define("qx.test.bom.client.DeviceRuntime",
 {
   extend : qx.dev.unit.TestCase,
 
