@@ -13,8 +13,8 @@
      See the LICENSE file in the project's top-level directory for details.
 
    Authors:
-     * Sebastian Werner (wpbasti)
      * Sebastian Fastner (fastner)
+     * Sebastian Werner (wpbasti)
      * Tino Butz (tbtz)
 
    ======================================================================
@@ -358,7 +358,7 @@ qx.Class.define("qx.bom.Viewport",
      *     is currently in landscape mode.
      */
     isLandscape : function(win) {
-      return Math.abs(this.getOrientation(win)) == 90;
+      return this.getOrientation(win) == 90;
     },
 
 
@@ -371,7 +371,7 @@ qx.Class.define("qx.bom.Viewport",
      */
     isPortrait : function(win)
     {
-      return Math.abs(this.getOrientation(win)) !== 90;
+      return this.getOrientation(win) === 0;
     }
   },
 
