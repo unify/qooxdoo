@@ -89,6 +89,12 @@ qx.Bootstrap.define("qx.bom.client.OperatingSystem",
         input.indexOf("SymbianOS") != -1
       ) {
         return "symbian";
+        
+      } else if (
+        input.indexOf("BlackBerry") != -1
+      ) {
+        return "blackberry";
+
       }
 
       else if (
