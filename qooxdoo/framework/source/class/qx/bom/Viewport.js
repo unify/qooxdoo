@@ -13,6 +13,7 @@
      See the LICENSE file in the project's top-level directory for details.
 
    Authors:
+     * Sebastian Fastner (fastner)
      * Sebastian Werner (wpbasti)
      * Tino Butz (tbtz)
 
@@ -281,22 +282,18 @@ qx.Class.define("qx.bom.Viewport",
      * All possible values and their meaning:
      *
      * * <code>0</code>: "Portrait"
-     * * <code>-90</code>: "Landscape (right, screen turned clockwise)"
-     * * <code>90</code>: "Landscape (left, screen turned counterclockwise)"
-     * * <code>180</code>: "Portrait (upside-down portrait)"
+     * * <code>90</code>: "Landscape"
      *
      * @param win {Window?window} The window to query
      * @return {Integer} The current orientation in degree
      */
     getOrientation : function(win)
     {
-      // See http://developer.apple.com/library/safari/#documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html%23//apple_ref/doc/uid/TP40006511-SW16
-      // for more information.
-      var orientation = (win||window).orientation;
-      if (orientation == null) {
-        orientation = this.getWidth(win) > this.getHeight(win) ? 90 : 0;
-      }
-      return orientation;
+      // The orientation property of window does not have the same behaviour over all tablets
+      // iPad has 0degrees = Portrait, Playbook has 90degrees = Portrait, same for Android Honeycomb
+      //
+      // To fix this the viewport width and height is compared
+      return this.getWidth(win) > this.getHeight(win) ? 90 : 0;
     },
 
 
@@ -308,7 +305,7 @@ qx.Class.define("qx.bom.Viewport",
      *     is currently in landscape mode.
      */
     isLandscape : function(win) {
-      return Math.abs(this.getOrientation(win)) == 90;
+      return this.getOrientation(win) == 90;
     },
 
 
@@ -321,8 +318,7 @@ qx.Class.define("qx.bom.Viewport",
      */
     isPortrait : function(win)
     {
-      var orientation = this.getOrientation(win);
-      return (orientation == 0 || orientation == 180);
+      return this.getOrientation(win) === 0;
     }
   }
 });
