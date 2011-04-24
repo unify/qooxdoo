@@ -14,10 +14,22 @@
 
    Authors:
      * Sebastian Werner (wpbasti)
+     * Sebastian Fastner (fastner)
 
    ======================================================================
 
    This class contains code based on the following work:
+
+   * Unify Project
+
+     Homepage:
+       http://unify-project.org
+
+     Copyright:
+       2009-2010 Deutsche Telekom AG, Germany, http://telekom.com
+
+     License:
+       MIT: http://www.opensource.org/licenses/mit-license.php
 
    * Prototype JS
      http://www.prototypejs.org/
@@ -289,9 +301,60 @@ qx.Class.define("qx.bom.element.Style",
     }),
 
 
+    /*
+    ---------------------------------------------------------------------------
+      STYLE ATTRIBUTE DETECTION
+    ---------------------------------------------------------------------------
+    */
+    
+    /** {Element} DOM element used for testing support for style properties */
+    __helperElem : document.createElement("div"),
+    
+    /** {String} Vendor prefix (depends on client) */
+    __vendorPrefix : qx.core.Environment.select("engine.name",
+    {
+      "mshtml" : "Ms",
+      "gecko" : "Moz",
+      "webkit" : "Webkit",
+      "opera" : "O"
+    }),
+    
+    /** {Map} Maps standard names to vendor names for faster access */
+    __propertyCache : {},
 
-
-
+    /**
+     * Returns style property name for current borwser engine
+     * 
+     * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
+     * @return {String} Stype property name
+     */
+    property : function(name)
+    {
+      var style = this.__helperElem.style;
+      if (style[name] !== undefined) {
+        return name;
+      }
+      
+      var propertyCache = this.__propertyCache;
+      var styleName = propertyCache[name];
+      if (styleName) {
+        return styleName;
+      }
+      
+      var vendorPropertyName = this.__vendorPrefix + qx.lang.String.firstUp(name);
+      if (style[vendorPropertyName] !== undefined) {
+        propertyCache[name] = vendorPropertyName;
+        return vendorPropertyName;
+      }
+      
+      // Warn about unsupported property
+      if (qx.core.Environment.get("qx.debug")) {
+        qx.log.Logger.warn('Style property "' + name + '" is not supported by the client!');
+      }
+    },
+    
+    
+    
     /*
     ---------------------------------------------------------------------------
       STYLE ATTRIBUTE SUPPORT
@@ -330,18 +393,6 @@ qx.Class.define("qx.bom.element.Style",
      *   Does not interpret values.
      */
     LOCAL_MODE : 3,
-
-
-    /**
-     * Returns style property name for current borwser engine
-     * 
-     * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
-     * @return {String} Stype property name
-     */
-    property : function(name)
-    {
-      return this.__styleNames[name] || name;
-    },
 
 
     /**
