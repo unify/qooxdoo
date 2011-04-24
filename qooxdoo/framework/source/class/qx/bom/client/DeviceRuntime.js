@@ -31,6 +31,8 @@ qx.Bootstrap.define("qx.bom.client.DeviceRuntime",
 {
   statics :
   {
+    userAgent : navigator.userAgent,
+    
     /**
      * Returns the device's runtime name
      * 
@@ -38,7 +40,7 @@ qx.Bootstrap.define("qx.bom.client.DeviceRuntime",
      */
     getName : function() 
     {
-      var agent = navigator.userAgent;
+      var agent = qx.bom.client.DeviceRuntime.userAgent;
       
       if (/iPad|iPhone|iPod/.test(agent)) {
         return "ios";
@@ -59,12 +61,12 @@ qx.Bootstrap.define("qx.bom.client.DeviceRuntime",
     /**
      * Returns the device's runtime version
      * 
-     * @return {Integer[]} Runtime version
+     * @return {String[]} Runtime version
      */
     getVersion : function() 
     {
       var runtime = qx.bom.client.DeviceRuntime.getName();
-      var agent = navigator.userAgent;
+      var agent = qx.bom.client.DeviceRuntime.userAgent;
       var version;
       
       if (runtime == "ios") {
