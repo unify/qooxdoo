@@ -395,7 +395,7 @@ qx.Class.define("qx.bom.element.Style",
 
 
       // normalize name
-      name = this.__styleNames[name] || name;
+      name = this.__styleNames[name] || this.__propertyCache[name] || name;
 
       // special handling for specific properties
       // through this good working switch this part costs nothing when
@@ -435,11 +435,12 @@ qx.Class.define("qx.bom.element.Style",
       var special = this.__special;
 
       var style = element.style;
+      var propertyCache = this.__propertyCache;
 
       for (var key in styles)
       {
         var value = styles[key];
-        var name = styleNames[key] || key;
+        var name = styleNames[key] || propertyCache[key] || key;
 
         if (value === undefined)
         {
@@ -473,7 +474,7 @@ qx.Class.define("qx.bom.element.Style",
     reset : function(element, name, smart)
     {
       // normalize name
-      name = this.__styleNames[name] || name;
+      name = this.__styleNames[name] || this.__propertyCache[name] || name;
 
       // special handling for specific properties
       if (smart!==false && this.__special[name]) {
@@ -515,7 +516,7 @@ qx.Class.define("qx.bom.element.Style",
       "mshtml" : function(element, name, mode, smart)
       {
         // normalize name
-        name = this.__styleNames[name] || name;
+        name = this.__styleNames[name] || this.__propertyCache[name] || name;
 
         // special handling
         if (smart!==false && this.__special[name]) {
@@ -580,7 +581,7 @@ qx.Class.define("qx.bom.element.Style",
       "default" : function(element, name, mode, smart)
       {
         // normalize name
-        name = this.__styleNames[name] || name;
+        name = this.__styleNames[name] || this.__propertyCache[name] || name;
 
         // special handling
         if (smart!==false && this.__special[name]) {
