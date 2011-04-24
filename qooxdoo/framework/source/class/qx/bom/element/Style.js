@@ -333,6 +333,18 @@ qx.Class.define("qx.bom.element.Style",
 
 
     /**
+     * Returns style property name for current borwser engine
+     * 
+     * @param name {String} Name of the style attribute (js variant e.g. marginTop, wordSpacing)
+     * @return {String} Stype property name
+     */
+    property : function(name)
+    {
+      return this.__styleNames[name] || name;
+    },
+
+
+    /**
      * Sets the value of a style property
      *
      * @param element {Element} The DOM element to modify
