@@ -17,7 +17,7 @@
    * Sebastian Werner (wpbasti)
    * Andreas Ecker (ecker)
    * Fabian Jakobs (fjakobs)
-   * Alexander Back (aback)
+   * Alexander Steitz (aback)
    * Martin Wittemann (martinwittemann)
 
 ************************************************************************* */
@@ -615,7 +615,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
         return {
           icon : "decoration/arrows/up-small.png",
           padding : [superStyles.padding[0] - 1, superStyles.padding[1] - 5],
-          shadow: undefined
+          shadow: undefined,
+          margin : 0
         };
       }
     },
@@ -630,7 +631,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
         return {
           icon : "decoration/arrows/down-small.png",
           padding : [superStyles.padding[0] - 1, superStyles.padding[1] - 5],
-          shadow: undefined
+          shadow: undefined,
+          margin : 0
         };
       }
     },
@@ -865,7 +867,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator : decorator,
           minHeight : states.horizontal ? undefined : 9,
           minWidth  : states.horizontal ? 9 : undefined,
-          padding : undefined
+          padding : undefined,
+          margin : 0
         };
       }
     },
@@ -907,7 +910,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
             padding : useCSS ? 3 : [3, 2],
             icon : icon,
             width: 14,
-            height: 15
+            height: 15,
+            margin: 0
           };
         }
       }
@@ -1325,7 +1329,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
           marginBottom : marginBottom,
           marginLeft : marginLeft,
           marginRight : marginRight,
-          textColor : states.checked ? "text-active" : "text-inactive"
+          textColor : states.disabled ? "text-disabled" : 
+            states.checked ? "text-active" : "text-inactive"
         };
       }
     },
@@ -1825,6 +1830,28 @@ qx.Theme.define("qx.theme.modern.Appearance",
           contentPadding : [ 10, 10, 10, 10 ],
           margin : [0, 5, 5, 0]
           
+        };
+      }
+    },
+
+    "window-resize-frame" :
+    {
+      style : function(states)
+      {
+        var useCSS = qx.core.Environment.get("css.borderradius");
+        var decorator;
+
+        if (useCSS) {
+          if (states.showStatusbar) {
+            decorator = "window-resize-frame-incl-statusbar-css";
+          } else {
+            decorator = "window-resize-frame-css";
+          }
+        } else {
+           decorator = "main";
+        }
+        return {
+          decorator : decorator 
         };
       }
     },

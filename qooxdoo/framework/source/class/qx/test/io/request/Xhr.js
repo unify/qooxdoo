@@ -202,15 +202,6 @@ qx.Class.define("qx.test.io.request.Xhr",
       this.assertCalled(this.transport.send);
     },
 
-    "test: send authorized request": function() {
-      this.setUpFakeTransport();
-      this.req.setUsername("affe");
-      this.req.setPassword("geheim");
-      this.req.send();
-
-      this.assertCalledWith(this.transport.open, "GET", "url", true, "affe", "geheim");
-    },
-
     "test: drop fragment from URL": function() {
       this.setUpFakeTransport();
       this.req.setUrl("example.com#fragment");
@@ -267,7 +258,7 @@ qx.Class.define("qx.test.io.request.Xhr",
       this.req.send();
 
       this.assertCalledWith(this.transport.setRequestHeader,
-           "Content-type", "application/x-www-form-urlencoded");
+           "Content-Type", "application/x-www-form-urlencoded");
     },
 
     "test: send string data with POST request": function() {
@@ -451,6 +442,40 @@ qx.Class.define("qx.test.io.request.Xhr",
       });
     },
 
+    "test: fire remoteError": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport,
+          that = this;
+
+      this.assertEventFired(req, "remoteError", function() {
+        transport.readyState = 4;
+        transport.status = 500;
+        transport.onreadystatechange();
+      });
+    },
+
+    "test: fire fail": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport,
+          that = this;
+
+      this.assertEventFired(req, "fail", function() {
+        transport.readyState = 4;
+        transport.status = 500;
+        transport.onreadystatechange();
+      });
+
+      this.assertEventFired(req, "fail", function() {
+        transport.onerror();
+      });
+
+      this.assertEventFired(req, "fail", function() {
+        transport.onerror();
+      });
+    },
+
     //
     // Handler
     //
@@ -607,27 +632,50 @@ qx.Class.define("qx.test.io.request.Xhr",
       this.assertCalledWith(qx.io.request.Xhr.PARSER.json, "JSON");
     },
 
-    "test: parse xml response": function() {
+    // XML
+
+    respondXml: function(contentType) {
       this.setUpFakeXhr();
+      var body = "XML: " + contentType;
 
-      var req = this.req,
-          fakeReq = this.getFakeReq(),
-          that = this;
+      this.req.setUrl("/found.xml");
+      this.req.send();
+      this.getFakeReq().respond(200, {"Content-Type": contentType}, body);
+    },
 
+    "test: parse xml response": function() {
       this.stub(qx.io.request.Xhr.PARSER, "xml");
+      this.respondXml("application/xml");
+      this.assertCalledWith(qx.io.request.Xhr.PARSER.xml, "XML: application/xml");
+    },
 
-      function respond(contentType) {
-        var body = "XML: " + contentType;
+    "test: parse arbitrary xml response": function() {
+      this.stub(qx.io.request.Xhr.PARSER, "xml");
+      this.respondXml("animal/affe+xml");
+      this.assertCalledWith(qx.io.request.Xhr.PARSER.xml, "XML: animal/affe+xml");
+    },
 
-        req.setUrl("/found.xml");
-        req.send();
-        fakeReq.respond(200, {"Content-Type": contentType}, body);
+    //
+    // Auth
+    //
 
-        that.assertCalledWith(qx.io.request.Xhr.PARSER.xml, body);
-      }
+    "test: basic auth": function() {
+      this.setUpFakeTransport();
 
-      respond("application/xml");
-      respond("animal/affe+xml");
+      var transport = this.transport,
+          auth, call, key, credentials;
+
+      auth = new qx.io.request.auth.BasicDelegate();
+      auth.setUsername("affe");
+      auth.setPassword("geheim");
+      this.req.setAuth(auth);
+      this.req.send();
+
+      call = transport.setRequestHeader.getCall(0);
+      key = "Authorization";
+      credentials = /Basic\s(.*)/.exec(call.args[1])[1];
+      this.assertEquals(key, call.args[0]);
+      this.assertEquals("affe:geheim", qx.util.Base64.decode(credentials));
     },
 
     //

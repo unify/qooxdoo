@@ -113,13 +113,22 @@ qx.Class.define("qx.io.request.Xhr",
     /**
      * Fires when request could not complete
      * due to a network error.
-     *
-     * Timeouts are not considered to be network
-     * errors. Usually, it is recommended to listen
-     * to both "error" and "timeout" event to handle
-     * errors.
      */
     "error": "qx.event.type.Event",
+
+    /**
+     * Fires when request completed with erroneous HTTP status,
+     * for instance indicating a server error or missing resource.
+     */
+    "remoteError": "qx.event.type.Event",
+
+    /**
+     * Fires on timeout, error or remote error.
+     *
+     * This event is fired for convenience. Usually, it is recommended
+     * to handle error related events in a more granular approach.
+     */
+    "fail": "qx.event.type.Event",
 
     /**
     * Fires on change of the parsed response.
@@ -150,22 +159,6 @@ qx.Class.define("qx.io.request.Xhr",
     async: {
       check: "Boolean",
       init: true
-    },
-
-    /**
-     * Authenticate with username.
-     */
-    username: {
-      check: "String",
-      nullable: true
-    },
-
-    /**
-     * Authenticate with password.
-     */
-    password: {
-      check: "String",
-      nullable: true
     },
 
     /**
@@ -248,6 +241,16 @@ qx.Class.define("qx.io.request.Xhr",
                qx.lang.Type.isObject(value);
       },
       nullable: true
+    },
+
+    /**
+     * Authentication delegate.
+     *
+     * The delegate must implement {@link qx.io.request.auth.IAuthDelegate}
+     */
+    auth: {
+      check: "qx.io.request.auth.IAuthDelegate",
+      nullable: true
     }
   },
 
@@ -269,6 +272,11 @@ qx.Class.define("qx.io.request.Xhr",
      * Parsed response.
      */
     __response: null,
+
+    /**
+     * Parser.
+     */
+    __parser: null,
 
     /**
      * Bound handlers.
@@ -305,9 +313,8 @@ qx.Class.define("qx.io.request.Xhr",
           method = this.getMethod(),
           url = this.getUrl(),
           async = this.getAsync(),
-          username = this.getUsername(),
-          password = this.getPassword(),
-          requestData = this.getRequestData();
+          requestData = this.getRequestData(),
+          auth = this.getAuth();
 
       var serializedData = this.__serializeData(requestData);
 
@@ -332,7 +339,7 @@ qx.Class.define("qx.io.request.Xhr",
       }
 
       // Initialize request
-      transport.open(method, url, async, username, password);
+      transport.open(method, url, async);
 
       // Align headers to configuration of instance
       if (this.getCache() === "force-validate") {
@@ -341,11 +348,25 @@ qx.Class.define("qx.io.request.Xhr",
       }
 
       if (method === "POST") {
-        transport.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        transport.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
       }
 
       if (this.getAccept()) {
         transport.setRequestHeader("Accept", this.getAccept());
+      }
+
+      if (auth) {
+        auth.getAuthHeaders().forEach(function(header) {
+
+          if (qx.core.Environment.get("qx.debug")) {
+            qx.core.Assert.assertString(header.key);
+            qx.core.Assert.assertString(header.value);
+          }
+
+          if (header.key && header.value) {
+            transport.setRequestHeader(header.key, header.value);
+          }
+        });
       }
 
       // User-provided headers
@@ -558,8 +579,7 @@ qx.Class.define("qx.io.request.Xhr",
      *
      */
     _getParser: function() {
-      var parser = this.__parser,
-          msg;
+      var parser = this.__parser;
 
       // Use user-provided parser, if any
       if (parser) {
@@ -624,13 +644,22 @@ qx.Class.define("qx.io.request.Xhr",
 
       this.fireEvent("readystatechange");
 
-      if (this.isDone() && qx.bom.request.Xhr.isSuccessful(this.getStatus())) {
+      if (this.isDone()) {
 
-        // Parse response
-        parsedResponse = this.__getParsedResponse();
-        this.__setResponse(parsedResponse);
+        // Successfull HTTP status
+        if (qx.bom.request.Xhr.isSuccessful(this.getStatus())) {
 
-        this.fireEvent("success");
+          // Parse response
+          parsedResponse = this.__getParsedResponse();
+          this.__setResponse(parsedResponse);
+
+          this.fireEvent("success");
+
+        // Erroneous HTTP status
+        } else {
+          this.fireEvent("remoteError");
+          this.fireEvent("fail");
+        }
       }
     },
 
@@ -660,6 +689,7 @@ qx.Class.define("qx.io.request.Xhr",
      */
     __onTimeout: function() {
       this.fireEvent("timeout");
+      this.fireEvent("fail");
     },
 
     /**
@@ -667,6 +697,7 @@ qx.Class.define("qx.io.request.Xhr",
      */
     __onError: function() {
       this.fireEvent("error");
+      this.fireEvent("fail");
     },
 
     /*
