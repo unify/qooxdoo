@@ -16,6 +16,7 @@
      * Martin Wittemann (martinwittemann)
      * Tino Butz (tbtz)
      * Christian Hagendorn (chris_schmidt)
+     * Dominik Göpel (dominikg)
 
 ************************************************************************ */
 
