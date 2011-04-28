@@ -85,7 +85,10 @@ qx.Class.define("qx.event.handler.Touch",
       touchend : 1,
       touchcancel : 1, // Appears when the touch is interrupted, e.g. by an alert box
       tap : 1,
-      swipe : 1
+      swipe : 1,
+      touchhold : 1,
+      touchleave: 1,
+      touchrelease : 1
     },
 
     /** {Integer} Which target check to use */
@@ -126,7 +129,13 @@ qx.Class.define("qx.event.handler.Touch",
      *      performed swipe is greater as or equal the value of this constant, a
      *      swipe event is fired.
      */
-    SWIPE_MIN_VELOCITY : 0
+    SWIPE_MIN_VELOCITY : 0,
+
+      /** {Integer} The delay between gesture start and the firing of a touchhold event.
+       *      touchhold is only fired if no touchend or touchleave occured during the delay.
+       *      When touchhold was fired a touchrelease event is fired on gesture end.
+       */
+    TOUCH_HOLD_DELAY: 50
   },
 
 
@@ -150,12 +159,18 @@ qx.Class.define("qx.event.handler.Touch",
     __startPageX : null,
     __startPageY : null,
     __startTime : null,
-    __isSingleTouchGesture : null,
+    __trackId : null,
 
     // Checks if the mouse movement is happening while simulating a touch event
     __isInTouch : false,
 
     __originalTarget : null,
+
+    //touchhold/touchleave/touchrelease support
+    __touchHoldTimer : null,
+    __isTouchHold : false,
+    __hasTouchLeft: false,
+
 
     /*
     ---------------------------------------------------------------------------
@@ -241,8 +256,9 @@ qx.Class.define("qx.event.handler.Touch",
      * @param domEvent {Event} DOM event
      * @param type {String ? null} type of the event
      * @param target {Element ? null} event target
+     * @param touch {Object} the tracked touch
      */
-    __checkAndFireGesture : function(domEvent, type, target)
+    __checkAndFireGesture : function(domEvent, type, target, touch)
     {
       if (!target) {
         target = this.__getTarget(domEvent);
@@ -251,15 +267,16 @@ qx.Class.define("qx.event.handler.Touch",
 
       if (type == "touchstart")
       {
-        this.__gestureStart(domEvent, target);
+        this.__gestureStart(domEvent, target, touch);
       }
       else if (type == "touchmove") {
-        this.__gestureChange(domEvent, target);
+        this.__gestureChange(domEvent, target, touch);
       }
       else if (type == "touchend")
       {
-        this.__gestureEnd(domEvent, target);
+        this.__gestureEnd(domEvent, target, touch);
       }
+      //TODO what about touchcancel (cancel running gesture?)
     },
 
 
@@ -268,14 +285,14 @@ qx.Class.define("qx.event.handler.Touch",
      *
      * @param domEvent {Event} DOM event
      * @param target {Element} event target
+     * @param touch {Object} the tracked touch
      */
-    __gestureStart : function(domEvent, target)
+    __gestureStart : function(domEvent, target, touch)
     {
-      var touch = domEvent.changedTouches[0];
       this.__startPageX = touch.screenX;
       this.__startPageY = touch.screenY;
       this.__startTime = new Date().getTime();
-      this.__isSingleTouchGesture = domEvent.changedTouches.length === 1;
+      this.__startTouchHoldTimer(domEvent,target);
     },
 
 
@@ -284,13 +301,11 @@ qx.Class.define("qx.event.handler.Touch",
      *
      * @param domEvent {Event} DOM event
      * @param target {Element} event target
+     * @param touch {Object} the tracked touch
      */
-    __gestureChange : function(domEvent, target)
+    __gestureChange : function(domEvent, target, touch)
     {
-      // Abort a single touch gesture when another touch occurs.
-      if (this.__isSingleTouchGesture && domEvent.changedTouches.length > 1) {
-        this.__isSingleTouchGesture = false;
-      }
+      this.__checkTouchLeave(domEvent,target,touch);
     },
 
 
@@ -299,31 +314,29 @@ qx.Class.define("qx.event.handler.Touch",
      *
      * @param domEvent {Event} DOM event
      * @param target {Element} event target
+     * @param touch {Object} the tracked touch
      */
-    __gestureEnd : function(domEvent, target)
+    __gestureEnd : function(domEvent, target, touch)
     {
-      if (this.__isSingleTouchGesture)
+      this.__checkTouchRelease(domEvent,target);
+
+      var deltaCoordinates = {
+        x : touch.screenX - this.__startPageX,
+        y : touch.screenY - this.__startPageY
+      };
+
+      var clazz = qx.event.handler.Touch;
+      if (this.__originalTarget == target
+          && Math.abs(deltaCoordinates.x) <= clazz.TAP_MAX_DISTANCE
+          && Math.abs(deltaCoordinates.y) <= clazz.TAP_MAX_DISTANCE) {
+        this.__fireEvent(domEvent, "tap", target, qx.event.type.Tap);
+      }
+      else
       {
-        var touch = domEvent.changedTouches[0];
-
-        var deltaCoordinates = {
-            x : touch.screenX - this.__startPageX,
-            y : touch.screenY - this.__startPageY
-        };
-
-        var clazz = qx.event.handler.Touch;
-        if (this.__originalTarget == target
-            && Math.abs(deltaCoordinates.x) <= clazz.TAP_MAX_DISTANCE
-            && Math.abs(deltaCoordinates.y) <= clazz.TAP_MAX_DISTANCE) {
-          this.__fireEvent(domEvent, "tap", target, qx.event.type.Tap);
-        }
-        else
-        {
-          var swipe = this.__getSwipeGesture(domEvent, target, deltaCoordinates);
-          if (swipe) {
-            domEvent.swipe = swipe;
-            this.__fireEvent(domEvent, "swipe", target, qx.event.type.Swipe);
-          }
+        var swipe = this.__getSwipeGesture(domEvent, target, deltaCoordinates);
+        if (swipe) {
+          domEvent.swipe = swipe;
+          this.__fireEvent(domEvent, "swipe", target, qx.event.type.Swipe);
         }
       }
     },
@@ -362,6 +375,80 @@ qx.Class.define("qx.event.handler.Touch",
       return swipe;
     },
 
+    /**
+     * Fires a touchhold event
+     *
+     * @param domEvent {Event} DOM event
+     * @param target {Element} event target
+     */
+    __touchHold: function(domEvent,target){
+        this.__isTouchHold = true;
+        this.__fireEvent(domEvent, "touchhold", target);
+    },
+
+    /**
+     * Fires a touchleve event if touchhold has been fired before and the touch is outside of the target
+     *
+     * @param domEvent {Event} DOM event
+     * @param target {Element} event target
+     * @param touch the tracked touch
+     */
+    __checkTouchLeave: function(domEvent,target,touch){
+      var loc=qx.bom.element.Location.get(target);
+      var x=touch.screenX;
+      var y=touch.screenY;
+
+      if (x<loc.left||x>loc.right||y<loc.top||y>loc.bottom){
+        this.__cancelTouchHoldTimer();
+        if(this.__isTouchHold&&!this.__hasTouchLeft)
+        {
+          this.__hasTouchLeft=true;
+          this.__fireEvent(domEvent, "touchleave", target);
+        }
+      }
+    },
+
+    /**
+     * Fires a touchrelease event if touchhold has been fired before
+     *
+     * @param domEvent {Event} DOM event
+     * @param target {Element} event target
+     */
+    __checkTouchRelease: function(domEvent,target){
+      this.__cancelTouchHoldTimer();
+      this.__hasTouchLeft=false;
+      if(this.__isTouchHold)
+      {
+        this.__isTouchHold=false;
+        this.__fireEvent(domEvent, "touchrelease", target);
+      }
+    },
+
+    /**
+     * Starts a timer that fires a touchhold event.
+     *
+     * @param domEvent {Event} DOM event
+     * @param target {Element} event target
+     */
+    __startTouchHoldTimer: function(domEvent,target){
+      this.__cancelTouchHoldTimer();
+      var self = this;
+      this.__touchHoldTimer = window.setTimeout(function()
+      {
+        self.__touchHold(domEvent,target);
+      }, qx.event.handler.Touch.TOUCH_HOLD_DELAY);
+    },
+
+    /**
+     * Cancels an existing timer for touchhold event.
+     */
+    __cancelTouchHoldTimer: function(){
+      if (this.__touchHoldTimer)
+      {
+        window.clearTimeout(this.__touchHoldTimer);
+        this.__touchHoldTimer = null;
+      }
+    },
 
     /**
      * Normalizes a mouse event to a touch event.
@@ -587,12 +674,44 @@ qx.Class.define("qx.event.handler.Touch",
      */
     _commonTouchEventHandler : function(domEvent, type)
     {
+      domEvent.preventDefault();//TODO maybe move this to defer section? Are there any events where we want native behavior?
+
       var type = type || domEvent.type;
+      var touch;
+
       if (type == "touchstart") {
+        if(this.__trackId){
+          return;//we are already tracking a finger, ignore additional touchstart event
+        } else {
+          touch = domEvent.changedTouches[0];
+          this.__trackId = touch.identifier;//start tracking
+        }
         this.__originalTarget = this.__getTarget(domEvent);
+      } else {
+        touch=this.__findTouch(domEvent.changedTouches,this.__trackId);
+        if(!touch){
+          return;//the finger we are tracking was not changed
+        } else if(type=="touchend"||type=="touchcancel"){
+           this.__trackId=null;//stop tracking
+        }
       }
       this.__fireEvent(domEvent, type);
-      this.__checkAndFireGesture(domEvent, type);
+      this.__checkAndFireGesture(domEvent, type, null,touch);
+    },
+
+    /**
+     * Finds a touch with id in touchlist
+     * @param touchlist list of touches from the touch event
+     * @param id
+     * @return the found touch or null if no matching touch was found
+     */
+    __findTouch : function (touchlist,id){
+      for(var i=0,l=touchlist.length;i<l;i++){
+        if( touchlist[i].identifier ==id){
+          return touchlist[i];
+        }
+      }
+      return null;
     }
   },
 
@@ -605,6 +724,7 @@ qx.Class.define("qx.event.handler.Touch",
 
   destruct : function()
   {
+    this.__cancelTouchHoldTimer();
     this._stopTouchObserver();
     this._stopMouseObserver();
 
