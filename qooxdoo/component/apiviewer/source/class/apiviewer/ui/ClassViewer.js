@@ -46,7 +46,6 @@ qx.Class.define("apiviewer.ui.ClassViewer",
     this.addInfoPanel(new apiviewer.ui.panels.MethodPanel("methods", "methods"));
     this.addInfoPanel(new apiviewer.ui.panels.MethodPanel("methods-static", "static methods"));
     this.addInfoPanel(new apiviewer.ui.panels.ConstantPanel("constants", "constants", false, true));
-    this.addInfoPanel(new apiviewer.ui.panels.AppearancePanel("appearances", "appearances", false, true));
     this.addInfoPanel(new apiviewer.ui.panels.ChildControlsPanel("childControls", "child controls"));
 
     this.getContentElement().setAttribute("class", "ClassViewer");
@@ -109,6 +108,28 @@ qx.Class.define("apiviewer.ui.ClassViewer",
       "Color"     : true,
       "Decorator" : true,
       "Font"      : true
+    },
+    
+    MDC_LINKS :
+    {
+      "Event" : "https://developer.mozilla.org/en/DOM/event",
+      "Window" : "https://developer.mozilla.org/en/DOM/window",
+      "Document" : "https://developer.mozilla.org/en/DOM/document",
+      "Element" : "https://developer.mozilla.org/en/DOM/element",
+      "Node" : "https://developer.mozilla.org/en/DOM/node",
+      "Date" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date",
+      "Function" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function",
+      "Array" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array",
+      "Object" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object",
+      "RegExp" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/RegExp",
+      "Error" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Error",
+      "Number" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Number",
+      "Boolean" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Boolean",
+      "String" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/String",
+      "undefined" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/undefined",
+      "arguments" : "https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/arguments",
+      "Font" : "https://developer.mozilla.org/en/CSS/font",
+      "Color" : "https://developer.mozilla.org/en/CSS/color"
     },
 
 
@@ -246,7 +267,7 @@ qx.Class.define("apiviewer.ui.ClassViewer",
     _getTocHtml : function(classNode)
     {
       var tocHtml = document.createDocumentFragment();
-      var members = ["events", "constructor", "properties", "methods", "methods-static", "constants", "appearances", "childControls"];
+      var members = ["constructor", "events", "properties", "methods", "methods-static", "constants", "childControls"];
       var iconURL = {"events" : "apiviewer/image/event18.gif",
                                 "constructor" : "apiviewer/image/constructor18.gif",
                                 "properties" : "apiviewer/image/property18.gif",
@@ -269,7 +290,44 @@ qx.Class.define("apiviewer.ui.ClassViewer",
       {
         var memberList = classNode.getItemList(members[i]);
         this.sortItems(memberList);
+        var showTOC = false;
         if(memberList.length>0)
+        {
+          showTOC = true;
+        }
+        else
+        {
+          if (
+            this.getShowInherited() &&
+            (
+              members[i] == "events" ||
+              members[i] == "properties" ||
+              members[i] == "methods"
+              )
+            )
+            {
+              var classNodes = null;
+              if (classNode.getType() == "interface") {
+                classNodes = classNode.getInterfaceHierarchy();
+              } else {
+                classNodes = classNode.getClassHierarchy();
+              }
+              for(var j=0;j<classNodes.length;j++)
+              {
+                if(apiviewer.dao.Class.isNativeObject(classNodes[j]) && classNodes[j].name==='Object') {
+                  continue;
+                }
+                memberList = classNodes[j].getItemList(members[i]);
+                if(memberList.length > 0)
+                {
+                  showTOC = true;
+                  break;
+                }
+              }
+          }
+        }
+        
+        if(showTOC)
         {
           if(separatorFlag) {
             tocHtml.appendChild(document.createTextNode(' | '));
@@ -287,7 +345,7 @@ qx.Class.define("apiviewer.ui.ClassViewer",
               this.__enableSection(firstItem, firstItem.getName());
               qx.bom.element.Scroll.intoView(panel.getTitleElement(), null, "left", "top");
             };})(panelByName[members[i]],memberList[0]),this,false);
-          tocItem.appendChild(document.createTextNode(members[i]));
+          tocItem.appendChild(document.createTextNode(qx.lang.String.capitalize(members[i])));
           tocHtml.appendChild(tocItem);
         }
       }
@@ -452,7 +510,7 @@ qx.Class.define("apiviewer.ui.ClassViewer",
           }
           else
           {
-            classHtml.add('<span style="white-space: nowrap;"><a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/'+classHierarchy[i].name+'" target="_blank" title="'+classHierarchy[i].name+'">'+classHierarchy[i].name+'</a></span>');
+            classHtml.add('<span style="white-space: nowrap;"><a href="'+apiviewer.ui.ClassViewer.MDC_LINKS[classHierarchy[i].name]+'" target="_blank" title="'+classHierarchy[i].name+'">'+classHierarchy[i].name+'</a></span>');
           }
         } else {
           classHtml.add(classHierarchy[i].getFullName());

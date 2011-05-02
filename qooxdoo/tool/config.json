@@ -8,10 +8,13 @@
     }
   ],
 
+  /*
   "export" :
   [
     "api"
+    ,"info"
   ],
+  */
 
   "let" :
   {
@@ -29,59 +32,40 @@
     {
       "desc" : "create an Apiviewer for the Python modules"
       ,"extend" : ["cache"]
+      ,"=library" : 
+      [ 
+        { "manifest" : "${QOOXDOO_PATH}/framework/Manifest.json" }
+       ,{ "manifest" : "${QOOXDOO_PATH}/component/apiviewer/Manifest.json"}
+      ]
       ,"let"    :
       {
         "APIVIEWER_ROOT" : "${QOOXDOO_PATH}/component/apiviewer",
         "BUILD_PATH"     : "${ROOT}/api",
         "API_INCLUDE"    : ["*"]
       }
-      ,"run":
+      ,"=run":
       [
         "apiconf::build-resources",
         "apiconf::build-script",
-        "apiconf::build-files",
-        "api-data"
+        "apiconf::build-files"/*,
+        "tool-api-data"
+        */
       ]
     }
 
-    ,"api-data" : 
+    ,"tool-api-data" : 
     {
       "desc" : "create api doc json data files"
+      ,"extend" : ["cache"]
       ,"let" :
       {
         "API_SCRIPT" : "${BUILD_PATH}/script"
         ,"XSLTPROC"  : "xsltproc"
       }
 
-      ,"run" :
-      [
-        "run-pythondoc",
-        "run-xml-transform",
-        "run-json-transform"
-      ]
-    }
-
-    ,"run-pythondoc" :
-    {
-      "shell" : 
+      ,"shell" : 
       {
-        "command" : "${PYTHON_CMD} admin/bin/pythondoc.py -x pylib/generator > ${API_SCRIPT}/pydoc.xml"
-      }
-    }
-
-    ,"run-xml-transform" :
-    {
-      "shell" : 
-      {
-        "command" : "${XSLTPROC} data/apidoc/pydoc2qx-xml.xsl ${API_SCRIPT}/pydoc.xml > ${API_SCRIPT}/qx.xml"
-      }
-    }
-
-    ,"run-json-transform" :
-    {
-      "shell" : 
-      {
-        "command" : "${XSLTPROC} data/apidoc/pydoc2qx-xml.xsl ${API_SCRIPT}/qx.xml > ${API_SCRIPT}/apidata.json"
+        "command" : "${PYTHON_CMD} bin/generator_api.py pylib/generator ${API_SCRIPT}"
       }
     }
   }

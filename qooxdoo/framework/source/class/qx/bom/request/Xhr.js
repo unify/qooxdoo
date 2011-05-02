@@ -161,7 +161,7 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
      * @lint ignoreUndefined(XDomainRequest)
      *
      * @param method {String}
-     *        The HTTP method to use, either "GET" or "POST".
+     *        The HTTP method to use.
      * @param url {String}
      *        The URL to which to send the request.
      * @param async {Boolean?true}
@@ -636,6 +636,10 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       var nxhr = this.__nativeXhr,
           propertiesReadable = true;
 
+      if (qx.core.Environment.get("qx.bomXhrDebug")) {
+        qx.Bootstrap.debug(qx.bom.request.Xhr, "Received native readyState: " + nxhr.readyState);
+      }
+
       // BUGFIX: IE, Firefox
       // onreadystatechange() is called twice for readyState OPENED.
       //
@@ -645,6 +649,9 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       }
 
       // Sync current readyState
+      if (qx.core.Environment.get("qx.bomXhrDebug")) {
+        qx.Bootstrap.debug(qx.bom.request.Xhr, "Set readyState to: " + nxhr.readyState);
+      }
       this.readyState = nxhr.readyState;
 
       // BUGFIX: IE

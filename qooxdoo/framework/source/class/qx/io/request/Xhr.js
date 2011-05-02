@@ -83,19 +83,21 @@ qx.Class.define("qx.io.request.Xhr",
     "readystatechange": "qx.event.type.Event",
 
     /**
-     * Fires when request is complete and HTTP status
-     * indicates success.
+     * Fires when request is complete and HTTP status indicates success.
      */
     "success": "qx.event.type.Event",
 
     /**
-     * Fires when request is complete. Must not necessarily
-     * have an HTTP status that indicates success.
+     * Fires when request is complete.
+     *
+     * Must not necessarily have an HTTP status that indicates
+     * success.
      */
     "load": "qx.event.type.Event",
 
     /**
      * Fires when processing of request completes.
+     *
      * Fired even when e.g. a network failure occured.
      */
     "loadend": "qx.event.type.Event",
@@ -117,8 +119,9 @@ qx.Class.define("qx.io.request.Xhr",
     "error": "qx.event.type.Event",
 
     /**
-     * Fires when request completed with erroneous HTTP status,
-     * for instance indicating a server error or missing resource.
+     * Fires when request completed with erroneous HTTP status.
+     *
+     * For instance, indicating a server error or missing resource.
      */
     "remoteError": "qx.event.type.Event",
 
@@ -132,6 +135,23 @@ qx.Class.define("qx.io.request.Xhr",
 
     /**
     * Fires on change of the parsed response.
+    *
+    * This event allows to use data binding with the
+    * parsed response as source.
+    *
+    * For example:
+    *
+    * <pre class="javascript">
+    * // req is an instance of qx.io.request.Xhr,
+    * // label an instance of qx.ui.basic.Label
+    * req.bind("response", label, "value");
+    * </pre>
+    *
+    * The response is parsed (and therefore changed) only
+    * after the request completes successfully. This means
+    * that when a new request is made the initial emtpy value
+    * is ignored, instead only the final value is bound.
+    *
     */
     "changeResponse": "qx.event.type.Data"
   },
@@ -142,7 +162,7 @@ qx.Class.define("qx.io.request.Xhr",
      * The HTTP method.
      */
     method: {
-      check: [ "GET", "POST"],
+      check: [ "HEAD", "OPTIONS", "GET", "POST", "PUT", "DELETE"],
       init: "GET"
     },
 
@@ -248,8 +268,8 @@ qx.Class.define("qx.io.request.Xhr",
      *
      * The delegate must implement {@link qx.io.request.auth.IAuthDelegate}
      */
-    auth: {
-      check: "qx.io.request.auth.IAuthDelegate",
+    authentication: {
+      check: "qx.io.request.authentication.IAuthentication",
       nullable: true
     }
   },
@@ -314,9 +334,8 @@ qx.Class.define("qx.io.request.Xhr",
           url = this.getUrl(),
           async = this.getAsync(),
           requestData = this.getRequestData(),
-          auth = this.getAuth();
-
-      var serializedData = this.__serializeData(requestData);
+          auth = this.getAuthentication(),
+          serializedData = this.__serializeData(requestData);
 
       // Drop fragment (anchor) from URL as per
       // http://www.w3.org/TR/XMLHttpRequest/#the-open-method
@@ -339,6 +358,13 @@ qx.Class.define("qx.io.request.Xhr",
       }
 
       // Initialize request
+      if (qx.core.Environment.get("qx.ioXhrDebug")) {
+        this.debug(
+          "Initialize request with " +
+          "method: '" + method +
+          "', url: '" + url +
+          "', async: " + async);
+      }
       transport.open(method, url, async);
 
       // Align headers to configuration of instance
@@ -347,14 +373,20 @@ qx.Class.define("qx.io.request.Xhr",
         transport.setRequestHeader("Cache-Control", "no-cache");
       }
 
+      // POST with request data needs special content-type
       if (method === "POST") {
         transport.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
       }
 
+      // What representations to accept
       if (this.getAccept()) {
+        if (qx.core.Environment.get("qx.ioXhrDebug")) {
+          this.debug("Accepting: '" + this.getAccept() + "'");
+        }
         transport.setRequestHeader("Accept", this.getAccept());
       }
 
+      // Read auth delegate and set headers accordingly
       if (auth) {
         auth.getAuthHeaders().forEach(function(header) {
 
@@ -364,9 +396,14 @@ qx.Class.define("qx.io.request.Xhr",
           }
 
           if (header.key && header.value) {
+            if (qx.core.Environment.get("qx.ioXhrDebug")) {
+              this.debug(
+                "Set authentication header '" + header.key +
+                "' to '" + header.value + "'");
+            }
             transport.setRequestHeader(header.key, header.value);
           }
-        });
+        }, this);
       }
 
       // User-provided headers
@@ -376,6 +413,9 @@ qx.Class.define("qx.io.request.Xhr",
       transport.timeout = this.getTimeout() * 1000;
 
       // Send request
+      if (qx.core.Environment.get("qx.ioXhrDebug")) {
+        this.debug("Send request");
+      }
       transport.send(serializedData);
     },
 
@@ -383,6 +423,9 @@ qx.Class.define("qx.io.request.Xhr",
      * Aborts the request. Cancels any network activity.
      */
     abort: function() {
+      if (qx.core.Environment.get("qx.ioXhrDebug")) {
+        this.debug("Abort request");
+      }
       this.__transport.abort();
     },
 
@@ -646,10 +689,17 @@ qx.Class.define("qx.io.request.Xhr",
 
       if (this.isDone()) {
 
-        // Successfull HTTP status
+        if (qx.core.Environment.get("qx.ioXhrDebug")) {
+          this.debug("Request completed with HTTP status: " + this.getStatus());
+        }
+
+        // Successful HTTP status
         if (qx.bom.request.Xhr.isSuccessful(this.getStatus())) {
 
           // Parse response
+          if (qx.core.Environment.get("qx.ioXhrDebug")) {
+            this.debug("Response is of type: '" + this.getResponseContentType() + "'");
+          }
           parsedResponse = this.__getParsedResponse();
           this.__setResponse(parsedResponse);
 
@@ -658,6 +708,8 @@ qx.Class.define("qx.io.request.Xhr",
         // Erroneous HTTP status
         } else {
           this.fireEvent("remoteError");
+
+          // A remote error failure
           this.fireEvent("fail");
         }
       }
@@ -689,6 +741,8 @@ qx.Class.define("qx.io.request.Xhr",
      */
     __onTimeout: function() {
       this.fireEvent("timeout");
+
+      // A network error failure
       this.fireEvent("fail");
     },
 
@@ -697,6 +751,8 @@ qx.Class.define("qx.io.request.Xhr",
      */
     __onError: function() {
       this.fireEvent("error");
+
+      // A network error failure
       this.fireEvent("fail");
     },
 
@@ -754,6 +810,12 @@ qx.Class.define("qx.io.request.Xhr",
       }
     }
 
+  },
+
+  environment:
+  {
+    "qx.ioXhrDebug": false,
+    "qx.bomXhrDebug": false
   },
 
   destruct: function()

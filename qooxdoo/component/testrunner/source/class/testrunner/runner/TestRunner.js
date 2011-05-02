@@ -609,7 +609,6 @@ qx.Class.define("testrunner.runner.TestRunner", {
         logger.unregister(this.__logAppender);
       }
     }
-
   },
 
   destruct : function()
