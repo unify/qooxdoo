@@ -24,6 +24,7 @@ qx.Bootstrap.define("qx.bom.request.Script",
   {
     this.__onNativeLoadBound = qx.Bootstrap.bind(this.__onNativeLoad, this);
     this.__onNativeErrorBound = qx.Bootstrap.bind(this.__onNativeError, this);
+    this.__onTimeoutBound = qx.Bootstrap.bind(this.__onTimeout, this);
 
     this.__headElement = document.head || document.getElementsByTagName( "head" )[0] ||
                          document.documentElement;
@@ -40,20 +41,25 @@ qx.Bootstrap.define("qx.bom.request.Script",
 
     send: function() {
       var script = this.__scriptElement = document.createElement("script"),
-          head = this.__headElement,
-          that = this;
+          head = this.__headElement;
 
       script.src = this.__url;
 
       if (this.timeout > 0) {
-        this.__timeoutId = window.setTimeout(function() {
-          that.ontimeout();
-          that.__removeScriptElement();
-        }, this.timeout);
+        this.__timeoutId = window.setTimeout(this.__onTimeoutBound, this.timeout);
       }
       head.insertBefore(script, head.firstChild);
 
       script.onload = this.__onNativeLoadBound;
+
+      // BUGFIX: IE < 9
+      // Legacy IEs do not fire the "load" event for script elements.
+      // Instead, the support the "readystatechange" event
+      if (qx.core.Environment.get("engine.name") === "mshtml" &&
+          qx.core.Environment.get("engine.version") < 9) {
+      script.onreadystatechange = this.__onNativeLoadBound;
+      }
+
       script.onerror = this.__onNativeErrorBound;
     },
 
@@ -80,16 +86,37 @@ qx.Bootstrap.define("qx.bom.request.Script",
       return this.__scriptElement;
     },
 
+    __scriptElement: null,
+    __headElement: null,
+
     __url: "",
 
     __onNativeLoadBound: null,
     __onNativeErrorBound: null,
+    __onTimeoutBound: null,
 
     __timeoutId: null,
 
     __disposed: null,
 
+    __onTimeout: function() {
+      this.ontimeout();
+      this.__removeScriptElement();
+    },
+
     __onNativeLoad: function(e) {
+      var script = this.__scriptElement;
+
+      // BUGFIX: IE < 9
+      // When handling "readystatechange" event, skip if readyState
+      // does not signal loaded script
+      if (qx.core.Environment.get("engine.name") === "mshtml" &&
+          qx.core.Environment.get("engine.version") < 9) {
+        if (!(/loaded|complete/).test(script.readyState)) {
+          return;
+        }
+      }
+
       this.__removeScriptElement();
       this.onload();
     },

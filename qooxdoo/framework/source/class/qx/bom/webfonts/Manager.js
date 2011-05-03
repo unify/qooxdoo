@@ -101,8 +101,18 @@ qx.Class.define("qx.bom.webfonts.Manager", {
      * {@link qx.bom.webfonts.Validator#fontInvalid}
      * @param context {Object?} Optional context for the callback function
      */
-    require : function(familyName, sources, callback, context)
+    require : function(familyName, sourcesList, callback, context)
     {
+      var sources = [];
+      for (var i=0,l=sourcesList.length; i<l; i++) {
+        var split = sourcesList[i].split("#");
+        var src = qx.util.ResourceManager.getInstance().toUri(split[0]);
+        if (split.length > 1) {
+          src = src + "#" + split[1];
+        }
+        sources.push(src);
+      }
+      
       // old IEs need a break in between adding @font-face rules
       if (!(qx.core.Environment.get("browser.name") == "ie" && 
       qx.bom.client.Browser.getVersion() < 9)) {
@@ -417,10 +427,10 @@ qx.Class.define("qx.bom.webfonts.Manager", {
       var reg = new RegExp("@font-face.*?" + familyName, "m");
       var rules = this.__styleSheet.cssRules || this.__styleSheet.rules;
       for (var i=0,l=rules.length; i<l; i++) {
-        var cssText = rules[i].cssText.replace(/\n/g, "");
+        var cssText = rules[i].cssText.replace(/\n/g, "").replace(/\r/g, "");
         if (reg.exec(cssText)) {
           this.__styleSheet.deleteRule(i);
-          break;
+          return;
         }
       }
     }
