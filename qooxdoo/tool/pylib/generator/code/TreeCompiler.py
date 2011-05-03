@@ -96,7 +96,10 @@ class TreeCompiler(object):
         
         for pos, classId in enumerate(classes):
             self._console.progress(pos + 1, length)
-            content.append( self.getCompiled(classId, variants, optimize, format) )
+            
+            compiled = self.getCompiled(classId, variants, optimize, format)
+            print "    - %s/%s: %s => %s bytes" % (str(pos+1).zfill(3), str(length).zfill(3), classId, len(compiled))
+            content.append( compiled )
             
         return u''.join(content)
 
