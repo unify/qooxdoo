@@ -18,6 +18,21 @@
      * Christian Hagendorn (chris_schmidt)
      * Dominik Göpel (dominikg)
 
+   ======================================================================
+
+   This class contains code based on the following work:
+
+   * Unify Project
+
+     Homepage:
+       http://unify-project.org
+
+     Copyright:
+       2009-2010 Deutsche Telekom AG, Germany, http://telekom.com
+
+     License:
+       MIT: http://www.opensource.org/licenses/mit-license.php
+
 ************************************************************************ */
 
 /* ************************************************************************
@@ -87,9 +102,9 @@ qx.Class.define("qx.event.handler.Touch",
       touchcancel : 1, // Appears when the touch is interrupted, e.g. by an alert box
       tap : 1,
       swipe : 1,
-      touchhold : 1,
-      touchleave: 1,
-      touchrelease : 1
+      touchhold : 1, // Appears after touchstart if the touch continues for a configurable amount of time and does not leave the original target
+      touchleave: 1, // Appears after touchhold if the touch moves out of the hold target
+      touchrelease : 1 // Appears after touchhold when the holding touch ends
     },
 
     /** {Integer} Which target check to use */
@@ -675,8 +690,6 @@ qx.Class.define("qx.event.handler.Touch",
      */
     _commonTouchEventHandler : function(domEvent, type)
     {
-      domEvent.preventDefault();//TODO maybe move this to defer section? Are there any events where we want native behavior?
-
       var type = type || domEvent.type;
       var touch;
 
@@ -748,6 +761,9 @@ qx.Class.define("qx.event.handler.Touch",
     if (qx.core.Environment.get("event.touch")) {
       if (qx.core.Environment.get("qx.mobile.nativescroll") == false)
       {
+        document.addEventListener("touchstart", function(e) {
+          e.preventDefault();
+        });
         document.addEventListener("touchmove", function(e) {
           e.preventDefault();
         });
