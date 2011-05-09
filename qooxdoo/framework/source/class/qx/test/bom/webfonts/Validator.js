@@ -16,13 +16,16 @@
 
 qx.Class.define("qx.test.bom.webfonts.Validator", {
 
-  extend : qx.dev.unit.TestCase,
+  extend : qx.test.bom.webfonts.Abstract,
+  
+  include : [qx.dev.unit.MRequirements],
   
   members :
   {
     setUp : function()
     {
       this.__nodesBefore = document.body.childNodes.length;
+      this.require(["webFontSupport"]);
       this.__val = new qx.bom.webfonts.Validator;
     },
     
@@ -39,8 +42,11 @@ qx.Class.define("qx.test.bom.webfonts.Validator", {
     testValidFont : function()
     {
       this.__val.setFontFamily("monospace, courier");
-      this.__val.addListener("fontValid", function(ev) {
-        this.resume();
+      this.__val.addListener("changeStatus", function(ev) {
+        var result = ev.getData();
+        this.resume(function(ev) {
+          this.assertTrue(result.valid);
+        }, this);
       }, this);
       
       var that = this;
@@ -54,8 +60,11 @@ qx.Class.define("qx.test.bom.webfonts.Validator", {
     {
       this.__val.setFontFamily("zzzzzzzzzzzzzzz");
       this.__val.setTimeout(250);
-      this.__val.addListener("fontInvalid", function(ev) {
-        this.resume();
+      this.__val.addListener("changeStatus", function(ev) {
+        var result = ev.getData();
+        this.resume(function(ev) {
+          this.assertFalse(result.valid);
+        }, this);
       }, this);
       
       var that = this;

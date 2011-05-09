@@ -194,6 +194,7 @@ class DependencyLoader(object):
         resultNames = []
         warn_deps = []
         logInfos = self._console.getLevel() == "info"
+        ignored_names = set()
 
         # No dependency calculation
         if len(includeWithDeps) == 0:
@@ -221,8 +222,7 @@ class DependencyLoader(object):
             result = [x.name for x in result]
 
         # warn about unknown references
-        ignored_names = set()
-        # the current global ignore set is just the list of name spaces of the selected classes
+        # add the list of name spaces of the selected classes
         for classid in result:
             nsindex = classid.rfind(".")
             if nsindex == -1:
@@ -281,12 +281,12 @@ class DependencyLoader(object):
             # this might incur extra generation if unoptimized deps
             # haven't computed before for this fileId
             for depItem in depsUnOpt["load"]:
-                if depItem.name in variantSelectClasses:
+                if depItem.name in variantSelectClasses and depItem.name not in [x.name for x in loadFinal]:
                     loadFinal.append(depItem)
                     # @deprecated
                     #break
             for depItem in depsUnOpt["run"]:
-                if depItem.name in variantSelectClasses:
+                if depItem.name in variantSelectClasses and depItem.name not in [x.name for x in runFinal]:
                     runFinal.append(depItem)
                     # @deprecated
                     #break

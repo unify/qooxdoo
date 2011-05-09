@@ -262,10 +262,20 @@ def processVariantGet(callNode, variantMap):
         log("Warning", "First argument must be a string literal! Ignoring this occurrence.", firstParam)
         return treeModified
 
+    # skipping "relative" calls like "a.b.qx.core.Environment.get()"
+    qxIdentifier = treeutil.selectNode(callNode, "operand/variable/identifier[1]")
+    if not treeutil.checkFirstChainChild(qxIdentifier):
+        log("Warning", "Skipping relative qx.core.Environment.get call. Ignoring this occurrence ('%s')." % treeutil.findChainRoot(qxIdentifier).toJavascript())
+        return treeModified
+
     variantKey = firstParam.get("value");
     confValue, found = __keyLookup(variantKey, variantMap)
     if not found:
         return treeModified
+
+    # @deprecated
+    # patch "on"/"off"
+    confValue = patchValue(confValue)
 
     # Replace the .get() with its value
     resultNode = reduceCall(callNode, confValue)
@@ -485,17 +495,17 @@ def reduceCall(callNode, value):
     return valueNode
 
 
+def patchValue(val):
+    if isinstance(val, types.StringTypes) and val in ["on","off"]:
+        val = {"on":True,"off":False}[val]
+    return val
+
+
 ##
 # 2. pass:
 # replace operations between literals, e.g. compares ("3 == 3" => true),
 # arithmetic ("3+4" => "7"), logical ("true && false" => false)
 def reduceOperation(literalNode): 
-
-    def patchValue(val):
-        if isinstance(val, types.StringTypes) and val in ["on","off"]:
-            val = {"on":True,"off":False}[val]
-        return val
-
 
     resultNode = None
     treeModified = False

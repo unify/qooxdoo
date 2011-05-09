@@ -277,17 +277,17 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
      *
      * Note: The request must be initialized before using this method.
      *
-     * @param header {String}
+     * @param key {String}
      *        The name of the header whose value is to be set.
      * @param value {String}
      *        The value to set as the body of the header.
      */
-    setRequestHeader: function(header, value) {
+    setRequestHeader: function(key, value) {
       if (this.__disposed) {
         return;
       }
 
-      this.__nativeXhr.setRequestHeader(header, value);
+      this.__nativeXhr.setRequestHeader(key, value);
     },
 
     /**
@@ -825,5 +825,9 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       return !(name == "mshtml" && version < 9 ||
                name == "gecko" && version < 3.5);
     }
+  },
+
+  defer: function() {
+    qx.core.Environment.add("qx.debug.xhr.bom", false);
   }
 });

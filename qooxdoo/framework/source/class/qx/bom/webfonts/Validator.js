@@ -145,15 +145,11 @@ qx.Class.define("qx.bom.webfonts.Validator", {
   events :
   {
     /**
-     * Fired when a font was checked successfully. The event data is the 
-     * font-family name
+     * Fired when the status of a web font has been determined. The event data 
+     * is a map with the keys "family" (the font-family name) and "valid" 
+     * (Boolean).
      */
-    "fontValid" : "qx.event.type.Data",
-    
-    /**
-     * Fired when a font check failed. The event data is the font-family name
-     */
-    "fontInvalid" : "qx.event.type.Data"
+    "changeStatus" : "qx.event.type.Data"
   },
   
   
@@ -191,7 +187,10 @@ qx.Class.define("qx.bom.webfonts.Validator", {
       else {
         this.__checkTimer = new qx.event.Timer(100);
         this.__checkTimer.addListener("interval", this.__onTimerInterval, this);
-        this.__checkTimer.start();
+        // Give the browser a chance to render the new elements
+        qx.event.Timer.once(function() {
+          this.__checkTimer.start();
+        }, this, 0);
       }
     },
     
@@ -331,16 +330,18 @@ qx.Class.define("qx.bom.webfonts.Validator", {
     
     
     /**
-     * Triggers helper element size comparison and fires events if the check
-     * succeeded ({@link #fontValid}) or the timeout was reached 
-     * ({@link #fontInvalid})
+     * Triggers helper element size comparison and fires a ({@link #changeStatus}) 
+     * event with the result.
      */
     __onTimerInterval : function()
     {
       if (this._isFontValid()) {
         this.__checkTimer.stop();
         this._reset();
-        this.fireDataEvent("fontValid", this.getFontFamily());
+        this.fireDataEvent("changeStatus", {
+          family : this.getFontFamily(),
+          valid : true
+        });
       }
       else
       {
@@ -348,7 +349,10 @@ qx.Class.define("qx.bom.webfonts.Validator", {
         if (now - this.__checkStarted >= this.getTimeout()) {
           this.__checkTimer.stop();
           this._reset();
-          this.fireDataEvent("fontInvalid", this.getFontFamily());
+          this.fireDataEvent("changeStatus", {
+            family : this.getFontFamily(),
+            valid : false
+          });
         }
       }
     }

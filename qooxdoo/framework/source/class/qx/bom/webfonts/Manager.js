@@ -92,13 +92,12 @@ qx.Class.define("qx.bom.webfonts.Manager", {
      * checks if the webFont was applied correctly.
      * 
      * @param familyName {String} Name of the web font
-     * @param sources {String[]} List of source URLs. For maximum compatibility,
+     * @param sourcesList {String[]} List of source URLs. For maximum compatibility,
      * this should include EOT, WOFF and TTF versions of the font.
      * @param callback {Function?} Optional event listener callback that will be
      * executed once the validator has determined whether the webFont was 
-     * applied correctly. 
-     * See {@link qx.bom.webfonts.Validator#fontValid} and 
-     * {@link qx.bom.webfonts.Validator#fontInvalid}
+     * applied correctly.
+     * See {@link qx.bom.webfonts.Validator#changeStatus}
      * @param context {Object?} Optional context for the callback function
      */
     require : function(familyName, sourcesList, callback, context)
@@ -237,24 +236,11 @@ qx.Class.define("qx.bom.webfonts.Manager", {
      * this should include EOT, WOFF and TTF versions of the font.
      * @param callback {Function?} Optional event listener callback that will be
      * executed once the validator has determined whether the webFont was 
-     * applied correctly. 
-     * See {@link qx.bom.webfonts.Validator#fontValid} and 
-     * {@link qx.bom.webfonts.Validator#fontInvalid}
+     * applied correctly.
      * @param context {Object?} Optional context for the callback function
      */
     __require : function(familyName, sources, callback, context)
     {
-      var browser = qx.core.Environment.get("browser.name");
-      var version = qx.core.Environment.get("browser.version");   
-      if ((browser == "firefox" && version < 3.5) ||
-          (browser == "opera" && version < 10))
-      {
-        if (qx.core.Environment.get("qx.debug")) {
-          this.warn("This browser does not support @font-face");
-        }
-        return;
-      }
-      
       if (!qx.lang.Array.contains(this.__createdStyles, familyName)) {
         var sourcesMap = this.__getSourcesMap(sources);
         var rule = this.__getRule(familyName, sourcesMap);
@@ -262,20 +248,32 @@ qx.Class.define("qx.bom.webfonts.Manager", {
         if (!rule) {
           throw new Error("Couldn't create @font-face rule for WebFont " + familyName + "!");
         }
-        this.__addRule(rule);
+
+        if (!this.__styleSheet) {
+          this.__styleSheet = qx.bom.Stylesheet.createElement();
+        }
+
+        try {
+          this.__addRule(rule);
+        }
+        catch(ex) {
+          if (qx.core.Environment.get("qx.debug")) {
+            this.warn("Error while adding @font-face rule:", ex.message);
+            return;
+          }
+        }
         this.__createdStyles.push(familyName);
       }
         
       if (!this.__validators[familyName]) {
         this.__validators[familyName] = new qx.bom.webfonts.Validator(familyName);
         this.__validators[familyName].setTimeout(qx.bom.webfonts.Manager.VALIDATION_TIMEOUT);
-        this.__validators[familyName].addListener("fontInvalid", this.__onFontInvalid, this);
+        this.__validators[familyName].addListener("changeStatus", this.__onFontChangeStatus, this);
       }
       
       if (callback) {
         var cbContext = context || window;
-        this.__validators[familyName].addListener("fontValid", callback, cbContext);
-        this.__validators[familyName].addListener("fontInvalid", callback, cbContext);
+        this.__validators[familyName].addListener("changeStatus", callback, cbContext);
       }
       
       this.__validators[familyName].validate();
@@ -299,13 +297,14 @@ qx.Class.define("qx.bom.webfonts.Manager", {
     /**
      * Removes the font-face declaration if a font could not be validated
      * 
-     * @param ev {qx.event.type.Data} qx.bom.webfonts.Validator#fontValid or
-     * qx.bom.webfonts.Validator#fontInvalid
+     * @param ev {qx.event.type.Data} qx.bom.webfonts.Validator#changeStatus
      */
-    __onFontInvalid : function(ev)
+    __onFontChangeStatus : function(ev)
     {
-      var familyName = ev.getData();
-      this.remove(familyName);
+      var result = ev.getData();
+      if (result.valid === false) {
+        this.remove(result.family);
+      }
     },
     
     
@@ -332,7 +331,7 @@ qx.Class.define("qx.bom.webfonts.Manager", {
         }
         
         if (type) {
-          sourcesMap[type] = sources[i]
+          sourcesMap[type] = sources[i];
         }
       }
       return sourcesMap;
@@ -400,15 +399,13 @@ qx.Class.define("qx.bom.webfonts.Manager", {
      */
     __addRule : function(rule)
     {
-      if (!this.__styleSheet) {
-        this.__styleSheet = qx.bom.Stylesheet.createElement();
-      }
-      
       var completeRule = "@font-face {" + rule + "}\n";
       
       if (qx.core.Environment.get("browser.name") == "ie" &&
           qx.core.Environment.get("browser.version") < 9) {
-        this.__styleSheet.cssText += completeRule;
+        var cssText = this.__fixCssText(this.__styleSheet.cssText);
+        cssText += completeRule;
+        this.__styleSheet.cssText = cssText;
       }
       else {
         this.__styleSheet.insertRule(completeRule, this.__styleSheet.cssRules.length);
@@ -425,14 +422,39 @@ qx.Class.define("qx.bom.webfonts.Manager", {
     __removeRule : function(familyName)
     {
       var reg = new RegExp("@font-face.*?" + familyName, "m");
-      var rules = this.__styleSheet.cssRules || this.__styleSheet.rules;
-      for (var i=0,l=rules.length; i<l; i++) {
-        var cssText = rules[i].cssText.replace(/\n/g, "").replace(/\r/g, "");
-        if (reg.exec(cssText)) {
-          this.__styleSheet.deleteRule(i);
-          return;
+      for (var i=0,l=document.styleSheets.length; i<l; i++) {
+        var sheet = document.styleSheets[i];
+        if (sheet.cssText) {
+          var cssText = sheet.cssText.replace(/\n/g, "").replace(/\r/g, "");
+          cssText = this.__fixCssText(cssText);
+          if (reg.exec(cssText)) {
+            cssText = cssText.replace(reg, "");
+          }
+          sheet.cssText = cssText;
+        }
+        else if (sheet.cssRules) {
+          for (var j=0,m=sheet.cssRules.length; j<m; j++) {
+            var cssText = sheet.cssRules[j].cssText.replace(/\n/g, "").replace(/\r/g, "");
+            if (reg.exec(cssText)) {
+              this.__styleSheet.deleteRule(j);
+              return;
+            }
+          }
         }
       }
+    },
+    
+    /**
+     * IE 6 and 7 omit the trailing quote after the format name when 
+     * querying cssText. This needs to be fixed before cssText is replaced
+     * or all rules will be invalid and no web fonts will work any more.
+     * 
+     * @param cssText {String} CSS text
+     * @return {String} Fixed CSS text
+     */
+    __fixCssText : function(cssText)
+    {
+      return cssText.replace("'eot)", "'eot')");
     }
   
   },

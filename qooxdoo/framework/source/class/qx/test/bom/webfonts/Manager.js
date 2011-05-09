@@ -20,19 +20,20 @@
 
 qx.Class.define("qx.test.bom.webfonts.Manager", {
 
-  extend : qx.dev.unit.TestCase,
+  extend : qx.test.bom.webfonts.Abstract,
+  
+  include : [qx.dev.unit.MRequirements],
   
   members :
   {
     __fontDefinitions :
     {
-      gorilla : 
+      finelinerScript : 
       {
-        family : "GorillaRegular",
-        source: [ qx.util.ResourceManager.getInstance().toUri("qx/test/webfonts/gorilla-webfont.woff"),
-                  qx.util.ResourceManager.getInstance().toUri("qx/test/webfonts/gorilla-webfont.ttf"),
-                  qx.util.ResourceManager.getInstance().toUri("qx/test/webfonts/gorilla-webfont.eot"),
-                  qx.util.ResourceManager.getInstance().toUri("qx/test/webfonts/gorilla-webfont.svg") ]
+        family : "FinelinerScriptRegular",
+        source: [ qx.util.ResourceManager.getInstance().toUri("qx/test/webfonts/fineliner_script.woff"),
+                  qx.util.ResourceManager.getInstance().toUri("qx/test/webfonts/fineliner_script.ttf"),
+                  qx.util.ResourceManager.getInstance().toUri("qx/test/webfonts/fineliner_script.eot") ]
       },
       invalid : 
       {
@@ -62,7 +63,7 @@ qx.Class.define("qx.test.bom.webfonts.Manager", {
             return true;
           }
         }
-        else {
+        else if (sheet.cssRules) {
           for (var j=0,m=sheet.cssRules.length; j<m; j++) {
             if (helper(sheet.cssRules[j].cssText)) {
               return true;
@@ -75,6 +76,7 @@ qx.Class.define("qx.test.bom.webfonts.Manager", {
     
     setUp : function()
     {
+      this.require(["webFontSupport"]);
       this.__nodesBefore = document.body.childNodes.length;
       this.__sheetsBefore = document.styleSheets.length;
       this.__manager = qx.bom.webfonts.Manager.getInstance();
@@ -95,12 +97,12 @@ qx.Class.define("qx.test.bom.webfonts.Manager", {
       font.set({
         size: 18,
         family: ["monospace"],
-        sources: [this.__fontDefinitions.gorilla]
+        sources: [this.__fontDefinitions.finelinerScript]
       });
       
       qx.event.Timer.once(function() {
         this.resume(function() {
-          var foundRule = this.__findRule(this.__fontDefinitions.gorilla.family);
+          var foundRule = this.__findRule(this.__fontDefinitions.finelinerScript.family);
           this.assertTrue(foundRule, "@font-face rule not found in document styles!");
         }, this);
       }, this, 2000);

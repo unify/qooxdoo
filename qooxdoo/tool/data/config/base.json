@@ -102,7 +102,7 @@
 
     // -- source jobs --------------------------------------------------
 
-    "source-script" :
+    "source-script1" :
     {
       "desc"    : "create includer script of current application",
 
@@ -137,19 +137,11 @@
     },
 
 
-    "source-script1" :
+    "source-script" :
     {
       "desc"    : "create includer script of current application",
 
       "extend" : ["common"],
-
-      /*
-      "require" :
-      {
-        // to have reporting infrastructure before custom classes
-        "qx.Class" : [ "qx.log.Logger", "qx.dev.StackTrace"]
-      },
-      */
 
       "compile-options" :
       {
@@ -242,7 +234,7 @@
 
       "compile-options" : 
       {
-        "code" : { "except" : [ "${APPLICATION}.*" ] }
+        "code" : { "=except" : [ "${APPLICATION}.*" ] }
       },
 
       "compile" : { "type" : "hybrid" }
@@ -251,17 +243,11 @@
 
     // -- build jobs ---------------------------------------------------
 
-    "build-script" :
+    "build-script1" :
     {
       "desc"    : "create build script of current application",
 
       "extend" : ["common"],
-
-      // @deprecated
-      "variants" :
-      {
-        "qx.debug" : ["off"]
-      },
 
       "environment" :
       {
@@ -292,17 +278,11 @@
     },
 
 
-    "build-script1" :
+    "build-script" :
     {
       "desc"    : "create build script of current application",
 
       "extend" : ["common"],
-
-      // @deprecated
-      "variants" :
-      {
-        "qx.debug" : ["off"]
-      },
 
       "environment" :
       {
@@ -313,7 +293,8 @@
       {
         "paths"  :
         {
-          "file" : "${BUILD_PATH}/script/${APPLICATION}.js"
+          "file" : "${BUILD_PATH}/script/${APPLICATION}.js",
+          "app-root" : "${BUILD_PATH}"
         },
         "uris"   :
         {
@@ -330,7 +311,7 @@
         }
       },
       
-      "compile" : { "type" : "hybrid" }
+      "compile" : { "type" : "build" }
     },
 
 
@@ -358,12 +339,6 @@
       "desc"    : "copy necessary resources for current application to build dir",
 
       "extend" : ["common"],
-
-      // @deprecated
-      "variants" :
-      {
-        "qx.debug" : ["off"]
-      },
 
       "environment" :
       {
@@ -674,12 +649,6 @@
     "profiling" :
     {
       "desc"    : "includer job, to activate profiling",
-
-      // @deprecated
-      "variants" :
-      {
-        "qx.aspects" : ["on"]
-      },
 
       "environment" :
       {

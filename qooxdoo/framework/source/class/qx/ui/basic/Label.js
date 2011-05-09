@@ -227,6 +227,7 @@ qx.Class.define("qx.ui.basic.Label",
     __invalidContentSize : null,
     __buddyEnabledBinding : null,
     __clickListenerId : null,
+    __webfontListenerId : null,
 
 
 
@@ -337,11 +338,18 @@ qx.Class.define("qx.ui.basic.Label",
     // property apply
     _applyFont : function(value, old)
     {
+      if (old && this.__font && this.__webfontListenerId) {
+        this.__font.removeListenerById(this.__webfontListenerId);
+        this.__webfontListenerId = null;
+      }
       // Apply
       var styles;
       if (value)
       {
         this.__font = qx.theme.manager.Font.getInstance().resolve(value);
+        if (this.__font instanceof qx.bom.webfonts.WebFont) {
+          this.__webfontListenerId = this.__font.addListener("changeStatus", this._onWebFontStatusChange, this);
+        }
         styles = this.__font.getStyles();
       }
       else
@@ -466,6 +474,20 @@ qx.Class.define("qx.ui.basic.Label",
     }),
 
 
+    /**
+     * Triggers layout recalculation after a web font was loaded
+     * 
+     * @param ev {qx.event.type.Data} "changeStatus" event
+     */
+    _onWebFontStatusChange : function(ev)
+    {
+      if (ev.getData().valid === true) {
+        this.__invalidContentSize = true;
+        qx.ui.core.queue.Layout.add(this);
+      }
+    },
+
+
     // property apply
     _applyValue : function(value, old)
     {
@@ -502,6 +524,10 @@ qx.Class.define("qx.ui.basic.Label",
       if (buddy != null && !buddy.isDisposed()) {
         buddy.removeBinding(this.__buddyEnabledBinding);
       }
+    }
+
+    if (this.__font && this.__webfontListenerId) {
+      this.__font.removeListenerById(this.__webfontListenerId);
     }
 
     this.__font = this.__buddyEnabledBinding = null;
