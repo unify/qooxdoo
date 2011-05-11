@@ -33,6 +33,7 @@ qx.Class.define("qx.test.bom.request.Script",
 
     tearDown: function() {
       this.req.dispose();
+      this.getSandbox().restore();
     },
 
     //
@@ -75,6 +76,12 @@ qx.Class.define("qx.test.bom.request.Script",
     },
 
     "test: properties indicate failure when request failed": function() {
+
+      // Known to fail in legacy IEs
+      if (this.isIeBelow(9)) {
+        this.skip();
+      }
+
       var that = this,
           req = this.req;
 
@@ -87,14 +94,20 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait();
+      this.wait(10000);
     },
 
     "test: properties indicate failure when request timed out": function() {
+
+      // Known to fail in legacy IEs
+      if (this.isIeBelow(9)) {
+        this.skip();
+      }
+
       var that = this,
           req = this.req;
 
-      req.timeout = 100;
+      req.timeout = 25;
       req.ontimeout = function() {
         that.resume(function() {
           that.assertEquals(4, req.readyState);
@@ -193,7 +206,11 @@ qx.Class.define("qx.test.bom.request.Script",
     // Event handlers
     //
 
-    "test: call onload when request completed": function() {
+    "test: call onload when request completes": function() {
+
+      // More precisely, the request completes when the browser
+      // has loaded and parsed the script
+
       var that = this;
 
       this.req.onload = function() {
@@ -212,10 +229,10 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait();
+      this.wait(10000);
     },
 
-    "test: call onloadend when when request completed": function() {
+    "test: call onloadend when request completes": function() {
       var that = this;
 
       this.req.onloadend = function() {
@@ -265,21 +282,21 @@ qx.Class.define("qx.test.bom.request.Script",
         });
       };
 
-      // For browsers not supporting the "error" event, wait for a while
-      // and assume "error" will not be fired later
-      timerId = window.setTimeout(function() {
-      }, 5000);
-
       this.req.onerror = function() {
-        window.clearTimeout(timerId);
         that.resume();
       };
 
       this.request("http://fail.tld");
-      this.wait(6000);
+      this.wait(10000);
     },
 
     "test: call onerror when request failed because of network error": function() {
+
+      // Known to fail in legacy IEs
+      if (this.isIeBelow(9)) {
+        this.skip();
+      }
+
       var that = this;
 
       this.req.onerror = function() {
@@ -287,7 +304,7 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait();
+      this.wait(10000);
     },
 
     "test: call onerror when request failed because of invalid script": function() {
@@ -321,7 +338,7 @@ qx.Class.define("qx.test.bom.request.Script",
       }
 
       this.spy(req, "onerror");
-      req.timeout = 10;
+      req.timeout = 25;
       this.requestPending();
 
       this.wait(20, function() {
@@ -330,16 +347,19 @@ qx.Class.define("qx.test.bom.request.Script",
     },
 
     "test: call ontimeout when request exceeds timeout limit": function() {
+
+      // Known to fail in legacy IEs
+      if (this.isIeBelow(9)) {
+        this.skip();
+      }
+
       var that = this;
 
-      this.req.timeout = 100;
+      this.req.timeout = 25;
       this.req.ontimeout = function() {
         that.resume(function() {});
       };
 
-      // In legacy browser, a long running script request blocks subsequent requests
-      // even if the script element is removed. Keep duration below default timeout
-      // for wait to work around.
       this.requestPending();
       this.wait();
     },
@@ -348,7 +368,7 @@ qx.Class.define("qx.test.bom.request.Script",
       var that = this;
 
       this.spy(this.req, "ontimeout");
-      this.req.timeout = 100;
+      this.req.timeout = 25;
 
       this.request();
       this.wait(250, function() {
@@ -399,14 +419,20 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait();
+      this.wait(10000);
     },
 
     "test: remove script from DOM when request timed out": function() {
+
+      // Known to fail in legacy IEs
+      if (this.isIeBelow(9)) {
+        this.skip();
+      }
+
       var script,
           that = this;
 
-      this.req.timeout = 100;
+      this.req.timeout = 25;
       this.req.ontimeout = function() {
         that.resume(function() {
           script = that.req._getScriptElement();
@@ -424,9 +450,13 @@ qx.Class.define("qx.test.bom.request.Script",
     },
 
     requestPending: function(sleep) {
-      var url = this.noCache(this.getUrl("qx/test/xmlhttp/echo_get_request.php"));
+      var url = this.noCache(this.getUrl("qx/test/jsonp_primitive.php"));
 
-      url += "&sleep=" + (sleep || 1);
+      // In legacy browser, a long running script request blocks subsequent requests
+      // even if the script element is removed. Keep duration very low to work around.
+      //
+      // Sleep 50ms
+      url += "&sleep=" + (sleep || 50);
       this.request(url);
     },
 

@@ -30,8 +30,25 @@ qx.Bootstrap.define("qx.bom.request.Script",
     this.__headElement = document.head || document.getElementsByTagName( "head" )[0] ||
                          document.documentElement;
 
+    // BUGFIX: Browsers not supporting error handler
+    // Set default timeout to capture network errors
     if (!this.__supportsErrorHandler()) {
       this.timeout = 5000;
+
+      // BUGFIX: IE < 9
+      // Legacy IEs fire "load" event on network error after about 3 seconds.
+      // Unfortunately there is not way to distinguish a long loading request
+      // from a network error, since the "loading" event is fired right after
+      // sending.
+      //
+      // A work-around is to detect a timeout before "load" is fired. However,
+      // a timeout of 2s can have unwanted side-effects such as detect an
+      // error for long loading requests. It should be noted that browsers
+      // parse the script, before a "load" is fired.
+      // if (qx.core.Environment.get("engine.name") == "mshtml" &&
+      //     qx.core.Environment.get("engine.version") < 9) {
+      //   this.timeout = 2000;
+      // }
     }
   },
 
@@ -42,6 +59,8 @@ qx.Bootstrap.define("qx.bom.request.Script",
     status: 0,
     statusText: null,
     timeout: 0,
+
+    _error: null,
 
     __async: null,
 
@@ -60,6 +79,12 @@ qx.Bootstrap.define("qx.bom.request.Script",
       this.__abort = false;
 
       this.__url = url;
+
+      if (qx.core.Environment.get("qx.debug.io")) {
+        qx.Bootstrap.debug(qx.bom.request.Script, "Open native request with " +
+          "url: " + url);
+      }
+
       this.__readyStateChange(1);
     },
 
@@ -86,6 +111,10 @@ qx.Bootstrap.define("qx.bom.request.Script",
 
       if (this.timeout > 0) {
         this.__timeoutId = window.setTimeout(this.__onTimeoutBound, this.timeout);
+      }
+
+      if (qx.core.Environment.get("qx.debug.io")) {
+        qx.Bootstrap.debug(qx.bom.request.Script, "Send native request");
       }
 
       // Attach script to DOM
@@ -142,7 +171,7 @@ qx.Bootstrap.define("qx.bom.request.Script",
       }
 
       if (qx.core.Environment.get("qx.debug")) {
-        qx.log.Logger.debug("Response header cannot be determined for" +
+        qx.log.Logger.debug("Response header cannot be determined for " +
           "requests made with script transport.");
       }
       return "unknown";
@@ -231,7 +260,24 @@ qx.Bootstrap.define("qx.bom.request.Script",
           qx.core.Environment.get("engine.version") < 9) {
         if (!(/loaded|complete/).test(script.readyState)) {
           return;
+        } else {
+          if (qx.core.Environment.get("qx.debug.io")) {
+            qx.Bootstrap.debug(qx.bom.request.Script, "Received native readyState: loaded");
+          }
         }
+      }
+
+      if (qx.core.Environment.get("qx.debug.io")) {
+        qx.Bootstrap.debug(qx.bom.request.Script, "Received native load");
+      }
+
+      if (this._error) {
+        if (qx.core.Environment.get("qx.debug.io")) {
+          qx.Bootstrap.debug(qx.bom.request.Script, "Error detected");
+        }
+
+        this._onNativeError();
+        return;
       }
 
       if (this.__timeoutId) {
@@ -287,5 +333,9 @@ qx.Bootstrap.define("qx.bom.request.Script",
         this.__headElement.removeChild(script);
       }
     }
+  },
+
+  defer: function() {
+    qx.core.Environment.add("qx.debug.io", false);
   }
 });

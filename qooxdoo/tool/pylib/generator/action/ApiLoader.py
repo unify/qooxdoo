@@ -237,6 +237,8 @@ class ApiLoader(object):
                 return 0  # continue traversal
             if node.type in ['state', 'param', 'see']:  # skip those currently
                 return 0
+            if "isCtor" in node.attributes and node.attributes["isCtor"]:
+                return 0
 
             # construct a name string
             if 'fullName' in node.attributes:
@@ -260,6 +262,8 @@ class ApiLoader(object):
                         sfx = '_prot'
                     elif acc == 'private':
                         sfx = '_priv'
+                    elif acc == 'internal':
+                        sfx = '_intl'
                     else:
                         sfx = '_pub'  # there seem to be methods with weird access attribs
                 else:

@@ -219,7 +219,8 @@ def handleInterfaceExtend(valueItem, classNode, docTree, className):
 
         superInterfaceNode.set("childClasses", childInterfaces)
 
-        node = tree.Node("interface");
+        node = tree.Node("class")
+        node.set("type", "interface")
         node.set("name", superInterface)
         classNode.addListChild("superInterfaces", node)
         #superInterfaceNode.type = "interface"
@@ -251,7 +252,8 @@ def handleMixins(item, classNode, docTree, className):
 
             superMixinNode.set("childClasses", childMixins)
 
-            node = tree.Node("interface");
+            node = tree.Node("class")
+            node.set("type", "mixin")
             node.set("name", superMixin)
             classNode.addListChild("superMixins", node)
 
@@ -1374,7 +1376,7 @@ def markPropertyApply(docTree, classNode):
             for prop in props.children:
                 if prop.get("apply", None) == name:
                     propNode = tree.Node("entry")
-                    propNode.set("name", dep.get("fullName") + "#" + prop.get("name"))
+                    propNode.set("applies", dep.get("fullName") + "#" + prop.get("name"))
                     itemNode.addListChild("apply", propNode) 
                     removeErrors(itemNode)
                     applyFor.append(prop)

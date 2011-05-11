@@ -145,6 +145,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
     _knobWidth : null,
     _containerElementWidth : null,
     _containerElementLeft : null,
+    _pixelPerStep : null,
 
 
     /**
@@ -191,6 +192,8 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       this.addListener("touchstart", this._onTouchStart, this);
       this.addListener("touchmove", this._onTouchMove, this);
       qx.bom.Element.addListener(this._getKnobElement(), "touchstart", this._onTouchStart, this);
+      qx.bom.Element.addListener(this._getKnobElement(), "transitionEnd", this._onTransitionEnd, this);
+      qx.event.Registration.addListener(window, "resize", this._refresh, this);
     },
 
 
@@ -202,6 +205,32 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       this.removeListener("touchstart", this._onTouchStart, this);
       this.removeListener("touchmove", this._onTouchMove, this);
       qx.bom.Element.removeListener(this._getKnobElement(), "touchstart", this._onTouchStart, this);
+      qx.bom.Element.removeListener(this._getKnobElement(), "transitionEnd", this._onTransitionEnd, this);
+      qx.event.Registration.removeListener(window, "resize", this._refresh, this);
+    },
+
+
+    /**
+     * Refreshs the slider.
+     */
+    _refresh : function()
+    {
+      this._updateSizes();
+      this._updateKnobPosition();
+    },
+
+
+    /**
+     * Updates all internal sizes of the slider.
+     */
+    _updateSizes : function()
+    {
+      var knobElement = this._getKnobElement();
+      var containerElement = this.getContainerElement();
+      this._containerElementWidth = qx.bom.element.Dimension.getWidth(containerElement);
+      this._containerElementLeft = qx.bom.element.Location.getLeft(containerElement);
+      this._knobWidth = qx.bom.element.Dimension.getWidth(knobElement);
+      this._pixelPerStep = this._getPixelPerStep(this._containerElementWidth);
     },
 
 
@@ -216,22 +245,31 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       this._lastPosition = 0;
       if (!evt.isMultiTouch())
       {
-        var knobElement = this._getKnobElement();
-        var containerElement = this.getContainerElement();
-        this._containerElementWidth = qx.bom.element.Dimension.getWidth(containerElement);
-        this._containerElementLeft = qx.bom.element.Location.getLeft(containerElement);
-        this._knobWidth = qx.bom.element.Dimension.getWidth(knobElement);
-
+        this._updateSizes();
         var position = this._lastPosition =  this._getPosition(evt.getDocumentLeft());
 
+        var knobElement = this._getKnobElement();
         if (evt.getTarget() == knobElement)
         {
           this._isMovingKnob = true;
           evt.stopPropagation();
         } else {
+          var element = this.getContainerElement();
+          qx.bom.element.Style.set(knobElement, "-webkit-transition", "left .15s, margin-left .15s");
+          qx.bom.element.Style.set(element, "-webkit-transition", "background-position .15s");
           this.setValue(this._positionToValue(position));
         }
       }
+    },
+
+
+    _onTransitionEnd : function(evt)
+    {
+      var knobElement = this._getKnobElement();
+      qx.bom.element.Style.set(knobElement, "-webkit-transition", null);
+
+      var element = this.getContainerElement();
+      qx.bom.element.Style.set(element, "-webkit-transition", null);
     },
 
 
@@ -245,9 +283,8 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       if (this._isMovingKnob)
       {
         var position = this._getPosition(evt.getDocumentLeft());
-        var pixelPerStep = this._pixelPerStep(this._containerElementWidth);
         // Optimize Performance - only update the position when needed
-        if (Math.abs(this._lastPosition - position) > pixelPerStep/2)
+        if (Math.abs(this._lastPosition - position) > this._pixelPerStep /2)
         {
           this._lastPosition = position;
           this.setValue(this._positionToValue(position));
@@ -292,7 +329,28 @@ qx.Class.define("qx.ui.mobile.form.Slider",
      */
     _updateKnobPosition : function()
     {
-      this._setKnobPosition(this._valueToPercent(this.getValue()));
+      var percent = this._valueToPercent(this.getValue());
+      this._setKnobPosition(percent);
+      this._setProgressIndicatorPosition(percent);
+    },
+
+
+    /**
+     * Sets the indicator positon based on the give percent value.
+     *
+     * @param percent {Float} The knob position
+     */
+    _setProgressIndicatorPosition : function(percent)
+    {
+      var width = this._containerElementWidth;
+      // Center the indicator to the knob element
+      var position = this._percentToPosition(width, percent) + (this._knobWidth / 2);
+      var element = this.getContainerElement();
+
+      // Fix the indicator position, corresponding to the knob position
+      var marginLeft = this._knobWidth * (percent / 100); 
+      var backgroundPositionValue = (position - marginLeft) + 'px 0px, 0px 0px';
+      qx.bom.element.Style.set(element, "backgroundPosition", backgroundPositionValue);
     },
 
 
@@ -306,17 +364,9 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       var knobElement = this._getKnobElement();
       if (knobElement)
       {
-        var width = this._containerElementWidth;
-        var position = this._percentToPosition(width, percent);
-
-        var marginLeft = this._knobWidth/2;
-        if (position > width - this._knobWidth) {
-          marginLeft = this._knobWidth;
-        } else if (position < this._knobWidth) {
-          marginLeft = 0;
-        }
-
         qx.bom.element.Style.set(knobElement, "left", percent + "%");
+        // Fix knob position, so that it can't be moved over the slider area
+        var marginLeft = this._knobWidth * (percent / 100); 
         qx.bom.element.Style.set(knobElement, "margin-left", "-" + marginLeft + "px");
       }
     },
@@ -346,16 +396,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
     {
       var width = this._containerElementWidth;
 
-      // Fix the position so that it is easier to set the last value
-      // Plus a bugfix: Seems like you can not hit the last pixel of the slider
-      // div in the browser
-      var pixelPerStep = this._pixelPerStep(width);
-      if (position <= 4) {
-        return this.getMinimum();
-      } else if (position >= width - 4) {
-        return this.getMaximum();
-      }
-      var value = this.getMinimum() + (Math.round(position / pixelPerStep) * this.getStep());
+      var value = this.getMinimum() + (Math.round(position / this._pixelPerStep) * this.getStep());
       return this._limitValue(value);
     },
 
@@ -393,7 +434,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
      * @param width {Integer} The width of the slider container element
      * @return {Integer} The pixels per step
      */
-    _pixelPerStep : function(width)
+    _getPixelPerStep : function(width)
     {
       return width / this._getOverallSteps();
     },

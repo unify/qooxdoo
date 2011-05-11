@@ -43,16 +43,27 @@ qx.Bootstrap.define("qx.bom.request.Jsonp",
         return;
       }
 
-      var query = {};
+      var query = {},
+          callbackParam,
+          callbackName;
 
+      callbackParam = this.__callbackParam || "callback";
+      callbackName = this.__callbackName ||
+        "qx.bom.request.Jsonp[" + this.__id + "].callback";
+
+      // Callback this object's callback method
+      //
       // User-defined callbacks must be handled by the user
       if (!this.__callbackName) {
         this.constructor[this.__id] = this;
       }
 
-      query[this.__callbackParam || "callback"] =
-        this.__callbackName || "qx.bom.request.Jsonp[" + this.__id + "].callback";
+      if (qx.core.Environment.get("qx.debug.io")) {
+        qx.Bootstrap.debug(qx.bom.request.Jsonp,
+          "Expecting JavaScript response to call: " + callbackName);
+      }
 
+      query[callbackParam] = callbackName;
       url = qx.util.Uri.appendParamsToUrl(url, query);
 
       this.__callBase("open", [method, url]);
@@ -75,7 +86,7 @@ qx.Bootstrap.define("qx.bom.request.Jsonp",
       // Set response
       this.responseJson = data;
 
-      // Delete handler
+      // Delete reference to this
       delete this.constructor[this.__id];
     },
 
@@ -89,16 +100,14 @@ qx.Bootstrap.define("qx.bom.request.Jsonp",
 
     _onNativeLoad: function() {
 
-      if (!this.callback.called) {
-        this._onNativeError();
-        return;
-      }
+      // Flag error if callback not called
+      this._error = !this.callback.called;
 
       this.__callBase("_onNativeLoad");
     },
 
     __callBase: function(method, args) {
-      qx.bom.request.Script.prototype[method].apply(this, args);
+      qx.bom.request.Script.prototype[method].apply(this, args || []);
     },
 
     __generateId: function() {
