@@ -739,6 +739,9 @@ class CodeGenerator(object):
 
         # Read in base file name
         fileRelPath = getOutputFile(script.buildType)
+        
+        # FIX BY SF : TODO : Check if resolving filename here is okay
+        fileRelPath = self._resolveFileName(fileRelPath, variants, settings)
         filePath    = self._config.absPath(fileRelPath)
         script.baseScriptPath = filePath
 
