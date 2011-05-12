@@ -275,7 +275,32 @@ qx.Class.define("qx.bom.Viewport",
       }
     }),
 
-
+    /**
+     * Returns an orientation normalizer value that should be added to device orientation 
+     * to normalize behaviour on different devices.
+     *
+     * @return {Integer} Orientation normalizing value
+     */
+    __getOrientationNormalizer : function() {
+      // Calculate own understanding of orientation (0 = portrait, 90 = landscape)
+      var currentOrientation = this.getWidth(window) > this.getHeight(window) ? 90 : 0;
+      var deviceOrientation  = window.orientation;
+      
+      if (deviceOrientation == null || deviceOrientation == currentOrientation) {
+        // If no device orientation available or device orientation equals own understanding of orientation
+        // return 0 as normalizing value
+        return 0;
+      } else {
+        // If device orientation is not equal to own understanding of orientation
+        // return 90 as normalizing value
+        return 90;
+      }
+    },
+    
+    // Cache orientation normalizer value on start
+    __orientationNormalizer : this.__getOrientationNormalizer(),
+    
+    
     /**
      * Returns the current orientation of the viewport in degree.
      *
@@ -289,11 +314,22 @@ qx.Class.define("qx.bom.Viewport",
      */
     getOrientation : function(win)
     {
-      // The orientation property of window does not have the same behaviour over all tablets
+      // The orientation property of window does not have the same behaviour over all devices
       // iPad has 0degrees = Portrait, Playbook has 90degrees = Portrait, same for Android Honeycomb
       //
-      // To fix this the viewport width and height is compared
-      return this.getWidth(win) > this.getHeight(win) ? 90 : 0;
+      // To fix this an orientationNormalizer value is calculated on application start
+      //
+      // The calculation of getWidth and getHeight returns wrong values if you are in an input field
+      // on iPad and rotate your device!
+      var orientation = (win||window).orientation;
+      if (orientation == null) {
+        // Try to calculate orientation from window width and window height
+        orientation = this.getWidth(win) > this.getHeight(win) ? 90 : 0;
+      } else {
+        // Normalize orientation value
+        orientation = Math.abs( (orientation + this.__orientationNormalizer) % 180 );
+      }
+      return orientation;
     },
 
 
