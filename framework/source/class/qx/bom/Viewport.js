@@ -275,7 +275,32 @@ qx.Class.define("qx.bom.Viewport",
       }
     }),
 
-
+    /**
+     * Returns an orientation normalizer value that should be added to device orientation 
+     * to normalize behaviour on different devices.
+     *
+     * @return {Integer} Orientation normalizing value
+     */
+    __getOrientationNormalizer : function() {
+      // Calculate own understanding of orientation (0 = portrait, 90 = landscape)
+      var currentOrientation = this.getWidth(window) > this.getHeight(window) ? 90 : 0;
+      var deviceOrientation  = window.orientation;
+      
+      if (deviceOrientation == null || deviceOrientation == currentOrientation) {
+        // If no device orientation available or device orientation equals own understanding of orientation
+        // return 0 as normalizing value
+        return 0;
+      } else {
+        // If device orientation is not equal to own understanding of orientation
+        // return 90 as normalizing value
+        return 90;
+      }
+    },
+    
+    // Cache orientation normalizer value on start
+    __orientationNormalizer : this.__getOrientationNormalizer(),
+    
+    
     /**
      * Returns an orientation normalizer value that should be added to device orientation
      * to normalize behaviour on different devices.
