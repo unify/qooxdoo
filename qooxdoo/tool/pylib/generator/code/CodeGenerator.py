@@ -176,7 +176,6 @@ class CodeGenerator(object):
         #
         # @return [[package_entry]]   e.g. [["gui:gui/Application.js"],["__out__:gui.21312313.js"]]
         def loaderScriptUris(script, compConf):
-            #uris = packageUrisToJS1(packages, version)
             uris = packageUrisToJS(script.packagesSorted(), script.buildType)
             return json.dumpsCode(uris)
 
@@ -341,30 +340,6 @@ class CodeGenerator(object):
             result = templ.substitute(vals)
             return result
 
-        def packageUrisToJS1(packages, version, namespace=None):
-            # Translate URI data to JavaScript
-            
-            allUris = []
-            for packageId, package in enumerate(packages):
-                packageUris = []
-                for fileId in package:
-
-                    if version == "build":
-                        # TODO: gosh, the next is an ugly hack!
-                        #namespace  = self._resourceHandler._genobj._namespaces[0]  # all name spaces point to the same paths in the libinfo struct, so any of them will do
-                        if not namespace:
-                            namespace  = script.namespace  # all name spaces point to the same paths in the libinfo struct, so any of them will do
-                        relpath    = OsPath(fileId)
-                    else:
-                        namespace  = self._classes[fileId].namespace
-                        relpath    = OsPath(self._classes[fileId].relpath)
-
-                    shortUri = Uri(relpath.toUri())
-                    packageUris.append("%s:%s" % (namespace, shortUri.encodedValue()))
-                allUris.append(packageUris)
-
-            return allUris
-
         ##
         # Translate URI data to JavaScript
         # using Package objects
@@ -417,10 +392,11 @@ class CodeGenerator(object):
             return data
 
 
-        def compileClasses(classList, compConf):
+        def compileClasses(classList, compConf, log_progress=lambda:None):
             result = []
             for clazz in classList:
                 result.append(clazz.getCode(compConf))
+                log_progress()
             return u''.join(result)
 
         ##
@@ -436,7 +412,7 @@ class CodeGenerator(object):
                 return fname
 
             def compileAndAdd(compiledClasses, packageUris, prelude='', wrap=''):
-                compiled = compileClasses(compiledClasses, compOptions)
+                compiled = compileClasses(compiledClasses, compOptions, log_progress)
                 if wrap:
                     compiled = wrap % compiled
                 if prelude:
@@ -464,9 +440,15 @@ class CodeGenerator(object):
             packageData = getPackageData(package)
             packageData = ("qx.$$packageData['%s']=" % package.id) + packageData
             package_classes = [y for x in package.classes for y in script.classesObj if y.id == x] # TODO: i need to make package.classes [Class]!
+
             self._console.info("Package #%s:" % package.id, feed=False)
+            len_pack_classes = len(package_classes)
+            # helper log function, to log progress here, but also in compileClasses()
+            def log_progress(c=[0]):
+                c[0]+=1
+                self._console.progress(c[0],len_pack_classes)
+
             for pos,clazz in enumerate(package_classes):
-                self._console.progress(pos+1, len(package_classes)) #, "Package #%s: " % package.id)
                 if sourceFilter.match(clazz.id):
                     package.has_source = True
                     if packageData or compiledClasses:
@@ -480,6 +462,7 @@ class CodeGenerator(object):
                     shortUri = Uri(relpath.toUri())
                     entry    = "%s:%s" % (clazz.library.namespace, shortUri.encodedValue())
                     packageUris.append(entry)
+                    log_progress()
                 else:
                     compiledClasses.append(clazz)
             else:
@@ -574,11 +557,7 @@ class CodeGenerator(object):
 
         # Get global script data (like qxlibraries, qxresources,...)
         globalCodes = {}
-        globalCodes["Settings"] = settings
-        variantsMap = self.generateVariantsCode(variants)
-        globalCodes["Variants"] = dict((k,v) for (k,v) in variantsMap.iteritems() if not k.startswith("<env>:"))
-        #globalCodes["EnvSettings"] = dict(j for i in (globalCodes["Settings"], globalCodes["Variants"]) for j in i.iteritems())  # variants currently contain script.envsettings
-        globalCodes["EnvSettings"] = dict((k.replace('<env>:','',1), v) for (k,v) in variantsMap.iteritems() if k.startswith("<env>:"))
+        globalCodes["EnvSettings"] = self.generateVariantsCode(variants)
         # add optimizations
         for val in optimize:
             globalCodes["EnvSettings"]["qx.optimization."+val] = True
@@ -590,7 +569,7 @@ class CodeGenerator(object):
             out_sourceUri = out_sourceUri.encodedValue()
         globalCodes["Libinfo"]['__out__'] = { 'sourceUri': out_sourceUri }
         globalCodes["Resources"]    = self.generateResourceInfoCode(script, settings, libraries, format)
-        globalCodes["Translations"],\
+        globalCodes["Translations"],                                      \
         globalCodes["Locales"]      = mergeTranslationMaps(translationMaps)
 
         # Potentally create dedicated I18N packages
@@ -719,15 +698,6 @@ class CodeGenerator(object):
             for key in variants:
                 pattern = "{%s}" % key
                 fileName = fileName.replace(pattern, str(variants[key]))
-            # @deprecated
-            for key in variants:
-                pattern = "{%s}" % key.replace('<env>:', '', 1)
-                fileName = fileName.replace(pattern, str(variants[key]))
-
-        if settings:
-            for key in settings:
-                pattern = "{%s}" % key
-                fileName = fileName.replace(pattern, str(settings[key]))
 
         if packageId != "":
             fileName = fileName.replace(".js", "-%s.js" % packageId)

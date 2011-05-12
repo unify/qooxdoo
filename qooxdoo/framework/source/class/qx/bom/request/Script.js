@@ -32,23 +32,11 @@ qx.Bootstrap.define("qx.bom.request.Script",
 
     // BUGFIX: Browsers not supporting error handler
     // Set default timeout to capture network errors
+    //
+    // Note: The script is parsed and executed, before a "load" is fired.
+    //
     if (!this.__supportsErrorHandler()) {
-      this.timeout = 5000;
-
-      // BUGFIX: IE < 9
-      // Legacy IEs fire "load" event on network error after about 3 seconds.
-      // Unfortunately there is not way to distinguish a long loading request
-      // from a network error, since the "loading" event is fired right after
-      // sending.
-      //
-      // A work-around is to detect a timeout before "load" is fired. However,
-      // a timeout of 2s can have unwanted side-effects such as detect an
-      // error for long loading requests. It should be noted that browsers
-      // parse the script, before a "load" is fired.
-      // if (qx.core.Environment.get("engine.name") == "mshtml" &&
-      //     qx.core.Environment.get("engine.version") < 9) {
-      //   this.timeout = 2000;
-      // }
+      this.timeout = 7500;
     }
   },
 
@@ -60,9 +48,8 @@ qx.Bootstrap.define("qx.bom.request.Script",
     statusText: null,
     timeout: 0,
 
-    _error: null,
-
     __async: null,
+    __determineSuccess: null,
 
     open: function(method, url, async) {
       if (this.__disposed) {
@@ -190,6 +177,12 @@ qx.Bootstrap.define("qx.bom.request.Script",
       return "Unknown response headers";
     },
 
+    setDetermineSuccess: function(delegate) {
+      qx.core.Assert.assertFunction(delegate);
+
+      this.__determineSuccess = delegate;
+    },
+
     dispose: function() {
       var script = this.__scriptElement;
 
@@ -246,6 +239,7 @@ qx.Bootstrap.define("qx.bom.request.Script",
 
     _onNativeLoad: function() {
       var script = this.__scriptElement,
+          determineSuccess = this.__determineSuccess,
           that = this;
 
       // Aborted request must not fire load
@@ -271,13 +265,20 @@ qx.Bootstrap.define("qx.bom.request.Script",
         qx.Bootstrap.debug(qx.bom.request.Script, "Received native load");
       }
 
-      if (this._error) {
-        if (qx.core.Environment.get("qx.debug.io")) {
-          qx.Bootstrap.debug(qx.bom.request.Script, "Error detected");
+      // Determine status by calling user-provided check function
+      if (determineSuccess) {
+
+        // Status set before has higher precedence
+        if (!this.status) {
+          this.status = determineSuccess() ? 200 : 500;
         }
 
-        this._onNativeError();
-        return;
+      }
+
+      if (this.status === 500) {
+        if (qx.core.Environment.get("qx.debug.io")) {
+          qx.Bootstrap.debug(qx.bom.request.Script, "Detected error");
+        }
       }
 
       if (this.__timeoutId) {
@@ -306,8 +307,13 @@ qx.Bootstrap.define("qx.bom.request.Script",
     __success: function() {
       this.__disposeScriptElement();
       this.readyState = 4;
-      this.status = 200;
-      this.statusText = "200 OK";
+
+      // By default, load is considered successful
+      if (!this.status) {
+        this.status = 200;
+      }
+
+      this.statusText = "" + this.status;
     },
 
     __failure: function() {
@@ -331,6 +337,10 @@ qx.Bootstrap.define("qx.bom.request.Script",
 
       if (script && script.parentNode) {
         this.__headElement.removeChild(script);
+      }
+
+      if (window[this.__callbackName]) {
+        delete window[this.__callbackName];
       }
     }
   },

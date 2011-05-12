@@ -17,6 +17,14 @@
 
 ************************************************************************ */
 
+/* ************************************************************************
+
+#asset(qx/test/jsonp_primitive.php)
+#asset(qx/test/script.js)
+#asset(qx/test/xmlhttp/sample.txt)
+
+************************************************************************ */
+
 qx.Class.define("qx.test.bom.request.Script",
 {
   extend : qx.dev.unit.TestCase,
@@ -67,13 +75,32 @@ qx.Class.define("qx.test.bom.request.Script",
         that.resume(function() {
           that.assertEquals(4, req.readyState);
           that.assertEquals(200, req.status);
-          that.assertEquals("200 OK", req.statusText);
+          that.assertEquals("200", req.statusText);
         });
       };
 
       this.request();
       this.wait();
     },
+
+    "test: status indicates success when determineSuccess returns true": function() {
+      var that = this;
+
+      this.req.onload = function() {
+        that.resume(function() {
+          that.assertEquals(200, that.req.status);
+        });
+      };
+
+      this.req.setDetermineSuccess(function() {
+        return SCRIPT_LOADED === true;
+      });
+
+      this.request(this.getUrl("qx/test/script.js"));
+      this.wait();
+    },
+
+    // Error handling
 
     "test: properties indicate failure when request failed": function() {
 
@@ -117,6 +144,23 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.requestPending();
+      this.wait();
+    },
+
+    "test: status indicates failure when determineSuccess returns false": function() {
+      var that = this;
+
+      this.req.onload = function() {
+        that.resume(function() {
+          that.assertEquals(500, that.req.status);
+        });
+      };
+
+      this.req.setDetermineSuccess(function() {
+        return false;
+      });
+
+      this.request();
       this.wait();
     },
 
@@ -206,7 +250,7 @@ qx.Class.define("qx.test.bom.request.Script",
     // Event handlers
     //
 
-    "test: call onload when request completes": function() {
+    "test: call onload": function() {
 
       // More precisely, the request completes when the browser
       // has loaded and parsed the script
@@ -214,28 +258,6 @@ qx.Class.define("qx.test.bom.request.Script",
       var that = this;
 
       this.req.onload = function() {
-        that.resume(function() {});
-      };
-
-      this.request();
-      this.wait();
-    },
-
-    "test: call onloadend on network error": function() {
-      var that = this;
-
-      this.req.onloadend = function() {
-        that.resume(function() {});
-      };
-
-      this.request("http://fail.tld");
-      this.wait(10000);
-    },
-
-    "test: call onloadend when request completes": function() {
-      var that = this;
-
-      this.req.onloadend = function() {
         that.resume(function() {});
       };
 
@@ -256,6 +278,30 @@ qx.Class.define("qx.test.bom.request.Script",
             that.assertArrayEquals([1, 2, 3, 4], readyStates);
           });
         }
+      };
+
+      this.request();
+      this.wait();
+    },
+
+    // Error handling
+
+    "test: call onloadend on network error": function() {
+      var that = this;
+
+      this.req.onloadend = function() {
+        that.resume(function() {});
+      };
+
+      this.request("http://fail.tld");
+      this.wait(10000);
+    },
+
+    "test: call onloadend when request completes": function() {
+      var that = this;
+
+      this.req.onloadend = function() {
+        that.resume(function() {});
       };
 
       this.request();
@@ -365,15 +411,25 @@ qx.Class.define("qx.test.bom.request.Script",
     },
 
     "test: not call ontimeout when request is within timeout limit": function() {
-      var that = this;
+      var req = this.req,
+          that = this;
 
-      this.spy(this.req, "ontimeout");
-      this.req.timeout = 25;
+      this.spy(req, "ontimeout");
 
+      req.onload = function() {
+        that.resume(function() {
+
+          // Assert that onload() cancels timeout
+          that.wait(350, function() {
+            that.assertNotCalled(req.ontimeout);
+          });
+
+        });
+      };
+
+      req.timeout = 300;
       this.request();
-      this.wait(250, function() {
-        this.assertNotCalled(this.req.ontimeout);
-      }, this);
+      this.wait();
     },
 
     "test: call onabort when request was aborted": function() {

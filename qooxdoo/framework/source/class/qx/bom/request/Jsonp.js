@@ -36,6 +36,7 @@ qx.Bootstrap.define("qx.bom.request.Jsonp",
     __id: null,
     __callbackParam: null,
     __callbackName: null,
+    __callbackCalled: null,
     __disposed: null,
 
     open: function(method, url) {
@@ -45,17 +46,29 @@ qx.Bootstrap.define("qx.bom.request.Jsonp",
 
       var query = {},
           callbackParam,
-          callbackName;
+          callbackName,
+          that = this;
 
       callbackParam = this.__callbackParam || "callback";
       callbackName = this.__callbackName ||
         "qx.bom.request.Jsonp[" + this.__id + "].callback";
 
-      // Callback this object's callback method
-      //
-      // User-defined callbacks must be handled by the user
+      // Default callback
       if (!this.__callbackName) {
+
+        // Store globally available reference to this object
         this.constructor[this.__id] = this;
+
+      // Custom callback
+      } else {
+
+        // Dynamically create globally available callback
+        // with user defined name. Delegate to this object's
+        // callback method.
+        window[this.__callbackName] = function(data) {
+          that.callback(data);
+        };
+
       }
 
       if (qx.core.Environment.get("qx.debug.io")) {
@@ -75,7 +88,7 @@ qx.Bootstrap.define("qx.bom.request.Jsonp",
       }
 
       // Signal callback was called
-      this.callback.called = true;
+      this.__callbackCalled = true;
 
       // Sanitize and parse
       if (qx.core.Environment.get("qx.debug")) {
@@ -100,8 +113,8 @@ qx.Bootstrap.define("qx.bom.request.Jsonp",
 
     _onNativeLoad: function() {
 
-      // Flag error if callback not called
-      this._error = !this.callback.called;
+      // Indicate erroneous status if callback was not called
+      this.status = this.__callbackCalled ? 200 : 500;
 
       this.__callBase("_onNativeLoad");
     },

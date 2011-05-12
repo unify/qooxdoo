@@ -98,7 +98,7 @@ qx.Class.define("qx.test.data.store.Json",
         this.resume(function() {
           var model = this.__store.getModel();
           this.assertEquals("String", model.getString(), "The model is not created how it should!");
-          qx.util.AliasManager.getInstance().remove("testLoadResource");          
+          qx.util.AliasManager.getInstance().remove("testLoadResource");
         }, this);
       }, this);
 
@@ -472,8 +472,10 @@ qx.Class.define("qx.test.data.store.Json",
 
 
     testErrorEvent : function() {
-      this.__store.addListener("error", function() {
-        this.resume(function() {}, this);
+      this.__store.addListener("error", function(ev) {
+        this.resume(function() {
+          this.assertNotNull(ev);
+        }, this);
       }, this);
 
       var self = this;
