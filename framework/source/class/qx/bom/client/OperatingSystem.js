@@ -62,6 +62,16 @@ qx.Bootstrap.define("qx.bom.client.OperatingSystem",
         return "webos";
 
       } else if (
+        agent.indexOf("RIM Tablet OS") != -1
+      ) {
+        return "rim_tabletos";
+        
+      } else if (
+        agent.indexOf("webOS") != -1
+      ) {
+        return "webos";
+        
+      } else if (
         input.indexOf("iPod") != -1 ||
         input.indexOf("iPhone") != -1 ||
         input.indexOf("iPad") != -1
