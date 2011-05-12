@@ -351,6 +351,8 @@ qx.Class.define("qx.bom.element.Style",
       if (qx.core.Environment.get("qx.debug")) {
         qx.log.Logger.warn('Style property "' + name + '" is not supported by the client!');
       }
+      
+      return name;
     },
     
     
