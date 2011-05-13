@@ -279,25 +279,39 @@ qx.Class.define("qx.bom.Viewport",
      * Returns an orientation normalizer value that should be added to device orientation 
      * to normalize behaviour on different devices.
      *
-     * @return {Integer} Orientation normalizing value
+     * @return {Map} Orientation normalizing value
      */
     __getOrientationNormalizer : function() {
       // Calculate own understanding of orientation (0 = portrait, 90 = landscape)
       var currentOrientation = this.getWidth() > this.getHeight() ? 90 : 0;
       var deviceOrientation  = window.orientation;
       if (deviceOrientation == null || Math.abs( deviceOrientation % 180 ) == currentOrientation) {
-        // If no device orientation available or device orientation equals own understanding of orientation
-        // return 0 as normalizing value
-        return 0;
+        // No device orientation available or device orientation equals own understanding of orientation
+        return {
+          "-270":  90,
+          "-180": 180,
+           "-90": -90,
+             "0":   0,
+            "90":  90,
+           "180": 180,
+           "270": -90
+        };
       } else {
-        // If device orientation is not equal to own understanding of orientation
-        // return 90 as normalizing value
-        return 90;
+        // Device orientation is not equal to own understanding of orientation
+        return {
+          "-270": 180,
+          "-180": -90,
+           "-90":   0,
+             "0":  90,
+            "90": 180,
+           "180": -90,
+           "270":   0
+        };
       }
     },
     
-    // Cache orientation normalizer value on start
-    __orientationNormalizer : 0,
+    // Cache orientation normalizer map on start
+    __orientationNormalizer : null,
     
     
     /**
@@ -305,8 +319,10 @@ qx.Class.define("qx.bom.Viewport",
      *
      * All possible values and their meaning:
      *
+     * * <code>-90</code>: "Landscape"
      * * <code>0</code>: "Portrait"
      * * <code>90</code>: "Landscape"
+     * * <code>180</code>: "Portrait"
      *
      * @param win {Window?window} The window to query
      * @return {Integer} The current orientation in degree
@@ -316,7 +332,7 @@ qx.Class.define("qx.bom.Viewport",
       // The orientation property of window does not have the same behaviour over all devices
       // iPad has 0degrees = Portrait, Playbook has 90degrees = Portrait, same for Android Honeycomb
       //
-      // To fix this an orientationNormalizer value is calculated on application start
+      // To fix this an orientationNormalizer map is calculated on application start
       //
       // The calculation of getWidth and getHeight returns wrong values if you are in an input field
       // on iPad and rotate your device!
@@ -326,7 +342,7 @@ qx.Class.define("qx.bom.Viewport",
         orientation = this.getWidth(win) > this.getHeight(win) ? 90 : 0;
       } else {
         // Normalize orientation value
-        orientation = Math.abs( (orientation + this.__orientationNormalizer) % 180 );
+        orientation = this.__orientationNormalizer[orientation];
       }
       return orientation;
     },
@@ -340,7 +356,7 @@ qx.Class.define("qx.bom.Viewport",
      *     is currently in landscape mode.
      */
     isLandscape : function(win) {
-      return this.getOrientation(win) == 90;
+      return Math.abs(this.getOrientation(win)) == 90;
     },
 
 
@@ -353,7 +369,7 @@ qx.Class.define("qx.bom.Viewport",
      */
     isPortrait : function(win)
     {
-      return this.getOrientation(win) === 0;
+      return Math.abs(this.getOrientation(win)) !== 90;
     }
   },
   
