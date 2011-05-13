@@ -283,7 +283,7 @@ qx.Class.define("qx.bom.Viewport",
      */
     __getOrientationNormalizer : function() {
       // Calculate own understanding of orientation (0 = portrait, 90 = landscape)
-      var currentOrientation = this.getWidth(window) > this.getHeight(window) ? 90 : 0;
+      var currentOrientation = this.getWidth() > this.getHeight() ? 90 : 0;
       var deviceOrientation  = window.orientation;
       
       if (deviceOrientation == null || deviceOrientation == currentOrientation) {
@@ -298,7 +298,7 @@ qx.Class.define("qx.bom.Viewport",
     },
     
     // Cache orientation normalizer value on start
-    __orientationNormalizer : this.__getOrientationNormalizer(),
+    __orientationNormalizer : 0,
     
     
     /**
@@ -323,7 +323,7 @@ qx.Class.define("qx.bom.Viewport",
       // on iPad and rotate your device!
       var orientation = (win||window).orientation;
       if (orientation == null) {
-        // Try to calculate orientation from window width and window height
+        // Calculate orientation from window width and window height
         orientation = this.getWidth(win) > this.getHeight(win) ? 90 : 0;
       } else {
         // Normalize orientation value
@@ -356,5 +356,9 @@ qx.Class.define("qx.bom.Viewport",
     {
       return this.getOrientation(win) === 0;
     }
+  },
+  
+  defer : function(statics) {
+    statics.__orientationNormalizer = statics.__getOrientationNormalizer();
   }
 });
