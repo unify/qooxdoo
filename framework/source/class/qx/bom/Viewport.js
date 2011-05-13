@@ -285,8 +285,7 @@ qx.Class.define("qx.bom.Viewport",
       // Calculate own understanding of orientation (0 = portrait, 90 = landscape)
       var currentOrientation = this.getWidth() > this.getHeight() ? 90 : 0;
       var deviceOrientation  = window.orientation;
-      
-      if (deviceOrientation == null || deviceOrientation == currentOrientation) {
+      if (deviceOrientation == null || Math.abs( deviceOrientation % 180 ) == currentOrientation) {
         // If no device orientation available or device orientation equals own understanding of orientation
         // return 0 as normalizing value
         return 0;
