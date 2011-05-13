@@ -279,25 +279,39 @@ qx.Class.define("qx.bom.Viewport",
      * Returns an orientation normalizer value that should be added to device orientation 
      * to normalize behaviour on different devices.
      *
-     * @return {Integer} Orientation normalizing value
+     * @return {Map} Orientation normalizing value
      */
     __getOrientationNormalizer : function() {
       // Calculate own understanding of orientation (0 = portrait, 90 = landscape)
       var currentOrientation = this.getWidth() > this.getHeight() ? 90 : 0;
       var deviceOrientation  = window.orientation;
       if (deviceOrientation == null || Math.abs( deviceOrientation % 180 ) == currentOrientation) {
-        // If no device orientation available or device orientation equals own understanding of orientation
-        // return 0 as normalizing value
-        return 0;
+        // No device orientation available or device orientation equals own understanding of orientation
+        return {
+          "-270":  90,
+          "-180": 180,
+           "-90": -90,
+             "0":   0,
+            "90":  90,
+           "180": 180,
+           "270": -90
+        };
       } else {
-        // If device orientation is not equal to own understanding of orientation
-        // return 90 as normalizing value
-        return 90;
+        // Device orientation is not equal to own understanding of orientation
+        return {
+          "-270": 180,
+          "-180": -90,
+           "-90":   0,
+             "0":  90,
+            "90": 180,
+           "180": -90,
+           "270":   0
+        };
       }
     },
     
-    // Cache orientation normalizer value on start
-    __orientationNormalizer : 0,
+    // Cache orientation normalizer map on start
+    __orientationNormalizer : null,
     
     
     /**
@@ -382,7 +396,7 @@ qx.Class.define("qx.bom.Viewport",
      *     is currently in landscape mode.
      */
     isLandscape : function(win) {
-      return this.getOrientation(win) == 90;
+      return Math.abs(this.getOrientation(win)) == 90;
     },
 
 
@@ -395,7 +409,7 @@ qx.Class.define("qx.bom.Viewport",
      */
     isPortrait : function(win)
     {
-      return this.getOrientation(win) === 0;
+      return Math.abs(this.getOrientation(win)) !== 90;
     }
   },
 
