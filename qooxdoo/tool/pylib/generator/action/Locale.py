@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 ################################################################################
 #
@@ -169,7 +170,7 @@ class Locale(object):
                 classList.append(classId)
                     
         self._console.debug("Compiling filter...")
-        pot = self.getPotFile(classList)
+        pot = self.getPotFile(classList)  # pot: source code => POFile object
         pot.sort()
 
         allLocales = self._translation[namespace]
@@ -194,7 +195,7 @@ class Locale(object):
             self._console.indent()
 
             entry = allLocales[locale]
-            po = polib.pofile(entry["path"])
+            po = polib.pofile(entry["path"])  # po: .po file from disk
             po.merge(pot)
             po.sort()
             self._console.debug("Percent translated: %d" % (po.percent_translated(),))
@@ -363,7 +364,8 @@ class Locale(object):
             #translation, cached = self.getTranslation(classId, variants) # should be a method on clazz
             translation, cached = self._classesObj[classId].messageStrings(variants)
             #self._console.dot('.' if cached else '*')
-            self._console.progress(num+1, numClass)
+            #self._console.progress(num+1, numClass)
+            self._console.dot()
 
             for source in translation:
                 #msgid = self.parseAsUnicodeString(source["id"])  # parse raw data as string, to translate \escapes
@@ -389,6 +391,7 @@ class Locale(object):
                     "column" : source["column"]
                 })
 
+        self._console.dotclear()
         self._console.debug("Package contains %s unique translation strings" % len(result))
         self._console.outdent()
         return result

@@ -18,8 +18,6 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL!
- *
  * The provider implements the {@link qx.ui.virtual.core.IWidgetCellProvider}
  * API, which can be used as delegate for the widget cell rendering and it
  * provides a API to bind the model with the rendered item.
@@ -83,7 +81,6 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
       widget.setOpen(hasChildren && this._tree.isNodeOpen(item));
       widget.setUserData("cell.children", hasChildren);
       widget.addListener("changeOpen", this.__onOpenChanged, this);
-      this._bindItem(widget, row);
 
       if(this._tree.getSelection().contains(item)) {
         this._styleSelectabled(widget);
@@ -103,6 +100,7 @@ qx.Class.define("qx.ui.tree.provider.WidgetProvider",
         widget.setOpenSymbolMode("auto");
       }
 
+      this._bindItem(widget, row);
       qx.ui.core.queue.Widget.add(widget);
 
       return widget;

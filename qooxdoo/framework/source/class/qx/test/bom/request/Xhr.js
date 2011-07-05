@@ -71,7 +71,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
     },
 
     "test: detect native XHR": function() {
-      var nativeXhr = this.req._getNativeXhr();
+      var nativeXhr = this.req.getRequest();
 
       this.assertObject(nativeXhr);
       this.assertNotNull(nativeXhr.readyState);
@@ -183,7 +183,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
     // send()
     //
 
-    "test: send request with data": function() {
+    "test: send() with data": function() {
       var fakeReq = this.getFakeReq();
       this.spy(fakeReq, "send");
 
@@ -196,7 +196,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
 
     // BUGFIXES
 
-    "test: send request without data": function() {
+    "test: send() without data": function() {
       var fakeReq = this.getFakeReq();
       this.spy(fakeReq, "send");
 
@@ -210,7 +210,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
     // abort()
     //
 
-    "test: aborting request aborts native Xhr": function() {
+    "test: abort() aborts native Xhr": function() {
       var req = this.req;
       var fakeReq = this.getFakeReq();
       this.spy(fakeReq, "abort");
@@ -219,7 +219,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
       this.assertCalled(fakeReq.abort);
     },
 
-    "test: aborting request resets readyState": function() {
+    "test: abort() resets readyState": function() {
       var req = this.req;
       req.open();
       req.abort();
@@ -286,7 +286,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
       req.send();
 
       fakeReq.respond();
-      this.assertUndefined(req._getNativeXhr().onreadystatechange());
+      this.assertUndefined(req.getRequest().onreadystatechange());
     },
 
     //
@@ -349,6 +349,13 @@ qx.Class.define("qx.test.bom.request.Xhr",
     },
 
     "test: not call onerror when timeout": function() {
+
+      // Since Opera does not fire "error" on network error, fire additional
+      // "error" on timeout (may well be related to network error)
+      if (qx.core.Environment.get("engine.name") === "opera") {
+        this.skip();
+      }
+
       var req = this.req;
 
       this.spy(req, "onerror");
@@ -643,7 +650,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
     // getResponseHeader()
     //
 
-    "test: get response header": function() {
+    "test: getResponseHeader()": function() {
       var fakeReq = this.getFakeReq();
       fakeReq.setResponseHeaders({
         "key": "value"
@@ -657,7 +664,7 @@ qx.Class.define("qx.test.bom.request.Xhr",
     // getAllResponseHeaders()
     //
 
-    "test: get all response headers": function() {
+    "test: getAllResponseHeaders()": function() {
       var fakeReq = this.getFakeReq();
       fakeReq.setResponseHeaders({
         "key1": "value1",
@@ -665,62 +672,27 @@ qx.Class.define("qx.test.bom.request.Xhr",
       });
 
       var responseHeaders = this.req.getAllResponseHeaders();
-      this.assertEquals("value2", responseHeaders["key2"]);
+      this.assertMatch(responseHeaders, /key1: value1/);
+      this.assertMatch(responseHeaders, /key2: value2/);
     },
 
     //
     // dispose()
     //
 
-    "test: dispose native Xhr": function() {
+    "test: dispose() deletes native Xhr": function() {
       this.req.dispose();
 
-      this.assertNull(this.req._getNativeXhr());
+      this.assertNull(this.req.getRequest());
     },
 
-    "test: dispose aborts": function() {
+    "test: dispose() aborts": function() {
       var req = this.req;
 
       this.spy(req, "abort");
       this.req.dispose();
 
       this.assertCalled(req.abort);
-    },
-
-    //
-    // Helper
-    //
-
-    "test: is cross domain": function() {
-      var location = window.location,
-          origin = location.protocol + "//" + location.host,
-          isCrossDomain = qx.bom.request.Xhr.isCrossDomain;
-
-      this.assertTrue(isCrossDomain("http://cross.domain"), "cross");
-      this.assertTrue(isCrossDomain(origin + ":123456"), "port");
-      this.assertTrue(isCrossDomain("foobar" + "://" + location.host), "protocol");
-    },
-
-    "test: is not cross domain": function() {
-      var location = window.location,
-          origin = location.protocol + "//" + location.host,
-          isCrossDomain = qx.bom.request.Xhr.isCrossDomain;
-
-      this.assertFalse(isCrossDomain(origin));
-      this.assertFalse(isCrossDomain("data.json"), "simple url");
-      this.assertFalse(isCrossDomain("/data.json"), "absolute url");
-      this.assertFalse(isCrossDomain("../data.json"), "relative url");
-      this.assertFalse(isCrossDomain("../foo-bar/meep.in/data.json"), "strange url");
-    },
-
-    "test: indicate success": function() {
-      var Xhr = qx.bom.request.Xhr;
-
-      this.assertTrue(Xhr.isSuccessful(200));
-      this.assertTrue(Xhr.isSuccessful(304));
-
-      this.assertFalse(Xhr.isSuccessful(404));
-      this.assertFalse(Xhr.isSuccessful(500));
     },
 
     fakeNativeXhr: function() {
@@ -764,6 +736,10 @@ qx.Class.define("qx.test.bom.request.Xhr",
 
     hasIEBelow8OrFFBelow35: function() {
       return this.hasIEBelow8() || this.hasFFBelow35();
+    },
+
+    skip: function(msg) {
+      throw new qx.dev.unit.RequirementError(null, msg);
     }
 
   }

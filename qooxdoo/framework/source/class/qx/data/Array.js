@@ -82,6 +82,24 @@ qx.Class.define("qx.data.Array",
 
   /*
   *****************************************************************************
+     PROPERTIES
+  *****************************************************************************
+  */
+
+  properties : 
+  {
+    /**
+     * Flag to set the dispose behavior of the array. If the property is set to 
+     * <code>true</code>, the array will dispose its content on dispose too.
+     */
+    autoDisposeItems : {
+      check : "Boolean",
+      init : false
+    }
+  },
+
+  /*
+  *****************************************************************************
      EVENTS
   *****************************************************************************
   */
@@ -595,7 +613,10 @@ qx.Class.define("qx.data.Array",
      * @return {var} The removed item.
      */
     removeAt : function(index) {
-      return this.splice(index, 1).getItem(0);
+      var returnArray = this.splice(index, 1);
+      var item = returnArray.getItem(0);
+      returnArray.dispose();
+      return item;
     },
 
 
@@ -799,13 +820,14 @@ qx.Class.define("qx.data.Array",
      * Invokes the given function for every item in the array.
      *
      * @param callback {Function} The function which will be call for every
-     *   item in the array.
+     *   item in the array. It will be invoked with three parameter: 
+     *   the item, the index and the array itself.
      * @param context {var} The context in which the callback will be invoked.
      */
     forEach : function(callback, context)
     {
       for (var i = 0; i < this.__array.length; i++) {
-        callback.call(context, this.__array[i]);
+        callback.call(context, this.__array[i], i, this);
       }
     },
 
@@ -837,7 +859,13 @@ qx.Class.define("qx.data.Array",
 
   destruct : function() {
     for (var i = 0; i < this.__array.length; i++) {
-      this._applyEventPropagation(null, this.__array[i], i);
+      var item = this.__array[i];
+      this._applyEventPropagation(null, item, i);
+
+      // dispose the items on outo dispose
+      if (this.isAutoDisposeItems() && item && item instanceof qx.core.Object) {
+        item.dispose();
+      }
     }
 
     this.__array = null;

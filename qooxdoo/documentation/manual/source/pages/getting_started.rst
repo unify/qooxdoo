@@ -3,6 +3,7 @@ Getting Started
 
 
 .. toctree::
+   :maxdepth: 2
 
    getting_started/requirements
    Hello World - "A must-read introduction" <getting_started/helloworld>
@@ -13,18 +14,41 @@ Getting Started
 Tutorials
 =========
 
+Rich Internet Applications (RIA)
+--------------------------------
+
 .. toctree::
+   :maxdepth: 1
 
    tutorials/tutorial-part-1
    tutorials/tutorial-part-2
    tutorials/tutorial-part-3
    tutorials/tutorial-part-4-1
    tutorials/tutorial-part-4-2
-   tutorials/tutorial-part-4-3
    tutorials/tutorial-part-4-2-1
+   tutorials/tutorial-part-4-3
+   tutorials/tutorial-part-4-4-1
+   tutorials/tutorial-part-4-5
+
+Mobile Apps
+-----------
+
+.. toctree::
+   :maxdepth: 1
+
+   mobile/tutorial
+
+Tooling
+-------
+
+.. toctree::
+   :maxdepth: 1
+
+   tool/tutorial_basics
+
 
 Video Tutorials
-===============
+---------------
 
 You can find some community made 
 `tutorial videos on vimeo <http://vimeo.com/channels/qooxdoo>`_.

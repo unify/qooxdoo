@@ -39,8 +39,8 @@ class Script(object):
         self.classes    = []   # classes making up the build
         self.classesObj = []   # temp. alternative list of class objects, [generator.code.Class, ...]
         self.jobconfig  = None # Job() config object
-        self.variants   = []
-        self.envsettings= {}
+        self.variants   = []   # current variant set
+        self.optimize   = []   # optimize settings
         self.parts      = {}   # parts defined by the configuration (if any); {part.name : Part()}
         self.packages   = []   # .js files for this application / library;  [Package()]
         self.boot       = "boot"
@@ -49,6 +49,10 @@ class Script(object):
         self.locales    = []   # supported locales, e.g. ["de", "de_DE", "en"]
         self.libraries  = []   # involved libraries [generator.code.Library, ...]
         self.namespace  = u""  # the main name space (config macro "APPLICATION")
+
+        # adding these methods on instance level, so the counters are fresh
+        self.getPartBitMask   = util.powersOfTwoSequence().next  # generator for part bitmasks
+        self.getPackageNumber = util.numberSequence().next  # generator for e.g. package numbers
 
     ##
     # return old-style array of arrays of classIds in self.packageIdsSorted order
@@ -75,15 +79,6 @@ class Script(object):
     
     def packagesSorted(self):
         return Package.sort(self.packages)
-
-    ##
-    # generates part bitmasks
-    getPartBitMask  = util.powersOfTwoSequence().next
-
-    ##
-    # generates consecutive package numbers
-    getPackageNumber = util.numberSequence().next
-
 
     ##
     # Create a resource structure suitable for serializing. The main simpli-
@@ -199,5 +194,19 @@ class Script(object):
                 
         return trie
                 
+
+
+    ##
+    # Not much use memoizing the result of this function, as various class lists
+    # can be passed in during a single run (think parts), and I'd need to key
+    # the results with the input classes (e.g. using a hash over the set's
+    # element hashes). But it shouldn't incure a big penalty anyway, as the
+    # individual class' variants are always cached.
+    def classVariants(self, classesObj=[]):
+        allVariants = set()
+        classes = classesObj if classesObj else self.classesObj
+        for clazz in classes:
+            allVariants.update(clazz.classVariants())
+        return allVariants
 
 

@@ -18,8 +18,6 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL!
- *
  * Virtual tree implementation.
  *
  * The virtual tree can be used to render node and leafs. Nodes and leafs are
@@ -30,7 +28,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 {
   extend : qx.ui.virtual.core.Scroller,
   implement : qx.ui.tree.core.IVirtualTree,
-  include : qx.ui.tree.selection.MSelectionHandling,
+  include : qx.ui.virtual.selection.MModel,
 
   /**
    * @param model {qx.core.Object?null} The model structure for the tree, for
@@ -64,6 +62,20 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     this.addListener("keypress", this._onKeyPress, this);
   },
 
+  events :
+  {
+    /**
+     * Fired when a node is opened.
+     */
+    open : "qx.event.type.Data",
+    
+    
+    /**
+     * Fired when a node is closed.
+     */
+    close : "qx.event.type.Data"
+  },
+  
 
   properties :
   {
@@ -286,6 +298,10 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     __itemWidth : 0,
 
 
+    /** {Array} internal parent chain form the last selected node */
+    __parentChain : null,
+    
+
     /*
     ---------------------------------------------------------------------------
       PUBLIC API
@@ -302,7 +318,9 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       for (var row = firstRow; row < firstRow + rowSize; row++)
       {
         var widget = this._layer.getRenderedCellWidget(row, 0);
-        this.__itemWidth = Math.max(this.__itemWidth, widget.getSizeHint().width);
+        if (widget != null) {
+          this.__itemWidth = Math.max(this.__itemWidth, widget.getSizeHint().width);
+        }
       }
       var paneWidth = this.getPane().getBounds().width;
       this.getPane().getColumnConfig().setItemSize(0, Math.max(this.__itemWidth, paneWidth));
@@ -345,6 +363,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       if (qx.lang.Array.contains(this.__openNodes, node))
       {
         qx.lang.Array.remove(this.__openNodes, node);
+        this.fireDataEvent("close", node);
         this.buildLookupTable();
       }
     },
@@ -372,7 +391,6 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       this.__openNodes = [];
       this.__nestingLevel = [];
       this._initLayer();
-      this._initSelection();
     },
 
 
@@ -390,6 +408,38 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
     // Interface implementation
     getLookupTable : function() {
+      return this.__lookupTable;
+    },
+
+
+    /**
+     * Performs a lookup from model index to row.
+     *
+     * @param index {Number} The index to look at.
+     * @return {Number} The row or <code>-1</code>
+     *  if the index is not a model index.
+     */
+    _reverseLookup : function(index) {
+      return index;
+    },
+
+
+    /**
+     * Returns the model data for the given row.
+     *
+     * @param row {Integer} row to get data for.
+     * @return {var|null} the row's model data.
+     */
+    _getDataFromRow : function(row) {
+      return this.__lookupTable.getItem(row);
+    },
+    
+    /**
+     * Returns the selectable model items.
+     * 
+     * @return {qx.data.Array} The selectable items.
+     */
+    _getSelectables : function() {
       return this.__lookupTable;
     },
 
@@ -548,7 +598,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
         old.removeListener("changeBubble", this._onChangeBubble, this);
       }
 
-      this.buildLookupTable();
+      this.__applyModelChanges();
     },
 
 
@@ -556,7 +606,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     _applyDelegate : function(value, old)
     {
       this._provider.setDelegate(value);
-      this.getPane().fullUpdate();
+      this.buildLookupTable();
     },
 
 
@@ -583,7 +633,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       }
 
       if (qx.lang.String.startsWith(propertyName, this.getChildProperty())) {
-        this.buildLookupTable();
+        this.__applyModelChanges();
       }
     },
 
@@ -647,7 +697,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
             if (isNode && this.isNodeOpen(item)) {
               this.closeNode(item);
             } else {
-              var parent = this.__getParent(item);
+              var parent = this.getParent(item);
               if (parent != null) {
                 selection.splice(0, 1, parent);
               }
@@ -683,16 +733,70 @@ qx.Class.define("qx.ui.tree.VirtualTree",
             break;
         }
       }
-      this.getPane().fullUpdate();
     },
 
+    /*
+    ---------------------------------------------------------------------------
+      SELECTION HOOK METHODS
+    ---------------------------------------------------------------------------
+    */
 
+    /**
+     * Hook method which is called from the {@link qx.ui.virtual.selection.MModel}.
+     * The hook method sets the first visible parent not as new selection when 
+     * the current selection is empty and the selection mode is one selection.
+     *
+     * @param newSelection {Array} The newSelection which will be set to the selection manager.  
+     */
+    _beforeApplySelection : function(newSelection) 
+    {
+      if (newSelection.length === 0 &&
+          this.getSelectionMode() === "one")
+      {
+        var visibleParent = this.__getVisibleParent();
+        var row = this.getLookupTable().indexOf(visibleParent);
+        
+        if (row >= 0) {
+          newSelection.push(row);
+        }
+      }
+    },
+    
+    
+    /**
+     * Hook method which is called from the {@link qx.ui.virtual.selection.MModel}.
+     * The hook method builds the parent chain form the current selected item.
+     */
+    _afterApplySelection : function() 
+    {
+      var selection = this.getSelection();
+      
+      if (selection.getLength() > 0 &&
+          this.getSelectionMode() === "one") {
+        this.__buildParentChain(selection.getItem(0));
+      } else {
+        this.__parentChain = [];
+      }
+    },
+    
+    
     /*
     ---------------------------------------------------------------------------
       HELPER METHODS
     ---------------------------------------------------------------------------
     */
 
+    
+    /**
+     * Helper method to apply model changes. Normally build the lookup table and
+     * apply the default selection. 
+     */
+    __applyModelChanges : function()
+    {
+      this.buildLookupTable();
+      this._applyDefaultSelection();
+    },
+    
 
     /**
      * Helper method to build the internal data structure.
@@ -736,7 +840,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       this._provider.removeBindings();
       this.__lookupTable.removeAll();
       this.__lookupTable.append(lookupTable);
-      this.__updateSelection();
+      this._updateSelection();
       this.__updateRowCount();
     },
 
@@ -804,6 +908,7 @@ qx.Class.define("qx.ui.tree.VirtualTree",
     {
       if (!qx.lang.Array.contains(this.__openNodes, node)) {
         this.__openNodes.push(node);
+        this.fireDataEvent("open", node);
       }
     },
 
@@ -852,22 +957,6 @@ qx.Class.define("qx.ui.tree.VirtualTree",
 
 
     /**
-     * Helper method to remove items form the selection which are not in the
-     * lookup table.
-     */
-    __updateSelection : function() {
-      var selection = this.getSelection();
-      if (selection.getLength() > 0)
-      {
-        var item = selection.getItem(0);
-        if (!this.__lookupTable.contains(item)) {
-          selection.remove(item);
-        }
-      }
-    },
-
-
-    /**
      * Helper method to update the row count.
      */
     __updateRowCount : function()
@@ -884,8 +973,10 @@ qx.Class.define("qx.ui.tree.VirtualTree",
      * @param item {qx.core.Object} Node or leaf to get parent.
      * @return {qx.core.Object|null} The parent note or <code>null</code> when
      *   no parent found.
+     *   
+     * @internal
      */
-    __getParent : function(item)
+    getParent : function(item)
     {
       var index = this.__lookupTable.indexOf(item);
       if (index < 0) {
@@ -903,6 +994,48 @@ qx.Class.define("qx.ui.tree.VirtualTree",
       }
 
       return null;
+    },
+    
+
+    /**
+     * Builds the parent chain form the passed item.
+     * 
+     * @param item {var} Item to build parent chain.
+     */
+    __buildParentChain : function(item)
+    {
+      this.__parentChain = [];
+      var parent = this.getParent(item); 
+      while(parent != null)
+      {
+        this.__parentChain.unshift(parent);
+        parent = this.getParent(parent); 
+      }
+    },
+    
+    
+    /**
+     * Return the first visible parent node from the last selected node.
+     * 
+     * @return {var} The first visible node.
+     */
+    __getVisibleParent : function()
+    {
+      if (this.__parentChain == null) {
+        return this.getModel();
+      }
+      
+      var lookupTable = this.getLookupTable();
+      var parent = this.__parentChain.pop();
+
+      while(parent != null)
+      {
+        if (lookupTable.contains(parent)) {
+          return parent;
+        }
+        parent = this.__parentChain.pop();
+      }
+      return this.getModel();
     }
   },
 

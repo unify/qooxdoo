@@ -54,6 +54,7 @@ qx.Class.define("qx.ui.mobile.core.Widget",
     this.initDefaultCssClass();
     this.initName();
     this.initAnonymous();
+    this.initActivatable();
   },
 
 
@@ -279,6 +280,19 @@ qx.Class.define("qx.ui.mobile.core.Widget",
       init : "visible",
       apply : "_applyVisibility",
       event : "changeVisibility"
+    },
+
+
+    /**
+     * Whether the widget can be activated or not. When the widget is activated
+     * a css class <code>active</code> is automatically added to the widget, which
+     * can indicate the acitvation status.  
+     */
+    activatable :
+    {
+      check : "Boolean",
+      init : false,
+      apply : "_applyAttribute"
     }
   },
 
@@ -492,6 +506,15 @@ qx.Class.define("qx.ui.mobile.core.Widget",
         {
           "true" : null,
           "false" : "false"
+        }
+      },
+      "activatable" :
+      {
+        attribute : "data-activatable",
+        values :
+        {
+          "true" :"true",
+          "false" : null
         }
       },
       "readOnly" :
@@ -999,6 +1022,7 @@ qx.Class.define("qx.ui.mobile.core.Widget",
       {
         qx.bom.element.Attribute.reset(element, attribute);
       }
+      this._domUpdated();
     },
 
 
@@ -1101,6 +1125,7 @@ qx.Class.define("qx.ui.mobile.core.Widget",
     addCssClass : function(cssClass) {
       var element = this.getContainerElement();
       qx.bom.element.Class.add(element, cssClass);
+      this._domUpdated();
     },
 
 
@@ -1112,6 +1137,7 @@ qx.Class.define("qx.ui.mobile.core.Widget",
     removeCssClass : function(cssClass) {
       var element = this.getContainerElement();
       qx.bom.element.Class.remove(element, cssClass);
+      this._domUpdated();
     },
 
 
@@ -1130,8 +1156,8 @@ qx.Class.define("qx.ui.mobile.core.Widget",
       }
       else if(value == "visible")
       {
-        this._setStyle("display", null);
-        this._setStyle("visibility", null);
+        this._setStyle("display", "block");
+        this._setStyle("visibility", "visible");
       }
       else if (value == "hidden") {
         this._setStyle("visibility", "hidden");

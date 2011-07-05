@@ -94,19 +94,16 @@ qx.Class.define('demobrowser.demo.table.RemoteTableModel', {
     __loadPHPRowData : function(firstRow, lastRow) {
       var param = "method=getRowData&start=" + firstRow + "&end=" + lastRow;
       this.__call(param, function(data) {
-        this._onRowDataLoaded(qx.util.Json.parse(data));
+        this._onRowDataLoaded(qx.lang.Json.parse(data));
       });
     },
 
 
     __call : function(param, callback) {
-      var req = new qx.io.HttpRequest(
-        "../../resource/demobrowser/backend/remote_table.php?" + param
-      );
-      req.addListener("change", function(e) {
-        if (e.getData() == 4) {
-          callback.call(this, req.getResponseText());
-        }
+      var req = new qx.io.request.Xhr();
+      req.setUrl("../../resource/demobrowser/backend/remote_table.php?" + param);
+      req.addListener("success", function() {
+        callback.call(this, req.getResponseText())
       }, this);
       req.send();
     },

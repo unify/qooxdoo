@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 ################################################################################
 #
@@ -20,7 +21,7 @@
 ################################################################################
 
 import os, sys, string, types, re, zlib, time
-import urllib, urlparse, optparse, pprint
+import urllib, urlparse, optparse, pprint, copy
 
 from generator.config.Lang      import Key
 from generator.code.Part        import Part
@@ -28,8 +29,10 @@ from generator.code.Package     import Package
 from generator.code.Class       import Class, ClassMatchList, CompileOptions
 from generator.code.Script      import Script
 #from generator.resource.ResourceHandler import ResourceHandler
-from ecmascript                 import compiler
-from misc                       import filetool, json, Path, securehash as sha
+from ecmascript.backend         import pretty
+from ecmascript.backend.Packer  import Packer
+from ecmascript.transform.optimizer    import variantoptimizer, privateoptimizer
+from misc                       import filetool, json, Path, securehash as sha, util
 from misc.ExtMap                import ExtMap
 from misc.Path                  import OsPath, Uri
 from misc.NameSpace             import NameSpace
@@ -54,7 +57,7 @@ class CodeGenerator(object):
         cache   = cache_
 
 
-    def runCompiled(self, script, treeCompiler):
+    def runCompiled(self, script):
 
         def getOutputFile(compileType):
             filePath = compConf.get("paths/file")
@@ -74,7 +77,7 @@ class CodeGenerator(object):
         # can take the code of the first ("boot") script of class code
         def generateLoader(script, compConf, globalCodes, bootCode='', ):
 
-            self._console.info("Generating loader script...")
+            self._console.info("Generate loader script")
             result = ""
             vals   = {}
 
@@ -119,6 +122,9 @@ class CodeGenerator(object):
 
             # Add potential extra scripts
             vals["UrisBefore"] = loaderUrisBefore(script, compConf)
+
+            # Add potential extra css
+            vals["CssBefore"] = loaderCssBefore(script, compConf)
 
             # Whether boot package is inline
             vals["BootIsInline"] = loaderBootInline(script, compConf)
@@ -276,6 +282,14 @@ class CodeGenerator(object):
             return json.dumpsCode(urisBefore)
 
 
+        def loaderCssBefore(script, compConf):
+            cssBefore = []
+            additional_csses = self._job.get("add-css",[])
+            for additional_css in additional_csses:
+                cssBefore.append(additional_css["uri"])
+            return json.dumpsCode(cssBefore)
+
+
         def loaderPartsList(script, compConf):
                 pass
 
@@ -392,23 +406,209 @@ class CodeGenerator(object):
             return data
 
 
-        def compileClasses(classList, compConf, log_progress=lambda:None):
-            result = []
-            for clazz in classList:
-                result.append(clazz.getCode(compConf))
+        # - _compileClassesMP stuff --------------------------------------
+
+        def _compileClassesMP(classes, compConf, log_progress, maxproc=8):
+            # experimental
+            # improve by incorporating cache handling, as done in getCompiled()
+            # hangs on Windows in the last call to reap_processes from the main loop
+
+            def reap_processes(wait=False):
+                # reap the current processes (wait==False: if they are finished)
+                #print "-- entering reap_processes with len: %d" % len(processes)
+                reaped  = False
+                counter = 0
+                while True:
+                    for pos, pid in enumerate(processes.keys()):
+                        if not wait and pid.poll() == None:  # None = process hasn't terminated
+                            #print pid.poll()
+                            continue
+                        #print "checking pos: %d" % pos
+                        #self._console.progress(pos, length)
+                        output, errout = pid.communicate()
+                        rcode = pid.returncode
+                        cpos = processes[pid][0]
+                        if rcode == 0:
+                            #tf   = processes[pid][1].read()
+                            #print output[:30]
+                            #print tf[:30]
+                            contA[cpos][CONTENT] = output.decode('utf-8')
+                            #contA[cpos] = tf
+                        else:
+                            raise RuntimeError("Problems compiling %s: %s" % (classes[cpos], errout))
+                        #print "-- terminating process for class: %s" % classes[cpos]
+                        del processes[pid]
+                        reaped = True
+
+                    if reaped: break
+                    else:
+                        #print "-- waiting for some process to terminate"
+                        if counter > 100: # arbitrary limit, to break deadlocks because of full pipes
+                            #print "-- switching to wait=True"
+                            wait = True
+                        else:
+                            counter += 1
+                        time.sleep(.050)
+
+                #print "-- leaving reap_processes with len: %d" % len(processes)
+                return
+
+            # -----------------------------------------------------------------
+
+            variants = compConf.variantset
+            optimize = compConf.optimize
+            format_  = compConf.format
+            import subprocess
+            contA = {}
+            CACHEID = 0
+            INCACHE = 1
+            CONTENT = 2
+            processes = {}
+            length = len(classes)
+
+            #self._console.debug("Compiling classes using %d sub-processes" % maxproc)
+
+            # go through classes, start individual compiles, collect results
+            for pos, clazz in enumerate(classes):
                 log_progress()
-            return u''.join(result)
+                contA[pos] = {}
+                contA[pos][INCACHE] = False
+                if len(processes) > maxproc:
+                    reap_processes()  # collect finished processes' results to make room
+
+                if clazz.id == "qx.core.Environment" and "variants" in compConf.optimize:
+                    content = optimizeEnvironmentClass(clazz, compConf)
+                    contA[pos][CONTENT] = content
+                    contA[pos][INCACHE] = True  # fake, to later not write it
+                    continue
+
+                cacheId, content = _checkCache(clazz, variants, optimize, format_)
+                contA[pos][CACHEID] = cacheId
+                if content:
+                    contA[pos][CONTENT] = content
+                    contA[pos][INCACHE] = True
+                    continue
+                cmd = _getCompileCommand(clazz, variants, optimize, format_)
+                #print cmd
+                tf = os.tmpfile()
+                #print "-- starting process for class: %s" % clazz
+                pid = subprocess.Popen(
+                            cmd, shell=True,
+                            stdout=subprocess.PIPE,
+                            #stdout=tf,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True)
+                processes[pid] = (pos, tf)
+
+            # collect outstanding processes
+            if len(processes):
+                #print "++ cleaning up processes"
+                reap_processes(wait=True)
+
+            # join single results in one string
+            content = u''
+            for i in sorted(contA.keys()):
+                #print i, contA[i][:30]
+                classStuff = contA[i]
+                content += classStuff[CONTENT]
+                if not classStuff[INCACHE]:
+                    self._cache.write(classStuff[CACHEID], classStuff[CONTENT])
+
+            return content
+
+
+        def _getCompileCommand(clazz, variants, optimize, format_):
+
+            def getToolBinPath():
+                path = sys.argv[0]
+                path = os.path.abspath(os.path.normpath(os.path.dirname(path)))
+                return path
+
+            m   = {}
+            cmd = ""
+            toolBinPath      = getToolBinPath()
+            m['compilePath'] = os.path.join(toolBinPath, "compile.py -q")
+            m['filePath']    = os.path.normpath(clazz.path)
+            # optimizations
+            optis = []
+            for opti in optimize:
+                optis.append("--" + opti)
+            m['optimizations'] = " ".join(optis)
+            # variants
+            varis = []
+            for vari in variants:
+                varis.append("--variant=" + vari + ":" + json.dumps(variants[vari]))
+            m['variants'] = " ".join(varis)
+            m['cache'] = "-c " + self._cache._path  # Cache needs context object, interrupt handler,...
+            # compile.py could read the next from privateoptimizer module directly
+            m['privateskey'] = "--privateskey " + '"' + privateoptimizer.privatesCacheId + '"'
+
+            cmd = "%(compilePath)s %(optimizations)s %(variants)s %(cache)s %(privateskey)s %(filePath)s" % m
+            return cmd
+
+
+        def _checkCache(clazz, variants, optimize, format_=False):
+            filePath = clazz.path
+
+            classVariants     = clazz.classVariants()
+            relevantVariants  = Class.projectClassVariantsToCurrent(classVariants, variants)
+            variantsId = util.toString(relevantVariants)
+
+            optimizeId = generateOptimizeId(optimize)
+
+            cacheId = "compiled-%s-%s-%s-%s" % (filePath, variantsId, optimizeId, format_)
+            compiled, _ = self._cache.read(cacheId, filePath)
+
+            return cacheId, compiled
+
+
+        def generateOptimizeId(optimize):
+            optimize = copy.copy(optimize)
+            optimize.sort()
+            return "[%s]" % ("-".join(optimize))
+
+        # - end: _compileClassesMP stuff --------------------------------
+
+
+        def compileClasses(classList, compConf, log_progress=lambda:None):
+            num_proc = self._job.get('run-time/num-processes', 0)
+            if num_proc == 0:
+                result = []
+                for clazz in classList:
+                    if clazz.id == "qx.core.Environment" and "variants" in compConf.optimize:
+                        code = optimizeEnvironmentClass(clazz, compConf)
+                    else:
+                        code = clazz.getCode(compConf)
+                    result.append(code)
+                    log_progress()
+                return u''.join(result)
+            else:
+                # multi-core version
+                return _compileClassesMP(classList, compConf, log_progress, num_proc)
+
+
+        ##
+        # optimize qx.core.Environment.useCheck()
+        #
+        def optimizeEnvironmentClass(envClass, compConf):
+            assert envClass.id == "qx.core.Environment"
+            tree = Class.optimizeEnvironmentClass(envClass, compConf)
+            code = Packer().serializeNode(tree, None, [u''], compConf.format)
+            code = u''.join(code)
+            return code
+
 
         ##
         # Go through a set of classes, and either compile some of them into
         # a common .js file, constructing the URI to this file, or just construct
         # the URI to the source file directly if the class matches a filter.
         # Return the list of constructed URIs.
-        def compileAndWritePackage(package, compConf):
+        def compileAndWritePackage(package, compConf, allClassVariants):
 
             def compiledFilename(compiled):
                 hash_ = sha.getHash(compiled)[:12]
-                fname = self._fileNameWithHash(script.baseScriptPath, hash_)
+                fname = self._resolveFileName(script.baseScriptPath, script.variants, {}, "")
+                fname = self._fileNameWithHash(fname, hash_)
                 return fname
 
             def compileAndAdd(compiledClasses, packageUris, prelude='', wrap=''):
@@ -433,6 +633,7 @@ class CodeGenerator(object):
             variantSet= script.variants
             sourceFilter = ClassMatchList(compConf.get("code/except", []))
             compOptions  = CompileOptions(optimize=optimize, variants=variantSet, _format=format_)
+            compOptions.allClassVariants = allClassVariants
 
             ##
             # This somewhat overlaps with packageUrisToJS
@@ -441,12 +642,13 @@ class CodeGenerator(object):
             packageData = ("qx.$$packageData['%s']=" % package.id) + packageData
             package_classes = [y for x in package.classes for y in script.classesObj if y.id == x] # TODO: i need to make package.classes [Class]!
 
-            self._console.info("Package #%s:" % package.id, feed=False)
+            #self._console.info("Package #%s:" % package.id, feed=False)
             len_pack_classes = len(package_classes)
             # helper log function, to log progress here, but also in compileClasses()
             def log_progress(c=[0]):
                 c[0]+=1
-                self._console.progress(c[0],len_pack_classes)
+                #self._console.progress(c[0],len_pack_classes)
+                self._console.dot()
 
             for pos,clazz in enumerate(package_classes):
                 if sourceFilter.match(clazz.id):
@@ -506,11 +708,10 @@ class CodeGenerator(object):
         variants   = script.variants
         libraries  = script.libraries
 
-        self._treeCompiler = treeCompiler
         self._variants     = variants
         self._script       = script
 
-        self._console.info("Generate %s version..." % script.buildType)
+        self._console.info("Generate application")
         self._console.indent()
 
         # - Evaluate job config ---------------------
@@ -605,18 +806,23 @@ class CodeGenerator(object):
             # @deprecated-end
 
             # - Generating packages ---------------------
-            self._console.info("Generating packages...")
-            self._console.indent()
+            self._console.info("Generate packages  ", feed=False)
+            #self._console.indent()
 
             if not len(packages):
                 raise RuntimeError("No valid boot package generated.")
 
+            variantKeys      = set(script.variants.keys())
+            allClassVariants = script.classVariants()
+            allClassVariants.difference_update(variantKeys)
+            
             for packageIndex, package in enumerate(packages):
-                package = compileAndWritePackage(package, compConf)
+                package = compileAndWritePackage(package, compConf, allClassVariants)
 
-            self._console.outdent()
+            #self._console.outdent()
+            self._console.dotclear()
 
-            # generate boot code
+            # generate loader
             if inlineBoot(script, compConf):
                 # read first script file from script dir
                 bfile = packages[0].files[0]  # "__out__:foo.js"
@@ -627,7 +833,8 @@ class CodeGenerator(object):
             else:
                 bcode = ""
             loaderCode = generateLoader(script, compConf, globalCodes, bcode)
-            self.writePackage(loaderCode, script.baseScriptPath, script)
+            fname = self._resolveFileName(script.baseScriptPath, script.variants, {}, "")
+            self.writePackage(loaderCode, fname, script)
 
 
         self._console.outdent()
@@ -635,9 +842,10 @@ class CodeGenerator(object):
         return  # runCompiled()
 
 
+    ##
+    # Pretty-print set of classes.
+    # Collects options and invokes ecmascript.backend.pretty
     def runPrettyPrinting(self, classesObj):
-        "Gather all relevant config settings and pass them to the compiler"
-
         if not isinstance(self._job.get("pretty-print", False), types.DictType):
             return
 
@@ -646,34 +854,35 @@ class CodeGenerator(object):
         ppsettings = ExtMap(self._job.get("pretty-print"))  # get the pretty-print config settings
 
         # init options
-        parser  = optparse.OptionParser()
-        compiler.addCommandLineOptions(parser)
-        (options, args) = parser.parse_args([])
+        def options(): pass
+        pretty.defaultOptions(options)
 
         # modify according to config
-        setattr(options, 'prettyPrint', True)  # turn on pretty-printing
-        if ppsettings.get('general/indent-string',False):
-            setattr(options, 'prettypIndentString', ppsettings.get('general/indent-string'))
-        if ppsettings.get('comments/trailing/keep-column',False):
-            setattr(options, 'prettypCommentsTrailingKeepColumn', ppsettings.get('comments/trailing/keep-column'))
-        if ppsettings.get('comments/trailing/comment-cols',False):
-            setattr(options, 'prettypCommentsTrailingCommentCols', ppsettings.get('comments/trailing/comment-cols'))
-        if ppsettings.get('comments/trailing/padding',False):
-            setattr(options, 'prettypCommentsInlinePadding', ppsettings.get('comments/trailing/padding'))
-        if ppsettings.get('blocks/align-with-curlies',False):
-            setattr(options, 'prettypAlignBlockWithCurlies', ppsettings.get('blocks/align-with-curlies'))
-        if ppsettings.get('blocks/open-curly/newline-before',False):
-            setattr(options, 'prettypOpenCurlyNewlineBefore', ppsettings.get('blocks/open-curly/newline-before'))
-        if ppsettings.get('blocks/open-curly/indent-before',False):
-            setattr(options, 'prettypOpenCurlyIndentBefore', ppsettings.get('blocks/open-curly/indent-before'))
+        if 'general/indent-string' in ppsettings:
+            options.prettypIndentString = ppsettings.get('general/indent-string')
+        if 'comments/block/add' in ppsettings:
+            options.prettypCommentsBlockAdd = ppsettings.get('comments/trailing/keep-column')
+        if 'comments/trailing/keep-column' in ppsettings:
+            options.prettypCommentsTrailingKeepColumn = ppsettings.get('comments/trailing/keep-column')
+        if 'comments/trailing/comment-cols' in ppsettings:
+            options.prettypCommentsTrailingCommentCols = ppsettings.get('comments/trailing/comment-cols')
+        if 'comments/trailing/padding' in ppsettings:
+            options.prettypCommentsInlinePadding = ppsettings.get('comments/trailing/padding')
+        if 'code/align-with-curlies' in ppsettings:
+            options.prettypAlignBlockWithCurlies = ppsettings.get('code/align-with-curlies')
+        if 'code/open-curly/newline-before' in ppsettings:
+            options.prettypOpenCurlyNewlineBefore = ppsettings.get('code/open-curly/newline-before')
+        if 'code/open-curly/indent-before' in ppsettings:
+            options.prettypOpenCurlyIndentBefore = ppsettings.get('code/open-curly/indent-before')
 
         self._console.info("Pretty-printing files: ", False)
         numClasses = len(classesObj)
         for pos, classId in enumerate(classesObj):
             self._console.progress(pos+1, numClasses)
-            #tree = treeLoader.getTree(classId)
             tree = classesObj[classId].tree()
-            compiled = compiler.compile(tree, options)
+            result = [u'']
+            result = pretty.prettyNode(tree, options, result)
+            compiled = u''.join(result)
             filetool.save(self._classes[classId].path, compiled)
 
         self._console.outdent()
@@ -843,14 +1052,14 @@ class CodeGenerator(object):
         if "C" not in locales:
             locales.append("C")
 
-        self._console.info("Processing translations for %s locales " % len(locales))
+        self._console.info("Processing %s locales  " % len(locales), feed=False)
         self._console.indent()
 
         packageTranslations = []
         i18n_with_packages  = self._job.get("packages/i18n-with-boot", True)
         for pos, package in enumerate(packages):
-            self._console.info("Package %s: " % pos, False)
-            self._console.indent()
+            self._console.debug("Package %s: " % pos, False)
+            #self._console.indent()
 
             pac_dat = self._locale.getTranslationData  (package.classes, variants, locales, addUntranslatedEntries) # .po data
             loc_dat = self._locale.getLocalizationData (package.classes, locales)  # cldr data
@@ -859,7 +1068,7 @@ class CodeGenerator(object):
                 package.data.translations.update(pac_dat)
                 package.data.locales.update(loc_dat)
 
-            self._console.outdent()
+            #self._console.outdent()
 
         self._console.outdent()
         return packageTranslations

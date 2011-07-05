@@ -59,7 +59,8 @@ def scanner_slice(self, a, b):
 # Interface function
 def parseStream(content, uniqueId=""):
     tokens = []
-    line = column = sol = 1
+    line = column = 1
+    sol = 0  # index of start-of-line
     scanner = Scanner.LQueue(tokens_2_obj(content, ))
     scanner.content = content
     scanner.slice = scanner_slice
@@ -169,6 +170,7 @@ def parseStream(content, uniqueId=""):
                         except SyntaxException, e:
                             desc = e.args[0] + " starting with \"%r...\"" % (tok.value + e.args[1])[:20]
                             raiseSyntaxException(token, desc)
+                        commnt = alignMultiLines(commnt, token['column'])
                         token['source'] = tok.value + commnt
                         token['detail'] = comment.getFormat(token['source'])
                         token['begin'] = not hasLeadingContent(tokens)
@@ -233,24 +235,13 @@ def parseStream(content, uniqueId=""):
 def parseString(scanner, sstart):
     # parse string literals
     result = []
-    for token in scanner:
-        result.append(token.value)
-        if token.value == sstart:
-            res = u"".join(result)
-            if not Scanner.is_last_escaped(res):  # be aware of escaped quotes
-                break
-    else:
-        # this means we've run out of tokens without finishing the string
-        res = u"".join(result)
-        raise SyntaxException("Non-terminated string", res)
-
-    return res
-
-
-def parseString1(scanner, sstart):
-    # parse string literals
-    tokens = parseDelimited(scanner, sstart)
-    return scanner.slice(scanner, tokens[0].spos, tokens[-1].spos + tokens[-1].len)
+    while True:
+        part = scanner.next(sstart)
+        result.append(part.value)
+        if not Scanner.is_last_escaped(part.value):  # be aware of escaped quotes
+            break
+        # run-away strings bomb in the above scanner.next()
+    return u"".join(result)
 
 
 ##
@@ -278,35 +269,11 @@ def parseRegexp(scanner):
     return rexp
 
 
-def parseRegexp1(scanner):
-    # leading '/' is already consumed
-    tokens = parseDelimited(scanner, '/')
-
-    # regexp modifiers
-    try:
-        if scanner.peek()[0].name == "ident":
-            token = scanner.next()
-            tokens.append(token)
-    except StopIteration:
-        pass
-
-    return scanner.slice(scanner, tokens[0].spos, tokens[-1].spos + tokens[-1].len)
-
-
 ##
 # parse an inline comment // ...
 def parseCommentI(scanner):
     result = scanner.next('\n')  # inform the low-level scanner to switch to commentI
     return result.value
-
-def parseCommentI1(scanner):
-    result = ""
-    for token in scanner:
-        if token.name == 'nl':
-            scanner.putBack(token)
-            break
-        result += token.value
-    return result
 
 
 ##
@@ -320,22 +287,6 @@ def parseCommentM(scanner):
             break
         # run-away comments bomb in the above scanner.next()
     return u"".join(res)
-
-def parseCommentM1(scanner):
-    result = []
-    res    = u""
-    for token in scanner:
-        result.append(token.value)
-        if token.value == '*/':
-            res = u"".join(result)
-            if not Scanner.is_last_escaped(res):
-                break
-    else:
-        # this means we've run out of tokens without finishing the comment
-        res = u"".join(result)
-        raise SyntaxException("Run-away comment", res)
-
-    return res
 
 
 ##
@@ -415,5 +366,23 @@ def hasLeadingContent(tokens):
             return False
         else:
             return True
+
+##
+# Remove whitespace at the beginning of subsequent lines in a multiline text
+# (usually comment).
+LeadingSpace = re.compile('\A\s+',re.U)
+def alignMultiLines(text, firstColumn):
+    firstIndent = firstColumn - 1 # columns start with 1
+    lines = text.split('\n')
+    nlines = [lines[0]]
+    for line in lines[1:]:
+        mo = LeadingSpace.search(line)
+        # only touch lines that are at least indented as the first line
+        if mo and len(mo.group()) >= firstIndent:
+            nline = LeadingSpace.sub(' ' * (len(mo.group())-firstIndent), line)
+        else :
+            nline = line
+        nlines.append(nline)
+    return '\n'.join(nlines)
 
 

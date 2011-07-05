@@ -24,17 +24,13 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL - NOT READY FOR PRODUCTION
- *
- * A wrapper of the XMLHttpRequest host object (or equivalent).
+ * A wrapper of the XMLHttpRequest host object (or equivalent). The interface is
+ * similar to <a href="http://www.w3.org/TR/XMLHttpRequest/">XmlHttpRequest</a>.
  *
  * Hides browser inconsistencies and works around bugs found in popular
- * implementations. Follows the interface specified in
- * <a href="http://www.w3.org/TR/XMLHttpRequest/">XmlHttpRequest</a>. Also
- * borrows some methods as described in
- * <a href="http://www.w3.org/TR/XMLHttpRequest2/">XmlHttpRequest2</a>.
+ * implementations.
  *
- * The most basic setup looks similar to this:
+ * Example:
  *
  * <pre class="javascript">
  *  var req = new qx.bom.request.Xhr();
@@ -46,6 +42,8 @@
  *  req.open("GET", url);
  *  req.send();
  * </pre>
+ *
+ * Implements {@link qx.bom.request.IRequest}.
  */
 qx.Bootstrap.define("qx.bom.request.Xhr",
 {
@@ -71,43 +69,7 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     OPENED: 1,
     HEADERS_RECEIVED: 2,
     LOADING: 3,
-    DONE: 4,
-
-    /**
-     * Whether URL given points to resource that is cross-domain,
-     * i.e. not of same origin.
-     *
-     * @param url {String} URL.
-     * @return {Boolean} Whether URL is cross domain.
-     */
-    isCrossDomain: function(url) {
-      var result = qx.util.Uri.parseUri(url),
-          location = window.location,
-          protocol = location.protocol;
-
-      // URL is relative in the sence that it points to origin host
-      if (!(url.indexOf("//") !== -1)) {
-        return false;
-      }
-
-      if (protocol.substr(0, protocol.length-1) == result.protocol &&
-          location.host === result.host &&
-          location.port === result.port) {
-        return false;
-      }
-
-      return true;
-    },
-
-    /**
-     * Determine if given HTTP status is considered successful.
-     *
-     * @param status {Number} HTTP status.
-     * @return {Boolean} Whether status is considered successful.
-     */
-    isSuccessful: function(status) {
-      return (status >= 200 && status < 300 || status === 304);
-    }
+    DONE: 4
   },
 
   members :
@@ -152,24 +114,26 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
 
     /**
      * {Number} Timeout limit in milliseconds.
+     *
+     * 0 (default) means no timeout.
      */
     timeout: 0,
 
     /**
-     * Initializes (prepares) the request.
+     * Initializes (prepares) request.
      *
      * @lint ignoreUndefined(XDomainRequest)
      *
      * @param method {String}
-     *        The HTTP method to use.
+     *  The HTTP method to use.
      * @param url {String}
-     *        The URL to which to send the request.
+     *  The URL to which to send the request.
      * @param async {Boolean?true}
-     *        Whether or not to perform the operation asynchronously.
+     *  Whether or not to perform the operation asynchronously.
      * @param user {String?null}
-     *        Optional user name to use for authentication purposes.
+     *  Optional user name to use for authentication purposes.
      * @param password {String?null}
-     *        Optional password to use for authentication purposes.
+     *  Optional password to use for authentication purposes.
      */
     open: function(method, url, async, user, password) {
       if (this.__disposed) {
@@ -225,7 +189,7 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       } catch(OpenError) {
 
         // Only work around exceptions caused by cross domain request attempts
-        if (!qx.bom.request.Xhr.isCrossDomain(url)) {
+        if (!qx.util.Request.isCrossDomain(url)) {
           // Is same origin
           throw OpenError;
         }
@@ -288,9 +252,9 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
      * Note: The request must be initialized before using this method.
      *
      * @param key {String}
-     *        The name of the header whose value is to be set.
+     *  The name of the header whose value is to be set.
      * @param value {String}
-     *        The value to set as the body of the header.
+     *  The value to set as the body of the header.
      */
     setRequestHeader: function(key, value) {
       if (this.__disposed) {
@@ -301,10 +265,10 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     },
 
     /**
-     * Sends the request.
+     * Sends request.
      *
      * @param data {String|Document?null}
-     *        Optional data to send.
+     *  Optional data to send.
      */
     send: function(data) {
       if (this.__disposed) {
@@ -369,12 +333,12 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     },
 
     /**
-     * Aborts the request.
+     * Abort request.
      *
      * Cancels any network activity.
      *
      * @param skipCallback {Boolean?false}
-     *        Whether onabort should be called.
+     *  Whether onabort should be called.
      */
     abort: function(skipCallback) {
       if (this.__disposed) {
@@ -396,7 +360,7 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     },
 
     /**
-     * Event handler for an event that fires at every state change.
+     * Event handler for XHR event that fires at every state change.
      *
      * Replace with custom method to get informed about the communication progress.
      */
@@ -424,9 +388,6 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     /**
      * Event handler for XHR event "error" that is fired on a network error.
      *
-     * Note: This handler is NOT called on successful retrieval, even when
-     * the HTTP status code indicates an error.
-     *
      * Replace with custom method to listen to the "error" event.
      */
     onerror: function() {},
@@ -450,10 +411,10 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     /**
      * Get a single response header from response.
      *
-     * @param  header {String}
-     *         Key of the header to get the value from.
+     * @param header {String}
+     *  Key of the header to get the value from.
      * @return {String}
-     *         Response header.
+     *  Response header.
      */
     getResponseHeader: function(header) {
       if (this.__disposed) {
@@ -474,6 +435,17 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       }
 
       return this.__nativeXhr.getAllResponseHeaders();
+    },
+
+    /**
+     * Get wrapped native XMLHttpRequest (or equivalent).
+     *
+     * Can be XMLHttpRequest or ActiveX.
+     *
+     * @return {Object} XMLHttpRequest or equivalent.
+     */
+    getRequest: function() {
+      return this.__nativeXhr;
     },
 
     /*
@@ -524,17 +496,6 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       PROTECTED
     ---------------------------------------------------------------------------
     */
-
-    /**
-     * Get wrapped native XMLHttpRequest (or equivalent).
-     *
-     * Can be XMLHttpRequest or ActiveX.
-     *
-     * @return {Object} XMLHttpRequest or equivalent.
-     */
-    _getNativeXhr: function() {
-      return this.__nativeXhr;
-    },
 
     /**
      * Create XMLHttpRequest (or equivalent).
@@ -721,9 +682,49 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
      * Handle readystatechange. Called internally when readyState is changed.
      */
     __readyStateChange: function() {
+      var that = this;
+
+      // BUGFIX: IE
+      // IE < 8 fires LOADING and DONE on open() - before send() - when from cache
+      if (qx.core.Environment.get("engine.name") == "mshtml" &&
+          qx.core.Environment.get("engine.version") < 8) {
+
+        // Detect premature events when async. LOADING and DONE is
+        // illogical to happen before request was sent.
+        if (this.__async && !this.__send && this.readyState >= qx.bom.request.Xhr.LOADING) {
+
+          if (this.readyState == qx.bom.request.Xhr.LOADING) {
+            // To early to fire, skip.
+            return;
+          }
+
+          if (this.readyState == qx.bom.request.Xhr.DONE) {
+            window.setTimeout(function() {
+
+              // Replay previously skipped
+              that.readyState = 3;
+              that.onreadystatechange();
+
+              that.readyState = 4;
+              that.onreadystatechange();
+              that.__readyStateChangeDone();
+            });
+            return;
+          }
+
+        }
+      }
+
       // Always fire "readystatechange"
       this.onreadystatechange();
+      this.__readyStateChangeDone();
+    },
 
+    /**
+     * Handle readystatechange. Called internally by
+     * {@link #__readyStateChange} when readyState is DONE.
+     */
+    __readyStateChangeDone: function() {
       if (this.readyState === qx.bom.request.Xhr.DONE) {
         // Request determined DONE. Cancel timeout.
         window.clearTimeout(this.__timerId);
@@ -731,6 +732,14 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
         // Fire "timeout" if timeout flag is set
         if (this.__timeout) {
           this.ontimeout();
+
+          // BUGFIX: Opera
+          // Since Opera does not fire "error" on network error, fire additional
+          // "error" on timeout (may well be related to network error)
+          if (qx.core.Environment.get("engine.name") === "opera") {
+            this.onerror();
+          }
+
           this.__timeout = false;
 
         // Fire either "load" or "error"

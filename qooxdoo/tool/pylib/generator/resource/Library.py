@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ################################################################################
 #
 #  qooxdoo - the new era of web development
@@ -79,6 +80,9 @@ class Library(object):
         self.namespace = self._config.get("namespace")
         if not self.namespace: raise RuntimeError
         self._checkNamespace(self._classPath)
+        
+        self.__youngest = (None, None) # to memoize youngest file in lib
+
 
 
     ##
@@ -98,25 +102,29 @@ class Library(object):
         self.__dict__ = d
 
 
-    def mostRecentlyChangedFile(self):
-        youngFiles = {}
+    def mostRecentlyChangedFile(self, force=False):
+        if self.__youngest != (None,None) and not force:
+            return self.__youngest
+
+        youngFiles = {} # {timestamp: "filepath"}
         # for each interesting library part
         for category in self.categories:
             catPath = self.categories[category]["path"]
             if category == "translation" and not os.path.isdir(catPath):
                 continue
             # find youngest file
-            file, mtime = filetool.findYoungest(catPath)
-            youngFiles[mtime] = file
+            file_, mtime = filetool.findYoungest(catPath)
+            youngFiles[mtime] = file_
             
         # also check the Manifest file
-        file, mtime = filetool.findYoungest(self.manifest)
-        youngFiles[mtime] = file
+        file_, mtime = filetool.findYoungest(self.manifest)
+        youngFiles[mtime] = file_
         
         # and return the maximum of those
         youngest = sorted(youngFiles.keys())[-1]
+        self.__youngest = (youngFiles[youngest], youngest) # ("filepath", mtime)
 
-        return (youngFiles[youngest], youngest)
+        return self.__youngest
 
 
     _codeExpr = re.compile(r'''qx.(Bootstrap|List|Class|Mixin|Interface|Theme).define\s*\(\s*["']((?u)[^"']+)["']''', re.M)
@@ -147,7 +155,7 @@ class Library(object):
         return self.resources
 
     def scan(self):
-        self._console.info("Scanning %s..." % self._path)
+        self._console.debug("Scanning %s..." % self._path)
         self._console.indent()
 
         scanres = self._scanClassPath(self._classPath, self._classUri, self._encoding)
@@ -287,12 +295,14 @@ class Library(object):
                 # Ignore dot files
                 if fileName.startswith("."):
                     continue
+                self._console.dot()
 
                 # Process path data
                 filePath = os.path.join(root, fileName)
                 fileRel  = filePath.replace(path + os.sep, "")
                 fileExt  = os.path.splitext(fileName)[-1]
-                fileSize = os.stat(filePath).st_size
+                fileStat = os.stat(filePath)
+                fileSize = fileStat.st_size
 
                 # Compute full URI from relative path
                 fileUri = uri + "/" + fileRel.replace(os.sep, "/")
@@ -362,6 +372,7 @@ class Library(object):
                 clazz.size     = fileSize     # dependency logging uses this
                 clazz.package  = filePackage  # Apiloader uses this
                 clazz.relpath  = fileRel      # Locale uses this
+                clazz.m_time_  = fileStat.st_mtime
                 classList.append(clazz)
 
         self._console.indent()

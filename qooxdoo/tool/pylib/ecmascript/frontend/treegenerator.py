@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ################################################################################
 #
 #  qooxdoo - the new era of web development
@@ -622,8 +623,9 @@ def readStatement (stream, expressionMode = False, overrunSemicolon = True, inSt
 
 def currIsIdentifier (stream, allowThis):
     det = stream.currDetail()
-    return stream.currIsType("name") or stream.currIsType("builtin") \
+    return (stream.currIsType("name") or stream.currIsType("builtin")
         or (stream.currIsType("reserved") and allowThis and det == "THIS")
+    )
 
 
 

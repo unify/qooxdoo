@@ -29,54 +29,86 @@
  * <pre class='javascript'>
  *   var title = new qx.ui.mobile.form.Title("Group");
  *   var form = new qx.ui.mobile.form.Form();
- *   var row = new qx.ui.mobile.form.Row();
- *   row.add(new qx.ui.mobile.form.TextField());
+ *   form.add(new qx.ui.mobile.form.TextField(), "Username: ");
  *
  *   this.getRoot.add(title);
- *   this.getRoot.add(form);
+ *   this.getRoot.add(new qx.ui.mobile.form.renderer.Single(form));
  * </pre>
  *
  * This example creates a form and adds a row with a text field in it.
  */
 qx.Class.define("qx.ui.mobile.form.Form",
 {
-  extend : qx.ui.mobile.core.Widget,
-  include : [ qx.ui.mobile.core.MChildrenHandling ],
-
+  extend : qx.ui.form.Form,
 
   /*
   *****************************************************************************
-     PROPERTIES
+     CONSTRUCTOR
   *****************************************************************************
   */
 
-  properties :
+  construct : function()
   {
-    // overridden
-    defaultCssClass :
-    {
-      refine : true,
-      init : "form"
-    }
+    this.base(arguments);
+    
+    this._resetter = new qx.ui.mobile.form.Resetter();
   },
-
-
-
-
-  /*
-  *****************************************************************************
-     MEMBERS
-  *****************************************************************************
-  */
-
+  
   members :
   {
-    // overridden
-    _getTagName : function()
+  
+    /**
+     * the renderer this form uses to be displayed
+     * 
+     */
+    __renderer : null,
+    
+    
+    /**
+     * 
+     * setter for the renderer private variable
+     * @param renderer {qx.ui.mobile.form.renderer.AbstractRenderer} the renderer
+     * 
+     */
+    setRenderer : function(renderer)
     {
-      // TODO: use real form tag here
-      // we need submit functionality
-      return "ul";
+      this.__renderer = renderer;
+    },
+    
+    // override
+    validate : function()
+    {
+      var validateResult = this.base(arguments);
+      if(this.__renderer != null) {
+        this.__renderer.resetForm();
+      }
+      var groups = this.getGroups();
+      for (var i = 0; i < groups.length; i++)
+      {
+        var group = groups[i];
+        for(var j=0; j<group.items.length; j++)
+        {
+          var item = group.items[j];
+          if(!item.isValid())
+          {
+            if(this.__renderer != null)
+            {
+              this.__renderer.showErrorForItem(item);
+            }
+            else
+            {
+              alert('error '+item.getInvalidMessage());
+            }
+          }
+        }
+      }
+      
+      if(this.__renderer != null) {
+        this.__renderer._domUpdated();
+      }
+      
+      return validateResult;
     }
   }
+
 });

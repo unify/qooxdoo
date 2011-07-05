@@ -38,6 +38,7 @@ qx.Class.define("qx.test.lang.String",
 
       this.assertEquals("1-2", Str.format("%1-%2", [ "1", "2" ]));
       this.assertEquals("2-1", Str.format("%2-%1", [ "1", "2" ]));
+      this.assertEquals("1-2-3-4-5-6-7-8-9-10-11", Str.format("%1-%2-%3-%4-%5-%6-%7-%8-%9-%10-%11", [ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]));
     },
 
 
@@ -147,6 +148,29 @@ qx.Class.define("qx.test.lang.String",
       this.assertEquals("<div id='1'>&nbsp; €</div>", qx.xml.String.unescape("&lt;div id=&apos;1&apos;&gt;&amp;nbsp; &#8364;&lt;/div&gt;"));
 
       this.assertEquals('"bread" & "butter"', qx.xml.String.unescape("&quot;bread&quot; &amp; &quot;butter&quot;"));
+    },
+    
+    testCapitalize : function()
+    {
+      this.assertEquals("Alibaba", qx.lang.String.capitalize("alibaba"));
+      this.assertEquals("Über", qx.lang.String.capitalize("über"));
+      this.assertEquals("Aüber", qx.lang.String.capitalize("aüber"));
+      this.assertEquals("Die-Über", qx.lang.String.capitalize("die-über"));
+      this.assertEquals("Die Über", qx.lang.String.capitalize("die über"));
+    },
+    
+    testCamelCase : function()
+    {
+      this.assertEquals("paddingTop", qx.lang.String.camelCase("padding-top"));
+      this.assertEquals("ILikeCookies", qx.lang.String.camelCase("I-like-cookies"));
+      this.assertEquals("iLikeCookies", qx.lang.String.camelCase("i-like-cookies"));
+    },
+    
+    testHyphenate : function()
+    {
+      this.assertEquals("padding-top", qx.lang.String.hyphenate("paddingTop"));
+      this.assertEquals("I-like-cookies", qx.lang.String.hyphenate("ILikeCookies"));
+      this.assertEquals("i-like-cookies", qx.lang.String.hyphenate("iLikeCookies"));
     },
 
     testClean: function()

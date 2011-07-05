@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 ################################################################################
 #
@@ -34,6 +35,7 @@ class Resource(object):
         self.id     = None
         self.path   = path
         self.library= None
+        self.m_time_= None  # last-modified time stamp
 
     def __str__(self):
         return self.id
@@ -56,6 +58,8 @@ class Resource(object):
 
     ##
     # Resource's last modified time (in epoch secs)
-    def m_time(self):
-        return os.stat(self.path).st_mtime
+    def m_time(self, force=False):
+        if not self.m_time_ or force:
+            self.m_time_ = os.stat(self.path).st_mtime
+        return self.m_time_
 

@@ -231,7 +231,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
       }
       else
       {
-        if (!this._getAnchorItem()) {
+        if (this._getAnchorItem() == null) {
           this._setAnchorItem(item);
         }
 
@@ -259,13 +259,10 @@ qx.Class.define("qx.ui.core.selection.Abstract",
 
       if (this.getMode() === "one" && this.isSelectionEmpty())
       {
-        var first = this._getFirstSelectable();
-        if (first) {
-          this.addItem(first);
-        }
+        var selected = this._applyDefaultSelection();
 
         // Do not fire any event in this case.
-        if (first == item) {
+        if (selected == item) {
           return;
         }
       }
@@ -316,8 +313,12 @@ qx.Class.define("qx.ui.core.selection.Abstract",
      */
     clearSelection : function()
     {
-      if (this.getMode() == "one") {
-        return;
+      if (this.getMode() == "one") 
+      {
+        var selected = this._applyDefaultSelection(true);
+        if (selected != null) {
+          return;
+        }
       }
 
       this._clearSelection();
@@ -505,11 +506,11 @@ qx.Class.define("qx.ui.core.selection.Abstract",
     {
       var old = this.__anchorItem;
 
-      if (old) {
+      if (old != null) {
         this._styleSelectable(old, "anchor", false);
       }
 
-      if (value) {
+      if (value != null) {
         this._styleSelectable(value, "anchor", true);
       }
 
@@ -808,14 +809,8 @@ qx.Class.define("qx.ui.core.selection.Abstract",
       this._clearSelection();
 
       // Mode "one" requires one selected item
-      if (value === "one")
-      {
-        var first = this._getFirstSelectable();
-        if (first != null)
-        {
-          this._setSelectedItem(first);
-          this._scrollItemIntoView(first);
-        }
+      if (value === "one") {
+        this._applyDefaultSelection(true);
       }
 
       this._fireChange();
@@ -1022,7 +1017,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
         (qx.core.Environment.get("os.name") == "osx" && event.isMetaPressed());
       var isShiftPressed = event.isShiftPressed();
 
-      if (!isCtrlPressed && !isShiftPressed && this.__mouseDownOnSelected)
+      if (!isCtrlPressed && !isShiftPressed && this.__mouseDownOnSelected != null)
       {
         var item = this._getSelectableFromMouseEvent(event);
         if (item === null || !this.isItemSelected(item)) {
@@ -1422,7 +1417,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
       else if (key === "Space")
       {
         var lead = this.getLeadItem();
-        if (lead && !isShiftPressed)
+        if (lead != null && !isShiftPressed)
         {
           if (isCtrlPressed || mode === "additive") {
             this._toggleInSelection(lead);
@@ -1727,7 +1722,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
     {
       var hash = this._selectableToHashCode(item);
 
-      if (!this.__selection[hash] && this._isSelectable(item))
+      if (this.__selection[hash] == null && this._isSelectable(item))
       {
         this.__selection[hash] = item;
         this._styleSelectable(item, "selected", true);
@@ -1747,7 +1742,7 @@ qx.Class.define("qx.ui.core.selection.Abstract",
     {
       var hash = this._selectableToHashCode(item);
 
-      if (!this.__selection[hash])
+      if (this.__selection[hash] == null)
       {
         this.__selection[hash] = item;
         this._styleSelectable(item, "selected", true);
@@ -1879,6 +1874,27 @@ qx.Class.define("qx.ui.core.selection.Abstract",
         this.fireDataEvent("changeSelection", this.getSelection());
         delete this.__selectionModified;
       }
+    },
+    
+    
+    /**
+     * Applies the default selection. The default item is the first item.
+     * 
+     * @param force {Boolean} Whether the default selection sould forced. 
+     * 
+     * @return {var} The selected item.
+     */
+    _applyDefaultSelection : function(force)
+    {
+      if (force === true || this.getMode() === "one" && this.isSelectionEmpty())
+      {
+        var first = this._getFirstSelectable();
+        if (first != null) {
+          this.selectItem(first);
+        }
+        return first;
+      }
+      return null;
     }
   },
 

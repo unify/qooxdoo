@@ -17,8 +17,18 @@
 
 ************************************************************************ */
 
+/* ************************************************************************
+
+#ignore(qx.test.Animal)
+#ignore(qx.test.Affe)
+#ignore(qx.test.Gibbon)
+
+************************************************************************ */
+
 /**
  * Rudimentary tests to check that Sinon.JS is integrated correctly.
+ *
+ * Also serves as a collection of examples.
  */
 qx.Class.define("qx.test.dev.unit.Sinon",
 {
@@ -31,9 +41,35 @@ qx.Class.define("qx.test.dev.unit.Sinon",
   {
     sinon: null,
 
+    /**
+     * @lint ignoreUndefined(qx.test.Animal)
+     * @lint ignoreUndefined(qx.test.Affe)
+     * @lint ignoreUndefined(qx.test.Gibbon)
+     */
     setUp : function()
     {
       this.sinon = qx.dev.unit.Sinon.getSinon();
+
+      qx.Class.define("qx.test.Animal", {
+        extend: qx.core.Object,
+        members: {
+          getKind: function() { return "Animal"; }
+        }
+      });
+
+      qx.Class.define("qx.test.Affe", {
+        extend: qx.test.Animal,
+        members: {
+          scratch: function() { return true; }
+        }
+      });
+
+      qx.Class.define("qx.test.Gibbon", {
+        extend: qx.test.Affe,
+        members: {
+          climb: function() { return true; }
+        }
+      });
     },
 
     "test: get sinon": function() {
@@ -78,6 +114,41 @@ qx.Class.define("qx.test.dev.unit.Sinon",
       whoami.returns("Affe");
 
       this.assertEquals("Affe", whoami());
+    },
+
+    "test: stub property": function() {
+      qx.test.PROP = false;
+
+      this.stub(qx.test, "PROP", true);
+      this.assertEquals(true, qx.test.PROP);
+
+      qx.test.PROP = undefined;
+    },
+
+    "test: stub property in isolation": function() {
+      qx.test.PROP = false;
+
+      this.stub(qx.test, "PROP", true);
+      this.getSandbox().restore();
+      this.assertEquals(false, qx.test.PROP);
+
+      qx.test.PROP = undefined;
+    },
+
+    "test: stub environment setting": function() {
+      var setting = this.stub(qx.core.Environment, "get").withArgs("browser.name");
+      setting.returns("My Browser");
+      this.assertEquals("My Browser", qx.core.Environment.get("browser.name"));
+    },
+
+    "test: stub environment setting in isolation": function() {
+      var name = qx.core.Environment.get("browser.name"),
+          version = qx.core.Environment.get("browser.version"),
+          setting = this.stub(qx.core.Environment, "get").withArgs("browser.name");
+      setting.returns("My Browser");
+      this.getSandbox().restore();
+      this.assertEquals(name, qx.core.Environment.get("browser.name"));
+      this.assertEquals(version, qx.core.Environment.get("browser.version"));
     },
 
     "test: assert": function() {
@@ -151,6 +222,82 @@ qx.Class.define("qx.test.dev.unit.Sinon",
       this.assertUndefined(nxhr.restore);
     },
 
+    "test: deep stub": function() {
+      var obj = new qx.test.Affe();
+          obj = this.deepStub(obj);
+      obj.getKind();
+      this.assertCalled(obj.getKind);
+      obj.dispose();
+    },
+
+    "test: shallow stub": function() {
+      var obj = new qx.test.Gibbon();
+          obj = this.shallowStub(obj, qx.test.Affe);
+
+      obj.climb();
+      obj.scratch();
+      this.assertCalled(obj.climb);
+      this.assertCalled(obj.scratch);
+
+      // Not stubbed
+      this.assertEquals("Animal", obj.getKind(), "Must return original");
+      this.assertUndefined(obj.getKind.called, "Must not be stubbed");
+      obj.dispose();
+    },
+
+    "test: inject stub of original": function() {
+      this.injectStub(qx.test, "Affe");
+      var affe = new qx.test.Affe();
+
+      affe.scratch.returns(false);
+      this.assertFalse(affe.scratch());
+      affe.dispose();
+    },
+
+    "test: inject stub of original and return": function() {
+      var stub = this.injectStub(qx.test, "Affe"),
+          affe = new qx.test.Affe();
+
+      stub.scratch.returns(false);
+      this.assertFalse(affe.scratch());
+      affe.dispose();
+    },
+
+    "test: inject custom stub": function() {
+      this.injectStub(qx.test, "Affe", this.stub({ dance: function(){} }));
+      var affe = new qx.test.Affe();
+
+      affe.dance();
+      this.assertCalled(affe.dance);
+    },
+
+    "test: inject custom stub and return": function() {
+      var stub = this.injectStub(qx.test, "Affe", this.stub({ dance: function(){} })),
+          affe = new qx.test.Affe();
+
+      affe.dance();
+      this.assertCalled(stub.dance);
+    },
+
+    "test: reveal mock of original and return": function() {
+      var mock = this.revealMock(qx.test, "Affe"),
+          affe = new qx.test.Affe();
+
+      mock.expects("scratch").once();
+      affe.scratch();
+      mock.verify();
+      affe.dispose();
+    },
+
+    "test: reveal mock of custom and return": function() {
+      var mock = this.revealMock(qx.test, "Affe", { dance: function() {} }),
+          affe = new qx.test.Affe();
+
+      mock.expects("dance").once();
+      affe.dance();
+      mock.verify();
+    },
+
     hasXhr: function() {
       return qx.core.Environment.get("io.xhr") === "xhr";
     },
@@ -159,6 +306,10 @@ qx.Class.define("qx.test.dev.unit.Sinon",
     {
       this.getSandbox().restore();
       this.sinon = null;
+
+      qx.Class.undefine("qx.test.Affe");
+      qx.Class.undefine("qx.test.Animal");
+      qx.Class.undefine("qx.test.Gibbon");
     }
   }
 });

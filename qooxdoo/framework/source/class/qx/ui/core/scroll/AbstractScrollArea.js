@@ -30,7 +30,10 @@
 qx.Class.define("qx.ui.core.scroll.AbstractScrollArea",
 {
   extend : qx.ui.core.Widget,
-  include : qx.ui.core.scroll.MScrollBarFactory,
+  include : [
+    qx.ui.core.scroll.MScrollBarFactory, 
+    qx.ui.core.scroll.MWheelHandling
+  ],
   type : "abstract",
 
 
@@ -436,37 +439,6 @@ qx.Class.define("qx.ui.core.scroll.AbstractScrollArea",
      */
     _onScrollPaneY : function(e) {
       this.scrollToY(e.getData());
-    },
-
-
-    /**
-     * Event handler for the mouse wheel
-     *
-     * @param e {qx.event.type.Mouse} The mouse wheel event
-     */
-    _onMouseWheel : function(e)
-    {
-      var showX = this._isChildControlVisible("scrollbar-x");
-      var showY = this._isChildControlVisible("scrollbar-y");
-
-      // If vertical scrollbar is present, scroll vertically, otherwise check if
-      // horizontal scrollbar is present to scroll horizontally, else do not scroll at all.
-      var scrollbar = (showY) ? this.getChildControl("scrollbar-y", true) : ( showX ? this.getChildControl("scrollbar-x", true) : null );
-      if (scrollbar) {
-        var delta = parseInt(e.getWheelDelta());
-        scrollbar.scrollBySteps(delta);
-
-        var position = scrollbar.getPosition();
-        var max = scrollbar.getMaximum();
-        // pass the event to the parent if the scrollbar is at an edge
-        if (delta < 0 && position <= 0 || delta > 0 && position >= max) {
-          // Pass the mousewheel event to the parent
-          return;
-        }
-
-        // Stop bubbling and native event only if a scrollbar is visible
-        e.stop();
-      }
     },
 
 

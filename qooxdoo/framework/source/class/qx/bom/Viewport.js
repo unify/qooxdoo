@@ -15,6 +15,7 @@
    Authors:
      * Sebastian Fastner (fastner)
      * Sebastian Werner (wpbasti)
+     * Sebastian Fastner (fastner)
      * Tino Butz (tbtz)
 
    ======================================================================
@@ -315,6 +316,46 @@ qx.Class.define("qx.bom.Viewport",
     
     
     /**
+     * Returns an orientation normalizer value that should be added to device orientation 
+     * to normalize behaviour on different devices.
+     *
+     * @return {Map} Orientation normalizing value
+     */
+    __getOrientationNormalizer : function() {
+      // Calculate own understanding of orientation (0 = portrait, 90 = landscape)
+      var currentOrientation = this.getWidth() > this.getHeight() ? 90 : 0;
+      var deviceOrientation  = window.orientation;
+      if (deviceOrientation == null || Math.abs( deviceOrientation % 180 ) == currentOrientation) {
+        // No device orientation available or device orientation equals own understanding of orientation
+        return {
+          "-270":  90,
+          "-180": 180,
+           "-90": -90,
+             "0":   0,
+            "90":  90,
+           "180": 180,
+           "270": -90
+        };
+      } else {
+        // Device orientation is not equal to own understanding of orientation
+        return {
+          "-270": 180,
+          "-180": -90,
+           "-90":   0,
+             "0":  90,
+            "90": 180,
+           "180": -90,
+           "270":   0
+        };
+      }
+    },
+
+
+    // Cache orientation normalizer map on start
+    __orientationNormalizer : null,
+
+
+    /**
      * Returns the current orientation of the viewport in degree.
      *
      * All possible values and their meaning:
@@ -372,7 +413,7 @@ qx.Class.define("qx.bom.Viewport",
       return Math.abs(this.getOrientation(win)) !== 90;
     }
   },
-  
+
   defer : function(statics) {
     statics.__orientationNormalizer = statics.__getOrientationNormalizer();
   }

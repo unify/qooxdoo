@@ -47,7 +47,18 @@
 qx.Class.define("qx.ui.mobile.form.Slider",
 {
   extend : qx.ui.mobile.core.Widget,
-
+  include : [
+    qx.ui.mobile.form.MValue,
+    qx.ui.form.MForm,
+    qx.ui.form.MModelProperty,
+    qx.ui.mobile.form.MState,
+    qx.ui.mobile.form.MEnable
+  ],
+  implement : [
+    qx.ui.form.IForm,
+    qx.ui.form.IModel,
+    qx.ui.form.INumberForm
+  ],
 
   /*
   *****************************************************************************
@@ -79,21 +90,6 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       init : "slider"
     },
 
-
-    /**
-     * The current slider value.
-     *
-     * Strictly validates according to {@link #minimum} and {@link #maximum}.
-     */
-    value :
-    {
-      check : "Integer",
-      init : 0,
-      apply : "_updateKnobPosition",
-      event : "changeValue"
-    },
-
-
     /**
      * The minimum slider value (may be negative). This value must be smaller
      * than {@link #maximum}.
@@ -102,7 +98,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
     {
       check : "Integer",
       init : 0,
-      apply : "_updateKnobPosition"
+      apply : "_setValue"
     },
 
 
@@ -114,7 +110,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
     {
       check : "Integer",
       init : 100,
-      apply : "_updateKnobPosition"
+      apply : "_setValue"
     },
 
 
@@ -127,6 +123,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       check : "Integer",
       init : 1
     }
+    
   },
 
 
@@ -146,6 +143,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
     _containerElementWidth : null,
     _containerElementLeft : null,
     _pixelPerStep : null,
+    __value: 0,
 
 
     /**
@@ -263,6 +261,11 @@ qx.Class.define("qx.ui.mobile.form.Slider",
     },
 
 
+    /**
+     * Event handler. Called when the transition end event occurs.
+     *
+     * @param evt {qx.event.type.Event} The causing event
+     */
     _onTransitionEnd : function(evt)
     {
       var knobElement = this._getKnobElement();
@@ -299,7 +302,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
      * Returns the current position of the knob.
      *
      * @param documentLeft {Integer} The left positon of the knob
-     * @return {Integer} The current position of the container elemnt.
+     * @return {Integer} The current position of the container element.
      */
     _getPosition : function(documentLeft)
     {
@@ -323,7 +326,26 @@ qx.Class.define("qx.ui.mobile.form.Slider",
       return this._knobElement;
     },
 
+    /**
+     * Sets the value of this slider.
+     * It is called by setValue method of qx.ui.mobile.form.MValue mixin
+     * @param value {Integer} the new value of the slider
+     */
+    _setValue : function(value)
+    {
+      this.__value = value;
+      this._updateKnobPosition();
+    },
 
+    /**
+     * Gets the value [true/false] of this slider.
+     * It is called by getValue method of qx.ui.mobile.form.MValue mixin
+     * @return value {Integer} the value of the slider
+     */
+    _getValue : function() {
+      return this.__value;
+    },
+    
     /**
      * Updates the knob position based on the current value.
      */
@@ -394,8 +416,6 @@ qx.Class.define("qx.ui.mobile.form.Slider",
      */
     _positionToValue : function(position)
     {
-      var width = this._containerElementWidth;
-
       var value = this.getMinimum() + (Math.round(position / this._pixelPerStep) * this.getStep());
       return this._limitValue(value);
     },
@@ -460,6 +480,7 @@ qx.Class.define("qx.ui.mobile.form.Slider",
     {
       return this.getMaximum() - this.getMinimum();
     }
+
   },
 
 

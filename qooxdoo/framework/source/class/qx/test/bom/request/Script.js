@@ -25,6 +25,12 @@
 
 ************************************************************************ */
 
+/* ************************************************************************
+
+#ignore(SCRIPT_LOADED)
+
+************************************************************************ */
+
 qx.Class.define("qx.test.bom.request.Script",
 {
   extend : qx.dev.unit.TestCase,
@@ -37,6 +43,11 @@ qx.Class.define("qx.test.bom.request.Script",
     setUp: function() {
       var req = this.req = new qx.bom.request.Script(),
           url = this.url = this.getUrl("qx/test/script.js");
+
+      // Assume timeout after 1s in Opera (no error!)
+      if (qx.core.Environment.get("engine.name") === "opera") {
+        req.timeout = 1000;
+      }
     },
 
     tearDown: function() {
@@ -61,6 +72,23 @@ qx.Class.define("qx.test.bom.request.Script",
       this.req.dispose();
 
       this.assertFalse(this.isInDom(script));
+    },
+
+    "test: allow many requests with same object": function() {
+      var count = 0,
+          that = this;
+
+      this.req.onload = function() {
+        count += 1;
+        if (count == 2) {
+          that.resume(function() {});
+          return;
+        }
+        that.request();
+      };
+
+      this.request();
+      this.wait();
     },
 
     //
@@ -121,7 +149,7 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait(10000);
+      this.wait(15000);
     },
 
     "test: properties indicate failure when request timed out": function() {
@@ -159,6 +187,23 @@ qx.Class.define("qx.test.bom.request.Script",
       this.req.setDetermineSuccess(function() {
         return false;
       });
+
+      this.request();
+      this.wait();
+    },
+
+    "test: reset XHR properties when reopened": function() {
+      var req = this.req,
+          that = this;
+
+      req.onload = function() {
+        that.resume(function() {
+          req.open("GET", "/url");
+          that.assertIdentical(1, req.readyState);
+          that.assertIdentical(0, req.status);
+          that.assertIdentical("", req.statusText);
+        });
+      };
 
       this.request();
       this.wait();
@@ -294,7 +339,7 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait(10000);
+      this.wait(15000);
     },
 
     "test: call onloadend when request completes": function() {
@@ -333,10 +378,10 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait(10000);
+      this.wait(15000);
     },
 
-    "test: call onerror when request failed because of network error": function() {
+    "test: call onerror on network error": function() {
 
       // Known to fail in legacy IEs
       if (this.isIeBelow(9)) {
@@ -350,10 +395,10 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait(10000);
+      this.wait(15000);
     },
 
-    "test: call onerror when request failed because of invalid script": function() {
+    "test: call onerror on invalid script": function() {
 
       // Known to fail in all browsers tested
       // Native "error" event not fired for script element.
@@ -475,7 +520,7 @@ qx.Class.define("qx.test.bom.request.Script",
       };
 
       this.request("http://fail.tld");
-      this.wait(10000);
+      this.wait(15000);
     },
 
     "test: remove script from DOM when request timed out": function() {

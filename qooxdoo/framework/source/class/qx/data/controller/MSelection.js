@@ -43,7 +43,8 @@ qx.Mixin.define("qx.data.controller.MSelection",
 
     // create a default selection array
     if (this.getSelection() == null) {
-      this.setSelection(new qx.data.Array());
+      this.__ownSelection = new qx.data.Array();
+      this.setSelection(this.__ownSelection);
     }
   },
 
@@ -85,6 +86,7 @@ qx.Mixin.define("qx.data.controller.MSelection",
     _modifingSelection : 0,
     __selectionListenerId : null,
     __selectionArrayListenerId : null,
+    __ownSelection : null,
 
     /*
     ---------------------------------------------------------------------------
@@ -155,27 +157,17 @@ qx.Mixin.define("qx.data.controller.MSelection",
       var selection = this.getSelection();
       if (selection == null) {
         selection = new qx.data.Array();
+        this.__ownSelection = selection;
         this.setSelection(selection);
-      }
-      // if the selection is not empty
-      if (targetSelection.length > 0) {
-        // remove all items without firing an event
-        selection.toArray().splice(0, selection.getLength());
-      } else {
-        // remove all with firing an event and get rid of the new array
-        selection.splice(0, this.getSelection().getLength()).dispose();
       }
 
       // go through the target selection
+      var spliceArgs = [0, selection.getLength()];
       for (var i = 0; i < targetSelection.length; i++) {
-        // get the fitting item
-        var item = targetSelection[i].getModel();
-        if (i + 1 == targetSelection.length) {
-          selection.push(item);
-        } else {
-          selection.toArray().push(item);
-        }
+        spliceArgs.push(targetSelection[i].getModel());
       }
+      // use splice to ensure a correct change event [BUG #4728]
+      selection.splice.apply(selection, spliceArgs).dispose();
 
       // fire the change event manually
       this.fireDataEvent("changeSelection", this.getSelection());
@@ -380,5 +372,19 @@ qx.Mixin.define("qx.data.controller.MSelection",
       return this._modifingSelection > 0;
     }
 
+  },
+
+
+  /*
+  *****************************************************************************
+     DESTRUCTOR
+  *****************************************************************************
+  */
+
+  destruct : function()
+  {
+    if (this.__ownSelection) {
+      this.__ownSelection.dispose();
+    }
   }
 });

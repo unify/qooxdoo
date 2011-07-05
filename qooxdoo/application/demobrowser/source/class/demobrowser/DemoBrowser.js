@@ -62,6 +62,9 @@ qx.Class.define("demobrowser.DemoBrowser",
   *****************************************************************************
   */
 
+  /**
+   * @lint ignoreUndefined(qxc)
+   */
   construct : function()
   {
     this.base(arguments);
@@ -155,7 +158,7 @@ qx.Class.define("demobrowser.DemoBrowser",
 
     var htmlView = this.__htmlView = this.__makeHtmlCodeView();
     var jsView = this.__jsView = this.__makeJsCodeView();
-    var logView = this.__logView = this.__makeLogView();
+    var logView = this.__logView = new qxc.ui.logpane.LogView();
 
     var stack = this.__stack = new qx.ui.container.Stack;
     stack.setDecorator("main");
@@ -302,30 +305,27 @@ qx.Class.define("demobrowser.DemoBrowser",
       if(theOtherGroup && selected) {
         theOtherGroup.setModelSelection([selected.getModel()]);
       }
-      if(e.getTarget() === this.__viewGroup)
+      var show = selected != null ? selected.getUserData("value") : "";
+      switch(show)
       {
-        var show = selected != null ? selected.getUserData("value") : "";
-        switch(show)
-        {
-          case "html":
-            this.__stack.setSelection([this.__htmlView]);
-            this.__stack.show();
-            break;
+        case "html":
+          this.__stack.setSelection([this.__htmlView]);
+          this.__stack.show();
+          break;
 
-          case "js":
-            this.__stack.setSelection([this.__jsView]);
-            this.__stack.show();
-            break;
+        case "js":
+          this.__stack.setSelection([this.__jsView]);
+          this.__stack.show();
+          break;
 
-          case "log":
-            this.__stack.setSelection([this.__logView]);
-            this.__stack.show();
-            break;
+        case "log":
+          this.__stack.setSelection([this.__logView]);
+          this.__stack.show();
+          break;
 
-          default:
-            this.__stack.resetSelection();
-            this.__stack.exclude();
-        }
+        default:
+          this.__stack.resetSelection();
+          this.__stack.exclude();
       }
     },
 
@@ -479,11 +479,17 @@ qx.Class.define("demobrowser.DemoBrowser",
       this._stopbutton.addListener("execute", this.stopSample, this);
       this._stopbutton.setToolTipText("Stop playback after current demo");
       this._navPart.add(this._stopbutton);
-      this._stopbutton.setVisibility("excluded");
+      var self = this;
+      window.setTimeout(function() {
+        self._stopbutton.setVisibility("excluded");
+      }, 0);
 
       // Avoid flickering of the buttons are exchanged
-      this._runbutton.setMinWidth(60);
-      this._stopbutton.setMinWidth(60);
+      this._stopbutton.addListenerOnce("appear", function(ev) {
+        var sizeHint = this._stopbutton.getSizeHint();
+        this._stopbutton.setMinWidth(sizeHint.width);
+        this._runbutton.setMinWidth(sizeHint.width);
+      }, this);
 
       var prevNextPart = new qx.ui.toolbar.Part();
       bar.add(prevNextPart);
@@ -783,6 +789,11 @@ qx.Class.define("demobrowser.DemoBrowser",
               cachedItem.setUserData('value',partButtons[i].getUserData('value'));
               cachedItem.setModel(partButtons[i].getModel());
               partButtons[i].bind("enabled", cachedItem, "enabled");
+
+              // sync the value's
+              partButtons[i].bind("value", cachedItem, "value");
+              cachedItem.bind("value", partButtons[i], "value");
+
               if(!this.__menuViewRadioGroup)
               {
                 this.__menuViewRadioGroup = new qx.ui.form.RadioGroup();
@@ -861,50 +872,6 @@ qx.Class.define("demobrowser.DemoBrowser",
       this._iframe = iframe;
 
       return iframe;
-    },
-
-    __makeLogView : function()
-    {
-      var logBox = new qx.ui.layout.VBox(0, "middle", "main");
-      logBox.setAlignX("right");
-
-      var logContainer = new qx.ui.container.Composite(logBox);
-      var deco = new qx.ui.decoration.Background().set({
-        backgroundColor : "background-medium"
-      });
-      logContainer.setDecorator(deco);
-
-      var clearBtn = new qx.ui.form.Button(this.tr("Clear log"), "icon/22/actions/edit-clear.png");
-      clearBtn.setAllowGrowX(false);
-      clearBtn.setMargin(5);
-      clearBtn.addListener("execute", function() {
-        this.logappender.clear();
-      }, this);
-
-      logContainer.add(clearBtn, {flex : 0});
-
-      this.f2 = new qx.ui.embed.Html();
-      this.f2.setOverflow("auto", "auto");
-      this.f2.setFont("monospace");
-      this.f2.setBackgroundColor("white");
-
-      // Create appender and unregister from this logger
-      // (we are interested in demo messages only)
-      this.logappender = new qx.log.appender.Element();
-      qx.log.Logger.unregister(this.logappender);
-
-      // Directly create DOM element to use
-      var wrap = document.createElement("div");
-      this.logelem = document.createElement("div");
-      this.logelem.style.padding="8px";
-      this.logappender.setElement(this.logelem);
-      wrap.appendChild(this.logelem);
-
-      this.f2.getContentElement().useElement(wrap);
-
-      logContainer.add(this.f2, {flex : 1});
-      //return this.f2;
-      return logContainer;
     },
 
     __makeHtmlCodeView : function()
@@ -1322,7 +1289,6 @@ qx.Class.define("demobrowser.DemoBrowser",
 
       try
       {
-
         // Do this in a try-catch block. For instance if a demobrowser runs from
         // the local file system over the file:// protocol, there might be
         // security restrictions when trying to access some fwindow properties
@@ -1334,12 +1300,10 @@ qx.Class.define("demobrowser.DemoBrowser",
 
             this.debug("Demo loaded: " + this._currentSample);
 
-            // Register to logger
-            this.logappender.$$id = null;
-            this.logappender.clear();
+            this.__logView.clear();
 
             try {
-              fwindow.qx.log.Logger.register(this.logappender);
+              this.__logView.fetch(fwindow.qx.log.Logger);
             } catch (e) {
               // if the logger is not available, ignore it
               return;
@@ -1540,7 +1504,7 @@ qx.Class.define("demobrowser.DemoBrowser",
        * TODOC
        *
        * @param evt {var} TODOC
-       * @lint ignoreDeprecated(eval)
+       * @lint ignoreDeprecated(alert, eval)
        */
       req.addListener("completed", function(evt)
       {
@@ -1845,25 +1809,6 @@ qx.Class.define("demobrowser.DemoBrowser",
     },
 
 
-    __fetchLog : function()
-    {
-      var w = this._iframe.getWindow();
-      var logger;
-      if (w.qx && w.qx.log && w.qx.log.Logger)
-      {
-        logger = w.qx.log.Logger;
-
-        // Register to flush the log queue into the appender.
-        logger.register(this.logappender)
-
-        // Clear buffer
-        logger.clear();
-
-        // Unregister again, so that the logger can flush again the next time the tab is clicked.
-        logger.unregister(this.logappender);
-      }
-    },
-
     __onChangeTheme : function(e)
     {
       this.__currentTheme = e.getData()[0].getUserData("value");
@@ -1908,9 +1853,10 @@ qx.Class.define("demobrowser.DemoBrowser",
       "f1", "f2", "_history", "logappender", '_cmdObjectSummary',
       '_cmdRunSample', '_cmdPrevSample', '_cmdNextSample',
       '_cmdSampleInOwnWindow', '_cmdDisposeSample', "__disposeBtn", "__debugButton",
-      "_navPart", "_runbutton", "_stopbutton", "__sobutt", "__themePart",
+      "_navPart", "_runbutton", "_stopbutton", "__sobutt", "__themePart", "__themeMenu",
       "__viewPart", "__viewGroup", "__menuBar", "_infosplit", "_searchTextField",
       "_status", "_tree", "_iframe", "_demoView", "__menuElements", "__summaryBtn",
-      "__logSync", "_leftComposite", "_urlWindow", "_nextButton", "_prevButton","__menuItemStore");
+      "__logSync", "_leftComposite", "_urlWindow", "_nextButton", "_prevButton",
+      "__menuItemStore", "__overflowMenu");
   }
 });

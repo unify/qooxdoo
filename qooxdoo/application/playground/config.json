@@ -24,12 +24,21 @@
     // this one so that source, build-script and build-resources use common settings
     "playground-compile" :
     {
+      "config-warnings" : 
+      { 
+        "exclude" : false 
+      },
       "include" :     
       [
         "${APPLICATION}.*",
         "qx.*"
       ],
-
+      "library" : 
+      [
+        {
+          "manifest"   : "${QOOXDOO_PATH}/component/library/logpane/Manifest.json"
+        }
+      ],
       "exclude" :
       [
         "qx.test.*",
@@ -41,7 +50,8 @@
       "environment" :
       {
         "qx.debug" : true,
-        "qx.nativeScrollBars" : true
+        "qx.nativeScrollBars" : true,
+        "qx.allowUrlSettings" : true
       }
     },
 

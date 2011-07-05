@@ -28,9 +28,6 @@ body > * {
 
 h1, h2 {
     font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 
@@ -65,9 +62,6 @@ a:hover {  color:rgb(76, 86, 108); }
 
 .button {
   cursor: pointer;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-weight: bold;
   color: black;
   background: #fff;
@@ -88,6 +82,9 @@ a:hover {  color:rgb(76, 86, 108); }
     color: #fff;
 }
 
+.button[disabled="disabled"] {
+  color: gray;
+}
 
 /* LISTS */
 
@@ -118,9 +115,6 @@ ul li {
 }
 
 ul li * {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 ul li.arrow {
@@ -165,6 +159,16 @@ input, select, textarea {
   font-size:.9em;
 }
 
+select {
+  text-indent: 0;
+  background: transparent no-repeat right center;
+  -webkit-appearance: textfield;
+  margin-left: -6px;
+  width: 100%;
+  color: #777;
+  border: none;
+}
+
 ul.form {
   margin-bottom: 10px;
 }
@@ -186,7 +190,7 @@ ul.form ul li * {
     text-overflow: ellipsis;
 }
 
-ul li input[type="text"], ul li input[type="password"], ul li textarea, ul li select {
+ input[type="text"], input[type="password"], textarea {
     color: #777;
     background: #fff url(../.png);
     border: 0;
@@ -199,33 +203,17 @@ ul li input[type="text"], ul li input[type="password"], ul li textarea, ul li se
     outline: none;
 }
 
-ul li textarea {
+textarea {
     height: 120px;
     padding: 0;
+    resize: none;
 }
 
-ul li select {
-    text-indent: 0px;
-    background: transparent url("../../icon/ios/arrow.png") no-repeat 103% 3px;
-    -webkit-appearance: textfield;
-    margin-left: -6px;
-    width: 104%;
-}
-
-ul li input[type="checkbox"], ul li input[type="radio"] {
+input[type="checkbox"], input[type="radio"] {
     margin: 0;
     color: rgb(50,79,133);
     padding: 10px 10px;
 }
-
-ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
-    content: attr(title);
-    font: 17px Helvetica;
-    display: block;
-    width: 246px;
-    margin: -12px 0 0 17px;
-}
-
 
 /* TOGGLE BUTTON */
 
@@ -291,6 +279,13 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
   -webkit-background-clip: padding-box;
 }
 
+input[type="text"].invalid, input[type="password"].invalid, textarea.invalid {
+  border: 1px solid red;
+}
+
+.formElementError {
+  color: red;
+}
 
 /* TABBAR */
 
@@ -330,7 +325,6 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
 .navigationbar-button, .navigationbar-backbutton {
     text-align: center;
     cursor: pointer;
-    overflow: hidden;
     border-width: 0 5px;
     padding: 0 3px;
     width: auto;
@@ -341,9 +335,7 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
     font-weight: bold;
     color: #fff;
     text-shadow: rgba(0, 0, 0, 0.5) 0px -1px 0;
-    text-overflow: ellipsis;
     text-decoration: none;
-    white-space: nowrap;
     background: none;
     -webkit-border-image: url(../../icon/ios/toolButton.png) 0 5 0 5;
 }
@@ -366,21 +358,82 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
 
 /* SCROLLBAR */
 
-.scrollbar {
-    position: absolute;
-    z-index: 1;
-    width: 1px;
-    height: 1px;
-    border-width: 3px;
-    -webkit-border-image: url(../../icon/ios/scrollbar.png) 3;
+.scrollbarV {
+  position:absolute;
+  z-index:100;
+  width:6px;bottom:7px;top:2px;right:2px
 }
 
-.scrollbar.horizontal {
-    bottom: 1px;
-    left: 1px;
+.scrollbarV > div {
+  border: none;
+  background:-webkit-gradient(linear, 0 0, 100% 0, from(#62666a), to(#65696c));
+  -webkit-background-clip:padding-box;
+  -webkit-box-sizing:border-box;
+  -webkit-border-radius:4px;
 }
 
-.scrollbar.vertical {
-    top: 1px;
-    right: 1px;
+/* CHECKBOX */
+
+input[type="checkbox"] {
+  background-color: #929292;
+  -webkit-appearance : none;
+  width: 30px;
+  height: 30px;
+  -webkit-border-radius: .5em;
+  border: 2px solid #4c4c4c;
+  background: -webkit-gradient(linear,left top,left bottom,from(#fefefe), to(#cecece));
+  background: -webkit-linear-gradient(top, #fefefe, #cecece);
+}
+
+input[type="checkbox"]:checked {
+  background: url(../../icon/ios/checkbox.png) 50% 50% no-repeat, -webkit-gradient(linear,left top,left bottom,from(#353535), to(#8f8f8f)) 0px 0px no-repeat;
+  background: url(../../icon/ios/checkbox.png) 50% 50% no-repeat, -webkit-linear-gradient(top, #353535, #8f8f8f) 0px 0px no-repeat;
+}
+
+input[type="checkbox"]:disabled {
+  border: 2px solid #b8b8b8;
+  background: -webkit-gradient(linear,left top,left bottom,from(#ffffff), to(#ebebeb));
+  background: -webkit-linear-gradient(top, #ffffff, #ebebeb);
+}
+
+/*  TOOLBAR  */
+
+.toolbar-button {
+  cursor: pointer;
+  font: normal 17px Helvetica;
+  line-height : 40px;
+  text-align: center;
+  padding-left: 20px;
+  padding-right: 20px;
+  -webkit-background-clip: padding-box;
+  color: #fff;
+}
+
+.toolbar-button.active {
+  font-weight: bold;
+}
+
+.toolbar-separator {
+  width: 5px;
+}
+
+.toolbar {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  z-index: 1;
+  /*
+  border-top: 1px solid #2d3033;
+  background: -webkit-gradient(linear,left top,left bottom,from(#d8dee6), color-stop(0.05, #b0bbce), color-stop(0.5, #8e9fb6), color-stop(0.5, #8195af), to(#778ca8));
+  background: -webkit-linear-gradient(top, #d8dee6, #b0bbce 5%,#8e9fb6 50%, #8195af 50%, #778ca8);
+  */
+  border-top: 1px solid #2d3642;
+  height: 45px;
+  background: -webkit-gradient(linear, left top, left bottom, from(#cdd5df), to(#6d84a2), color-stop(0.5, #8195af));
+  -webkit-transition: bottom .65s;
+}
+
+
+.toolbar-hidden {
+  bottom: -100px;
 }

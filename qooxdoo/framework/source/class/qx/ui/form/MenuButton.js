@@ -175,6 +175,11 @@ qx.Class.define("qx.ui.form.MenuButton",
       // call the base function to get into the capture phase [BUG #4340]
       this.base(arguments, e);
 
+      // only open on left clicks [BUG #5125]
+      if(e.getButton() != "left") {
+        return;
+      }
+
       var menu = this.getMenu();
       if (menu)
       {
@@ -248,23 +253,5 @@ qx.Class.define("qx.ui.form.MenuButton",
     _onKeyUp : function(e) {
       // no action required here
     }
-  },
-
-
-
-  /*
-   *****************************************************************************
-      DESTRUCTOR
-   *****************************************************************************
-   */
-
-   destruct : function()
-   {
-     if (this.getMenu())
-     {
-       if (!qx.core.ObjectRegistry.inShutDown) {
-         this.getMenu().destroy();
-       }
-     }
-   }
+  }
 });

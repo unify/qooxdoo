@@ -25,7 +25,18 @@
 qx.Class.define("qx.ui.mobile.form.TextArea",
 {
   extend : qx.ui.mobile.core.Widget,
-  include : [qx.ui.mobile.form.MValue],
+  include : [
+    qx.ui.mobile.form.MValue,
+    qx.ui.mobile.form.MText,
+    qx.ui.form.MForm,
+    qx.ui.form.MModelProperty,
+    qx.ui.mobile.form.MState,
+    qx.ui.mobile.form.MEnable
+  ],
+  implement : [
+    qx.ui.form.IForm,
+    qx.ui.form.IModel
+  ],
 
 
   /*
@@ -57,6 +68,7 @@ qx.Class.define("qx.ui.mobile.form.TextArea",
       refine : true,
       init : "textArea"
     }
+    
   },
 
 
@@ -67,5 +79,6 @@ qx.Class.define("qx.ui.mobile.form.TextArea",
     {
       return "textarea";
     }
+    
   }
 });

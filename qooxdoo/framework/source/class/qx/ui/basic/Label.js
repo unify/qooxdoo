@@ -164,7 +164,7 @@ qx.Class.define("qx.ui.basic.Label",
     /** Control the text alignment */
     textAlign :
     {
-      check : ["left", "center", "right"],
+      check : ["left", "center", "right", "justify"],
       nullable : true,
       themeable : true,
       apply : "_applyTextAlign",
@@ -499,8 +499,6 @@ qx.Class.define("qx.ui.basic.Label",
 
       // Update layout
       qx.ui.core.queue.Layout.add(this);
-
-      this.fireDataEvent("changeContent", value, old);
     }
   },
 

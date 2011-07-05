@@ -58,6 +58,7 @@ qx.Class.define("mobileshowcase.page.Overview",
           {title : "Form Elements", subTitle : "TextField, TextArea, ToggleButton, Button...", path:"form"},
           {title : "List", subTitle : "A large list", path:"list"},
           {title : "Tab Bar", subTitle : "Usings tabs to switch views", path:"tab"},
+          {title : "Toolbar", subTitle : "toolbar, buttons, separators", path:"toolbar"},
           {title : "Events", subTitle : "Touch, Tap, Swipe...", path:"event"},
           {title : "Page Transitions", subTitle : "Slide, Fade, Cube...", path:"animation"}
       ];
@@ -68,6 +69,7 @@ qx.Class.define("mobileshowcase.page.Overview",
         qx.ui.mobile.navigation.Manager.getInstance().executeGet("/"+path);
       }, this);
       this.getContent().add(list);
+
     }
   }
 });

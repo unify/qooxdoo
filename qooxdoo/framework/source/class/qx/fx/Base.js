@@ -188,7 +188,6 @@ qx.Class.define("qx.fx.Base",
     {
       IDLE      : 'idle',
       PREPARING : 'preparing',
-      FINISHED  : 'finished',
       RUNNING   : 'running'
     }
 
@@ -380,10 +379,11 @@ qx.Class.define("qx.fx.Base",
      * This internal function is called
      * when the effect has finished.
      *
-     * Fires "finish" event.
+     * Fires "finish" event and sets the internal state to "finished".
      *
      */
-    finish  : function() {
+    finish : function()
+    {
       this.fireEvent("finish");
     },
 
@@ -445,7 +445,7 @@ qx.Class.define("qx.fx.Base",
 
       if(this.__state == qx.fx.Base.EffectState.PREPARING)
       {
-        this.__state = qx.fx.Base.EffectState.RUNNING
+        this.__state = qx.fx.Base.EffectState.RUNNING;
 
         this.beforeSetupInternal();
         this.beforeSetup();
@@ -527,8 +527,18 @@ qx.Class.define("qx.fx.Base",
     */
     resetState : function() {
       this.__state = qx.fx.Base.EffectState.IDLE;
-    }
+    },
 
+
+    /**
+     * Returns whether the effect is active
+     * 
+     * @return {Boolean} Whether the effect is active.
+     */
+    isActive : function() {
+      return this.__state === qx.fx.Base.EffectState.RUNNING || 
+             this.__state === qx.fx.Base.EffectState.PREPARING;
+    }
   },
 
 

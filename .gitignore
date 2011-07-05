@@ -43,6 +43,15 @@ qooxdoo/component/apiviewer/source/script
 qooxdoo/component/apiviewer/build
 qooxdoo/component/apiviewer/test
 qooxdoo/component/apiviewer/api
+qooxdoo/component/library/formdemo/api
+qooxdoo/component/library/formdemo/build
+qooxdoo/component/library/formdemo/source/script
+qooxdoo/component/library/twitterdemo/api
+qooxdoo/component/library/twitterdemo/build
+qooxdoo/component/library/twitterdemo/source/script
+qooxdoo/component/library/logpane/api
+qooxdoo/component/library/logpane/build
+qooxdoo/component/library/logpane/source/script
 qooxdoo/documentation/manual/build
 qooxdoo/application/feedreader/inspector
 qooxdoo/application/demobrowser/source/script/
@@ -61,6 +70,7 @@ qooxdoo/application/showcase/source/script
 qooxdoo/application/showcase/build
 qooxdoo/application/showcase/cache
 qooxdoo/component/testrunner/source/script/
+qooxdoo/component/testrunner/build/
 qooxdoo/frontend/application/demobrowser/source/script
 qooxdoo/frontend/application/playground/source/script
 qooxdoo/frontend/framework/.cache

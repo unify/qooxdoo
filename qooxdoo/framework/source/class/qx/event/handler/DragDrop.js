@@ -300,7 +300,7 @@ qx.Class.define("qx.event.handler.DragDrop",
 
       if (this.__validDrop)
       {
-        if (keys.Shift && keys.Ctrl && actions.alias) {
+        if (keys.Shift && keys.Control && actions.alias) {
           current = "alias";
         } else if (keys.Shift && keys.Alt && actions.copy) {
           current = "copy";
@@ -308,7 +308,7 @@ qx.Class.define("qx.event.handler.DragDrop",
           current = "move";
         } else if (keys.Alt && actions.alias) {
           current = "alias";
-        } else if (keys.Ctrl && actions.copy) {
+        } else if (keys.Control && actions.copy) {
           current = "copy";
         } else if (actions.move) {
           current = "move";
@@ -430,6 +430,7 @@ qx.Class.define("qx.event.handler.DragDrop",
         this.__manager.removeListener(this.__root, "mouseout", this._onMouseOut, this, true);
         this.__manager.removeListener(this.__root, "keydown", this._onKeyDown, this, true);
         this.__manager.removeListener(this.__root, "keyup", this._onKeyUp, this, true);
+        this.__manager.removeListener(this.__root, "keypress", this._onKeyPress, this, true);
 
         // Fire dragend event
         this.__fireEvent("dragend", this.__dragTarget, this.__dropTarget, false);
@@ -483,7 +484,7 @@ qx.Class.define("qx.event.handler.DragDrop",
       switch(iden)
       {
         case "Alt":
-        case "Ctrl":
+        case "Control":
         case "Shift":
           if (!this.__keys[iden])
           {
@@ -505,13 +506,29 @@ qx.Class.define("qx.event.handler.DragDrop",
       switch(iden)
       {
         case "Alt":
-        case "Ctrl":
+        case "Control":
         case "Shift":
           if (this.__keys[iden])
           {
             this.__keys[iden] = false;
             this.__detectAction();
           }
+      }
+    },
+
+
+    /**
+     * Event listener for root's <code>keypress</code> event
+     *
+     * @param e {qx.event.type.KeySequence} Event object
+     */
+    _onKeyPress : function(e)
+    {
+      var iden = e.getKeyIdentifier();
+      switch(iden)
+      {
+        case "Escape":
+          this.__clearSession();
       }
     },
 
@@ -598,10 +615,11 @@ qx.Class.define("qx.event.handler.DragDrop",
             this.__manager.addListener(this.__root, "mouseout", this._onMouseOut, this, true);
             this.__manager.addListener(this.__root, "keydown", this._onKeyDown, this, true);
             this.__manager.addListener(this.__root, "keyup", this._onKeyUp, this, true);
+            this.__manager.addListener(this.__root, "keypress", this._onKeyPress, this, true);
 
             // Reevaluate current action
             var keys = this.__keys;
-            keys.Ctrl = e.isCtrlPressed();
+            keys.Control = e.isCtrlPressed();
             keys.Shift = e.isShiftPressed();
             keys.Alt = e.isAltPressed();
             this.__detectAction();

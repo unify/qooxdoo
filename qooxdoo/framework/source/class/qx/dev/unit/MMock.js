@@ -140,6 +140,10 @@ qx.Mixin.define("qx.dev.unit.MMock",
     *   The returned spy is the function object which replaced the original method.
     *   spy === object.method.
     *
+    * * spy.withArgs(arg1[, arg2, ...])
+    *   Creates a spy that only records calls when the received arguments matches those
+    *   passed to <code>withArgs</code>.
+    *
     * A spy has a rich interface to introspect how the wrapped function was used:
     *
     * * spy.callCount
@@ -163,7 +167,7 @@ qx.Mixin.define("qx.dev.unit.MMock",
     * * spy.alwaysThrew(obj)
     * * spy.returned(obj)
     * * spy.alwaysReturned(obj)
-    * * spy.getCall(n);
+    * * spy.getCall(n)
     * * spy.thisValues
     * * spy.args
     * * spy.exceptions
@@ -175,13 +179,11 @@ qx.Mixin.define("qx.dev.unit.MMock",
     * the original function for all spies run this.getSandbox().restore()
     * in your tearDown() method.
     *
-    * @param  function_or_object {Function?null|Object?null}
-    *         Spies on the provided function or object.
-    * @param  method {String?null}
-    *         The method to spy upon if an object was given.
-    * @return {Spy}
-    *         The wrapped function enhanced with properties and
-    *         methods that allow for introspection.
+    * @param function_or_object {Function?null|Object?null} Spies on the
+    *   provided function or object.
+    * @param method {String?null} The method to spy upon if an object was given.
+    * @return {Spy} The wrapped function enhanced with properties and methods
+    *   that allow for introspection.
     */
     spy: function(function_or_object, method) {
       return this.__sandbox.spy.apply(this.__sandbox, arguments);
@@ -192,13 +194,19 @@ qx.Mixin.define("qx.dev.unit.MMock",
     *
     * * stub()
     *   Creates an anonymous stub function
+    *
     * * stub(object, "method")
     *   Replaces object.method with a stub function. The original function
     *   can be restored by calling object.method.restore() (or stub.restore()).
     *   An exception is thrown if the property is not already a function,
     *   to help avoid typos when stubbing methods.
+    *
     * * stub(obj)
     *   Stubs all the object's methods.
+    *
+    * * stub.withArgs(arg1[, arg2, ...])
+    *   Stubs the method only for the provided arguments. Can be used to create
+    *   a stub that acts differently in response to different arguments.
     *
     * A stub has the interface of a spy in addition to methods that allow to define behaviour:
     *
@@ -216,16 +224,13 @@ qx.Mixin.define("qx.dev.unit.MMock",
     * the original function for all stubs run this.getSandbox().restore()
     * in your tearDown() method.
     *
-    * @param  object {Object?null}
-    *         Object to stub. Stubs all methods if no
-    *         method is given.
-    * @param  method {String?null}
-    *         Replaces object.method with a stub function.
-    *         An exception is thrown if the property is not already a
-    *         function, to help avoid typos when stubbing methods.
-    * @return {Stub}
-    *         A stub. Has the interface of a spy in addition to methods
-    *         that allow to define behaviour.
+    * @param object {Object?null} Object to stub. Stubs all methods if no method
+    *   is given.
+    * @param  method {String?null} Replaces object.method with a stub function.
+    *   An exception is thrown if the property is not already a function, to
+    *   help avoid typos when stubbing methods.
+    * @return {Stub} A stub. Has the interface of a spy in addition to methods
+    *   that allow to define behaviour.
     *
     */
     stub: function(object, method) {
@@ -239,6 +244,7 @@ qx.Mixin.define("qx.dev.unit.MMock",
     * * var mock = mock(obj)
     *   Creates a mock for the provided object. Does not change the object, but
     *   returns a mock object to set expectations on the object's methods.
+    *
     * * var expectation = mock.expects("method")
     *   Overrides obj.method with a mock function and returns an expectation
     *   object. Expectations implement both the spy and stub interface plus
@@ -261,10 +267,8 @@ qx.Mixin.define("qx.dev.unit.MMock",
     *
     * See http://sinonjs.org/docs/api/#mocks.
     *
-    * @param object {Object}
-    *        The object to create a mock of.
-    * @return {Mock}
-    *        A mock to set expectations on.
+    * @param object {Object} The object to create a mock of.
+    * @return {Mock} A mock to set expectations on.
     */
     mock: function(object) {
       var sinon = this.__getSinon();
@@ -338,6 +342,157 @@ qx.Mixin.define("qx.dev.unit.MMock",
     */
     getSandbox: function() {
       return this.__sandbox;
+    },
+
+    /**
+     * Returns a deep copied, API-identical stubbed out clone of the given
+     * object.
+     *
+     * In contrast to the shallow {@link #stub}, also stubs out properties that
+     * belong to the prototype chain.
+     *
+     * @param object {Object} Object to stub deeply.
+     * @return {Stub} A stub.
+     */
+    deepStub: function(object) {
+      this.__getOwnProperties(object).forEach(function(prop) {
+        this.__stubProperty(object, prop);
+      }, this);
+
+      return object;
+    },
+
+    /**
+     * Shallowly stub methods that belong to classes found in inheritance
+     * chain up to (but including) the given class.
+     *
+     * @param object {Object} Object to stub shallowly.
+     * @param targetClazz {Object} Class which marks the end of the chain.
+     * @return {Object} A stub.
+     */
+    shallowStub: function(object, targetClazz) {
+      this.__getOwnProperties(object, targetClazz).forEach(function(prop) {
+        this.__stubProperty(object, prop);
+      }, this);
+
+      return object;
+    },
+
+    /**
+     * Changes the given factory (e.g. a constructor) to return a stub. The
+     * method itself returns this stub.
+     *
+     * By default, the stub returned by the changed factory is the object built
+     * by the original factory, but deeply stubbed (see {@link #deepStub}).
+     * Alternatively, a custom stub may be given explicitly that is used instead.
+     *
+     * @param object {Object} Namespace to hold factory, e.g. qx.html.
+     * @param property {String} Property as string that functions as
+     *  constructor, e.g. "Element".
+     * @param customStub {Stub?} Stub to inject.
+     * @return {Stub} Injected stub.
+     */
+    injectStub: function(object, property, customStub) {
+      var stub = customStub || this.deepStub(new object[property]);
+
+      this.stub(object, property).returns(stub);
+      return stub;
+    },
+
+    /**
+     * Changes the given factory (e.g. a constructor) to make a mock of the
+     * object returned. The method itself returns this mock.
+     *
+     * By default, the object returned by the changed factory (that a mock is
+     * made of) is a deep copied, API-identical clone of the object built by the
+     * original factory. Alternatively, the object returned can be given
+     * explicitly.
+     *
+     * @param object {Object} Namespace to hold factory, e.g. qx.html.
+     * @param property {String} Property as string that functions as
+     *  constructor, e.g. "Element".
+     * @param customObject {Object?} Object to inject.
+     * @return {Mock} Mock of the object built.
+     */
+    revealMock: function(object, property, customObject) {
+      var source = customObject ||
+        this.__deepClone(new object[property]);
+
+      this.stub(object, property).returns(source);
+      return this.mock(source);
+    },
+
+    /**
+     * Deep clone object by copying properties from prototype.
+     *
+     * @param obj {Object} Object to prepare (that is, clone).
+     * @return {Object} Prepared (deeply cloned) object.
+     */
+    __deepClone: function(obj) {
+      var clone = {};
+
+      // Copy from prototype
+      for (var prop in obj) {
+        clone[prop] = obj[prop];
+      }
+
+      return clone;
+    },
+
+    /**
+     * Get the object’s own properties.
+     *
+     * @param object {Object} Object to analyse.
+     * @param targetClazz {Object} Class which marks the end of the chain.
+     * @return {Array} Array of the object’s own properties.
+     */
+    __getOwnProperties: function(object, targetClazz) {
+      var clazz = object.constructor,
+          clazzes = [],
+          properties = [];
+
+      // Find classes in inheritance chain up to targetClazz
+      if (targetClazz) {
+        while(clazz.superclass) {
+          clazzes.push(clazz);
+          clazz = clazz.superclass;
+          if (clazz == targetClazz.superclass) {
+            break;
+          }
+        }
+      }
+
+      // Check if property is own in one of the classes in chain
+      for (var prop in object) {
+
+        if (clazzes.length) {
+          var found = clazzes.some(function(clazz) {
+            return clazz.prototype.hasOwnProperty(prop);
+          });
+          if (!found) {
+            continue;
+          }
+        }
+
+        properties.push(prop);
+      }
+
+      return properties;
+    },
+
+    /**
+     * Safely stub property.
+     *
+     * @param object {Object} Object to stub.
+     * @param prop {String} Property to stub.
+     */
+    __stubProperty: function(object, prop) {
+      // Leave constructor and properties intact
+      if(prop === "constructor" || typeof object[prop] !== "function") {
+        return;
+      }
+
+      this.stub(object, prop);
     }
   }
 });

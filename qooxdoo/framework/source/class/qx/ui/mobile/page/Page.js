@@ -117,7 +117,6 @@ qx.Class.define("qx.ui.mobile.page.Page",
     qx.ui.mobile.page.Page.getManager().add(this);
     this._resize();
     qx.event.Registration.addListener(window, "orientationchange", this._resize, this);
-    // TODO: only add this event for desktop browsers
     qx.event.Registration.addListener(window, "resize", this._resize, this);
   },
 
@@ -185,32 +184,26 @@ qx.Class.define("qx.ui.mobile.page.Page",
   statics :
   {
     __manager : null,
-    __managerClass : null,
-
 
     /**
      * Returns the used page manager. The page manager is responsible for the
      * page transition and calling the lifecycle methods of a page.
      *
-     * @return {var} The used page manager
+     * @return {var} The used page manager.
      */
-    getManager : function()
-    {
-      if (!this.__manager) {
-        this.__manager = new qx.ui.mobile.page.Page.__managerClass();
-      }
+    getManager : function() {
       return qx.ui.mobile.page.Page.__manager;
     },
 
 
     /**
-     * Sets the page manager to use.
-     *
-     * @param clazz {Class} The page manager class to use
+     * Sets the used page manager. The page manager is responsible for the
+     * page transition and calling the lifecycle methods of a page.
+     * 
+     * @param manager {var} The manager to use. 
      */
-    setManagerClass : function(clazz)
-    {
-      qx.ui.mobile.page.Page.__managerClass = clazz;
+    setManager : function(manager) {
+      qx.ui.mobile.page.Page.__manager = manager;
     }
   },
 
@@ -465,7 +458,6 @@ qx.Class.define("qx.ui.mobile.page.Page",
   destruct : function()
   {
     qx.event.Registration.removeListener(window, "orientationchange", this._resize, this);
-    // TODO: only add this event for desktop browsers
     qx.event.Registration.removeListener(window, "resize", this._resize, this);
     this.__initialized = null;
     if (!qx.core.ObjectRegistry.inShutDown)
@@ -488,9 +480,9 @@ qx.Class.define("qx.ui.mobile.page.Page",
   defer : function(statics)
   {
     if (qx.core.Environment.get("css.translate3d")) {
-      statics.setManagerClass(qx.ui.mobile.page.manager.Animation);
+      statics.setManager(new qx.ui.mobile.page.manager.Animation());
     } else {
-      statics.setManagerClass(qx.ui.mobile.page.manager.Simple);
+      statics.setManager(new qx.ui.mobile.page.manager.Simple());
     }
   }
 });

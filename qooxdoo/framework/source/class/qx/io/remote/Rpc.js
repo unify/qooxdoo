@@ -19,6 +19,10 @@
 
 ************************************************************************ */
 
+/* ************************************************************************
+#ignore(qx.util.Json)
+************************************************************************ */
+
 /**
  * Provides a Remote Procedure Call (RPC) implementation.
  *
@@ -202,6 +206,51 @@ qx.Class.define("qx.io.remote.Rpc",
 
 
     /**
+     * Boolean flag which controls the stringification of date objects.
+     * <code>null</code> for the default behavior, acts like false
+     * <code>true</code> for stringifying dates the old, qooxdoo specific way
+     * <code>false</code> using the native toJSON of date objects.
+     *
+     * When enabled, dates are converted to and parsed from
+     * a literal that complies to the format
+     *
+     * <code>new Date(Date.UTC(year,month,day,hour,min,sec,ms))</code>
+     *
+     * The server can fairly easily parse this in its JSON
+     * implementation by stripping off "new Date(Date.UTC("
+     * from the beginning of the string, and "))" from the
+     * end of the string. What remains is the set of
+     * comma-separated date components, which are also very
+     * easy to parse.
+     *
+     * The work-around compensates for the fact that while the
+     * Date object is a primitive type in Javascript, the
+     * specification neglects to provide a literal form for it.
+     */
+    CONVERT_DATES : null,
+
+
+    /**
+     * Boolean flag which controls whether to expect and verify a JSON
+     * response.
+     *
+     * Should be <code>true</code> when backend returns valid JSON.
+     *
+     * Date literals are parsed when CONVERT_DATES is <code>true</code>
+     * and comply to the format
+     *
+     * <code>"new Date(Date.UTC(year,month,day,hour,min,sec,ms))"</code>
+     *
+     * Note the surrounding quotes that encode the literal as string.
+     *
+     * Using valid JSON is recommended, because it allows to use
+     * {@link qx.lang.Json#parse} for parsing. {@link qx.lang.Json#parse}
+     * is preferred over the potentially insecure <code>eval</code>.
+     */
+    RESPONSE_JSON : null,
+
+
+    /**
      * Creates an URL for talking to a local service. A local service is one that
      * lives in the same application as the page calling the service. For backends
      * that don't support this auto-generation, this method returns null.
@@ -339,9 +388,23 @@ qx.Class.define("qx.io.remote.Rpc",
     {
       check : "Boolean",
       nullable : true
+    },
+    
+    /** 
+     * EXPERIMENTAL
+     * 
+     * Whether to use the original qooxdoo RPC protocol or the
+     * now-standardized Version 2 protocol.  Defaults to the original qooxdoo
+     * protocol for backward compatibility.
+     * 
+     * Valid values are "qx1" and "2.0".
+     */
+    protocol :
+    {
+      init : "qx1", 
+      check : function(val) { return val == "qx1" || val == "2.0"; }
     }
   },
-
 
 
 
@@ -397,19 +460,49 @@ qx.Class.define("qx.io.remote.Rpc",
      */
     createRpcData: function(id, method, parameters, serverData)
     {
-      // Create the rpc data object
-      var requestObject =
-        {
-          "service" : method == "refreshSession" ? null : this.getServiceName(),
-    "method"  : method,
-    "id"      : id,
-    "params"  : parameters
-        };
-
-      // Only add the server_data member if there is actually server data
-      if (serverData)
+      var             requestObject;
+      var             service;
+      
+      // Create a protocol-dependent request object
+      if (this.getProtocol() == "qx1")
       {
-        requestObject.server_data = serverData;
+        // Create a qooxdoo-modified version 1.0 rpc data object
+        requestObject =
+          {
+            "service" :
+              method == "refreshSession" ? null : this.getServiceName(),
+            "method"  : method,
+            "id"      : id,
+            "params"  : parameters
+          };
+
+        // Only add the server_data member if there is actually server data
+        if (serverData)
+        {
+          requestObject.server_data = serverData;
+        }
+      }
+      else
+      {
+        // If there's a service name, we'll prepend it to the method name
+        service = this.getServiceName();
+        if (service && service != "")
+        {
+          service += ".";
+        }
+        else
+        {
+          service = "";
+        }
+        
+        // Create a standard version 2.0 rpc data object
+        requestObject =
+          {
+            "jsonrpc" : "2.0",
+            "method"  : service + method,
+            "id"      : id,
+            "params" : parameters
+          };
       }
 
       return requestObject;
@@ -443,6 +536,7 @@ qx.Class.define("qx.io.remote.Rpc",
       var handler = args[0];
       var argsArray = [];
       var eventTarget = this;
+      var protocol = this.getProtocol();
 
       for (var i=offset+1; i<args.length; ++i)
       {
@@ -514,34 +608,55 @@ qx.Class.define("qx.io.remote.Rpc",
 
       var addToStringToObject = function(obj)
       {
-        obj.toString = function()
+        if (protocol == "qx1")
         {
-          switch(obj.origin)
+          obj.toString = function()
           {
-            case qx.io.remote.Rpc.origin.server:
-              return "Server error " + obj.code + ": " + obj.message;
+            switch(obj.origin)
+            {
+              case qx.io.remote.Rpc.origin.server:
+                return "Server error " + obj.code + ": " + obj.message;
 
-            case qx.io.remote.Rpc.origin.application:
-              return "Application error " + obj.code + ": " + obj.message;
+              case qx.io.remote.Rpc.origin.application:
+                return "Application error " + obj.code + ": " + obj.message;
 
-            case qx.io.remote.Rpc.origin.transport:
-              return "Transport error " + obj.code + ": " + obj.message;
+              case qx.io.remote.Rpc.origin.transport:
+                return "Transport error " + obj.code + ": " + obj.message;
 
-            case qx.io.remote.Rpc.origin.local:
-              return "Local error " + obj.code + ": " + obj.message;
+              case qx.io.remote.Rpc.origin.local:
+                return "Local error " + obj.code + ": " + obj.message;
 
-            default:
-              return ("UNEXPECTED origin " + obj.origin +
-                      " error " + obj.code + ": " + obj.message);
-          }
-        };
+              default:
+                return ("UNEXPECTED origin " + obj.origin +
+                        " error " + obj.code + ": " + obj.message);
+            }
+          };
+        }
+        else // protocol == "2.0"
+        {
+          obj.toString = function()
+          {
+            var             ret;
+
+            ret =  "Error " + obj.code + ": " + obj.message;
+            if (obj.data)
+            {
+              ret += " (" + obj.data + ")";
+            }
+            
+            return ret;
+          };
+        }
       };
 
       var makeException = function(origin, code, message)
       {
         var ex = new Object();
 
-        ex.origin = origin;
+        if (protocol == "qx1")
+        {
+          ex.origin = origin;
+        }
         ex.code = code;
         ex.message = message;
         addToStringToObject(ex);
@@ -581,6 +696,37 @@ qx.Class.define("qx.io.remote.Rpc",
       req.addListener("completed", function(evt)
       {
         response = evt.getContent();
+
+        // Parse. Skip when response is already an object
+        // because the script transport was used.
+        if (!qx.lang.Type.isObject(response)) {
+
+          // Handle converted dates
+          if (self._isConvertDates()) {
+
+            // Parse as JSON and revive date literals
+            if (self._isResponseJson()) {
+              response = qx.lang.Json.parse(response, function(key, value) {
+                if (value && typeof value === "string") {
+                  if (value.indexOf("new Date(Date.UTC(") >= 0) {
+                    var m = value.match(/new Date\(Date.UTC\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)\)/);
+                    return new Date(Date.UTC(m[1],m[2],m[3],m[4],m[5],m[6],m[7]));
+                  }
+                }
+                return value;
+              });
+
+            // Eval
+            } else {
+              response = response && response.length > 0 ? eval('(' + response + ')') : null;
+            }
+
+          // No special date handling required, JSON assumed
+          } else {
+            response = qx.lang.Json.parse(response);
+          }
+        }
+
         id = response["id"];
 
         if (id != this.getSequenceNumber())
@@ -625,7 +771,30 @@ qx.Class.define("qx.io.remote.Rpc",
         handleRequestFinished(eventType, eventTarget);
       });
 
-      req.setData(qx.util.Json.stringify(rpcData));
+      // Provide a replacer when convert dates is enabled
+      var replacer = null;
+      if (this._isConvertDates()) {
+        replacer = function(key, value) {
+          // The value passed in is of type string, because the Date's
+          // toJson gets applied before. Get value from containing object.
+          value = this[key];
+
+          if (qx.lang.Type.isDate(value)) {
+            var dateParams =
+              value.getUTCFullYear() + "," +
+              value.getUTCMonth() + "," +
+              value.getUTCDate() + "," +
+              value.getUTCHours() + "," +
+              value.getUTCMinutes() + "," +
+              value.getUTCSeconds() + "," +
+              value.getUTCMilliseconds();
+            return "new Date(Date.UTC(" + dateParams + "))";
+          }
+          return value;
+        };
+      }
+
+      req.setData(qx.lang.Json.stringify(rpcData, replacer));
       req.setAsynchronous(callType > 0);
 
       if (req.getCrossDomain())
@@ -639,6 +808,9 @@ qx.Class.define("qx.io.remote.Rpc",
         // When not cross-domain, set type to text/json
         req.setRequestHeader("Content-Type", "application/json");
       }
+
+      // Do not parse as JSON. Later done conditionally.
+      req.setParseJson(false);
 
       req.send();
 
@@ -849,6 +1021,32 @@ qx.Class.define("qx.io.remote.Rpc",
       {
         handler(false); // no refresh possible, but would be necessary
       }
+    },
+
+
+    /**
+     * Whether to convert date objects to pseudo literals and
+     * parse with eval.
+     *
+     * Controlled by {@link qx.util.Json.CONVERT_DATES}
+     * and {@link #CONVERT_DATES} (in this order).
+     *
+     * @return {Boolean} Whether to convert.
+     */
+    _isConvertDates: function() {
+      return !!((qx.util && qx.util.Json && qx.util.Json.CONVERT_DATES) || qx.io.remote.Rpc.CONVERT_DATES);
+    },
+
+
+    /**
+     * Whether to expect and verify a JSON response.
+     *
+     * Controlled by {@link #RESPONSE_JSON}.
+     *
+     * @return {Boolean} Whether to expect JSON.
+     */
+    _isResponseJson: function() {
+      return !!(qx.io.remote.Rpc.RESPONSE_JSON);
     },
 
 

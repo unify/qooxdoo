@@ -27,9 +27,6 @@ body > * {
 
 h1, h2 {
     font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 
@@ -67,9 +64,6 @@ a:hover { color: #e89c00; }
 
 .button, .tabButton {
   cursor: pointer;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-weight: bold;
   color: black;
   background: -webkit-gradient(linear, left top, left bottom, from(#f4f4f4), to(#c4c4c4));
@@ -84,9 +78,46 @@ a:hover { color: #e89c00; }
   -webkit-background-clip: padding-box;
 }
 
-
 .button.active {
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffdb66), color-stop(50%,#e89c00),color-stop(100%,#fdd824));
+}
+
+.button[disabled="disabled"] {
+  color: gray;
+}
+
+.toolbar-button {
+  cursor: pointer;
+  font-weight: bold;
+  color: black;
+  background: -webkit-gradient(linear, left top, left bottom, from(#f4f4f4), to(#c4c4c4));
+  border: 1px solid #232323;
+  -webkit-border-radius: 4px;
+  font: bold 17px Helvetica;
+  height : 50px;
+  text-align: center;
+  padding-left: 20px;
+  padding-right: 20px;
+  -webkit-background-clip: padding-box;
+  overflow: hidden;
+  width: 0; /* this is for equal sizes od the buttons when aded in a toolbar or other container with flex :1*/
+}
+
+.toolbar-button.active {
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffdb66), color-stop(50%,#e89c00),color-stop(100%,#fdd824));
+}
+
+.toolbar-button img {
+  vertical-align: middle;
+}
+
+.toolbar-button > div {
+  height: 50px;
+  overflow: hidden;
+}
+
+.toolbar-button .label {
+  height: auto;
 }
 
 /* LISTS */
@@ -112,9 +143,7 @@ ul li {
 }
 
 ul li * {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+
 }
 
 ul li.arrow {
@@ -150,10 +179,21 @@ li:first-child, li:first-child a {
 
 /* FORMS */
 
+
 input, select { vertical-align:middle; }
 input, select, textarea { 
   font-family: Helvetica;
   font-size:.9em;
+}
+
+select {
+  text-indent: 0;
+  background: transparent no-repeat right center;
+  -webkit-appearance: textfield;
+  margin-left: -6px;
+  width: 100%;
+  color: #777;
+  border: none;
 }
 
 ul.form li {
@@ -173,7 +213,7 @@ ul.form li * {
     text-overflow: ellipsis;
 }
 
-ul li input[type="text"], ul li input[type="password"], ul li textarea, ul li select {
+input[type="text"], input[type="password"], textarea {
     color: #222222;
     background: -webkit-gradient(linear, left top, left bottom, from(#e2e0e2), to(#f8f5f8));
     border: 1px solid #242424;
@@ -185,33 +225,17 @@ ul li input[type="text"], ul li input[type="password"], ul li textarea, ul li se
     -webkit-background-clip: padding-box;
 }
 
-ul li textarea {
+textarea {
     height: 120px;
     width: 100%;
+    resize: none;
 }
 
-ul li select {
-    text-indent: 0px;
-    background: transparent url(../../icon/android/arrow.png) no-repeat 103% 3px;
-    -webkit-appearance: textfield;
-    margin-left: -6px;
-    width: 104%;
-}
-
-ul li input[type="checkbox"], ul li input[type="radio"] {
+input[type="checkbox"], input[type="radio"] {
     margin: 0;
     color: rgb(50,79,133);
     padding: 10px 10px;
 }
-
-ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
-    content: attr(title);
-    font: 17px Helvetica;
-    display: block;
-    width: 246px;
-    margin: -12px 0 0 17px;
-}
-
 
 /* TOGGLE BUTTON */
 
@@ -273,6 +297,13 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
   -webkit-background-clip: padding-box;
 }
 
+input[type="text"].invalid, input[type="password"].invalid, textarea.invalid {
+  border: 1px solid red;
+}
+
+.formElementError {
+  color: red;
+}
 
 /* TABBAR */
 
@@ -287,6 +318,7 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
   line-height: 45px;
   margin:0 !important;
   -webkit-box-sizing: border-box;
+  width: 0; /* this is for equal sizes od the buttons when aded in a toolbar or other container with flex :1*/
 }
 
 .tabButton.active, .tabButton.selected {
@@ -309,7 +341,6 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
     text-align: center;
     min-width:40px;
     cursor: pointer;
-    overflow: hidden;
     padding: 0 3px;
     width: auto;
     height: 30px;
@@ -317,12 +348,10 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
     font-family: inherit;
     font-size: 12px;
     font-weight: bold;
-    color: #black;
-    text-overflow: ellipsis;
-    text-decoration: none;
-    white-space: nowrap;
+    color: black;
     background: -webkit-gradient(linear, left top, left bottom, from(#f4f4f4), to(#c4c4c4));
     border: 2px solid #232323;
+    text-decoration: none;
     -webkit-border-radius: 4px;
     -webkit-background-clip: padding-box;
 }
@@ -334,21 +363,63 @@ ul li input[type="checkbox"]:after, ul li input[type="radio"]:after {
 
 /* SCROLLBAR */
 
-.scrollbar {
-    position: absolute;
-    z-index: 1;
-    width: 1px;
-    height: 1px;
-    border-width: 3px;
-    -webkit-border-image: url(../../icon/android/scrollbar.png) 3;
+.scrollbarV {
+  position:absolute;
+  z-index:100;
+  width:6px;bottom:7px;top:2px;right:1px
 }
 
-.scrollbar.horizontal {
-    bottom: 1px;
-    left: 1px;
+.scrollbarV > div {
+  position:absolute;
+  z-index:100;
+  width:100%;
+
+  /* The following is probably what you want to customize */
+  background:-webkit-gradient(linear, 0 0, 100% 0, from(#b5b6b5), to(#949294));
+  border: 1px solid #000;
+  -webkit-background-clip:padding-box;
+  -webkit-box-sizing:border-box;
+  -webkit-border-radius:4px;
 }
 
-.scrollbar.vertical {
-    top: 1px;
-    right: 1px;
+/* CHECKBOX */
+
+input[type="checkbox"] {
+  background-color: #929292;
+  -webkit-appearance : none;
+  width: 30px;
+  height: 30px;
+  -webkit-border-radius: .3em;
+  background: url(../../icon/android/checkbox-gray.png) 50% 50% no-repeat, -webkit-gradient(linear,left top,left bottom,from(#f1f1f1), color-stop(0.6, #c1c1c1), to(#d0d0d0)) 0px 0px no-repeat;
+  background: url(../../icon/android/checkbox-gray.png) 50% 50% no-repeat, -webkit-linear-gradient(top, #f1f1f1, #c1c1c1 90%, #d0d0d0) 0px 0px no-repeat;
+}
+
+input[type="checkbox"]:checked {
+  background: url(../../icon/android/checkbox-green.png) 50% 50% no-repeat, -webkit-gradient(linear,left top,left bottom,from(#f1f1f1), color-stop(0.6, #c1c1c1), to(#d0d0d0)) 0px 0px no-repeat;
+  background: url(../../icon/android/checkbox-green.png) 50% 50% no-repeat, -webkit-linear-gradient(top, #f1f1f1, #c1c1c1 90%, #d0d0d0) 0px 0px no-repeat;
+}
+
+input[type="checkbox"]:disabled {
+
+}
+
+/*  TOOLBAR  */
+.toolbar-separator {
+  width: 5px;
+  background-color: red;
+}
+
+.toolbar {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  z-index: 1;
+  -webkit-transition: bottom .65s;
+  height: 55px;
+  background: -webkit-gradient(linear, left top, left bottom, from(#9a9a9a), to(#7c7e7c));
+  border-top: 1px solid #2d3642;
+}
+
+.toolbar-hidden {
+  bottom: -100px;
 }

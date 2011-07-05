@@ -40,12 +40,6 @@ qx.Class.define("testrunner.view.widget.Widget", {
   construct : function()
   {
     this.__menuItemStore = {};
-    this.__logLevelData = [
-      ["debug", "Debug", "icon/22/categories/system.png"],
-      ["info", "Info", "icon/22/status/dialog-information.png"],
-      ["warn", "Warning", "icon/22/status/dialog-warning.png"],
-      ["error", "Error", "icon/22/status/dialog-error.png"]
-    ];
 
     this.__app = qx.core.Init.getApplication();
 
@@ -73,16 +67,19 @@ qx.Class.define("testrunner.view.widget.Widget", {
       });
     } catch(ex) {}
 
-    mainsplit.add(this.__createTestList(), 0);
+    var leftPane = this.__createTestList();
+    mainsplit.add(leftPane, 0);
 
     var outerPane = new qx.ui.splitpane.Pane("horizontal");
     outerPane.setDecorator(null);
 
     mainsplit.add(outerPane, 1);
 
-    outerPane.add(this.__createCenterPane(), 1);
+    var centerPane = this.__createCenterPane();
+    outerPane.add(centerPane, 1);
 
-    outerPane.add(this.__createAutPane(), 1);
+    var rightPane = this.__createAutPane();
+    outerPane.add(rightPane, 1);
 
     qx.ui.core.queue.Manager.flush();
 
@@ -90,6 +87,12 @@ qx.Class.define("testrunner.view.widget.Widget", {
     mainContainer.add(statuspane);
 
     this._makeCommands();
+    
+    this._applyPaneWidths(centerPane, rightPane);
+    
+    leftPane.addListener("resize", this.__onPaneResize);
+    centerPane.addListener("resize", this.__onPaneResize);
+    rightPane.addListener("resize", this.__onPaneResize);
   },
 
   statics :
@@ -182,14 +185,11 @@ qx.Class.define("testrunner.view.widget.Widget", {
      * Creates the application header.
      */
 
-    __logLevelData : null,
-
     __app : null,
     __iframe : null,
     __overflowMenu : null,
     __menuItemStore : null,
     __labelDeco : null,
-    __logElement : null,
     __testTree : null,
     __runButton : null,
     __stopButton : null,
@@ -203,6 +203,7 @@ qx.Class.define("testrunner.view.widget.Widget", {
     __autoReloadActive : false,
     __loadingContainer : null,
     __stack : null,
+    __logView : null,
 
     /**
      * Returns the iframe element the AUT should be loaded in.
@@ -219,12 +220,8 @@ qx.Class.define("testrunner.view.widget.Widget", {
      *
      * @return {Element} DIV element
      */
-    getLogAppenderElement : function()
-    {
-      if (!this.__logElement) {
-        this.__logElement = document.createElement("DIV");
-      }
-      return this.__logElement;
+    getLogAppenderElement : function() {
+      return this.__logView.getAppenderElement();
     },
 
     /**
@@ -251,6 +248,7 @@ qx.Class.define("testrunner.view.widget.Widget", {
     /**
      * Returns the tool bar with the main test suite controls
      *
+     * @lint ignoreDeprecated(eval)
      * @return {qx.ui.toolbar.ToolBar} The tool bar
      */
     __createToolbar : function()
@@ -454,18 +452,6 @@ qx.Class.define("testrunner.view.widget.Widget", {
               cachedItem.setEnabled(partButtons[i].getEnabled());
               cachedItem.setValue(partButtons[i].getValue());
             }
-             else if(partButtons[i] instanceof qx.ui.toolbar.MenuButton)
-             {
-              cachedItem = new qx.ui.menu.Button(
-                partButtons[i].getLabel().translate(),
-                partButtons[i].getIcon(),
-                partButtons[i].getCommand(),
-                partButtons[i].getMenu()
-                );
-              cachedItem.setToolTipText(partButtons[i].getToolTipText());
-              var logLevelController = new qx.data.controller.Object(this);
-              logLevelController.addTarget(cachedItem, "icon", "logLevel", false, {converter: qx.lang.Function.bind(this.__logLevelIconConverter,this)});
-            }
             else
             {
               cachedItem = new qx.ui.menu.Separator();
@@ -502,46 +488,6 @@ qx.Class.define("testrunner.view.widget.Widget", {
     },
 
     /**
-     * Returns the icon for a given log level
-     * @param data {String} The log level
-     * @return {String} The icon's resource id
-     */
-    __logLevelIconConverter: function(data) {
-        for (var i=0,l=this.__logLevelData.length; i<l; i++) {
-          if (this.__logLevelData[i][0] == data) {
-            return this.__logLevelData[i][2];
-          }
-        }
-        return null;
-      },
-
-    /**
-     * Returns the menu button used to select the AUT's log level
-     *
-     * @return {qx.ui.toolbar.MenuButton}
-     */
-    __createLogLevelMenu : function()
-    {
-      var logLevelMenu = new qx.ui.menu.Menu();
-      var logLevelMenuButton = new qx.ui.form.MenuButton(this.__app.tr("Log Level"), "icon/16/categories/system.png");
-      logLevelMenuButton.setMenu(logLevelMenu);
-
-      for (var i=0,l=this.__logLevelData.length; i<l; i++) {
-        var data = this.__logLevelData[i];
-        var button = new qx.ui.menu.Button(this.__app.tr(data[1]), data[2]);
-        button.setUserData("model", data[0]);
-        button.addListener("execute", function(ev) {
-          var pressedButton = ev.getTarget();
-          this.setLogLevel(pressedButton.getUserData("model"));
-          logLevelMenuButton.setIcon(pressedButton.getIcon());
-        }, this);
-        logLevelMenu.add(button);
-      }
-
-      return logLevelMenuButton;
-    },
-
-    /**
      * Returns a container with the list of available tests
      *
      * @return {qx.ui.container.Composite}
@@ -564,7 +510,6 @@ qx.Class.define("testrunner.view.widget.Widget", {
       }
 
       container.setUserData("pane", "left");
-      container.addListener("resize", this.__onPaneResize);
 
       var caption = new qx.ui.basic.Label(this.__app.tr("Tests")).set({
         font : "bold",
@@ -669,7 +614,8 @@ qx.Class.define("testrunner.view.widget.Widget", {
     __onPaneResize : function(e)
     {
       var pane = this.getUserData("pane");
-      qx.bom.Cookie.set("testrunner." + pane + "PaneWidth", e.getData().width, 365);
+      var width = e.getData().width;
+      qx.bom.Cookie.set("testrunner." + pane + "PaneWidth", width, 365);
     },
 
     /**
@@ -686,16 +632,7 @@ qx.Class.define("testrunner.view.widget.Widget", {
         decorator : "main"
       });
 
-      var centerPaneWidth = qx.bom.Cookie.get("testrunner.centerPaneWidth");
-      if (centerPaneWidth !== null) {
-        p1.setWidth(parseInt(centerPaneWidth));
-      }
-      else {
-        p1.setWidth(400);
-      }
-
       p1.setUserData("pane", "center");
-      p1.addListener("resize", this.__onPaneResize);
 
       var inner = new qx.ui.container.Composite(new qx.ui.layout.Dock());
       p1.add(inner);
@@ -744,6 +681,8 @@ qx.Class.define("testrunner.view.widget.Widget", {
       pane2.add(this.__createIframeContainer(), 1);
       pane2.add(this.__createLogContainer(), 1);
 
+      pane2.setUserData("pane", "right");
+      
       return pane2;
     },
 
@@ -788,48 +727,15 @@ qx.Class.define("testrunner.view.widget.Widget", {
     /**
      * Returns a container with the AUT log element
      *
-     * @return {qx.ui.container.Composite} The log container
+     * @lint ignoreUndefined(qxc)
+     * @return {log.LogView} The log container
      */
     __createLogContainer : function()
     {
-      var layout3 = new qx.ui.layout.VBox();
-      //layout3.setSeparator("separator-vertical");
-      var pp2 = new qx.ui.container.Composite(layout3).set({
-        decorator : "main"
-      });
-
-      var inner = new qx.ui.container.Composite(new qx.ui.layout.Dock());
-      pp2.add(inner);
-      
-      var caption2 = new qx.ui.basic.Label("Log").set({
-        font : "bold",
-        decorator : this.__labelDeco,
-        padding : [8, 3, 7, 3],
-        allowGrowX : true,
-        allowGrowY : true
-      });
-      inner.add(caption2, {edge: "west"});
-      
-      var logLevelButton = this.__createLogLevelMenu();
-      logLevelButton.setMargin([3, 5]);
-      inner.add(logLevelButton, {edge: "east"});
-
-      // main output area
-      var f2 = new qx.ui.embed.Html('');
-      f2.set({
-        backgroundColor : "white",
-        overflowY : "scroll",
-        decorator : "separator-vertical"
-      });
-      pp2.add(f2, {flex: 1});
-      f2.getContentElement().setAttribute("id", "sessionlog");
-
-      var logAppender = this.getLogAppenderElement();
-      f2.addListenerOnce("appear", function(ev) {
-        this.getContentElement().getDomElement().appendChild(logAppender);
-      });
-
-      return pp2;
+      this.__logView = new qxc.ui.logpane.LogView()
+      this.__logView.setShowLogLevel(true);
+      this.__logView.bind("logLevel", this, "logLevel");
+      return this.__logView;
     },
 
     /**
@@ -1240,6 +1146,24 @@ qx.Class.define("testrunner.view.widget.Widget", {
 
       var reloadAut = new qx.ui.core.Command("Ctrl+Shift+R");
       reloadAut.addListener("execute", this.__reloadAut, this);
+    },
+    
+    /**
+     * Applies the cookie width values to the center and right panes
+     * 
+     * @param centerPane {qx.ui.core.Widget} center pane
+     * @param rightPane {qx.ui.core.Widget} right pane
+     */    
+    _applyPaneWidths : function(centerPane, rightPane)
+    {
+      var centerPaneWidth = qx.bom.Cookie.get("testrunner.centerPaneWidth");
+      var rightPaneWidth = qx.bom.Cookie.get("testrunner.rightPaneWidth");
+      if (centerPaneWidth !== null && rightPaneWidth !== null) {
+        var centerWidth = parseInt(centerPaneWidth);
+        var rightWidth = parseInt(rightPaneWidth);
+        centerPane.setLayoutProperties({ flex : centerWidth });
+        rightPane.setLayoutProperties({ flex : rightWidth });
+      }
     }
   },
 
@@ -1248,9 +1172,7 @@ qx.Class.define("testrunner.view.widget.Widget", {
     this._disposeObjects(
     "__iframe",
     "__overflowMenu",
-    "__menuItemStore",
     "__labelDeco",
-    "__logElement",
     "__testTree",
     "__runButton",
     "__stopButton",
@@ -1263,5 +1185,7 @@ qx.Class.define("testrunner.view.widget.Widget", {
     "__loadingContainer",
     "__stack",
     "__app");
+    
+    this._disposeMap("__menuItemStore");
   }
 });

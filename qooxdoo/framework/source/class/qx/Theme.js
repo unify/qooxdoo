@@ -56,7 +56,6 @@ qx.Bootstrap.define("qx.Theme",
      *   colors : {},
      *   decorations : {},
      *   fonts : {},
-     *   icons : {},
      *   widgets : {},
      *   appearances : {},
      *   meta : {}
@@ -259,11 +258,6 @@ qx.Bootstrap.define("qx.Theme",
       // Save theme type
       theme.type = type || "other";
 
-      // Return if there is no key defined at all
-      if (!type) {
-        return;
-      }
-
       // Create pseudo class
       var clazz = function() {};
 
@@ -387,6 +381,11 @@ qx.Bootstrap.define("qx.Theme",
         {
           var key = maps[i];
 
+          // @deprecated since 1.5
+          if (config[key] !== undefined && key === "icons") {
+            qx.Bootstrap.warn("The key 'icons' is deprecated, please check your configuration: " + name);
+          }
+
           if (config[key] !== undefined && (config[key] instanceof Array || config[key] instanceof RegExp || config[key] instanceof Date || config[key].classname !== undefined)) {
             throw new Error('Invalid key "' + key + '" in theme "' + name + '"! The value needs to be a map!');
           }
@@ -405,11 +404,6 @@ qx.Bootstrap.define("qx.Theme",
           if (counter > 1) {
             throw new Error("You can only define one theme category per file! Invalid theme: " + name);
           }
-        }
-
-        // At least one entry
-        if (!config.extend && counter === 0) {
-          throw new Error("You must define at least one entry in your theme configuration :" + name);
         }
 
         // Validate meta

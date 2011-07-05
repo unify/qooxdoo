@@ -13,7 +13,7 @@
      See the LICENSE file in the project's top-level directory for details.
 
    Authors:
-     * Tino Butz (tbtz)
+     * Tino Butz (tbtz)
 
 ************************************************************************ */
 
@@ -41,20 +41,23 @@ qx.Class.define("mobileshowcase.page.Form",
     __save : null,
     __result : null,
     __slide : null,
+    __sel : null,
+    __rememberPass : null,
 
     // overridden
     _initialize : function()
     {
       this.base(arguments);
-      var title = new qx.ui.mobile.form.Title("Form");
+      var title = new qx.ui.mobile.form.Title("User Registration Form");
       this.getContent().add(title);
-      this.getContent().add(this.__createForm());
+      this.__form = this.__createForm();
+      this.getContent().add(new qx.ui.mobile.form.renderer.Single(this.__form));
 
       var button = new qx.ui.mobile.form.Button("Submit");
       button.addListener("tap", this._onButtonTap, this);
       this.getContent().add(button);
 
-      var title = new qx.ui.mobile.form.Title("Form Content");
+      var title = new qx.ui.mobile.form.Title("Registration Result");
       this.getContent().add(title);
       this.__result = new qx.ui.mobile.embed.Html();
       this.getContent().add(this.__result);
@@ -68,36 +71,56 @@ qx.Class.define("mobileshowcase.page.Form",
      */
     __createForm : function()
     {
+     
       var form = new qx.ui.mobile.form.Form();
+      var validationManager = form.getValidationManager();
 
-      var row = new qx.ui.mobile.form.Row();
       this.__name = new qx.ui.mobile.form.TextField().set({placeholder:"Username"});
-      row.add(this.__name);
-      form.add(row);
+      this.__name.setRequired(true);
+      form.add(this.__name, "Username: ");
+      validationManager.add(this.__name, function(value, item){
+        var valid = value != null && value.length>3;
+        if(!valid) {
+          item.setInvalidMessage("username should have more than 3 characters!");
+        }
+        return valid;
+      }, this);
 
-      var row = new qx.ui.mobile.form.Row();
-      form.add(row);
       this.__password = new qx.ui.mobile.form.PasswordField().set({placeholder:"Password"});
-      row.add(this.__password);
+      form.add(this.__password, "Password: ");
+      
+      this.__rememberPass = new qx.ui.mobile.form.CheckBox();
+      form.add(this.__rememberPass, "Remember password? ");
+      this.__rememberPass.setModel("password_reminder");
+      this.__rememberPass.bind("model",this.__password,"value");
+      this.__password.bind("value",this.__rememberPass,"model");
+      
+      
+      form.addGroupHeader("Gender");
+      this.__radio1 = new qx.ui.mobile.form.RadioButton();
+      this.__radio2 = new qx.ui.mobile.form.RadioButton();
+      var radioGroup = new qx.ui.form.RadioGroup(this.__radio1, this.__radio2);
+      form.add(this.__radio1, "Male");
+      form.add(this.__radio2, "Female");
+      
+      this.__info = new qx.ui.mobile.form.TextArea().set({placeholder:"Terms of Service"});
+      form.add(this.__info,"Terms of Service: ");
+      this.__info.setValue("qooxdoo Licensing Information\n=============================\n\nqooxdoo may be used under the terms of either the\n\n  * GNU Lesser General Public License (LGPL)\n    http://www.gnu.org/licenses/lgpl.html\n\nor the\n\n  * Eclipse Public License (EPL)\n    http://www.eclipse.org/org/documents/epl-v10.php\n\nAs a recipient of qooxdoo, you may choose which license to receive the code \nunder. Certain files or entire directories may not be covered by this \ndual license, but are subject to licenses compatible to both LGPL and EPL.\nLicense exceptions are explicitly declared in all relevant files or in a \n\nLICENSE file in the relevant directories.");
 
-      var row = new qx.ui.mobile.form.Row();
-      form.add(row);
-      this.__info = new qx.ui.mobile.form.TextArea().set({placeholder:"Some Info"});
-      row.add(this.__info);
-
-      var row = new qx.ui.mobile.form.Row(new qx.ui.mobile.layout.HBox());
-      form.add(row);
-      row.add(new qx.ui.mobile.basic.Label("Save"), {flex:1});
       this.__save = new qx.ui.mobile.form.ToggleButton();
-      row.add(this.__save);
+      form.add(this.__save, "Agree? ");
 
-      var row = new qx.ui.mobile.form.Row(new qx.ui.mobile.layout.HBox());
-      form.add(row);
       this.__slide = new qx.ui.mobile.form.Slider();
-      row.add(this.__slide, {flex:1});
+      form.add(this.__slide,"Are you human? Drag the slider to prove it.");
+      
+      var dd = new qx.data.Array(["Web search", "From a friend", "Offline ad"]);
+      this.__sel = new qx.ui.mobile.form.SelectBox();
+      this.__sel.setModel(dd);
+      form.add(this.__sel, "How did you hear about us ?");
+      
       return form;
+      
     },
-
 
     /**
      * Event handler.
@@ -106,13 +129,16 @@ qx.Class.define("mobileshowcase.page.Form",
      */
     _onButtonTap : function(evt)
     {
-      var result = [];
-      result.push("Username: " +  this.__name.getValue());
-      result.push("Password: " +  this.__password.getValue());
-      result.push("Info: " +  this.__info.getValue());
-      result.push("Save: " +  this.__save.getValue());
-      result.push("Slider: " +  this.__slide.getValue());
-      this.__result.setHtml(result.join("<br>"));
+      if(this.__form.validate())
+      {
+        var result = [];
+        result.push("Username: " +  this.__name.getValue());
+        result.push("Password: " +  this.__password.getValue());
+        result.push("Agree on our terms: " +  this.__save.getValue());
+        result.push("How did you hear about us : " +  this.__sel.getValue());
+        result.push("Are you human? : " +  this.__slide.getValue() +"%");
+        this.__result.setHtml(result.join("<br>"));
+      }
     },
 
 

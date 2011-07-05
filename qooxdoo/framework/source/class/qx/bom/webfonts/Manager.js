@@ -268,12 +268,12 @@ qx.Class.define("qx.bom.webfonts.Manager", {
       if (!this.__validators[familyName]) {
         this.__validators[familyName] = new qx.bom.webfonts.Validator(familyName);
         this.__validators[familyName].setTimeout(qx.bom.webfonts.Manager.VALIDATION_TIMEOUT);
-        this.__validators[familyName].addListener("changeStatus", this.__onFontChangeStatus, this);
+        this.__validators[familyName].addListenerOnce("changeStatus", this.__onFontChangeStatus, this);
       }
 
       if (callback) {
         var cbContext = context || window;
-        this.__validators[familyName].addListener("changeStatus", callback, cbContext);
+        this.__validators[familyName].addListenerOnce("changeStatus", callback, cbContext);
       }
 
       this.__validators[familyName].validate();

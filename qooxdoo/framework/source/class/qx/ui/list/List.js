@@ -65,7 +65,7 @@
 qx.Class.define("qx.ui.list.List",
 {
   extend : qx.ui.virtual.core.Scroller,
-  include : [qx.ui.list.core.MSelectionHandling],
+  include : [qx.ui.virtual.selection.MModel],
 
 
   /**
@@ -461,6 +461,16 @@ qx.Class.define("qx.ui.list.List",
     },
 
 
+    /**
+     * Returns the selectable model items.
+     * 
+     * @return {qx.data.Array} The selectable items.
+     */
+    _getSelectables : function() {
+      return this.getModel();
+    },
+    
+    
     /*
     ---------------------------------------------------------------------------
       APPLY ROUTINES
@@ -556,7 +566,6 @@ qx.Class.define("qx.ui.list.List",
     _onModelChange : function(e) {
       this.__buildUpLookupTable();
       this._applyDefaultSelection();
-      this._updateSelection();
     },
 
 
@@ -599,6 +608,7 @@ qx.Class.define("qx.ui.list.List",
       this._runDelegateFilter(model);
       this._runDelegateSorter(model);
       this._runDelegateGroup(model);
+      this._updateSelection();
       this.__updateRowCount();
     },
 

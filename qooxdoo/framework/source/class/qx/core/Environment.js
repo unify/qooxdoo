@@ -317,6 +317,14 @@
  *       <td>{@link qx.bom.client.Plugin#getGears}</td>
  *     </tr>
  *     <tr>
+ *       <td>plugin.pdf</td><td><i>Boolean</em></td><td><code>false</code></td>
+ *       <td>{@link qx.bom.client.Plugin#getPdf}</td>
+ *     </tr>
+ *     <tr>
+ *       <td>plugin.pdf.version</td><td><i>String</em></td><td></td>
+ *       <td>{@link qx.bom.client.Plugin#getPdfVersion}</td>
+ *     </tr>
+ *     <tr>
  *       <td>plugin.quicktime</td><td><i>Boolean</em></td><td><code>true</code></td>
  *       <td>{@link qx.bom.client.Plugin#getQuicktime}</td>
  *     </tr>
@@ -369,6 +377,10 @@
  *       <td><i>default:</i> <code>false</code></td>
  *     </tr>
  *     <tr>
+ *       <td>qx.debug.dispose</td><td><i>Boolean</em></td><td><code>false</code></td>
+ *       <td><i>default:</i> <code>false</code></td>
+ *     </tr>
+ *     <tr>
  *       <td>qx.disposerDebugLevel</td><td><i>Integer</em></td><td><code>0</code></td>
  *       <td><i>default:</i> <code>0</code></td>
  *     </tr>
@@ -393,12 +405,42 @@
  *       <td><i>default:</i> <code>false</code></td>
  *     </tr>
  *     <tr>
+ *       <td>qx.optimization.basecalls</td><td><i>Boolean</em></td><td><code>true</code></td>
+ *       <td>true if the corresp. <i>optimize</i> key is set in the config</td>
+ *     </tr>
+ *     <tr>
+ *       <td>qx.optimization.comments</td><td><i>Boolean</em></td><td><code>true</code></td>
+ *       <td>true if the corresp. <i>optimize</i> key is set in the config</td>
+ *     </tr>
+ *     <tr>
+ *       <td>qx.optimization.privates</td><td><i>Boolean</em></td><td><code>true</code></td>
+ *       <td>true if the corresp. <i>optimize</i> key is set in the config</td>
+ *     </tr>
+ *     <tr>
+ *       <td>qx.optimization.strings</td><td><i>Boolean</em></td><td><code>true</code></td>
+ *       <td>true if the corresp. <i>optimize</i> key is set in the config</td>
+ *     </tr>
+ *     <tr>
+ *       <td>qx.optimization.variables</td><td><i>Boolean</em></td><td><code>true</code></td>
+ *       <td>true if the corresp. <i>optimize</i> key is set in the config</td>
+ *     </tr>
+ *     <tr>
+ *       <td>qx.optimization.variants</td><td><i>Boolean</em></td><td><code>true</code></td>
+ *       <td>true if the corresp. <i>optimize</i> key is set in the config</td>
+ *     </tr>
+ *     <tr>
  *       <td>qx.propertyDebugLevel</td><td><i>Integer</em></td><td><code>0</code></td>
  *       <td><i>default:</i> <code>0</code></td>
  *     </tr>
  *     <tr>
+ *       <td>qx.revision</td><td><i>String</em></td><td><code>27348</code></td>
+ *     </tr>
+ *     <tr>
  *       <td>qx.theme</td><td><i>String</em></td><td><code>qx.theme.Modern</code></td>
  *       <td><i>default:</i> <code>&lt;&lt;theme name&gt;&gt;</code></td>
+ *     </tr>
+ *     <tr>
+ *       <td>qx.version</td><td><i>String</em></td><td><code>1.5</code></td>
  *     </tr>
  *     <tr>
  *       <td colspan="4"><h3>Asynchronous checks</h3>
@@ -639,7 +681,7 @@ qx.Bootstrap.define("qx.core.Environment",
       this.add("qx.propertyDebugLevel", function() {return 0;});
 
       // old variants
-      // make sure to reflect all changes to qx.debug here to thebootstrap class!
+      // make sure to reflect all changes to qx.debug here in the bootstrap class!
       this.add("qx.debug", function() {return true;});
       this.add("qx.aspects", function() {return false;});
       this.add("qx.dynlocale", function() {return true;});
@@ -648,6 +690,15 @@ qx.Bootstrap.define("qx.core.Environment",
 
       this.add("qx.dynamicmousewheel", function() {return true;});
       this.add("qx.debug.databinding", function() {return false;});
+      this.add("qx.debug.dispose", function() {return false;});
+
+      // generator optimization vectors
+      this.add("qx.optimization.basecalls", function() {return false;});
+      this.add("qx.optimization.comments", function() {return false;});
+      this.add("qx.optimization.privates", function() {return false;});
+      this.add("qx.optimization.strings", function() {return false;});
+      this.add("qx.optimization.variables", function() {return false;});
+      this.add("qx.optimization.variants", function() {return false;});
     },
 
 
@@ -847,6 +898,13 @@ qx.Bootstrap.define("qx.core.Environment",
         this._checks["plugin.flash.strictsecurity"] = qx.bom.client.Flash.getStrictSecurityModel;
       }
 
+      if (this.useCheck("plugin.pdf")) {
+        this._checks["plugin.pdf"] = qx.bom.client.Plugin.getPdf;
+      }
+      if (this.useCheck("plugin.pdf.version")) {
+        this._checks["plugin.pdf.version"] = qx.bom.client.Plugin.getPdfVersion;
+      }
+
       // /////////////////////////////////////////
       // IO
       // /////////////////////////////////////////
@@ -950,6 +1008,9 @@ qx.Bootstrap.define("qx.core.Environment",
       if (this.useCheck("html.dataurl")) {
         this._asyncChecks["html.dataurl"] = qx.bom.client.Html.getDataUrl;
       }
+      if (this.useCheck("html.dataset")) {
+        this._checks["html.dataset"] = qx.bom.client.Html.getDataset;
+      }
 
       // /////////////////////////////////////////
       // CSS
@@ -1008,7 +1069,7 @@ qx.Bootstrap.define("qx.core.Environment",
     // load the checks from the generator
     statics.__importFromGenerator();
     // load the checks from the url
-    if (statics.get("qx.allowUrlSettings") != true) {
+    if (statics.get("qx.allowUrlSettings") === true) {
       statics.__importFromUrl();
     }
   }

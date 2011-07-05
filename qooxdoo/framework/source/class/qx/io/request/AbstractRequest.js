@@ -18,8 +18,6 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL - NOT READY FOR PRODUCTION
- *
  * AbstractRequest serves as a base class for {@link qx.io.request.Xhr}
  * and {@link qx.io.request.Jsonp}. It contains methods to conveniently
  * communicate with transports found in {@link qx.bom.request}.
@@ -27,6 +25,7 @@
  * The general procedure to derive a new request is to choose a
  * transport (override {@link #_createTransport}) and link
  * the transport’s response (override {@link #_getParsedResponse}).
+ * The transport must implement {@link qx.bom.request.IRequest}.
  *
  * To adjust the behavior of {@link #send} override
  * {@link #_getConfiguredUrl} and {@link #_setRequestHeader}.
@@ -37,11 +36,19 @@ qx.Class.define("qx.io.request.AbstractRequest",
 
   extend : qx.core.Object,
 
-  construct : function()
+  /**
+   * @param url {String?} The URL of the resource to request.
+   */
+  construct : function(url)
   {
     this.base(arguments);
 
+    if (url !== undefined) {
+      this.setUrl(url);
+    }
+
     var transport = this._transport = this._createTransport();
+    this._setPhase("unsent");
 
     this.__onReadyStateChangeBound = qx.lang.Function.bind(this._onReadyStateChange, this);
     this.__onLoadBound = qx.lang.Function.bind(this._onLoad, this);
@@ -61,61 +68,48 @@ qx.Class.define("qx.io.request.AbstractRequest",
   events :
   {
     /**
-     * Fires on every change of the transport’s readyState.
+     * Fired on every change of the transport’s readyState.
      */
-    "readystatechange": "qx.event.type.Event",
+    "readyStateChange": "qx.event.type.Event",
 
     /**
-     * Fires when request is complete and HTTP status indicates success.
-     *
-     * Note: Some transports, e.g. {@link qx.bom.request.Jsonp}, do not
-     * expose the HTTP status of the response. Instead they fake a
-     * successful response.
+     * Fired when request completes without error and transport’s status
+     * indicates success.
      */
     "success": "qx.event.type.Event",
 
     /**
-     * Fires when request is complete.
-     *
-     * Ignores the HTTP status.
+     * Fired when request completes without error.
      */
     "load": "qx.event.type.Event",
 
     /**
-     * Fires when processing of request completes.
-     *
-     * A request completes no matter if it was successful,
-     * or a network/timeout error occured.
+     * Fired when request completes with or without error.
      */
-    "loadend": "qx.event.type.Event",
+    "loadEnd": "qx.event.type.Event",
 
     /**
-     * Fires when request was aborted.
+     * Fired when request is aborted.
      */
     "abort": "qx.event.type.Event",
 
     /**
-     * Fires when request reached timeout limit.
+     * Fired when request reaches timeout limit.
      */
     "timeout": "qx.event.type.Event",
 
     /**
-     * Fires when request could not complete
-     * due to a network error.
+     * Fired when request completes with error.
      */
     "error": "qx.event.type.Event",
 
     /**
-     * Fires when request completed with erroneous HTTP status.
-     *
-     * For instance, indicating a server error or missing resource.
-     *
-     * Note: Only ever fired for transports revealing an HTTP status.
+     * Fired when request completes without error but erroneous HTTP status.
      */
-    "remoteError": "qx.event.type.Event",
+    "statusError": "qx.event.type.Event",
 
     /**
-     * Fires on timeout, error or remote error.
+     * Fired on timeout, error or remote error.
      *
      * This event is fired for convenience. Usually, it is recommended
      * to handle error related events in a more granular approach.
@@ -123,12 +117,12 @@ qx.Class.define("qx.io.request.AbstractRequest",
     "fail": "qx.event.type.Event",
 
     /**
-    * Fires on change of the parsed response.
+    * Fired on change of the parsed response.
     *
     * This event allows to use data binding with the
     * parsed response as source.
     *
-    * For example:
+    * For example, to bind the response to the value of a label:
     *
     * <pre class="javascript">
     * // req is an instance of qx.io.request.*,
@@ -142,7 +136,12 @@ qx.Class.define("qx.io.request.AbstractRequest",
     * is ignored, instead only the final value is bound.
     *
     */
-    "changeResponse": "qx.event.type.Data"
+    "changeResponse": "qx.event.type.Data",
+
+    /**
+     * Fired on change of the phase.
+     */
+    "changePhase": "qx.event.type.Data"
   },
 
   properties :
@@ -191,9 +190,14 @@ qx.Class.define("qx.io.request.AbstractRequest",
      *
      * For every supported type except strings, a URL encoded string
      * with unsafe characters escaped is internally generated and sent
-     * with the request. However, if a string is given the user must make
-     * sure it is properly formatted and escaped. See
-     * {@link qx.lang.Object#toUriParameter}.
+     * as part of the request.
+     *
+     * Depending on the underlying transport and it's configuration, the request
+     * data is transparently included as URL query parameters or embedded in the
+     * request header as form data.
+     *
+     * If a string is given the user must make sure it is properly formatted and
+     * escaped. See {@link qx.lang.Object#toUriParameter}.
      *
      */
     requestData: {
@@ -208,7 +212,7 @@ qx.Class.define("qx.io.request.AbstractRequest",
     /**
      * Authentication delegate.
      *
-     * The delegate must implement {@link qx.io.request.auth.IAuthDelegate}.
+     * The delegate must implement {@link qx.io.request.authentication.IAuthentication}.
      */
     authentication: {
       check: "qx.io.request.authentication.IAuthentication",
@@ -233,6 +237,11 @@ qx.Class.define("qx.io.request.AbstractRequest",
      * Parsed response.
      */
     __response: null,
+
+    /**
+     * Current phase.
+     */
+    __phase: null,
 
     /**
      * Holds transport.
@@ -332,6 +341,7 @@ qx.Class.define("qx.io.request.AbstractRequest",
       }
 
       transport.open(method, url, async);
+      this._setPhase("opened");
 
       //
       // Send request
@@ -348,6 +358,7 @@ qx.Class.define("qx.io.request.AbstractRequest",
         this.debug("Send low-level request");
       }
       method == "GET" ? transport.send() : transport.send(serializedData);
+      this._setPhase("sent");
     },
 
     /**
@@ -374,13 +385,12 @@ qx.Class.define("qx.io.request.AbstractRequest",
      * This method can be used to query the transport directly,
      * but should be used with caution. Especially, it
      * is not advisable to call any destructive methods
-     * such as {@link qx.bom.request.Xhr#open} or
-     * {@link qx.bom.request.Xhr#send}.
+     * such as <code>open</code> or <code>send</code>.
      *
-     * @return {qx.bom.request.Xhr} The transport
+     * @return {Object} An instance of a class found in
+     *  <code>qx.bom.request.*</code>
      */
 
-     //
      // This method mainly exists so that some methods found in the
      // low-level transport can be deliberately omitted here,
      // but still be accessed should it be absolutely necessary.
@@ -394,7 +404,7 @@ qx.Class.define("qx.io.request.AbstractRequest",
     },
 
     /**
-     * Get ready state.
+     * Get current ready state.
      *
      * States can be:
      * UNSENT:           0,
@@ -410,18 +420,41 @@ qx.Class.define("qx.io.request.AbstractRequest",
     },
 
     /**
-     * Get HTTP status code.
+     * Get current phase.
      *
-     * @return {Number} The HTTP status code.
+     * A more elaborate version of {@link #getReadyState}, this method indicates
+     * the current phase of the request. Maps to stateful (i.e. deterministic)
+     * events (success, abort, timeout, statusError) and intermediate
+     * readyStates (unsent, configured, loading, load).
+     *
+     * When the requests is successful, it progresses the states:<br>
+     * 'unsent', 'opened', 'sent', 'loading', 'load', 'success'
+     *
+     * In case of failure, the final state is one of:<br>
+     * 'abort', 'timeout', 'statusError'
+     *
+     * For each change of the phase, a {@link #changePhase} data event is fired.
+     *
+     * @return {String} Current phase.
+     *
+     */
+    getPhase: function() {
+      return this.__phase;
+    },
+
+    /**
+     * Get status code.
+     *
+     * @return {Number} The transport’s status code.
      */
     getStatus: function() {
       return this._transport.status;
     },
 
     /**
-     * Get HTTP status text.
+     * Get status text.
      *
-     * @return {String} The HTTP status text.
+     * @return {String} The transport’s status text.
      */
     getStatusText: function() {
       return this._transport.statusText;
@@ -448,10 +481,10 @@ qx.Class.define("qx.io.request.AbstractRequest",
     /**
      * Get a single response header from response.
      *
-     * @param  key {String}
-     *         Key of the header to get the value from.
+     * @param key {String}
+     *   Key of the header to get the value from.
      * @return {String}
-     *         Response header.
+     *   Response header.
      */
     getResponseHeader: function(key) {
       return this._transport.getResponseHeader(key);
@@ -461,7 +494,7 @@ qx.Class.define("qx.io.request.AbstractRequest",
      * Get the content type response header from response.
      *
      * @return {String}
-     *         Content type response header.
+     *   Content type response header.
      */
     getResponseContentType: function() {
       return this.getResponseHeader("Content-Type");
@@ -510,16 +543,21 @@ qx.Class.define("qx.io.request.AbstractRequest",
     */
 
     /**
-     * Handle "readystatechange" event.
+     * Handle "readyStateChange" event.
      */
     _onReadyStateChange: function() {
-      var parsedResponse;
+      var parsedResponse,
+          readyState = this.getReadyState();
 
       if (qx.core.Environment.get("qx.debug.io")) {
-        this.debug("Fire readyState: " + this.getReadyState());
+        this.debug("Fire readyState: " + readyState);
       }
 
-      this.fireEvent("readystatechange");
+      this.fireEvent("readyStateChange");
+
+      if (readyState === 3) {
+        this._setPhase("loading");
+      }
 
       if (this.isDone()) {
 
@@ -527,8 +565,11 @@ qx.Class.define("qx.io.request.AbstractRequest",
           this.debug("Request completed with HTTP status: " + this.getStatus());
         }
 
+        // Event "load" fired in onLoad
+        this._setPhase("load");
+
         // Successful HTTP status
-        if (qx.bom.request.Xhr.isSuccessful(this.getStatus())) {
+        if (qx.util.Request.isSuccessful(this.getStatus())) {
 
           // Parse response
           if (qx.core.Environment.get("qx.debug.io")) {
@@ -537,11 +578,11 @@ qx.Class.define("qx.io.request.AbstractRequest",
           parsedResponse = this._getParsedResponse();
           this._setResponse(parsedResponse);
 
-          this.fireEvent("success");
+          this._fireStatefulEvent("success");
 
         // Erroneous HTTP status
         } else {
-          this.fireEvent("remoteError");
+          this._fireStatefulEvent("statusError");
 
           // A remote error failure
           this.fireEvent("fail");
@@ -557,24 +598,24 @@ qx.Class.define("qx.io.request.AbstractRequest",
     },
 
     /**
-     * Handle "loadend" event.
+     * Handle "loadEnd" event.
      */
     _onLoadEnd: function() {
-      this.fireEvent("loadend");
+      this.fireEvent("loadEnd");
     },
 
     /**
      * Handle "abort" event.
      */
     _onAbort: function() {
-      this.fireEvent("abort");
+      this._fireStatefulEvent("abort");
     },
 
     /**
      * Handle "timeout" event.
      */
     _onTimeout: function() {
-      this.fireEvent("timeout");
+      this._fireStatefulEvent("timeout");
 
       // A network error failure
       this.fireEvent("fail");
@@ -595,6 +636,39 @@ qx.Class.define("qx.io.request.AbstractRequest",
       INTERNAL / HELPERS
     ---------------------------------------------------------------------------
     */
+
+    /**
+     * Fire stateful event.
+     *
+     * Fires event and sets phase to name of event.
+     *
+     * @param evt {String} Name of the event to fire.
+     */
+    _fireStatefulEvent: function(evt) {
+      if (qx.core.Environment.get("qx.debug")) {
+        qx.core.Assert.assertString(evt);
+      }
+      this._setPhase(evt);
+      this.fireEvent(evt);
+    },
+
+    /**
+     * Set phase.
+     *
+     * @param phase {String} The phase to set.
+     */
+    _setPhase: function(phase) {
+      var previousPhase = this.__phase;
+
+      if (qx.core.Environment.get("qx.debug")) {
+        qx.core.Assert.assertString(phase);
+        qx.core.Assert.assertMatch(phase,
+          /^(unsent)|(opened)|(sent)|(loading)|(load)|(success)|(abort)|(timeout)|(statusError)$/);
+      }
+
+      this.__phase = phase;
+      this.fireDataEvent("changePhase", phase, previousPhase);
+    },
 
     /**
      * Serialize data
@@ -628,10 +702,10 @@ qx.Class.define("qx.io.request.AbstractRequest",
     __setUserRequestHeaders: function() {
       var requestHeaders = this.getRequestHeaders();
 
-      for (var key in requestHeaders) {
-        if (requestHeaders.hasOwnProperty(key)) {
+      if (requestHeaders) {
+        qx.lang.Object.getKeys(requestHeaders).forEach(function(key) {
           this._transport.setRequestHeader(key, requestHeaders[key]);
-        }
+        }, this);
       }
     },
 

@@ -21,6 +21,8 @@ qx.Class.define("qx.test.ui.form.TextArea",
 {
   extend : qx.test.ui.LayoutTestCase,
 
+  include : qx.dev.unit.MRequirements,
+
   members :
   {
     __textArea: null,
@@ -29,16 +31,13 @@ qx.Class.define("qx.test.ui.form.TextArea",
     {
       var textArea = this.__textArea = new qx.ui.form.TextArea();
       this.getRoot().add(textArea);
-      this.flush();
     },
-
-    // Of course, <br/> in a function name is far from optimal
 
     //
     // "Plain" textarea
     //
 
-    "test: textarea<br/> set value": function() {
+    "test: textarea set value": function() {
       var textArea = this.__textArea;
       textArea.setValue("Affe");
       this.flush();
@@ -46,7 +45,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assertEquals("Affe", textArea.getValue());
     },
 
-    "test: textarea<br/> set minimal line-height": function() {
+    "test: textarea set minimal line-height": function() {
       var textArea = this.__textArea;
       this.flush();
       var heightInitial = textArea.getSizeHint().height;
@@ -64,7 +63,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
     // Auto-Size
     //
 
-    "test: textarea with autoSize<br/> grows when input would trigger scrollbar": function() {
+    "test: textarea with autoSize grows when input would trigger scrollbar": function() {
       var textArea = this.__textArea;
       textArea.setAutoSize(true);
       this.flush();
@@ -83,7 +82,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assert(heightTall > heightSmall, msg);
     },
 
-    "test: textarea with autoSize<br/> shrinks when removal would hide scrollbar": function() {
+    "test: textarea with autoSize shrinks when removal would hide scrollbar": function() {
       var textArea = this.__textArea;
       textArea.setAutoSize(true);
       this.flush();
@@ -106,7 +105,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assert(heightShrink < heightTall, msg);
     },
 
-    "test: textarea with autoSize<br/> does not shrink below original height": function() {
+    "test: textarea with autoSize does not shrink below original height": function() {
       var textArea = this.__textArea;
       textArea.setAutoSize(true);
       this.flush();
@@ -126,7 +125,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assert(!(heightShrink < originalHeight), msg);
     },
 
-    "test: textarea with autoSize<br/> shows scroll-bar when above maxHeight": function() {
+    "test: textarea with autoSize shows scroll-bar when above maxHeight": function() {
       var textArea = this.__textArea;
       textArea.set({
         autoSize: true,
@@ -143,7 +142,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assertEquals("auto", overflow);
     },
 
-    "test: textarea with autoSize<br/> shows scroll-bar when finally above maxHeight": function() {
+    "test: textarea with autoSize shows scroll-bar when finally above maxHeight": function() {
       var textArea = this.__textArea;
       textArea.set({
         autoSize: true,
@@ -163,7 +162,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assertEquals("auto", overflow);
     },
 
-    "test: textarea with autoSize<br/> hides scroll-bar when finally below maxHeight": function() {
+    "test: textarea with autoSize hides scroll-bar when finally below maxHeight": function() {
       var textArea = this.__textArea;
       textArea.set({
         autoSize: true,
@@ -183,7 +182,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assertEquals("hidden", overflow);
     },
 
-    "test: textarea with autoSize<br/> takes initial value into consideration": function() {
+    "test: textarea with autoSize respects initial value": function() {
       var textArea = this.__textArea;
       textArea.set({
         autoSize: true,
@@ -207,10 +206,34 @@ qx.Class.define("qx.test.ui.form.TextArea",
       textAreaNoValue.destroy();
     },
 
-    "test: textarea with autoSize<br/> shrinks when long line is unwrapped": function() {
+    "test: textarea with autoSize respects initial wrap": function() {
+      var textArea = this.__textArea;
+      textArea.set({
+        autoSize: true,
+        wrap: false,
+        minimalLineHeight: 2,
+        value: this.__getLongValue()
+      });
 
+      // No wrap
+      this.flush();
+      var heightInitial = textArea.getBounds().height;
+
+      // Wrap
+      textArea.setWrap(true);
+      this.flush();
+
+      // No wrap
+      textArea.setWrap(false);
+      this.flush();
+      var heightFinal = textArea.getBounds().height;
+
+      this.assertEquals(heightInitial, heightFinal);
+    },
+
+    "test: textarea with autoSize shrinks when long line is unwrapped": function() {
       if (!this.__supportsLiveWrap()) {
-        return;
+        this.skip();
       }
 
       var textArea = this.__textArea;
@@ -233,10 +256,10 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assert(noWrapHeight < wrapHeight, msg);
     },
 
-    "test: textarea with autoSize<br/> grows when long line is wrapped": function() {
+    "test: textarea with autoSize grows when long line is wrapped": function() {
 
       if (!this.__supportsLiveWrap()) {
-        return;
+        this.skip();
       }
 
       var textArea = this.__textArea;
@@ -273,7 +296,7 @@ qx.Class.define("qx.test.ui.form.TextArea",
       this.assertNotEquals(wrapHeight, noWrapHeight, msg);
       this.assert(wrapHeight > noWrapHeight, msg);
 
-      var msg = "Must be same height when wrap is toggled"
+      msg = "Must be same height when wrap is toggled";
       this.assertEquals(initialWrapHeight, wrapHeight, msg);
     },
 
@@ -286,7 +309,6 @@ qx.Class.define("qx.test.ui.form.TextArea",
     },
 
     __supportsLiveWrap: function() {
-
       // Opera and older versions of IE ignore changes to wrap settings
       // once the textarea is in the DOM
       if (
@@ -294,10 +316,13 @@ qx.Class.define("qx.test.ui.form.TextArea",
         (qx.core.Environment.get("engine.name") == "mshtml" &&
         parseFloat(qx.core.Environment.get("engine.version")) < 8))
       {
-        this.warn("Skipping test");
         return false;
       }
+      return true;
+    },
 
+    skip: function(msg) {
+      throw new qx.dev.unit.RequirementError(null, msg);
     },
 
     tearDown : function()

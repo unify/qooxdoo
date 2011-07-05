@@ -13,6 +13,11 @@
   {
     "build" :
     {
+      "config-warnings" : 
+      { 
+        "exclude" : false 
+      },
+ 
       "library" :
       [
         {
@@ -64,7 +69,8 @@
         "code" :
         {
           "format"   : true,
-          "optimize" : [ "variables", "basecalls", "privates", "strings" ]
+          "optimize" : [ "variables", "basecalls", "privates", "strings" ],
+          "except"   : []
         }
       },
       

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ################################################################################
 #
 #  qooxdoo - the new era of web development
@@ -25,6 +26,7 @@ import sys, os, copy
 #sys.path.append(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "../"))
 
 import simplejson
+
 
 ##
 #<h2>Module Description</h2>
@@ -149,6 +151,14 @@ class Node(object):
             chain.append(currNode.parent.type)
             currNode = currNode.parent
         return reversed (chain)
+
+    ##
+    # return the root of the current tree
+    def getRoot(self):
+        rnode = self
+        while rnode.parent:
+            rnode = rnode.parent
+        return rnode
 
 
     def hasChildren(self, ignoreComments = False):
@@ -577,18 +587,12 @@ class Node(object):
         return nodeToJsonString(self, prefix, childPrefix, newLine)
 
     def toJavascript(self):
-        from ecmascript import compiler
+        from ecmascript.backend import pretty
         def options(): pass
-        options.prettyPrint =  True
-        options.prettypIndentString = "  "
-        options.prettypCommentsInlinePadding = "  "
-        options.prettypCommentsTrailingCommentCols = ""
-        options.prettypOpenCurlyNewlineBefore = "m"
-        options.prettypOpenCurlyIndentBefore = False
-        options.prettypAlignBlockWithCurlies = False
-        options.prettypCommentsTrailingKeepColumn = False
-
-        return compiler.compile(self, options)
+        pretty.defaultOptions(options)
+        result = [u'']
+        result = pretty.prettyNode(self, options, result)
+        return u''.join(result)
 
     def nodeIter(self):
         "A generator/iterator method, to traverse a tree and 'yield' each node"

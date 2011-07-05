@@ -17,7 +17,7 @@
 
 ************************************************************************ */
 /**
- * The resetter is responsible for managing a set of items and resetting this
+ * The resetter is responsible for managing a set of items and resetting these
  * items on a {@link #reset} call. It can handle all form items supplying a
  * value property and all widgets implementing the single selection linked list
  * or select box.
@@ -41,7 +41,7 @@ qx.Class.define("qx.ui.form.Resetter",
     /**
      * Adding a widget to the reseter will get its current value and store
      * it for resetting. To access the value, the given item needs to specify
-     * a value property of implement the {@link qx.ui.core.ISingleSelection}
+     * a value property or implement the {@link qx.ui.core.ISingleSelection}
      * interface.
      *
      * @param item {qx.ui.core.Widget} The widget which should be added.

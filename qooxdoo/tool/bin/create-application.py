@@ -184,11 +184,12 @@ def patchSkeleton(dir, framework_dir, options):
     for root, dirs, files in os.walk(dir):
         for file in files:
             split = file.split(".")
-            if len(split) >= 3 and split[1] == "tmpl":
-                outFile = os.path.join(root, split[0] + "." + ".".join(split[2:]))
+            if len(split) >= 3 and split[-2] == "tmpl":
+                outFile = os.path.join(root, ".".join(split[:-2] + split[-1:]))
                 inFile = os.path.join(root, file)
                 console.log("Patching file '%s'" % outFile)
 
+                #config = MyTemplate(open(inFile).read())
                 config = Template(open(inFile).read())
                 out = open(outFile, "w")
                 out.write(
@@ -265,17 +266,24 @@ def checkNamespace(options):
             console.log("WARNING: Converted illegal characters in namespace (from %s to %s)" % (options.namespace, convertedNamespace))
             options.namespace = convertedNamespace
 
-    # check well-formed identifier
-    if not re.match(lang.IDENTIFIER_REGEXP, options.namespace):
-        console.error("Name space must be a legal JS identifier, but is not: '%s'" % options.namespace)
-        sys.exit(1)
+    for namepart in options.namespace.split("."):
+        # check well-formed identifier
+        if not re.match(lang.IDENTIFIER_REGEXP, namepart):
+            console.error("Name space part must be a legal JS identifier, but is not: '%s'" % namepart)
+            sys.exit(1)
 
-    # check reserved words
-    if options.namespace in (lang.GLOBALS + lang.RESERVED.keys()):
-        console.error("JS reserved word '%s' is not allowed as name space" % options.namespace)
-        sys.exit(1)
+        # check reserved words
+        if namepart in (lang.GLOBALS + lang.RESERVED.keys()):
+            console.error("JS reserved word '%s' is not allowed as name space part" % namepart)
+            sys.exit(1)
 
 
+def skeletonsHelpString():
+    helpString = "Type of the application to create, one of: "
+    helpString += str(map(str, sorted(APP_INFOS.keys()))) + "." 
+    helpString += str("; ".join(["'%s' -- %s" % (x, y) for x,y in sorted(APP_INFOS.items())])) 
+    helpString += ". (Default: %default)"
+    return helpString
 
 
 def main():
@@ -305,9 +313,7 @@ Example: For creating a regular GUI application \'myapp\' you could execute:
     )
     parser.add_option(
         "-t", "--type", dest="type", metavar="TYPE", default="gui",
-        help="Type of the application to create, one of: "+str(map(str, sorted(APP_INFOS.keys())))+"." +
-          str(", ".join(["'%s' %s" % (x, y) for x,y in sorted(APP_INFOS.items())])) +
-          ". (Default: %default)"
+        help=skeletonsHelpString()
      )
     parser.add_option(
         "-l", "--logfile", dest="logfile", metavar="LOGFILE",
@@ -341,6 +347,27 @@ Example: For creating a regular GUI application \'myapp\' you could execute:
     createApplication(options)
 
     console.log("DONE")
+
+
+pattern = r"""
+%(delim)s(?:
+  (?P<escaped>%(delim)s) |   # Escape sequence of two delimiters
+  (?P<named>%(id)s)      |   # delimiter and a Python identifier
+  {(?P<braced>%(id)s)}   |   # delimiter and a braced identifier
+  (?P<invalid>)              # Other ill-formed delimiter exprs
+)
+"""
+
+class MyTemplate(Template):
+     #delimiter = "%"
+    pattern = r"""
+    \$(?:
+      (?P<escaped>\$) |   # Escape sequence of two delimiters
+      {(?P<braced>[_a-z][_a-z0-9]*)}   |   # delimiter and a braced identifier
+      (?P<invalid>)              # Other ill-formed delimiter exprs
+    )
+    """
+     
 
 
 if __name__ == '__main__':

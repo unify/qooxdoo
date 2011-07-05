@@ -36,6 +36,7 @@ qx.Class.define("qx.test.html.Element",
     tearDown : function()
     {
       qx.html.Element.flush();
+      this._doc.dispose();
       var div = document.getElementById("doc");
       document.body.removeChild(div);
     },
@@ -685,6 +686,8 @@ qx.Class.define("qx.test.html.Element",
        *   - el4_1
        * - el5
        */
+      
+      el4_2.dispose();
     },
 
 

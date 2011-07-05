@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ################################################################################
 #
 #  qooxdoo - the new era of web development
@@ -38,13 +39,14 @@
 #
 ##
 
-import sys, re, os, types
+import sys, re, os, types, time
 from operator import attrgetter
 import graph
 
 from misc.ExtMap                import ExtMap
+from misc                       import util
 from ecmascript.frontend        import lang
-from generator.code.Class       import DependencyItem, DependencyError
+from generator.code.Class       import Class, DependencyItem, DependencyError, CompileOptions
 
 class DependencyLoader(object):
 
@@ -101,12 +103,12 @@ class DependencyLoader(object):
         result = resolveDepsSmartCludes()
         result = processExplicitCludes(result, includeNoDeps, excludeWithDeps) # using excludeWithDeps here as well
         # Sort classes
-        self._console.info("Sorting %s classes " % len(result), False)
-        if  self._jobconf.get("dependencies/sort-topological", False):
-            result = self.sortClassesTopological(result, variants)
-        else:
-            result = self.sortClasses(result, variants, buildType)
-        self._console.nl()
+        #self._console.info("Sorting %s classes " % len(result), False)
+        #if  self._jobconf.get("dependencies/sort-topological", False):
+        #    result = self.sortClassesTopological(result, variants)
+        #else:
+        #result = self.sortClasses(result, variants, buildType)
+        #self._console.nl()
 
         if self._console.getLevel() == "debug":
             self._console.indent()
@@ -125,7 +127,7 @@ class DependencyLoader(object):
     def classlistFromInclude(self, includeWithDeps, excludeWithDeps, variants, 
                              verifyDeps=False, script=None, allowBlockLoaddeps=True):
 
-        def classlistFromClassRecursive(depsItem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps=True):
+        def classlistFromClassRecursive(depsItem, excludeWithDeps, variants, result, warn_deps, loadDepsChain, allowBlockLoaddeps=True):
             # support blocking
             if depsItem.name in excludeWithDeps:
                 if depsItem.isLoadDep and not allowBlockLoaddeps:
@@ -136,14 +138,17 @@ class DependencyLoader(object):
             if depsItem.name in resultNames:  # string compares are perceivably faster than object compares (as DependencyItem defines __eq__)
                 return
 
-            # add self
-            result.append(depsItem)
-            resultNames.append(depsItem.name)
+            # Handle qx.core.Environment
+            if depsItem.name == "qx.core.Environment" and firstTime[0]:
+                envObj = self._classesObj["qx.core.Environment"]
+                envTreeId = "tree-%s-%s" % (envObj.path, util.toString({})) # TODO: {} is a temp. hack
+                self._cache.remove(envTreeId)  # clear pot. memcache, so already (string) optimized tree is not optimized again (e.g. with Demobrowser)
+                firstTime[0] = False
 
             # reading dependencies
             self._console.debug("Gathering dependencies: %s" % depsItem.name)
             self._console.indent()
-            deps, cached = self.getCombinedDeps(depsItem.name, variants, buildType)
+            deps, cached = self.getCombinedDeps(depsItem.name, variants, buildType, genProxy=genProxyIter.next())
             self._console.outdent()
             if logInfos: self._console.dot("%s" % "." if cached else "*")
 
@@ -158,23 +163,36 @@ class DependencyLoader(object):
             # process lists
             try:
                 skipNames = [x.name for x in deps["warn"] + deps["ignore"]]
+
+                # cycle detection
+                assert depsItem.name not in loadDepsChain
+                loadDepsChain.append(depsItem.name)
   
                 for subitem in deps["load"]:
+                    # cycle check
+                    if subitem.name in loadDepsChain:
+                        self._console.warn("Detected circular dependency between: %s and %s" % (depsItem.name, subitem.name))
+                        self._console.indent()
+                        self._console.debug("currently explored dependency path: %r" % loadDepsChain)
+                        self._console.outdent()
+                        raise RuntimeError("Circular class dependencies")
                     if subitem.name not in resultNames and subitem.name not in skipNames:
-                        classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
-  
+                        classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, loadDepsChain, allowBlockLoaddeps)
+
                 ##
                 # putting this here allows sorting and expanding of the class
-                # list in one go! what's missing from sortClassesRecursor is
-                # the cycle check
-                #if depsItem.name not in resultNames:
-                #    result.append(depsItem)
-                #    resultNames.append(depsItem.name)
-  
+                # list in one go!
+                if depsItem.name not in resultNames:
+                    result.append(depsItem)
+                    resultNames.append(depsItem.name)
+                
+                # cycle check
+                loadDepsChain.remove(depsItem.name)
+
                 for subitem in deps["run"]:
                     if subitem.name not in resultNames and subitem.name not in skipNames:
-                        classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
-  
+                        classlistFromClassRecursive(subitem, excludeWithDeps, variants, result, warn_deps, [], allowBlockLoaddeps)
+
             except DependencyError, detail:
                 raise ValueError("Attempt to block load-time dependency of class %s to %s" % (depsItem.name, subitem.name))
 
@@ -183,18 +201,67 @@ class DependencyLoader(object):
 
             return
 
+
+        def classlistFromClassIterative(depsItem, excludeWithDeps, variants, result, warn_deps, loadDepsChain, allowBlockLoaddeps=True):
+
+            def processNode(depsItem):
+                if depsItem.name in resultNames:
+                    node = None
+                else:
+                    result.append(depsItem)
+                    resultNames.append(depsItem.name)
+                    node = depsItem
+                return node
+
+            def getNodeChildren(depsItem):
+                deps, cached = self.getCombinedDeps(depsItem.name, variants, buildType=buildType, genProxy=genProxyIter.next())
+
+                # and evaluate them
+                deps["warn"] = self._checkDepsAreKnown(deps)  # add 'warn' key to deps
+                ignore_names = [x.name for x in deps["ignore"]]
+                if verifyDeps:
+                    for dep in deps["warn"]:
+                        if dep.name not in ignore_names:
+                            warn_deps.append(dep)
+
+                skipNames = [x.name for x in deps["warn"] + deps["ignore"]]
+                result = []
+                for dep in deps['load'] + deps['run']:
+                    if dep.name in skipNames or dep.name in resultNames:
+                        continue
+                    result.append(dep)
+
+                return result  # returns *all* deps (load, run, ...)
+
+            # ---------------------------------------------------------------------
+
+            self.agendaSearch([depsItem], processNode, getNodeChildren, mode="bf")
+
+            return
+
         # -------------------------------------------
 
-        if script:
-            buildType = script.buildType  # source/build, for classlistFromClassRecursive
-        else:
-            buildType = ""
-
+        buildType = script.buildType  # source/build, for classlistFromClassRecursive
         result = []
-        resultNames = []
         warn_deps = []
         logInfos = self._console.getLevel() == "info"
         ignored_names = set()
+        firstTime = [True]
+
+        # Pyro servers
+        #import Pyro.core
+        #genProxies = [
+        #    Pyro.core.getProxyForURI("PYRONAME://genworker0"),
+        #    Pyro.core.getProxyForURI("PYRONAME://genworker1"),
+        #    Pyro.core.getProxyForURI("PYRONAME://genworker2"),
+        #    Pyro.core.getProxyForURI("PYRONAME://genworker3"),
+        #    Pyro.core.getProxyForURI("PYRONAME://genworker4"),
+        #    Pyro.core.getProxyForURI("PYRONAME://genworker5"),
+        #]
+        import itertools
+        #genProxyIter = itertools.cycle(genProxies)
+        genProxyIter = itertools.repeat(None)
+
 
         # No dependency calculation
         if len(includeWithDeps) == 0:
@@ -208,15 +275,62 @@ class DependencyLoader(object):
 
         # Calculate dependencies
         else:
-            self._console.info(" ", feed=False)
+            #self._console.info(" ", feed=False)
 
-            for item in includeWithDeps:
-                depsItem = DependencyItem(item, '', '|config|')
-                # calculate dependencies and add required classes
-                classlistFromClassRecursive(depsItem, excludeWithDeps, variants, result, warn_deps, allowBlockLoaddeps)
+            # Multiple loop over class list calculation
+            processedEnvironment = False
+            while True:
+                result      = []          # reset any previous results for this iteration
+                resultNames = []
+
+                # calculate class list recursively
+                for item in includeWithDeps:
+                    depsItem = DependencyItem(item, '', '|config|')
+                    # calculate dependencies and add required classes
+                    classlistFromClassRecursive(depsItem, excludeWithDeps, variants, result, warn_deps, [], allowBlockLoaddeps)
+                    #classlistFromClassIterative(depsItem, excludeWithDeps, variants, result, warn_deps, [], allowBlockLoaddeps)
+
+                self._console.dotclear()
+                #print len(result),"  ",
+
+                # process qx.core.Environment
+                if ("qx.core.Environment" in resultNames 
+                    and "variants" in script.optimize
+                    and not processedEnvironment):
+                    envObj = self._classesObj["qx.core.Environment"]
+                    envTreeId = "tree-%s-%s" % (envObj.path, util.toString({})) # TODO: {} is a temp. hack
+                    compOpts = CompileOptions(optimize=[], variants=variants)
+                    compOpts.allClassVariants = script.classVariants([self._classesObj[x] for x in resultNames])
+                    tree = Class.optimizeEnvironmentClass(envObj, compOpts)
+                    self._cache.write(envTreeId, tree, memory=True, writeToFile=False)
+                    # this is for the side-effect of leaving a modified tree for qx.core.Environmet
+                    # in the cache!
+                    _ = envObj.dependencies(variants, force=True)
+                    # this is for the side-effect of re-calculating the transitive dependencies
+                    # of qx.core.Environment!
+                    processedEnvironment = True
+                else:
+                    # We currently know that one additional iteration is enough,
+                    # after optimizeEnvironmentClass() has run. This has to do
+                    # with the fact that it only removes dependencies to
+                    # qx.bom.client.* classes, which in turn do not use
+                    # qx.core.Env calls. So after calculating the new class
+                    # list, allClassVariants will not have changed. If it would,
+                    # we would need to re-calculate until the class list is
+                    # stable.
+                    processedEnvironment = False  # to force break after a single run through the 'then' part
+
+                if not processedEnvironment:
+                    break
+                else:
+                    # signify repetition
+                    self._console.dot("(@)")
+                    
+
 
             if self._console.getLevel() is "info":
-                self._console.nl()
+                #self._console.nl()
+                pass
 
             # extract names of depsItems
             result = [x.name for x in result]
@@ -242,7 +356,7 @@ class DependencyLoader(object):
     # expressed in config options
     # - interface method
 
-    def getCombinedDeps(self, fileId, variants, buildType="", stripSelfReferences=True, projectClassNames=True):
+    def getCombinedDeps(self, fileId, variants, buildType="", stripSelfReferences=True, projectClassNames=True, genProxy=None):
 
         # init lists
         loadFinal = []
@@ -251,7 +365,10 @@ class DependencyLoader(object):
         # add static dependencies
         classObj = self._classesObj[fileId]
 
-        static, cached = classObj.dependencies (variants)
+        if genProxy == None:
+            static, cached = classObj.dependencies (variants)
+        else:
+            static, cached = genProxy.dependencies(classObj.id, classObj.path, variants)
 
         loadFinal.extend(static["load"])
         runFinal.extend(static["run"])
@@ -338,6 +455,10 @@ class DependencyLoader(object):
                 return
 
             # reading dependencies
+            if classId == "qx.core.Environment":
+                envObj = self._classesObj["qx.core.Environment"]
+                envTreeId = "tree-%s-%s" % (envObj.path, util.toString({})) # TODO: {} is a temp. hack
+                self._cache.remove(envTreeId)  # clear pot. memcache, so already (string) optimized tree is not optimized again (e.g. with Demobrowser)
             deps, cached = self.getCombinedDeps(classId, variants, buildType)
 
             if self._console.getLevel() is "info":
@@ -430,4 +551,31 @@ class DependencyLoader(object):
         self._console.outdent()
 
         return featureMap
+
+
+    def agendaSearch(self, agenda, processNode, getNodeChildren, mode="df"):
+        while agenda:
+            node = agenda.pop(0)
+            node = processNode(node)
+            if node:
+                children = getNodeChildren(node)
+                if mode == "df":
+                    agenda[0:0] = children  # prepend
+                else:
+                    agenda.extend(children) # append
+        return
+
+
+    def agendaSearchMP(self, agenda, processNode, getNodeChildren, mode="df"):
+        while agenda:
+            node = agenda.pop(0)
+            node = processNode(node)
+            if node:
+                children = getNodeChildren(node)
+                if mode == "df":
+                    agenda[0:0] = children  # prepend
+                else:
+                    agenda.extend(children) # append
+        return
+
 

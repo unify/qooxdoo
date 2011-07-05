@@ -18,31 +18,104 @@
 ************************************************************************ */
 
 /**
- * EXPERIMENTAL - NOT READY FOR PRODUCTION
+ * Send HTTP requests and handle responses using the HTTP client API.
  *
- * Note: This class is going to replace {@link qx.io.HttpRequest} in a
- * future release.
+ * Configuration of the request is done with properties. Events are fired for
+ * various states in the life cycle of a request, such as "success". Request
+ * data is transparently processed.
  *
- * Send HTTP requests and handle responses. Configuration of the request
- * is done with properties. Events are fired for various states in the life
- * cycle of a request, such as "success". Request data is transparently
- * processed.
+ * Here is how to request a JSON file and listen to the "success" event:
  *
- * Internally uses {@link qx.bom.request.Xhr} to abstract browser
- * inconsistencies in their implementation of XMLHttpRequest (or equivalent).
- * This means the HTTP status and other XHR properties can be safely queried
- * and events are fired consistently on all platforms. Moreover, the same
- * instance of this class can be efficiently used to repeatedly send many
- * requests.
+ * <pre class="javascript">
+ * var req = new qx.io.request.Xhr("/some/path/file.json");
  *
+ * req.addListener("success", function(e) {
+ *   var req = e.getTarget();
+ *
+ *   // Response parsed according to the server's
+ *   // response content type, e.g. JSON
+ *   req.getResponse();
+ * }, this);
+ *
+ * // Send request
+ * req.send();
+ * </pre>
+ *
+ * Some noteable features:
+ *
+ * * Abstraction of low-level request
+ * * Convenient setup using properties
+ * * Fine-grained events
+ * * Symbolic phases
+ * * Transparent processing of request data
+ * * Stream-lined authentication
+ * * Automagic parsing of response based on content type
+ *
+ * Cross-origin requests are supported, but require browser support
+ * (see <a href="http://caniuse.com/#search=CORS">caniuse.com</a>) and backend configuration
+ * (see <a href="https://developer.mozilla.org/en/http_access_control">MDN</a>).
+ * Note that IE's <code>XDomainRequest</code> is not currently supported.
+ * For a cross-browser alternative, consider {@link qx.io.request.Jsonp}.
+ *
+ * In order to debug requests, set the environment flag
+ * <code>qx.debug.io</code>.
+ *
+ * Internally uses {@link qx.bom.request.Xhr}.
  */
 qx.Class.define("qx.io.request.Xhr",
 {
   extend: qx.io.request.AbstractRequest,
 
-  construct: function()
+  /**
+   * @param url {String?} The URL of the resource to request.
+   * @param method {String?} The HTTP method.
+   */
+  construct: function(url, method) {
+    if (method !== undefined) {
+      this.setMethod(method);
+    }
+
+    this.base(arguments, url);
+  },
+
+  // Only document events with transport specific details.
+  // For a complete list of events, refer to AbstractRequest.
+
+  events:
   {
-    this.base(arguments);
+    /**
+     * Fired on every change of the transport’s readyState.
+     *
+     * See {@link qx.bom.request.Xhr#readyState} for available readyStates.
+     */
+    "readystatechange": "qx.event.type.Event",
+
+    /**
+    * Fired when request completes without eror and transport’s status
+    * indicates success.
+     *
+     * Refer to {@link qx.util.Request#isSuccessful} for a list of HTTP
+     * status considered successful.
+     */
+    "success": "qx.event.type.Event",
+
+    /**
+     * Fired when request completes without error.
+     *
+     * Every request not canceled or aborted completes. This means that
+     * even requests receiving a response with erroneous HTTP status
+     * fire a "load" event. If you are only interested in successful
+     * responses, listen to the {@link #success} event instead.
+     */
+    "load": "qx.event.type.Event",
+
+    /**
+     * Fired when request completes without error but erroneous HTTP status.
+     *
+     * Refer to {@link qx.util.Request#isSuccessful} for a list of HTTP
+     * status considered successful.
+     */
+    "statusError": "qx.event.type.Event"
   },
 
   statics:
@@ -99,15 +172,34 @@ qx.Class.define("qx.io.request.Xhr",
      *
      * * <code>true</code>: Allow caching (Default)
      * * <code>false</code>: Prohibit caching. Appends nocache parameter to URL.
-     * * <code>"force-validate"</code>: Force browser to submit request in order to
-     *   validate freshness of resource. Sets HTTP header Cache-Control to "no-cache".
-     *   Note: Should the resource be considered fresh after validation, the requested
-     *   resource is still served from cache.
+     * * <code>String</code>: Any Cache-Control request directive
+     *
+     * If a string is given, it is inserted in the request's Cache-Control
+     * header. A request’s Cache-Control header may contain a number of directives
+     * controlling the behavior of any caches in between client and origin
+     * server.
+     *
+     * * <code>"no-cache"</code>: Force caches to submit request in order to
+     *   validate the freshness of the representation. Note that the requested
+     *   resource may still be served from cache if the representation is
+     *   considered fresh. Use this directive to ensure freshness but save
+     *   bandwidth when possible.
+     * * <code>"no-store"</code>: Do not keep a copy of the representation under
+     *   any conditions.
+     *
+     * See <a href="http://www.mnot.net/cache_docs/#CACHE-CONTROL">
+     * Caching tutorial</a> for an excellent introduction to Caching in general.
+     * Refer to the corresponding section in the
+     * <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9">
+     * HTTP 1.1 specification</a> for more details and advanced directives.
+     *
+     * It is recommended to choose an appropriate Cache-Control directive rather
+     * than prohibit caching using the nocache parameter.
      */
     cache: {
       check: function(value) {
         return qx.lang.Type.isBoolean(value) ||
-               value === "force-validate";
+          qx.lang.Type.isString(value);
       },
       init: true
     }
@@ -168,9 +260,8 @@ qx.Class.define("qx.io.request.Xhr",
       var transport = this._transport;
 
       // Align headers to configuration of instance
-      if (this.getCache() === "force-validate") {
-        // Force validation. See http://www.mnot.net/cache_docs/#CACHE-CONTROL.
-        transport.setRequestHeader("Cache-Control", "no-cache");
+      if (qx.lang.Type.isString(this.getCache())) {
+        transport.setRequestHeader("Cache-Control", this.getCache());
       }
 
       // POST with request data needs special content-type
@@ -186,6 +277,12 @@ qx.Class.define("qx.io.request.Xhr",
         transport.setRequestHeader("Accept", this.getAccept());
       }
     },
+
+    /*
+    ---------------------------------------------------------------------------
+      PARSING
+    ---------------------------------------------------------------------------
+    */
 
     /**
      * Returns response parsed with parser determined by
@@ -203,12 +300,6 @@ qx.Class.define("qx.io.request.Xhr",
 
       return response;
     },
-
-    /*
-    ---------------------------------------------------------------------------
-      PARSING
-    ---------------------------------------------------------------------------
-    */
 
     /**
      * Set parser used to parse response once request has

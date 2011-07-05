@@ -26,7 +26,7 @@
 
 /* ************************************************************************
 
-#ignore(myCallback)
+#ignore(myExistingCallback)
 
 ************************************************************************ */
 
@@ -39,34 +39,45 @@ qx.Class.define("qx.test.bom.request.Jsonp",
 
   members :
   {
-    /**
-     * @lint ignoreUndefined(myCallback)
-     */
     setUp: function() {
-      this.req = new qx.bom.request.Jsonp();
+      var req = this.req = new qx.bom.request.Jsonp();
       this.url = this.getUrl("qx/test/jsonp_primitive.php");
-      myCallback = function() {};
+
+      // Assume timeout after 1s in Opera (no error!)
+      if (qx.core.Environment.get("engine.name") === "opera") {
+        req.timeout = 1000;
+      }
     },
 
     tearDown: function() {
-      delete window.SCRIPT_LOADED;
-      delete window.myCallback;
+      window.SCRIPT_LOADED = undefined;
+      window.myExistingCallback = undefined;
       this.req.dispose();
+      this.getSandbox().restore();
     },
 
     //
-    // Callback Param
+    // Callback
     //
 
-    "test: set callback param and name": function() {
+    "test: setCallbackParam()": function() {
       var req = this.req;
 
       req.setCallbackParam("myMethod");
+      req.open("GET", this.url);
+      req.send();
+
+      this.assertMatch(req._getUrl(), /(myMethod=)/);
+    },
+
+    "test: setCallbackName()": function() {
+      var req = this.req;
+
       req.setCallbackName("myCallback");
       req.open("GET", this.url);
       req.send();
 
-      this.assertMatch(req._getUrl(), /(myMethod=myCallback)/);
+      this.assertMatch(req._getUrl(), /(=myCallback)/);
     },
 
     "test: has default callback param and name": function() {
@@ -81,6 +92,15 @@ qx.Class.define("qx.test.bom.request.Jsonp",
       this.assertMatch(req._getUrl(), regExp);
     },
 
+    "test: not overwrite existing callback": function() {
+      // User provided callback that must not be overwritten
+      myExistingCallback = "Affe";
+
+      this.req.setCallbackName("myExistingCallback");
+      this.request();
+      this.assertEquals("Affe", myExistingCallback);
+    },
+
     //
     // Properties
     //
@@ -93,6 +113,21 @@ qx.Class.define("qx.test.bom.request.Jsonp",
           var data = this.req.responseJson;
           that.assertObject(data);
           that.assertTrue(data["boolean"]);
+        });
+      };
+
+      this.request();
+      this.wait();
+    },
+
+    "test: reset responseJson when reopened": function() {
+      var req = this.req,
+          that = this;
+
+      req.onload = function() {
+        that.resume(function() {
+          req.open("GET", "/url");
+          that.assertNull(req.responseJson);
         });
       };
 
@@ -157,6 +192,28 @@ qx.Class.define("qx.test.bom.request.Jsonp",
       this.wait();
     },
 
+    "test: status indicates failure when callback not called on second request": function() {
+      var count = 0,
+          req = this.req,
+          that = this;
+
+      req.onload = function() {
+        count += 1;
+
+        if (count == 2) {
+          that.resume(function() {
+            that.assertEquals(500, req.status);
+          });
+          return;
+        }
+
+        that.request(that.getUrl("qx/test/script.js"));
+      };
+
+      this.request();
+      this.wait();
+    },
+
     //
     // Event handlers
     //
@@ -177,12 +234,20 @@ qx.Class.define("qx.test.bom.request.Jsonp",
     "test: call onerror on network error": function() {
       var that = this;
 
+      // For legacy IEs, timeout needs to be lower than browser timeout
+      // or false "load" is fired. Alternatively, a false "load"
+      // can be identified by checking status property.
+      if (qx.core.Environment.get("engine.name") == "mshtml" &&
+          qx.core.Environment.get("engine.version") < 9) {
+        this.req.timeout = 2000;
+      }
+
       this.req.onerror = function() {
         that.resume(function() {});
       };
 
       this.request("http://fail.tld");
-      this.wait(10000);
+      this.wait(15000 + 100);
     },
 
     "test: call onloadend on network error": function() {
@@ -193,7 +258,7 @@ qx.Class.define("qx.test.bom.request.Jsonp",
       };
 
       this.request("http://fail.tld");
-      this.wait(10000);
+      this.wait(15000 + 100);
     },
 
     request: function(customUrl) {

@@ -7,12 +7,34 @@ This page contains the complete list of configuration keys and their sub-structu
 
 Mandatory keys in a context are marked *'(required)'*, all other keys can be considered optional (most have default values). Special note boxes starting with *'peer-keys'* indicate interactions of the current key with other  configuration keys that should be present in the job for the current key to function properly. E.g. the key :ref:`pages/tool/generator_config_ref#compile` will use the peer-key :ref:`pages/tool/generator_config_ref#cache` in the job definition for its workings. Again, in many cases fall-back defaults will be in place, but relying on them might lead to sub-optimal results.
 
+.. _pages/tool/generator_config_ref#add-css:
+
+add-css
+==========
+
+Add CSS files to the application. Takes a list.
+
+::
+
+  "add-css" :
+  [
+    {
+      "uri" : "<css-uri>"
+    }
+  ]
+
+.. note::
+
+  peer-keys: :ref:`pages/tool/generator_config_ref#compile`
+
+* **uri** *(required)* : URI with which the css file will be loaded, relative to the index.html.
+
 .. _pages/tool/generator_config_ref#add-script:
 
 add-script
 ==========
 
-Add a pre-fabricated JS file to the application. Takes a list.
+Add pre-fabricated JS files to the application. Takes a list.
 
 ::
 
@@ -248,7 +270,7 @@ Specify various options for compile (and other) keys. Takes a map.
     {
       "format"          : (true|false),
       "locales"         : ["de", "en"],
-      "optimize"        : ["variables", "basecalls", "privates", "strings"],
+      "optimize"        : ["basecalls", "comments", "privates", "strings", "variables", "variants"],
       "decode-uris-plug"  : "<path>",
       "except"          : ["myapp.classA", "myapp.util.*"]
     }
@@ -276,9 +298,29 @@ Possible keys are
 
   * **format** : (*build*) whether to apply simple output formatting (it adds some sensible line breaks to the output code) (default: *false*)
   * **locales** : (*build*) a list of locales to include (default: *["C"]*)
-  * **optimize** : list of dimensions for optimization, max. '["variables", "basecalls", "privates", "strings"]' (default: *[]*) :ref:`special section <pages/tool/generator_config_articles#optimize_key>`
+  * **optimize** : list of dimensions for optimization, max. ["basecalls", "comments", "privates", "strings", "variables", "variants"] (default: *[]*) :ref:`special section <pages/tool/generator_config_articles#optimize_key>`
   * **decode-uris-plug** : path to a file containing JS code, which will be plugged into the loader script, into the ``qx.$$loader.decodeUris()`` method. This allows you to post-process script URIs, e.g. through pattern matching. The current produced script URI is available and can be modified in the variable ``euri``.
   * **except** : (*hybrid*) exclude the classes specified in the class pattern list from compilation when creating a :ref:`hybrid <pages/tool/generator_config_ref#compile>` version of the application
+
+
+.. _pages/tool/generator_config_ref#config-warnings:
+
+config-warnings
+===============
+
+Taylor configuration warnings. Takes a map.
+
+::
+
+  "config-warnings" :
+  {
+    "<config_key>" : (true|false)
+  }
+
+Turn off warnings printed by the generator to the console for specific configuration keys. If a given key is not used in the current job, it is ignored. Each key has to be a legal configuration key name (such as "let", "excludes", "packages",...). To turn off **all** warnings (independent of settings given in this key) use the generator ``-q`` :ref:`command line option <pages/tool/generator_usage#command-line_options>`.
+
+* **<config_key>** : whether warnings are printed for this configuration key (default: *true*)
+
 
 .. _pages/tool/generator_config_ref#copy-files:
 
@@ -591,7 +633,7 @@ Check Javscript source code with a lint-like utility. Takes a map.
 
   "lint-check" :
   {
-    "allowed-globals" : [ "qx", "qxsettings", "qxvariants", "${APPLICATION}" ]
+    "allowed-globals" : [ "qx", "${APPLICATION}" ]
   }
 
 .. note::
@@ -651,7 +693,7 @@ Configure log/reporting features. Takes a map.
 
 .. note::
 
-  peer-keys: :ref:`pages/tool/generator_config_ref#cache`, :ref:`pages/tool/generator_config_ref#include`, :ref:`pages/tool/generator_config_ref#library`, :ref:`pages/tool/generator_config_ref#variants`, :ref:`pages/tool/generator_config_ref#compile-options` 
+  peer-keys: :ref:`pages/tool/generator_config_ref#cache`, :ref:`pages/tool/generator_config_ref#include`, :ref:`pages/tool/generator_config_ref#library`, :ref:`pages/tool/generator_config_ref# variants`, :ref:`pages/tool/generator_config_ref#compile-options` 
 
 This key allows you to enable logging features along various axes. 
 
@@ -809,6 +851,10 @@ Triggers code beautification of source class files (in-place-editing). An empty 
     },
     "comments" :
     {
+      "block"  :
+      {
+        "add"  : true
+      },
       "trailing" :
       {
         "keep-column"        : false,
@@ -816,7 +862,7 @@ Triggers code beautification of source class files (in-place-editing). An empty 
         "padding"            : "  "
       }
     },
-    "blocks" :
+    "code" :
     {
       "align-with-curlies"   : false,
       "open-curly" :
@@ -835,20 +881,26 @@ Keys are:
 
 * **general** : General settings.
 
-  * **indent-string** : "<whitespace_string>", e.g. "\t" for tab (default: "  " (2spaces))
+  * **indent-string** : "<whitespace_string>", e.g. "\t" for tab (default: "  " (2 spaces))
+
 * **comments** : Settings for pretty-printing comments.
-  * **trailing** : Settings for pretty-printing line-end ("trailing") comments ("%%//%% ...").
+
+  * **block** : Settings for block comments ("/\*...\*/")
+
+    * **add** : (true|false) Whether to automatically add JSDoc comment templates, e.g. ahead of method definitions (default: true)
+
+  * **trailing** : Settings for pretty-printing line-end ("trailing") comments ("//...").
 
     * **keep-column** : (true|false) Tries to fix the column of the trailing comments to the value in the original source (default: false)
     * **comment-cols** : [n1, n2, ..., nN] Column positions to start trailing comments at, e.g. [50, 70, 90] (default: [])
-    * **padding** : "<whitespace_string>" White space to be inserted after statement end and beginning of comment (default: "  " (2spaces))
+    * **padding** : "<whitespace_string>" White space to be inserted after statement end and beginning of comment (default: "  " (2 spaces))
 
-* **blocks** : Settings for pretty-printing code blocks.
+* **code** : Settings for pretty-printing code blocks.
 
   * **align-with-curlies** : (true|false) Whether to put a block at the same column as the surrounding/ending curly bracket (default: false)
   * **open-curly** : Settings for the opening curly brace '{'.
 
-    * **newline-before** : "(a|A|n|N|m|M)" Whether to insert a line break before the opening curly always (aA), never (nN) or mixed (mM) depending on block complexity (default: "m")
+    * **newline-before** : "([aA]|[nN]|[mM])" Whether to insert a line break before the opening curly always (aA), never (nN) or mixed (mM) depending on block complexity (default: "m")
     * **indent-before** : (true|false) Whether to indent the opening curly if it is on a new line (default: false)
 
 .. _pages/tool/generator_config_ref#provider:
@@ -995,10 +1047,12 @@ Triggers cutting images into regions. Takes a map.
   peer-keys: :ref:`pages/tool/generator_config_ref#cache`
 
 * **images** : map with slice entries.
-* <input_image> :  path to input file for the slicing; may be relative to config file location
-* **prefix** *(required)* : file name prefix used for the output files; will be interpreted relative to the input file location (so a plain name will result in output files in the same directory, but you can also navigate away with ``../../....`` etc.)
-* **border-width** : pixel width to cut into original image when slicing borders etc. Takes either a single integer (common border width for all sides) or an array of four integers (top, right, bottom, left).
-* **trim-width** : reduce the width of the center slice to no more than 20 pixels. (default: *true*) 
+
+  * **<input_image>** :  path to input file for the slicing; may be relative to config file location
+
+    * **prefix** *(required)* : file name prefix used for the output files; will be interpreted relative to the input file location (so a plain name will result in output files in the same directory, but you can also navigate away with ``../../....`` etc.)
+    * **border-width** : pixel width to cut into original image when slicing borders etc. Takes either a single integer (common border width for all sides) or an array of four integers (top, right, bottom, left).
+    * **trim-width** : reduce the width of the center slice to no more than 20 pixels. (default: *true*) 
 
 .. _pages/tool/generator_config_ref#translate:
 
@@ -1042,6 +1096,5 @@ Define prerequisite classes needed at run time. Takes a map.
 
 Each key is a 
 
-* <class_name> : each value is an array of used classes of this class.
-
+* **<class_name>** : each value is an array of used classes of this class.
 

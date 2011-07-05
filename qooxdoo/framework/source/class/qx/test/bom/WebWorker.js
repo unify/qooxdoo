@@ -28,7 +28,6 @@
 qx.Class.define("qx.test.bom.WebWorker",
 {
   extend : qx.dev.unit.TestCase,
-  include: [qx.dev.unit.MRequirements],
 
   members :
   {
@@ -36,30 +35,21 @@ qx.Class.define("qx.test.bom.WebWorker",
     _worker: null,
     _send: null,
 
-    hasWorker: function() {
-      return qx.core.Environment.get("html.webworker");
-    },
-
     setUp: function() {
-      this.require(["worker"]);
       this._url = qx.util.ResourceManager.getInstance().toUri("qx/test/webworker.js");
       this._worker = new qx.bom.WebWorker(this._url);
 
       this._send = function(message, fn) {
         this._worker.addListener("message", function(e) {
-          this.resume(function() {
-            //check the type, it should be the same
-            this.assertType(e.getData(), typeof message);
-            //make other checks
-            fn.call(this, message, e);
-          }, this);
+          this.assertType(e.getData(), typeof message);
+          fn.call(this, message, e);
         }, this);
         this._worker.postMessage(message);
-        this.wait();
       };
     },
 
     tearDown: function() {
+      this._worker.dispose();
       this._worker = null;
       this._send = null;
       this._url = null;
@@ -79,13 +69,9 @@ qx.Class.define("qx.test.bom.WebWorker",
       var message = "error";
 
       this._worker.addListener("error", function(e) {
-        this.resume(function() {
-          this.assertTrue(/error/.test(e.getData()));
-        }, this);
+        this.assertTrue(/error/.test(e.getData()));
       }, this);
-
       this._worker.postMessage(message);
-      this.wait();
     },
 
     testPostMessageWithNumber: function() {

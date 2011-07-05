@@ -187,7 +187,8 @@ qx.Class.define("apiviewer.Viewer",
       expandBtn.setToolTipText(this.tr("Show/hide all generated property methods."));
       part.add(expandBtn);
 
-      var includesBtn = new qx.ui.toolbar.MenuButton(this.tr("Includes"), "apiviewer/image/includes.gif");
+      var includesBtn = new qx.ui.toolbar.MenuButton(this.tr("Includes"), "apiviewer/image/overlay_mixin18.gif");
+      includesBtn.setId("menubtn_includes");
       includesBtn.setToolTipText(this.tr("Show/hide members of other classes/mixins inherited/included in the current class"));
       part.add(includesBtn);
 
@@ -240,6 +241,9 @@ qx.Class.define("apiviewer.Viewer",
         var menuItems = this._getMenuItems(item);
         for (var i = 0; i < menuItems.length; i++) {
           menuItems[i].setVisibility("visible");
+          if(menuItems[i] instanceof qx.ui.menu.Button) {
+            menuItems[i].getMenu().setPosition("right-top");
+          }
         };
       }, this);
 
@@ -248,6 +252,9 @@ qx.Class.define("apiviewer.Viewer",
         var menuItems = this._getMenuItems(item);
         for (var i = 0; i < menuItems.length; i++) {
           menuItems[i].setVisibility("excluded");
+          if(menuItems[i] instanceof qx.ui.menu.Button) {
+            menuItems[i].getMenu().setPosition("bottom-left");
+          }
         };
       }, this);
 
@@ -283,14 +290,32 @@ qx.Class.define("apiviewer.Viewer",
         cachedItem = this.__menuItemStore[toolbarItem.toHashCode()];
 
         if (!cachedItem) {
-          if (toolbarItem instanceof qx.ui.toolbar.RadioButton) {
+          if (toolbarItem instanceof qx.ui.toolbar.RadioButton)
+          {
             var cachedItem = new qx.ui.menu.RadioButton(toolbarItem.getLabel());
-          } else {
-            cachedItem = new qx.ui.menu.CheckBox(toolbarItem.getLabel());
+            // bidirectional binding takes care of everything
+            toolbarItem.bind("value", cachedItem, "value");
+            cachedItem.bind("value", toolbarItem, "value");
           }
-          // bidirectional binding takes care of everything
-          toolbarItem.bind("value", cachedItem, "value");
-          cachedItem.bind("value", toolbarItem, "value");
+          else if(toolbarItem instanceof qx.ui.toolbar.MenuButton)
+          {
+            cachedItem = new qx.ui.menu.Button(
+              toolbarItem.getLabel().translate(),
+              toolbarItem.getIcon(),
+              toolbarItem.getCommand(),
+              toolbarItem.getMenu()
+              );
+            cachedItem.setToolTipText(toolbarItem.getToolTipText());
+            cachedItem.setEnabled(toolbarItem.getEnabled());
+            toolbarItem.bind("enabled", cachedItem, "enabled");
+          }
+          else
+          {  
+            cachedItem = new qx.ui.menu.CheckBox(toolbarItem.getLabel());
+            // bidirectional binding takes care of everything
+            toolbarItem.bind("value", cachedItem, "value");
+            cachedItem.bind("value", toolbarItem, "value");
+          }
 
           this.__overflowMenu.addAt(cachedItem, 0);
           this.__menuItemStore[toolbarItem.toHashCode()] = cachedItem;

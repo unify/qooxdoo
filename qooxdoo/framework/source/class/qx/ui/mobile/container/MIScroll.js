@@ -60,8 +60,6 @@ qx.Mixin.define("qx.ui.mobile.container.MIScroll",
   members :
   {
     __scroll : null,
-    __onDomSubtreeModified : null,
-
 
     /**
      * Mixin method. Creates the scroll element.
@@ -116,8 +114,22 @@ qx.Mixin.define("qx.ui.mobile.container.MIScroll",
      */
     __createScrollInstance : function()
     {
-      var desktopCompatibility = qx.core.Environment.get("qx.mobile.emulatetouch");
-      var scroll = new iScroll(this.getContentElement(), {desktopCompatibility:desktopCompatibility});
+      var scroll = new iScroll(this.getContainerElement(), {
+        hideScrollbar:true,
+        fadeScrollbar:true,
+        hScrollbar : false,
+        scrollbarClass:"scrollbar",
+        onBeforeScrollStart : function(e) {
+          // QOOXDOO ENHANCEMENT: Do not prevent default for form elements
+          var target = e.target;
+          while (target.nodeType != 1) {
+            target = target.parentNode;
+          }
+          if (target.tagName != 'SELECT' && target.tagName != 'INPUT' && target.tagName != 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }
+      });
       return scroll;
     },
 
@@ -128,7 +140,6 @@ qx.Mixin.define("qx.ui.mobile.container.MIScroll",
     __registerEventListeners : function()
     {
       qx.event.Registration.addListener(window, "orientationchange", this._refresh, this);
-      // TODO: only add this event for desktop browsers
       qx.event.Registration.addListener(window, "resize", this._refresh, this);
       this.addListener("domupdated", this._refresh, this);
     },
@@ -183,7 +194,6 @@ qx.Mixin.define("qx.ui.mobile.container.MIScroll",
     _refresh : function()
     {
       if (this.__scroll) {
-        // TODO: Set minHeight of containerElement?
         this.__scroll.refresh();
       }
     }
@@ -206,6 +216,6 @@ qx.Mixin.define("qx.ui.mobile.container.MIScroll",
     if (this.__scroll) {
       this.__scroll.destroy();
     }
-    this.__scroll = this.__onDomSubtreeModified = null;
+    this.__scroll;
   }
 });

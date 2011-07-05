@@ -25,6 +25,8 @@
 qx.Class.define("qx.ui.mobile.form.TextField",
 {
   extend : qx.ui.mobile.form.Input,
+  include : [qx.ui.mobile.form.MValue, qx.ui.mobile.form.MText],
+  implement : [qx.ui.form.IStringForm],
 
 
   /*
@@ -50,18 +52,28 @@ qx.Class.define("qx.ui.mobile.form.TextField",
   properties :
   {
     // overridden
-    type :
-    {
-      refine : true,
-      init : "text"
-    },
-
-
-    // overridden
     defaultCssClass :
     {
       refine : true,
       init : "textField"
+    }
+  },
+
+
+
+
+  /*
+  *****************************************************************************
+     MEMBERS
+  *****************************************************************************
+  */
+
+  members :
+  {
+    // overridden
+    _getType : function()
+    {
+      return "text";
     }
   }
 });

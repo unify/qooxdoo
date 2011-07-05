@@ -36,7 +36,7 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
   {
     this.base(arguments, model);
 
-    this._createChildControl("textfield");
+    var textField = this._createChildControl("textfield");
     this._createChildControl("button");
 
     var dropdown = this.getChildControl("dropdown");
@@ -44,6 +44,14 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
 
     this.__selection = dropdown.getSelection();
     this.__selection.addListener("change", this.__onSelectionChange, this);
+
+    this.bind("value", textField, "value");
+    textField.bind("value", this, "value");
+    
+    // @deprecated since 1.5: Remove warning when apply method is removed.
+    if (qx.core.Environment.get("qx.debug")) {
+      qx.log.Logger.deprecateMethodOverriding(this, qx.ui.form.VirtualComboBox, "_applyValue");
+    }
   },
 
   properties :
@@ -70,7 +78,20 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
     {
       nullable: true,
       event: "changeValue",
-      apply: "_applyValue"
+      apply: "_applyValue" // @deprecated since 1.5
+    },
+
+
+    /**
+     * String value which will be shown as a hint if the field is all of:
+     * unset, unfocused and enabled. Set to null to not show a placeholder
+     * text.
+     */
+    placeholder :
+    {
+      check : "String",
+      nullable : true,
+      apply : "_applyPlaceholder"
     },
 
 
@@ -92,6 +113,14 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
 
   members :
   {
+    /** {var} Binding id between local value and text field value. */
+    __localBindId : null,
+
+
+    /** {var} Binding id between text field value and local value. */
+    __textFieldBindId : null,
+
+
     /** {qx.data.Array} the drop-down selection. */
     __selection : null,
 
@@ -301,7 +330,6 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
       selected = this.__convertValue(selected);
 
       this.setValue(selected);
-      this.getChildControl("textfield").setValue(selected);
     },
 
 
@@ -312,11 +340,14 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
     */
 
 
+    // property apply 
+    // @deprecated since 1.5: The apply method is not needed anymore.
+    _applyValue : function(value, old) {},
+
+
     // property apply
-    _applyValue : function(value, old)
-    {
-      var textfield = this.getChildControl("textfield");
-      textfield.setValue(value);
+    _applyPlaceholder : function(value, old) {
+      this.getChildControl("textfield").setPlaceholder(value);
     },
 
 
@@ -332,7 +363,7 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
      */
     __selectFirstMatch : function()
     {
-      var value = this.getChildControl("textfield").getValue();
+      var value = this.getValue();
       var dropdown = this.getChildControl("dropdown");
       var selection = dropdown.getSelection();
 
@@ -399,6 +430,10 @@ qx.Class.define("qx.ui.form.VirtualComboBox",
 
   destruct : function()
   {
+    var textField = this.getChildControl("textfield");
+    this.removeAllBindings();
+    textField.removeAllBindings();
+
     this.__selection.removeListener("change", this.__onSelectionChange, this);
     this.__selection = null;
   }

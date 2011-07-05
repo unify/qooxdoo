@@ -126,6 +126,7 @@
       {
         "files" :
         [
+          "index-ios.html",
           "index.html"
         ],
 

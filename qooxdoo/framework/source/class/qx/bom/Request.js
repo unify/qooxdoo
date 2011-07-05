@@ -41,6 +41,7 @@
 ************************************************************************ */
 
 /**
+ *
  * Cross browser compatible unified XMLHttp transport low-level implementation.
  * Mimics an ideal browser without any quirks and is API identical to
  * the W3C definition.
@@ -56,8 +57,7 @@
  * These features are being considered for a future version of the XMLHttpRequest
  * specification by the W3C at http://www.w3.org/TR/XMLHttpRequest/.
  *
- * For an higher level implementation with additional comfort please have a look
- * at {@link qx.io.HttpRequest}.
+ * @deprecated since 1.5
  */
 qx.Class.define("qx.bom.Request",
 {
@@ -69,8 +69,14 @@ qx.Class.define("qx.bom.Request",
   *****************************************************************************
   */
 
+  /**
+   * @deprecated since 1.5
+   */
   construct : function()
   {
+    qx.log.Logger.deprecatedClassWarning(qx.bom.Request,
+      "Please use qx.bom.request.Xhr instead.");
+
     this.__headers = {};
     this.__xmlhttp = this.__createNative();
   },
@@ -148,6 +154,8 @@ qx.Class.define("qx.bom.Request",
      * This method needs to be overwritten by the user to get
      * informed about the communication progress.
      *
+     * @deprecated since 1.5
+     *
      * @return {void}
      */
     onreadystatechange : function() {
@@ -160,6 +168,8 @@ qx.Class.define("qx.bom.Request",
      *
      * This method needs to be overwritten by the user to get
      * informed about the timeout.
+     *
+     * @deprecated since 1.5
      *
      * @return {void}
      */
@@ -174,6 +184,8 @@ qx.Class.define("qx.bom.Request",
      * This method needs to be overwritten by the user to get
      * informed about the successful load of the request.
      *
+     * @deprecated since 1.5
+     *
      * @return {void}
      */
     onload : function() {
@@ -187,6 +199,8 @@ qx.Class.define("qx.bom.Request",
      * This method needs to be overwritten by the user to get
      * informed about the failure of the running request.
      *
+     * @deprecated since 1.5
+     *
      * @return {void}
      */
     onerror : function() {
@@ -199,6 +213,8 @@ qx.Class.define("qx.bom.Request",
      *
      * This method needs to be overwritten by the user to get
      * informed about the user abort.
+     *
+     * @deprecated since 1.5
      *
      * @return {void}
      */
@@ -219,6 +235,8 @@ qx.Class.define("qx.bom.Request",
     /**
      * Assigns destination URL, method, and other optional attributes of a pending request
      *
+     * @deprecated since 1.5
+     *
      * @param method {String} The HTTP method to use. Valid values: GET, POST, PUT, HEAD and DELETE.
      * @param url {String} The URL to open
      * @param async {Boolean?true} Whether the request should be asynchronous. Default is <code>true</code>
@@ -228,6 +246,8 @@ qx.Class.define("qx.bom.Request",
      */
     open : function(method, url, async, username, password)
     {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       if (async == null) {
         async = true;
       }
@@ -266,11 +286,15 @@ qx.Class.define("qx.bom.Request",
     /**
      * Transmits the request, optionally with postable string or XML DOM object data
      *
+     * @deprecated since 1.5
+     *
      * @param data {String|Element?} String or XML DOM object data
      * @return {void}
      */
     send : function(data)
     {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       var headers = this.__headers;
 
       // BUGFIX: Safari - fails sending documents created/modified dynamically, so an explicit serialization required
@@ -327,10 +351,14 @@ qx.Class.define("qx.bom.Request",
     /**
      * Whether the currently running or finished request is successful.
      *
+     * @deprecated since 1.5
+     *
      * @return {Boolean} Returns <code>true</code> when the request is successful.
      */
     isSuccessful : function()
     {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       var status = this.status;
       return status === 304 || (status >= 200 && status < 300);
     },
@@ -339,10 +367,14 @@ qx.Class.define("qx.bom.Request",
     /**
      * Stops the current request.
      *
+     * @deprecated since 1.5
+     *
      * @return {void}
      */
     abort : function()
     {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       // Clear timeout for all aborted requests
       if (this.__timeoutHandle) {
         window.clearTimeout(this.__timeoutHandle);
@@ -444,10 +476,14 @@ qx.Class.define("qx.bom.Request",
     /**
      * Returns complete set of headers (labels and values) as a string
      *
+     * @deprecated since 1.5
+     *
      * @return {String} All headers
      */
     getAllResponseHeaders : function()
     {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       try {
         return this.__xmlhttp.getAllResponseHeaders();
       } catch(ex) {
@@ -459,11 +495,15 @@ qx.Class.define("qx.bom.Request",
     /**
      * Returns the string value of a single header label
      *
+     * @deprecated since 1.5
+     *
      * @param label {String} Name of the header label
      * @return {String} The selected header's value.
      */
     getResponseHeader : function(label)
     {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       try {
         return this.__xmlhttp.getResponseHeader(label);
       } catch(ex) {
@@ -486,12 +526,16 @@ qx.Class.define("qx.bom.Request",
      *
      * Uses local cache to omit dependency to <code>open()</code> call.
      *
+     * @deprecated since 1.5
+     *
      * @param label {String} Name of the header label
      * @param value {String} Value of the header field
      * @return {void}
      */
     setRequestHeader : function(label, value)
     {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       if (value == null) {
         delete this.__headers[label];
       } else {
@@ -505,11 +549,15 @@ qx.Class.define("qx.bom.Request",
      *
      * Uses local cache to omit dependency to <code>open()</code> call.
      *
+     * @deprecated since 1.5
+     *
      * @param label {String} Name of the header label
      * @param value {String} Value of the header field
      * @return {void}
      */
     removeRequestHeader : function(label, value) {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       delete this.__headers[label];
     },
 
@@ -517,10 +565,14 @@ qx.Class.define("qx.bom.Request",
     /**
      * Returns the value of a given header label.
      *
+     * @deprecated since 1.5
+     *
      * @param label {String} Label of the header entry
      * @return {String} The value or <code>null</code> when not defined.
      */
     getRequestHeader : function(label) {
+      qx.log.Logger.deprecatedMethodWarning(arguments.callee, "Please use qx.bom.request.Xhr instead.");
+
       return this.__headers[label] || null;
     },
 

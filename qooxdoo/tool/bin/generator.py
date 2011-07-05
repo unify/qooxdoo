@@ -37,7 +37,7 @@ from generator.runtime.InterruptRegistry import InterruptRegistry
 ## when working on string handling in other parts of the generator
 reload(sys)
 sys.setdefaultencoding('utf-8')
-sys.setrecursionlimit(1500)  # due to bug#2922; maybe this can be removed later
+sys.setrecursionlimit(3500)  # due to bug#2922; increased with bug#5265
 
 interruptRegistry = InterruptRegistry()
 
@@ -50,6 +50,21 @@ def interruptCleanup():
         except Error, e:
             print >>sys.stderr, e  # just keep on with the others
     
+##
+# This can be used with sys.settrace(). It records the max. stack size during
+# exection. Slows the whole thing down, of course.
+maxstacki = 0
+def stacktrace(frame, event, arg):
+    global maxstacki
+    currstacki = 0
+    f = frame
+    while f.f_back:
+        currstacki += 1
+        f = f.f_back
+    if currstacki > maxstacki:
+        maxstacki = currstacki
+
+
 def listJobs(console, jobs, config):
     console.info("Available jobs:")
     console.indent()
@@ -101,6 +116,7 @@ Arguments:
     parser.add_option("-l", "--logfile", dest="logfile", metavar="FILENAME", default=None, type="string", help="log file")
     parser.add_option("-s", "--stacktrace", action="store_true", dest="stacktrace", default=False, help="enable stack traces on fatal exceptions")
     parser.add_option("-m", "--macro", dest="letmacros", metavar="KEY:VAL", action="map", type="string", default={}, help="define/overwrite a global 'let' macro KEY with value VAL")
+    parser.add_option("-d", "--daemon", dest="daemon", action="store_true", default=False, help="(EXPERIMENTAL - DON'T USE) puts the generator in daemon mode")
     
     # Dynamic options (currently not supported)
     #parser.add_option("--setting", action="extend", dest="settings", metavar="KEY:VALUE", type="string", default=[], help="Used settings")
@@ -137,7 +153,8 @@ Arguments:
     # Initial user feedback
     appname = ((os.path.dirname(os.path.abspath(options.config)).split(os.sep)))[-1]
     console.head(u"Initializing: %s" % appname.decode('utf-8'), True)
-    console.info(u"Configuration: %s" % options.config)
+    console.info(u"Processing configuration")
+    console.debug(u"    file: %s" % options.config)
 
     # Load application configuration
     config = Config(console, options.config, **options.letmacros)
@@ -152,7 +169,7 @@ Arguments:
     #console.setFilter(config.get("log/filter/debug", []))
 
     # Resolve "include"-Keys
-    console.info("Resolving config includes...")
+    console.debug("Resolving config includes...")
     console.indent()
     config.resolveIncludes()
     console.outdent()
@@ -164,8 +181,9 @@ Arguments:
         if default_job:
             options.jobs.append(default_job)
         else:
-            listJobs(console, availableJobs, config)
-            sys.exit(1)
+            if not options.daemon:
+                listJobs(console, availableJobs, config)
+                sys.exit(1)
         
     else:
         for job in options.jobs:
@@ -174,53 +192,66 @@ Arguments:
                 listJobs(console, availableJobs, config)
                 sys.exit(1)
 
-    console.info(u"Jobs: %s" % ", ".join(options.jobs))
-
-    # Resolve "extend"- and "run"-Keys
-    expandedjobs = config.resolveExtendsAndRuns(options.jobs[:])
-
-    # Include system defaults
-    config.includeSystemDefaults(expandedjobs)
-    
-    # Resolve "let"-Keys
-    config.resolveMacros(expandedjobs)
-
-    # Resolve libs/Manifests
-    config.resolveLibs(expandedjobs)
-
-    # To see fully expanded config:
-    #console.info(pprint.pformat(config.get(".")))
-
-    # Do some config schema checking
-    config.checkSchema(expandedjobs, checkJobTypes=True)
-
-    # Clean-up config
-    config.cleanUpJobs(expandedjobs)
-
-    # Reset console level
-    console.setLevel(level)
-    console.resetFilter()
-
-    # Processing jobs...
+    console.debug(u"Jobs: %s" % ", ".join(options.jobs))
     context = {'config': config, 'console':console, 'jobconf':None, 'interruptRegistry':interruptRegistry}
-    for job in expandedjobs:
-        console.head("Executing: %s" % job.name, True)
-        if options.config_verbose:
-            console.setLevel("debug")
-            console.debug("Expanded job config:")
-            console.debug(pprint.pformat(config.getJob(job).getData()))
-            console.setLevel(level)
 
-        ctx = context.copy()
-        ctx['jobconf'] = config.getJob(job)
+    # CLI mode
+    if not options.daemon:
+        # Resolve "extend"- and "run"-Keys
+        expandedjobs = config.resolveExtendsAndRuns(options.jobs[:])
 
-        generatorObj = Generator(ctx)
-        generatorObj.run()
+        # Include system defaults
+        config.includeSystemDefaults(expandedjobs)
+        
+        # Resolve "let"-Keys
+        config.resolveMacros(expandedjobs)
+
+        # Resolve libs/Manifests
+        config.resolveLibs(expandedjobs)
+
+        # To see fully expanded config:
+        #console.info(pprint.pformat(config.get(".")))
+
+        # Do some config schema checking
+        config.checkSchema(expandedjobs, checkJobTypes=True)
+
+        # Clean-up config
+        config.cleanUpJobs(expandedjobs)
+
+        # Reset console level
+        console.setLevel(level)
+        console.resetFilter()
+
+        # Processing jobs...
+        for job in expandedjobs:
+            console.head("Executing: %s" % job.name, True)
+            if options.config_verbose:
+                console.setLevel("debug")
+                console.debug("Expanded job config:")
+                console.debug(pprint.pformat(config.getJob(job).getData()))
+                console.setLevel(level)
+
+            ctx = context.copy()
+            ctx['jobconf'] = config.getJob(job)
+
+            generatorObj = Generator(ctx)
+            generatorObj.run()
+
+    # Daemon mode
+    else: 
+        from generator.runtime.Generatord import Generatord
+        console.head("Executing: Daemon Mode", True)
+        generatord = Generatord(context)
+        console.info("Opening port %s on %s, serving in background..." % (generatord.servAddr[1], 
+            generatord.servAddr[0] if generatord.servAddr[0] else 'localhost')
+        )
+        generatord.serve()
 
 
 if __name__ == '__main__':
     options = None
     try:
+        #sys.settrace(stacktrace)
         main()
 
     except KeyboardInterrupt:

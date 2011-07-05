@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 ################################################################################
 #
@@ -25,20 +26,16 @@ import functools, codecs, operator, time
 import graph
 
 from misc                            import filetool, textutil, util, Path, json, copytool
-from ecmascript                      import compiler
 from ecmascript.transform.optimizer  import privateoptimizer
 from misc.ExtMap                     import ExtMap
-from generator.code.Class            import Class
+from generator.code.Class            import Class, CompileOptions
 from generator.code.DependencyLoader import DependencyLoader
-from generator.code.ClassList        import ClassList
 from generator.code.PartBuilder      import PartBuilder
-from generator.code.TreeCompiler     import TreeCompiler
 from generator.code.Script           import Script
 from generator.code.Package          import Package
 from generator.code.Part             import Part
 from generator.code.CodeGenerator    import CodeGenerator
 from generator.resource.Library      import Library
-#from generator.resource.ResourceHandler  import ResourceHandler
 from generator.resource.ImageClipping    import ImageClipping
 from generator.resource.Image        import Image
 from generator.action.ApiLoader      import ApiLoader
@@ -68,7 +65,12 @@ class Generator(object):
         else:
             cache_path  = self._job.get("cache/compile", "cache")
             cache_path  = self._config.absPath(cache_path)
-            self._cache = Cache(cache_path, context)
+            self._cache = Cache(cache_path, **{
+                'interruptRegistry' : context['interruptRegistry'],
+                'console' : context['console'],
+                'cache/downloads' : self._job.get("cache/downloads", cache_path + "/downloads"),
+                'cache/invalidate-on-tool-change' : self._job.get('cache/invalidate-on-tool-change', False),
+            })
             context['cache'] = self._cache
 
         console = self._console
@@ -194,7 +196,7 @@ class Generator(object):
         # Invoke the DependencyLoader to calculate the list of required classes
         # from include/exclude settings
         def computeClassList(includeWithDeps, excludeWithDeps, includeNoDeps, variants, verifyDeps=False, script=None):
-            self._console.info("Resolving dependencies")
+            self._console.info("Collecting classes   ", feed=False)
             self._console.indent()
             classList = self._depLoader.getClassList(includeWithDeps, excludeWithDeps, includeNoDeps, [], variants, verifyDeps, script)
             #buildType = script.buildType if script else ""
@@ -203,88 +205,6 @@ class Generator(object):
             self._console.outdent()
 
             return classList
-
-
-        ##
-        # Invoke the Library() objects on involved libraries, to collect class
-        # and resource lists etc.
-        def scanLibrary(libraryKey):
-
-            def getJobsLib(path):
-                lib = None
-                libMaps = self._job.getFeature("library")
-                for l in libMaps:
-                    if l['path'] == path:
-                        lib = l
-                        break
-                if not lib:   # this must never happen
-                    raise RuntimeError("Unable to look up library \"%s\" in Job definition" % path)
-                return lib
-
-            def mostRecentlyChangedIn(lib):  # this should go into another class
-                youngFiles = {}
-                # for each interesting library part
-                for category in ["class", "translation", "resource"]:
-                    catPath = os.path.normpath(os.path.join(lib["path"], lib[category]))
-                    if category == "translation" and not os.path.isdir(catPath):
-                        continue
-                    # find youngest file
-                    file, mtime = filetool.findYoungest(catPath)
-                    youngFiles[mtime] = file
-                    
-                # also check the Manifest file
-                file, mtime = filetool.findYoungest(lib["manifest"])
-                youngFiles[mtime] = file
-                
-                # and return the maximum of those
-                ytime = sorted(youngFiles.keys())[-1]
-                return (youngFiles[ytime], ytime)
-
-            # - Main -----------------------------------------------------------
-
-            self._console.info("Scanning libraries...")
-            self._console.indent()
-
-            namespaces = []
-            classes = {}
-            docs = {}
-            translations = {}
-            libraries = []     # [generator.code.Library]
-            if not isinstance(libraryKey, types.ListType):
-                return (namespaces, classes, docs, translations, libraries)
-
-            for lib in libraryKey:
-
-                libObj    = Library(lib, self._console)
-                checkFile = libObj.mostRecentlyChangedFile()[0]
-                cacheId   = "lib-%s" % libObj.manifest
-                checkObj, _  = self._cache.read(cacheId, checkFile, memory=True)
-                if checkObj:
-                    self._console.debug("Use memory cache for %s" % libObj._path)
-                    libObj = checkObj  # continue with cached obj
-                else:
-                    libObj.scan()
-                    self._cache.write(cacheId, libObj, memory=True)
-
-                namespace = libObj.getNamespace()
-                namespaces.append(namespace)
-
-                classList = libObj.getClasses()
-
-                for entry in classList:
-                    entry._classesObj = classes
-                    classes[entry.id] = entry
-
-                docs.update(libObj.getDocs())
-                translations[namespace] = libObj.getTranslations()
-                libraries.append(libObj)
-
-            self._console.outdent()
-            self._console.debug("Loaded %s libraries" % len(namespaces))
-            self._console.debug("")
-
-            return (namespaces, classes, docs, translations, libraries)
-
 
 
         ##
@@ -315,14 +235,14 @@ class Generator(object):
             # -----------------------------------------------------------
             classList  = script.classes
             variants   = script.variants
-            self._partBuilder    = PartBuilder(self._console, self._depLoader, self._treeCompiler)
+            self._partBuilder = PartBuilder(self._console, self._depLoader)
 
             # Check for package configuration
             if self._job.get("packages"):
                 (boot,
                 partPackages,           # partPackages[partId]=[0,1,3]
                 packageClasses          # packageClasses[0]=['qx.Class','qx.bom.Stylesheet',...]
-                )              = evalPackagesConfig(excludeWithDeps, classList, variants)
+                )   = evalPackagesConfig(excludeWithDeps, classList, variants)
             else:
                 # Emulate configuration
                 boot           = "boot"
@@ -375,7 +295,8 @@ class Generator(object):
             if len(excludeCfg) == 0:
                 return [], []
             else:
-                self._console.warn("Excludes may break code (%r)" % excludeCfg)
+                if self._job.get("config-warnings/exclude", True):
+                    self._console.warn("Excludes may break code (%r)" % excludeCfg)
 
             # Splitting lists
             self._console.debug("Preparing exclude configuration...")
@@ -385,7 +306,8 @@ class Generator(object):
             self._console.indent()
 
             if len(excludeNoDeps) > 0:
-                self._console.warn("Excluding without dependencies is not supported, treating them as normal excludes: %r" % excludeNoDeps)
+                if self._job.get("config-warnings/exclude", True):
+                    self._console.warn("Excluding without dependencies is not supported, treating them as normal excludes: %r" % excludeNoDeps)
                 excludeWithDeps.extend(excludeNoDeps)
                 excludeNoDeps = []
             self._console.debug("Excluding %s items smart, %s items explicit" % (len(excludeWithDeps), len(excludeNoDeps)))
@@ -401,7 +323,8 @@ class Generator(object):
                     expanded = self._expandRegExp(entry)
                     nexcludeWithDeps.extend(expanded)
                 except RuntimeError:
-                    self._console.warn("Skipping unresolvable exclude entry: \"%s\"" % entry)
+                    if self._job.get("config-warnings/exclude", True):
+                        self._console.warn("Skipping unresolvable exclude entry: \"%s\"" % entry)
             excludeWithDeps = nexcludeWithDeps
 
             self._console.outdent()
@@ -424,7 +347,8 @@ class Generator(object):
                 self._console.debug("Including %s items smart, %s items explicit" % (len(includeWithDeps), len(includeNoDeps)))
 
                 if len(includeNoDeps) > 0:
-                    self._console.warn("Explicitly included classes may not work")  # ?!
+                    if self._job.get("config-warnings/include", True):
+                        self._console.warn("Explicitly included classes may not work")  # ?!
 
                 # Resolve regexps
                 self._console.debug("Expanding expressions...")
@@ -486,7 +410,7 @@ class Generator(object):
              self._classesObj,
              self._docs,
              self._translations,
-             self._libraries)     = scanLibrary(config.get("library", []))
+             self._libraries)     = self.scanLibrary(config.get("library", []))
 
 
             # create tool chain instances
@@ -542,90 +466,89 @@ class Generator(object):
         if takeout(jobTriggers, "slice-images"):
             self.runImageSlicing()
          
-        if not jobTriggers: return
+        if jobTriggers:
 
-        # -- Process job triggers that require a class list (and some)
-        prepareGenerator1()
+            # -- Process job triggers that require a class list (and some)
+            prepareGenerator1()
 
-        # Preprocess include/exclude lists
-        includeWithDeps, includeNoDeps = getIncludes(self._job.get("include", []))
-        excludeWithDeps, excludeNoDeps = getExcludes(self._job.get("exclude", []))
-        
-        # process classdep triggers
-        if takeout(jobTriggers, "api"):
-            # class list with no variants (all-encompassing)
-            classListProducer = functools.partial(#args are complete, but invocation shall be later
-                       computeClassList, includeWithDeps, excludeWithDeps, includeNoDeps, 
-                       {}, verifyDeps=True, script=None)
-            self.runApiData(classListProducer)
-        if takeout(jobTriggers, "fix-files"):
-            self.runFix(self._classesObj)
-        if takeout(jobTriggers, "lint-check"):
-            self.runLint(self._classesObj)
-        if takeout(jobTriggers, "translate"):
-            self.runUpdateTranslation()
-        if takeout(jobTriggers, "pretty-print"):
-            self._codeGenerator.runPrettyPrinting(self._classesObj)
-        if takeout(jobTriggers, "provider"):
-            script = Script()
-            script.classesObj = self._classesObj.values()
-            environData = getVariants("environment") 
-            variantSets = util.computeCombinations(environData)
-            script.variants = variantSets[0] 
-            script.libraries = self._libraries
-            script.namespace = self.getAppName()
-            script.locales = config.get("compile-options/code/locales", [])
-            CodeProvider.runProvider(script, self)
+            # Preprocess include/exclude lists
+            includeWithDeps, includeNoDeps = getIncludes(self._job.get("include", []))
+            excludeWithDeps, excludeNoDeps = getExcludes(self._job.get("exclude", []))
+            
+            # process classdep triggers
+            if takeout(jobTriggers, "api"):
+                # class list with no variants (all-encompassing)
+                classListProducer = functools.partial(#args are complete, but invocation shall be later
+                           computeClassList, includeWithDeps, excludeWithDeps, includeNoDeps, 
+                           {}, verifyDeps=True, script=Script())
+                self.runApiData(classListProducer)
+            if takeout(jobTriggers, "fix-files"):
+                self.runFix(self._classesObj)
+            if takeout(jobTriggers, "lint-check"):
+                self.runLint(self._classesObj)
+            if takeout(jobTriggers, "translate"):
+                self.runUpdateTranslation()
+            if takeout(jobTriggers, "pretty-print"):
+                self._codeGenerator.runPrettyPrinting(self._classesObj)
+            if takeout(jobTriggers, "provider"):
+                script = Script()
+                script.classesObj = self._classesObj.values()
+                environData = getVariants("environment") 
+                variantSets = util.computeCombinations(environData)
+                script.variants = variantSets[0] 
+                script.optimize = config.get("compile-options/code/optimize", [])
+                script.libraries = self._libraries
+                script.namespace = self.getAppName()
+                script.locales = config.get("compile-options/code/locales", [])
+                CodeProvider.runProvider(script, self)
 
-        if not jobTriggers: return
+        if jobTriggers:
 
-        # -- Process job triggers that require the full tool chain
-        # Create tool chain instances
-        self._treeCompiler   = TreeCompiler(self._classesObj, self._context)
+            # -- Process job triggers that require the full tool chain
 
-        # Processing all combinations of variants
-        environData = getVariants("environment")   # e.g. {'qx.debug':false, 'qx.aspects':[true,false]}
-        variantSets  = util.computeCombinations(environData) # e.g. [{'qx.debug':'on','qx.aspects':'on'},...]
-        for variantSetNum, variantset in enumerate(variantSets):
+            # Processing all combinations of variants
+            environData = getVariants("environment")   # e.g. {'qx.debug':false, 'qx.aspects':[true,false]}
+            variantSets  = util.computeCombinations(environData) # e.g. [{'qx.debug':'on','qx.aspects':'on'},...]
+            for variantSetNum, variantset in enumerate(variantSets):
 
-            # some console output
-            printVariantInfo(variantSetNum, variantset, variantSets, environData)
+                # some console output
+                printVariantInfo(variantSetNum, variantset, variantSets, environData)
 
-            script           = Script()  # a new Script object represents the target code
-            script.namespace = self.getAppName()
-            script.variants  = variantset
-            script.envsettings = variantset
-            script.libraries = self._libraries
-            script.jobconfig = self._job
-            # set source/build version
-            if "compile" in jobTriggers:
-                script.buildType = config.get("compile/type", "")
-                if script.buildType not in ("source","build","hybrid"):
-                    raise ValueError("Unknown compile type '%s'" % script.buildType)
+                script           = Script()  # a new Script object represents the target code
+                script.namespace = self.getAppName()
+                script.variants  = variantset
+                script.optimize  = config.get("compile-options/code/optimize", [])
+                script.libraries = self._libraries
+                script.jobconfig = self._job
+                # set source/build version
+                if "compile" in jobTriggers:
+                    script.buildType = config.get("compile/type", "")
+                    if script.buildType not in ("source","build","hybrid"):
+                        raise ValueError("Unknown compile type '%s'" % script.buildType)
 
-            # get current class list
-            script.classes = computeClassList(includeWithDeps, excludeWithDeps, 
-                               includeNoDeps, variantset, script=script, verifyDeps=True)
-              # keep the list of class objects in sync
-            script.classesObj = [self._classesObj[id] for id in script.classes]
+                # get current class list
+                script.classes = computeClassList(includeWithDeps, excludeWithDeps, 
+                                   includeNoDeps, variantset, script=script, verifyDeps=True)
+                  # keep the list of class objects in sync
+                script.classesObj = [self._classesObj[id] for id in script.classes]
 
-            featureMap = self._depLoader.registerDependeeFeatures(script.classesObj, variantset, script.buildType)
-            self._treeCompiler._featureMap = featureMap
+                featureMap = self._depLoader.registerDependeeFeatures(script.classesObj, variantset, script.buildType)
+                script._featureMap = featureMap
 
-            # prepare 'script' object
-            if set(("compile", "log")).intersection(jobTriggers):
-                partsConfigFromClassList(excludeWithDeps, script)
+                # prepare 'script' object
+                if set(("compile", "log")).intersection(jobTriggers):
+                    partsConfigFromClassList(excludeWithDeps, script)
 
-            # Execute real tasks
-            if "copy-resources" in jobTriggers:
-                self.runResources(script)
-            if "compile" in jobTriggers:
-                self._codeGenerator.runCompiled(script, self._treeCompiler)
-            if "log" in jobTriggers:
-                self.runLogDependencies(script)
-                self.runPrivateDebug()
-                self.runLogUnusedClasses(script)
-                self.runLogResources(script)
+                # Execute real tasks
+                if "copy-resources" in jobTriggers:
+                    self.runResources(script)
+                if "compile" in jobTriggers:
+                    self._codeGenerator.runCompiled(script)
+                if "log" in jobTriggers:
+                    self.runLogDependencies(script)
+                    self.runPrivateDebug()
+                    self.runLogUnusedClasses(script)
+                    self.runLogResources(script)
                 
         elapsedsecs = time.time() - starttime
         self._console.info("Done (%dm%05.2f)" % (int(elapsedsecs/60), elapsedsecs % 60))
@@ -1002,9 +925,13 @@ class Generator(object):
                     'compiled' : (8000, 2000),
                     'source'   : (20000, 5000)
                 }
+                compOptions = CompileOptions()
+                compOptions.optimize = optimize
+                compOptions.variantset = variants
+                compOptions.format = True # guess it's most likely
                 if classId in self._classesObj:
                     if useCompiledSize:
-                        fsize = self._treeCompiler.getCompiledSize(classId, variants, optimize, recompile=True)
+                        fsize = self._classesObj[classId].getCompiledSize(compOptions)
                         mode  = 'compiled'
                     else:
                         fsize = self._classesObj[classId].size
@@ -1491,7 +1418,8 @@ class Generator(object):
         def extractFromPrefixSpec(prefixSpec):
             prefix = altprefix = ""
             if not prefixSpec or not isinstance(prefixSpec, types.ListType):
-                self._console.warn("Missing or incorrect prefix spec, might lead to incorrect resource id's.")
+                if self._job.get("config-warnings/combine-images", True):
+                    self._console.warn("Missing or incorrect prefix spec, might lead to incorrect resource id's.")
             elif len(prefixSpec) == 2 :  # prefixSpec = [ prefix, altprefix ]
                 prefix, altprefix = prefixSpec
             elif len(prefixSpec) == 1:
@@ -1687,20 +1615,10 @@ class Generator(object):
 
     def runMigration(self, libs):
         
-        def checkConfigFiles():
-            keyset = set(self._config.findKey(r'compile-dist|compile-source', "rel"))
-            for key in keyset:
-                self._console.warn("! DeprecationWarning: You are using deprecated config key '%s'" % key)
-            return
-
         if not self._job.get('migrate-files', False):
             return
 
-        self._console.info("Checking configuration files...")
-        self._console.indent()
-        checkConfigFiles()
-        self._console.outdent()
-
+        self._console.info("Please heed the warnings from the configuration file parsing")
         self._console.info("Migrating Javascript source code to most recent qooxdoo version...")
         self._console.indent()
 
@@ -1920,12 +1838,56 @@ class Generator(object):
         return memo['appname']
 
 
-##
-# String class, extensibel
-#
-class mstr(str):
-    def __init__(self,*args,**kwargs):
-        #super(mstr, self).__init__(*args,**kwargs) -- throws deprecWarning under 2.6+!
-        str.__init__(*args,**kwargs)
-        self.type = None
+    ##
+    # Invoke the Library() objects on involved libraries, to collect class
+    # and resource lists etc.
+    def scanLibrary(self, libraryKey):
+
+        self._console.info("Scanning libraries  ", feed=False)
+        self._console.indent()
+
+        namespaces = []
+        classes = {}
+        docs = {}
+        translations = {}
+        libraries = []     # [generator.code.Library]
+        if not isinstance(libraryKey, types.ListType):
+            return (namespaces, classes, docs, translations, libraries)
+
+        for lib in libraryKey:
+
+            libObj    = Library(lib, self._console)
+            checkFile = libObj.mostRecentlyChangedFile()[0]
+            cacheId   = "lib-%s" % libObj.manifest
+            checkObj, _  = self._cache.read(cacheId, checkFile, memory=True)
+            if checkObj:
+                self._console.debug("Use memory cache for %s" % libObj._path)
+                libObj = checkObj  # continue with cached obj
+            else:
+                libObj.scan()
+                self._cache.write(cacheId, libObj, memory=True)
+
+            namespace = libObj.getNamespace()
+            namespaces.append(namespace)
+
+            classList = libObj.getClasses()
+
+            for entry in classList:
+                entry._classesObj = classes
+                classes[entry.id] = entry
+
+            docs.update(libObj.getDocs())
+            translations[namespace] = libObj.getTranslations()
+            libraries.append(libObj)
+
+        self._console.dotclear()
+        self._console.nl()
+        self._console.outdent()
+        self._console.debug("Loaded %s libraries" % len(namespaces))
+        self._console.debug("")
+
+        return (namespaces, classes, docs, translations, libraries)
+
+
+
 

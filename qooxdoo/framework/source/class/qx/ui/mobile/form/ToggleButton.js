@@ -43,7 +43,17 @@
 qx.Class.define("qx.ui.mobile.form.ToggleButton",
 {
   extend : qx.ui.mobile.core.Widget,
-
+  include : [
+    qx.ui.mobile.form.MValue,
+    qx.ui.form.MForm,
+    qx.ui.form.MModelProperty,
+    qx.ui.mobile.form.MState,
+    qx.ui.mobile.form.MEnable
+  ],
+  implement : [
+    qx.ui.form.IForm,
+    qx.ui.form.IModel
+  ],
 
   /*
   *****************************************************************************
@@ -57,17 +67,17 @@ qx.Class.define("qx.ui.mobile.form.ToggleButton",
   construct : function(value)
   {
     this.base(arguments);
+    this.__child = this._createChild();
+    this._add(this.__child);
+
     if (value) {
       this.setValue(value);
     }
+
     this.addListener("tap", this._onTap, this);
     this.addListener("swipe", this._onSwipe, this);
-    // TODO: Add Child Control
-    this.__child = this._createChild();
-    this._add(this.__child);
+    
   },
-
-
 
 
   /*
@@ -83,19 +93,8 @@ qx.Class.define("qx.ui.mobile.form.ToggleButton",
     {
       refine : true,
       init : "toggleButton"
-    },
-
-
-    /**
-     * The value of the toggle button.
-     */
-    value :
-    {
-      check : "Boolean",
-      init : false,
-      apply : "_applyValue",
-      event : "changeValue"
     }
+    
   },
 
 
@@ -110,6 +109,7 @@ qx.Class.define("qx.ui.mobile.form.ToggleButton",
   members :
   {
     __child : null,
+    __value : null,
 
 
     /**
@@ -131,16 +131,32 @@ qx.Class.define("qx.ui.mobile.form.ToggleButton",
     },
 
 
-    // property apply
-    _applyValue : function(value, old)
+    /**
+     * Sets the value [true/false] of this toggle button.
+     * It is called by setValue method of qx.ui.mobile.form.MValue mixin
+     * @param value {Boolean} the new value of the toggle button
+     */
+    _setValue : function(value)
     {
+      if(typeof value !== 'boolean') {
+        throw new Error("value for "+this+" should be boolean");
+      }
       if (value) {
         this._getChild().addCssClass("checked");
       } else {
         this._getChild().removeCssClass("checked");
       }
+       this.__value = value;
     },
 
+    /**
+     * Gets the value [true/false] of this toggle button.
+     * It is called by getValue method of qx.ui.mobile.form.MValue mixin
+     * @return value {Boolean} the value of the toggle button
+     */
+    _getValue : function() {
+      return this.__value;
+    },
 
     /**
      * Toggles the value of the button.
@@ -173,6 +189,7 @@ qx.Class.define("qx.ui.mobile.form.ToggleButton",
     {
       this.toggle();
     }
+
   },
 
 

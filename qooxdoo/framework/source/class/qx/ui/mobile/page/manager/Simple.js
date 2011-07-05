@@ -43,13 +43,15 @@ qx.Class.define("qx.ui.mobile.page.manager.Simple",
   */
 
   /**
-   * @param root {qx.ui.mobile.core.Widget} The root widget to use
+   * @param root {qx.ui.mobile.core.Widget?null} Optional. The root widget to use.
+   *    If no root is set, the root widget of the application is used.
+   * 
    */
   construct : function(root)
   {
     this.base(arguments);
     this.__pages = {};
-    this._setRoot(root || qx.core.Init.getApplication().getRoot());
+    this._setRoot(root);
 
     this.__registerEventListeners();
   },
@@ -104,7 +106,6 @@ qx.Class.define("qx.ui.mobile.page.manager.Simple",
         this.__backButtonHandler = qx.lang.Function.bind(this._onBackButton, this);
         this.__menuButtonHandler = qx.lang.Function.bind(this._onMenuButton, this);
         BackButton.override();
-        // TODO: Move this to an PhoneGap / Android Event Handler
         qx.bom.Event.addNativeListener(document, "backKeyDown", this.__backButtonHandler);
         qx.bom.Event.addNativeListener(document, "menuKeyDown", this.__menuButtonHandler);
       }
@@ -178,9 +179,6 @@ qx.Class.define("qx.ui.mobile.page.manager.Simple",
     remove : function(id)
     {
       var page = this.getPage(id);
-      if (this.__currentPage == page) {
-        throw new Error("Current page with the Id " + page.getId() + " can not be removed");
-      }
       delete this.__pages[page.getId()];
       this.fireDataEvent("remove", page);
     },
@@ -206,7 +204,7 @@ qx.Class.define("qx.ui.mobile.page.manager.Simple",
 
       page.initialize();
       page.start();
-      this.__root.add(page);
+      this._getRoot().add(page);
 
 
       if (currentPage)
@@ -225,17 +223,21 @@ qx.Class.define("qx.ui.mobile.page.manager.Simple",
      */
     _removeCurrentPage : function()
     {
-      this.__root.remove(this.__currentPage);
+      this._getRoot().remove(this.__currentPage);
     },
 
 
     /**
-     * Returns the root widget.
+     * Returns the root widget. If no root is set, the root of the application
+     * is returned.
      *
      * @return {qx.ui.mobile.core.Widget} The used root widget
      */
     _getRoot : function()
     {
+      if (this.__root == null) {
+        this._setRoot(qx.core.Init.getApplication().getRoot());
+      }
       return this.__root;
     },
 

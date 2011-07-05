@@ -25,7 +25,16 @@
 qx.Class.define("qx.ui.mobile.form.Input",
 {
   extend : qx.ui.mobile.core.Widget,
-  include : [qx.ui.mobile.form.MValue],
+  include : [
+    qx.ui.form.MForm,
+    qx.ui.form.MModelProperty,
+    qx.ui.mobile.form.MState,
+    qx.ui.mobile.form.MEnable
+  ],
+  implement : [
+    qx.ui.form.IForm,
+    qx.ui.form.IModel
+  ],
   type : "abstract",
 
 
@@ -38,48 +47,8 @@ qx.Class.define("qx.ui.mobile.form.Input",
   construct : function()
   {
     this.base(arguments);
-
-    this.initType();
-    this.initMaxLength();
+    this._setAttribute("type", this._getType());
   },
-
-
-
-
-  /*
-  *****************************************************************************
-     PROPERTIES
-  *****************************************************************************
-  */
-
-  properties :
-  {
-    /**
-     * The type of the input field.
-     */
-    type :
-    {
-      check : "String",
-      nullable : true,
-      init : null,
-      apply : "_applyAttribute"
-    },
-
-
-    /**
-     * Maximal number of characters that can be entered in the input field.
-     */
-    maxLength :
-    {
-      check : "PositiveInteger",
-      nullable : true,
-      init : null,
-      apply : "_applyAttribute"
-    }
-  },
-
-
-
 
   /*
   *****************************************************************************
@@ -93,24 +62,19 @@ qx.Class.define("qx.ui.mobile.form.Input",
     _getTagName : function()
     {
       return "input";
-    }
-  },
+    },
 
 
-
-
-  /*
-  *****************************************************************************
-     DEFER
-  *****************************************************************************
-  */
-
-  defer : function(statics)
-  {
-    qx.ui.mobile.core.Widget.addAttributeMapping("maxLength",
-      {
-        attribute : "maxlength"
+    /**
+     * Returns the type of the input field. Override this method in the
+     * specialized input class.
+     */
+    _getType : function()
+    {
+      if (qx.core.Environment.get("qx.debug")) {
+        throw new Error("Abstract method call");
       }
-    );
+    }
+    
   }
 });

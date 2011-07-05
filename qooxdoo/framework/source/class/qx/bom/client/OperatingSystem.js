@@ -55,6 +55,12 @@ qx.Bootstrap.define("qx.bom.client.OperatingSystem",
       ) {
         return "osx";
 
+      } else if (agent.indexOf("RIM Tablet OS") != -1) {
+        return "rim_tabletos";
+
+      } else if (agent.indexOf("webOS") != -1) {
+        return "webos";
+
       } else if (
         agent.indexOf("RIM Tablet OS") != -1
       ) {
@@ -98,6 +104,12 @@ qx.Bootstrap.define("qx.bom.client.OperatingSystem",
       ) {
         return "blackberry";
 
+      }
+
+      else if (
+        input.indexOf("BlackBerry") != -1
+      ) {
+        return "blackberry";
       }
 
       // don't know

@@ -39,7 +39,7 @@ qx.Class.define("qx.data.marshal.Json",
 
   statics :
   {
-    __instance : null,
+    $$instance : null,
 
     /**
      * Creates a qooxdoo object based on the given json data. This function
@@ -54,13 +54,13 @@ qx.Class.define("qx.data.marshal.Json",
      */
     createModel : function(data, includeBubbleEvents) {
       // singleton for the json marshaler
-      if (this.__instance === null) {
-        this.__instance = new qx.data.marshal.Json();
+      if (this.$$instance === null) {
+        this.$$instance = new qx.data.marshal.Json();
       }
       // be sure to create the classes first
-      this.__instance.toClass(data, includeBubbleEvents);
+      this.$$instance.toClass(data, includeBubbleEvents);
       // return the model
-      return this.__instance.toModel(data);
+      return this.$$instance.toModel(data);
     }
   },
 
@@ -147,9 +147,9 @@ qx.Class.define("qx.data.marshal.Json",
       for (var key in data) {
         // stip the unwanted characters
         key = key.replace(/-/g, "");
-        // check for valid JavaScript identifier
+        // check for valid JavaScript identifier (leading numbers are ok)
         if (qx.core.Environment.get("qx.debug")) {
-          this.assertTrue((/^[$A-Za-z_][0-9A-Za-z_]*$/).test(key),
+          this.assertTrue((/^[0-9A-Za-z_]*$/).test(key),
           "The key '" + key + "' is not a valid JavaScript identifier.")
         }
 
@@ -234,14 +234,6 @@ qx.Class.define("qx.data.marshal.Json",
       if (item.isDisposed()) {
         return;
       }
-      // dispose all entires of an array
-      if (qx.Class.implementsInterface(item, qx.data.IListData)) {
-        // dispose all items of the array
-        for (var i=0; i < item.getLength(); i++) {
-          this.__disposeItem(item.getItem(i));
-        };
-      }
-
       item.dispose();
     },
 
@@ -291,6 +283,9 @@ qx.Class.define("qx.data.marshal.Json",
 
       } else if (isArray) {
         var array = new qx.data.Array();
+        // set the auto dispose for the array
+        array.setAutoDisposeItems(true);
+
         for (var i = 0; i < data.length; i++) {
           array.push(this.toModel(data[i]));
         }

@@ -31,14 +31,14 @@ import sys, collections
 from misc                    import util
 from generator.code.Part     import Part
 from generator.code.Package  import Package
+from generator.code.Class    import CompileOptions
 from generator.config.Config import ConfigurationError
 
 class PartBuilder(object):
 
-    def __init__(self, console, depLoader, compiler):
+    def __init__(self, console, depLoader):
         self._console   = console
         self._depLoader = depLoader
-        self._compiler  = compiler
 
 
     ##
@@ -75,6 +75,7 @@ class PartBuilder(object):
         self._printPartStats(script)
 
         # Collapse parts by collapse order
+        self._console.info("Collapsing parts  ", feed=False)
         self.collapsePartsByOrder(script)
 
         # Collapse parts by package size
@@ -104,6 +105,7 @@ class PartBuilder(object):
         script = self._getFinalClassList(script)
         #resultClasses = util.dictToList(resultClasses) # turn map into list, easier for upstream methods
 
+        self._console.dotclear()
         if True: #self._console.getLevel() < self._console._levels["info"]: # - not working!
             self.verifyParts(script.parts, script)
 
@@ -146,13 +148,13 @@ class PartBuilder(object):
             else:
                 self._console.warn("! "+msg)
 
-        self._console.info("Verifying Parts")
+        self._console.info("Verifying parts  ", feed=False)
         self._console.indent()
         bomb_on_error = self._jobconf.get("packages/verifier-bombs-on-error", True)
         allpartsclasses = []
 
         # 5) Check consistency between package.part_mask and part.packages
-        self._console.info("Verifying packages-to-parts relations...")
+        self._console.debug("Verifying packages-to-parts relations...")
         self._console.indent()
         for package in script.packages:
             for part in partsMap.values():
@@ -161,12 +163,13 @@ class PartBuilder(object):
                         handleError("Package '%d' supposed to be in part '%s', but isn't" % (package.id, part.name))
         self._console.outdent()
 
-        self._console.info("Verifying individual parts...")
-        self._console.indent()
+        self._console.debug("Verifying individual parts...")
+        #self._console.indent()
         for part in partsMap.values():
             if part.is_ignored:  # skip ignored parts
                 continue
-            self._console.info("Part: %s" % part.name)
+            self._console.debug("Part: %s" % part.name)
+            self._console.dot()
             self._console.indent()
             # get set of current classes in this part
             classList = []
@@ -209,7 +212,7 @@ class PartBuilder(object):
                     #    self._console.warn("Unfullfilled load dependencies of class '%s': %r" % (classId, tuple(missingDeps)))
             self._console.outdent()
 
-        self._console.outdent()
+        #self._console.outdent()
 
         # 4) Check all classes from the global class list are contained in
         # *some* part
@@ -217,6 +220,7 @@ class PartBuilder(object):
         if missingclasses:
             handleError("These necessary classes are not covered by parts: %r" % list(missingclasses))
 
+        self._console.dotclear()
         self._console.outdent()
         return
     ##
@@ -254,10 +258,11 @@ class PartBuilder(object):
         globalClassList = [x.id for x in script.classesObj]
 
         self._console.debug("")
-        self._console.info("Resolving part dependencies...")
+        self._console.info("Assembling parts")
         self._console.indent()
 
         for part in parts.values():
+            self._console.info("part %s  " % part.name, feed=False)
             # Exclude initial classes of other parts
             partExcludes = []
             for otherPartId in parts:
@@ -363,12 +368,17 @@ class PartBuilder(object):
         return packages
 
 
-    def _computePackageSize(self, package, variants):
+    def _computePackageSize(self, package, variants, script):
         packageSize = 0
+        compOptions = CompileOptions()
+        compOptions.optimize = script.optimize
+        compOptions.format = True
+        compOptions.variantset = variants
+        classesObj = dict((x.id,x) for x in script.classesObj if x.id in package.classes)
 
         self._console.indent()
         for classId in package.classes:
-            packageSize += self._compiler.getCompiledSize(classId, variants)
+            packageSize += classesObj[classId].getCompiledSize(compOptions)
         self._console.outdent()
 
         return packageSize
@@ -388,7 +398,7 @@ class PartBuilder(object):
 
         variants  = script.variants
         self._console.debug("")
-        self._console.info("Collapsing parts by package sizes...")
+        self._console.debug("Collapsing parts by package sizes...")
         self._console.indent()
         self._console.debug("Minimum size: %sKB" % minPackageSize)
         self._console.indent()
@@ -413,12 +423,13 @@ class PartBuilder(object):
             
             # Test and optimize 'fromId'
             for fromPackage in allPackages:
+                self._console.dot()
                 # possibly protect part-private package from merging
                 if fromPackage.id in allPartBitMasks.keys():  # fromPackage.id == a part's bit mask
                     if allPartBitMasks[fromPackage.id].no_merge_private_package:
                         self._console.debug("Skipping private package #%s" % (fromPackage.id,))
                         continue
-                packageSize = self._computePackageSize(fromPackage, variants) / 1024
+                packageSize = self._computePackageSize(fromPackage, variants, script) / 1024
                 self._console.debug("Package #%s: %sKB" % (fromPackage.id, packageSize))
                 # check selectablility
                 if (fromPackage.part_count == 1) and (packageSize >= minPackageSizeForUnshared):
@@ -435,6 +446,7 @@ class PartBuilder(object):
 
                 self._console.outdent()
 
+        self._console.dotclear()
         self._console.outdent()
         self._console.outdent()
 
@@ -599,7 +611,7 @@ class PartBuilder(object):
         # ---------------------------------------------------------------------
 
         self._console.debug("")
-        self._console.info("Collapsing parts by collapse order...")
+        self._console.debug("Collapsing parts by collapse order...")
         self._console.indent()
 
         if collapse_groups == None:
@@ -607,6 +619,7 @@ class PartBuilder(object):
         seen_targets    = set(())
 
         for collidx in sorted(collapse_groups.keys()): # go through groups in load order
+            self._console.dot()
             collgrp         = collapse_groups[collidx]
             self._console.debug("Collapse group %d %r" % (collidx, [x.name for x in collgrp]))
             self._console.indent()
@@ -616,6 +629,7 @@ class PartBuilder(object):
 
             self._console.outdent()
 
+        self._console.dotclear()
         self._console.outdent()
         return
 
@@ -718,7 +732,7 @@ class PartBuilder(object):
 
         for package in packages:
             package.classes = self._depLoader.sortClasses(package.classes, script.variants, script.buildType)
-        self._console.nl() # terminate dots
+        #self._console.nl() # terminate dots
 
         #script.packageIdsSorted = [x.id for x in packages]
 

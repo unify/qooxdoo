@@ -176,12 +176,15 @@ qx.Class.define("qx.ui.mobile.list.List",
      */
     _onTap : function(evt)
     {
-      var originalTarget = evt.getOriginalTarget();
+      var element = evt.getOriginalTarget();
       var index = -1;
-      if (qx.bom.element.Attribute.get(originalTarget, "data-selectable") != "false"
-          && qx.dom.Element.hasChild(this.getContainerElement(), originalTarget))
+      while (element.tagName != "LI") {
+        element = element.parentNode;
+      }
+      if (qx.bom.element.Attribute.get(element, "data-selectable") != "false"
+          && qx.dom.Element.hasChild(this.getContainerElement(), element))
       {
-        index = qx.dom.Hierarchy.getElementIndex(originalTarget);
+        index = qx.dom.Hierarchy.getElementIndex(element);
       }
       if (index != -1) {
         this.fireDataEvent("changeSelection", index);
@@ -192,12 +195,13 @@ qx.Class.define("qx.ui.mobile.list.List",
     // property apply
     _applyModel : function(value, old)
     {
-      if (value) {
-        this.setItemCount(value ? value.getLength() : 0);
-        this.__render();
-      } else {
-        this.clear();
+      if (old != null) {
+        old.removeListener("change", this.__onModelChange, this);
       }
+      if (value != null) {
+        value.addListener("change", this.__onModelChange, this);
+      }
+      this.__onModelChange();
     },
 
 
@@ -208,11 +212,13 @@ qx.Class.define("qx.ui.mobile.list.List",
 
 
     /**
-     * Clears the list.
+     * Reacts on model changes.
      */
-    clear : function()
+    __onModelChange : function()
     {
-      this._setHtml("");
+      var model = this.getModel();
+      this.setItemCount(model ? model.getLength() : 0);
+      this.__render();
     },
 
 

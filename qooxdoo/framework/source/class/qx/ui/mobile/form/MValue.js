@@ -46,9 +46,6 @@ qx.Mixin.define("qx.ui.mobile.form.MValue",
       this.setValue(value);
     }
 
-    this.initPlaceholder();
-    this.initReadOnly();
-
     qx.event.Registration.addListener(this.getContentElement(), "change", this._onChangeContent, this);
     qx.event.Registration.addListener(this.getContentElement(), "input", this._onInput, this);
   },
@@ -107,31 +104,8 @@ qx.Mixin.define("qx.ui.mobile.form.MValue",
     {
       check : "Boolean",
       init : false
-    },
-
-
-    /**
-     * String value which will be shown as a hint if the field is all of:
-     * unset, unfocused and enabled. Set to <code>null</code> to not show a placeholder
-     * text.
-     */
-    placeholder :
-    {
-      check : "String",
-      nullable : true,
-      init : null,
-      apply : "_applyAttribute"
-    },
-
-
-    /** Whether the field is read only */
-    readOnly :
-    {
-      check : "Boolean",
-      nullable : true,
-      init : null,
-      apply : "_applyAttribute"
     }
+    
   },
 
 
@@ -155,7 +129,18 @@ qx.Mixin.define("qx.ui.mobile.form.MValue",
      */
     _convertValue : function(value)
     {
-      return value || "";
+      if(typeof value === 'boolean')
+      {
+        return value;
+      }
+      else if (typeof value === 'number')
+      {
+        return value;
+      }
+      else
+      {
+        return value || "";
+      }
     },
 
 
@@ -169,11 +154,14 @@ qx.Mixin.define("qx.ui.mobile.form.MValue",
       value = this._convertValue(value);
       if (this.__oldValue != value)
       {
-        this._setAttribute("value", value);
+        if (this._setValue) {
+          this._setValue(value);
+        } else {
+          this._setAttribute("value", value);
+        }
         this.__fireChangeValue(value);
       }
     },
-
 
     /**
      * Returns the set value.
@@ -182,7 +170,7 @@ qx.Mixin.define("qx.ui.mobile.form.MValue",
      */
     getValue : function()
     {
-      return this._convertValue(this._getAttribute("value"));
+      return this._convertValue(this._getValue ? this._getValue() : this._getAttribute("value"));
     },
 
 

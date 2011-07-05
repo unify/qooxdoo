@@ -32,10 +32,8 @@ qx.Class.define("qx.test.io.request.Jsonp",
 {
   extend : qx.dev.unit.TestCase,
 
-  include : [qx.test.io.MRemoteTest,
-             qx.test.io.request.MRequest,
-             qx.dev.unit.MMock,
-             qx.dev.unit.MRequirements],
+  include : [qx.test.io.request.MRequest,
+             qx.dev.unit.MMock],
 
   members :
   {
@@ -51,17 +49,8 @@ qx.Class.define("qx.test.io.request.Jsonp",
     // Also called in shared tests, i.e. shared tests
     // use appropriate transport
     setUpFakeTransport: function() {
-      this.transport = this.stub(new qx.bom.request.Jsonp());
-
-      // JSONP only offers the bare minimum of a BOM request
-      this.stub(this.transport, "open");
-      this.stub(this.transport, "setRequestHeader");
-      this.stub(this.transport, "send");
-      this.stub(this.transport, "abort");
-
-      this.stub(qx.io.request.Jsonp.prototype, "_createTransport").
-          returns(this.transport);
-
+      this.transport = this.injectStub(qx.io.request.Jsonp.prototype,
+        "_createTransport", this.deepStub(new qx.bom.request.Jsonp()));
       this.setUpRequest();
     },
 
@@ -74,24 +63,36 @@ qx.Class.define("qx.test.io.request.Jsonp",
     },
 
     //
-    // Full stack tests
+    // General (cont.)
     //
 
-    "test: fetch json": function() {
-      var req = new qx.io.request.Jsonp(),
-          url = this.noCache(this.getUrl("qx/test/jsonp_primitive.php"));
+    "test: set url property on construct": function() {
+      var req = new qx.io.request.Jsonp("url");
+      this.assertEquals("url", req.getUrl());
+    },
 
-      req.addListener("load", function(e) {
-        this.resume(function() {
-          this.assertObject(req.getResponse());
-          this.assertTrue(req.getResponse()["boolean"]);
-        }, this);
-      }, this);
+    //
+    // Callback management
+    //
 
-      req.setUrl(url);
-      req.send();
+    "test: setCallbackParam()": function() {
+      this.setUpFakeTransport();
 
-      this.wait();
+      var req = this.req,
+          transport = this.transport;
+
+      req.setCallbackParam("method");
+      this.assertCalledWith(transport.setCallbackParam, "method");
+    },
+
+    "test: setCallbackName()": function() {
+      this.setUpFakeTransport();
+
+      var req = this.req,
+          transport = this.transport;
+
+      req.setCallbackName("myCallback");
+      this.assertCalledWith(transport.setCallbackName, "myCallback");
     }
   }
 });

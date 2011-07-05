@@ -533,10 +533,13 @@ qx.Class.define("qx.test.data.DataArray",
       var thisContext = {};
       var handlerCalled = false;
 
-      var forEachHandler = function(item) {
+      var forEachHandler = function(item, index, array) {
         handlerCalled = true;
         // check for the context
         self.assertEquals(this, thisContext);
+        // check the parameter
+        self.assertEquals(i, index);
+        self.assertEquals(self.__a, array);
         // check the tree items
         if (i == 0) {
           i++;
@@ -560,6 +563,24 @@ qx.Class.define("qx.test.data.DataArray",
 
       // check if the handlers has been called
       this.assertTrue(handlerCalled);
+    },
+
+
+    testNotAutoDisposeItems : function() {
+      var o = new qx.core.Object();
+      this.__a.push(o);
+      this.__a.dispose();
+      this.assertFalse(o.isDisposed());
+      o.dispose();
+    },
+
+
+    testAutoDisposeItems : function() {
+      var o = new qx.core.Object();
+      this.__a.push(o);
+      this.__a.setAutoDisposeItems(true);
+      this.__a.dispose();
+      this.assertTrue(o.isDisposed());
     }
   }
 });

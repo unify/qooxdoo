@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ################################################################################
 #
 #  qooxdoo - the new era of web development
@@ -41,11 +42,11 @@ def log(level, msg, node=None):
     global verbose
     str = makeLogMessage(level, msg, node)
     if verbose:
-        print "      - " + str
+        print >> sys.stderr, "      - " + str
     else:
         if level != "Information":
-            print
-            print str
+            print >> sys.stderr
+            print >> sys.stderr, str
 
 
 def search(node, variantMap, fileId_="", verb=False):
@@ -59,7 +60,7 @@ def search(node, variantMap, fileId_="", verb=False):
     modified = False
 
     #if fileId_ == "qx.core.Environment":
-    #    modified = processEnvironmentClass(node, variantMap)
+        #modified = processEnvironmentClass(node, variantMap)
 
     variantNodes = findVariantNodes(node)
     for variantNode in variantNodes:
@@ -67,12 +68,6 @@ def search(node, variantMap, fileId_="", verb=False):
         if variantMethod in ["select"]:
             #modified = processVariantSelect(selectNode(variantNode, "../.."), variantMap) or modified
             modified = processVariantSelect(selectCallNode(variantNode), variantMap) or modified
-        elif variantMethod == "isSet":
-            #modified = processVariantIsSet(selectNode(variantNode, "../.."), variantMap) or modified
-            modified = processVariantIsSet(selectCallNode(variantNode), variantMap) or modified
-        elif variantMethod == "compilerIsSet":
-            #modified = processVariantIsSet(selectNode(variantNode, "../.."), variantMap) or modified
-            modified = processVariantIsSet(selectCallNode(variantNode), variantMap) or modified
         elif variantMethod in ["get"]:
             #modified = processVariantGet(selectNode(variantNode, "../.."), variantMap) or modified
             modified = processVariantGet(selectCallNode(variantNode), variantMap) or modified
@@ -91,13 +86,13 @@ def selectCallNode(variableNode):
     return callNode
 
 ##
-# Processes qx.core.[Environment|Variant].select blocks
+# Processes qx.core.Environment.select blocks
 # Destructive! re-writes the AST tree passed in <callNode> by replacing choices with
 # the suitable branch.
 #
 # Mirror line:
 # <callNode>:
-# qx.core.[Environment|Variant].select("qx.debug", { "on" : function(){return true;},
+# qx.core.Environment.select("qx.debug", { "on" : function(){return true;},
 #                                      "off": function(){return false;}})
 # <variantMap>:
 # {
@@ -110,7 +105,7 @@ def processVariantSelect(callNode, variantMap):
         
     params = callNode.getChild("params")
     if len(params.children) != 2:
-        log("Warning", "Expecting exactly two arguments for qx.core.[Environment|Variant].select. Ignoring this occurrence.", params)
+        log("Warning", "Expecting exactly two arguments for qx.core.Environment.select. Ignoring this occurrence.", params)
         return False
 
     # Get the variant key from the select() call
@@ -164,74 +159,8 @@ def processVariantSelect(callNode, variantMap):
                 raise RuntimeError(makeLogMessage("Error", "Variantoptimizer: No matching case found for variant (%s:%s) at" % (variantKey, variantValue), callNode))
         return True
 
-    log("Warning", "The second parameter of qx.core.[Environment|Variant].select must be a map or a string literal. Ignoring this occurrence.", secondParam)
+    log("Warning", "The second parameter of qx.core.Environment.select must be a map or a string literal. Ignoring this occurrence.", secondParam)
     return False
-
-
-##
-# processes qx.core.Variant.isSet() calls;
-# destructive! re-writes the AST tree passed in [callNode] by replacing choices with
-# the suitable branch
-#
-def processVariantIsSet(callNode, variantMap):
-    if callNode.type != "call":
-        return False
-        
-    params = callNode.getChild("params")
-    if len(params.children) != 2:
-        log("Warning", "Expecting exactly two arguments for qx.core.Variant.isSet. Ignoring this occurrence.", params)
-        return False
-
-    firstParam = params.getChildByPosition(0)
-    if not isStringLiteral(firstParam):
-        log("Warning", "First argument must be a string literal! Ignoring this occurrence.", firstParam)
-        return False
-
-    variantKey = firstParam.get("value");
-    if variantKey in variantMap:
-        confValue = variantMap[variantKey]
-    else:
-        return False
-
-    secondParam = params.getChildByPosition(1)
-
-    if isStringLiteral(secondParam):
-        ifcondition =  secondParam.parent.parent.parent
-
-        # normal if then else
-        if ifcondition.type == "expression" and ifcondition.getChildrenLength(True) == 1 and ifcondition.parent.type == "loop":
-            loop = ifcondition.parent
-            variantValue = secondParam.get("value")
-            inlineIfStatement(loop, __variantMatchKey(variantValue, confValue))
-
-        # ternary operator  ?:
-        elif (
-            ifcondition.type == "first" and
-            ifcondition.getChildrenLength(True) == 1 and
-            ifcondition.parent.type == "operation" and
-            ifcondition.parent.get("operator") == "HOOK"
-        ):
-            variantValue = secondParam.get("value")
-            if __variantMatchKey(variantValue, confValue):
-                replacement = selectNode(ifcondition, "../second")
-            else:
-                replacement = selectNode(ifcondition, "../third")
-            replaceChildWithNodes(ifcondition.parent.parent, ifcondition.parent, replacement.children)
-
-        else:
-            variantValue = secondParam.get("value")
-            constantNode = tree.Node("constant")
-            constantNode.set("value", str(__variantMatchKey(variantValue, confValue)).lower())
-            constantNode.set("constantType", "boolean")
-            constantNode.set("line", callNode.get("line"))
-            callNode.parent.replaceChild(callNode, constantNode)
-            #log("Warning", "Only processing qx.core.Variant.isSet directly inside of an if condition. Ignoring this occurrence.", secondParam)
-
-        return True
-
-    log("Warning", "The second parameter of qx.core.Variant.isSet must be a string literal. Ignoring this occurrence.", secondParam)
-    return False
-
 
 
 ##
@@ -288,62 +217,62 @@ def processVariantGet(callNode, variantMap):
 # qx.core.Environment gets special treatment, as it uses a pseudo-method,
 # to indicate optimizable code
 #
-def processEnvironmentClass(node, variantMap):
+def processEnvironmentClass(tree, usedVariantKeys):
     
-    def myVariantNodes(node):
+    def useCheckNodes(node):
         variantNodes = treeutil.findVariablePrefix(node, "this.useCheck")
         for variantNode in variantNodes:
-            print variantNode.toXml()
+            #print variantNode.toXml()
             if not variantNode.hasParentContext("call/operand"):
                 continue
             else:
-                yield variantNode
+                yield selectCallNode(variantNode)
 
-    treeModified = False
+    # -----------------------------------------------------------------
+    global verbose
+    global fileId
+    verbose = False
+    fileId = "qx.core.Environment"
 
-    #TODO: use myVariantNodes()
+    for callNode in useCheckNodes(tree):
 
-    # Simple sanity checks
-    params = callNode.getChild("params")
-    if len(params.children) != 1:
-        log("Warning", "Expecting exactly one argument for qx.core.Environment.get. Ignoring this occurrence.", params)
-        return treeModified
+        # Simple sanity checks
+        params = callNode.getChild("params")
+        if len(params.children) != 1:
+            log("Warning", "Expecting exactly one argument for qx.core.Environment.get. Ignoring this occurrence.", params)
+            continue
 
-    firstParam = params.getChildByPosition(0)
-    if not isStringLiteral(firstParam):
-        log("Warning", "First argument must be a string literal! Ignoring this occurrence.", firstParam)
-        return treeModified
+        firstParam = params.getChildByPosition(0)
+        if not isStringLiteral(firstParam):
+            log("Warning", "First argument must be a string literal! Ignoring this occurrence.", firstParam)
+            continue
 
-    variantKey = firstParam.get("value");
-    if variantKey in variantMap:
-        variantValue = variantMap[variantKey]
-    else:
-        return treeModified
+        variantKey = firstParam.get("value");
+        if variantKey in usedVariantKeys:
+            continue  # need these checks at run time
 
-    # Processing
-    # are we in a if/loop condition expression, i.e. a "loop/expression/..." context?
-    conditionNode = None
-    loopType = None
-    node = callNode
-    while (node):
-        if node.type == "expression" and node.parent and node.parent.type == "loop":
-            conditionNode = node
-            break
-        node = node.parent
+        # Processing
+        # are we in a if/loop condition expression, i.e. a "loop/expression/..." context?
+        conditionNode = None
+        loopType = None
+        node = callNode
+        while (node):
+            if node.type == "expression" and node.parent and node.parent.type == "loop":
+                conditionNode = node
+                break
+            node = node.parent
 
-    if not conditionNode:
-        return treeModified
+        if not conditionNode:
+            continue
 
-    # handle "if" statements
-    if conditionNode.parent.get("loopType") == "IF":
-        loopNode = conditionNode.parent
-        # get() call is only condition
-        if callNode.parent == conditionNode:
-            #TODO: variantValue is not interesting, only if variantKey is in variantMap (!?)
-            treeutil.inlineIfStatement(loopNode, bool(variantValue)) # take the truth val of the key value
-            treeModified = True
+        # handle "if" statements
+        if conditionNode.parent.get("loopType") == "IF":
+            loopNode = conditionNode.parent
+            # useCheck() call is only condition
+            if callNode.parent == conditionNode:
+                treeutil.inlineIfStatement(loopNode, False) # use 'else' branch (if any)
 
-    return treeModified
+    return tree
 
 
 ##
@@ -662,7 +591,7 @@ def getSelectParams(callNode):
         
     params = callNode.getChild("params")
     if len(params.children) != 2:
-        log("Warning", "Expecting exactly two arguments for qx.core.[Environment|Variant].select. Ignoring this occurrence.", params)
+        log("Warning", "Expecting exactly two arguments for qx.core.Environment.select. Ignoring this occurrence.", params)
         return result
 
     # Get the variant key from the select() call
@@ -692,15 +621,15 @@ def getSelectParams(callNode):
 #
 # @return {Iter<Node>} node generator
 #
+InterestingEnvMethods = ["select", "selectAsync", "getAsync", "get"]
 def findVariantNodes(node):
-    variantNodes = treeutil.findVariablePrefix(node, "qx.core.Variant")
-    variantNodes.extend(treeutil.findVariablePrefix(node, "qx.core.Environment"))
+    variantNodes = treeutil.findVariablePrefix(node, "qx.core.Environment")
     for variantNode in variantNodes:
         if not variantNode.hasParentContext("call/operand"):
             continue
         variantMethod = treeutil.selectNode(variantNode, "identifier[4]/@name")
-        if variantMethod not in ["select", "isSet", "compilerIsSet", "get"]:
-            continue
-        else:
+        if variantMethod in InterestingEnvMethods:
             yield variantNode
+        else:
+            continue
 

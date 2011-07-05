@@ -46,8 +46,7 @@ qx.Class.define("qx.test.io.request.Xhr",
 {
   extend : qx.dev.unit.TestCase,
 
-  include : [qx.test.io.MRemoteTest,
-             qx.test.io.request.MRequest,
+  include : [qx.test.io.request.MRequest,
              qx.dev.unit.MMock,
              qx.dev.unit.MRequirements],
 
@@ -63,18 +62,8 @@ qx.Class.define("qx.test.io.request.Xhr",
     },
 
     setUpFakeTransport: function() {
-      this.transport = this.stub(new qx.bom.request.Xhr());
-
-      // XHR offers an extended feature set compared to JSONP
-      this.stub(this.transport, "open");
-      this.stub(this.transport, "setRequestHeader");
-      this.stub(this.transport, "send");
-      this.stub(this.transport, "abort");
-      this.stub(this.transport, "getResponseHeader");
-
-      this.stub(qx.io.request.Xhr.prototype, "_createTransport").
-          returns(this.transport);
-
+      this.transport = this.injectStub(qx.io.request.Xhr.prototype,
+        "_createTransport", this.deepStub(new qx.bom.request.Xhr()));
       this.setUpRequest();
     },
 
@@ -101,87 +90,18 @@ qx.Class.define("qx.test.io.request.Xhr",
     },
 
     //
-    // Full stack tests
+    // General (cont.)
     //
 
-    "test: fetch resource": function() {
-      // TODO: Adjust URL when file://
-      this.require(["http"]);
-
-      var req = new qx.io.request.Xhr(),
-          url = this.noCache(this.getUrl("qx/test/xmlhttp/sample.txt"));
-
-      req.addListener("success", function(e) {
-        this.resume(function() {
-          this.assertEquals("SAMPLE", e.getTarget().getResponseText());
-        }, this);
-      }, this);
-
-      req.setUrl(url);
-      req.send();
-
-      this.wait();
+    "test: set url property on construct": function() {
+      var req = new qx.io.request.Xhr("url");
+      this.assertEquals("url", req.getUrl());
     },
 
-    "test: recycle request": function() {
-      this.require(["http"]);
-
-      var req = new qx.io.request.Xhr(),
-          url1 = this.noCache(this.getUrl("qx/test/xmlhttp/sample.txt") + "?1"),
-          url2 = this.noCache(this.getUrl("qx/test/xmlhttp/sample.txt") + "?2"),
-          count = 0;
-
-      req.addListener("success", function() {
-        count++;
-
-        if (count == 2) {
-          this.resume();
-        } else {
-          req.setUrl(url2);
-          req.send();
-        }
-      }, this);
-
-      req.setUrl(url1);
-      req.send();
-
-      this.wait();
+    "test: set method property on construct": function() {
+      var req = new qx.io.request.Xhr("url", "POST");
+      this.assertEquals("POST", req.getMethod());
     },
-
-    // "test: fetch resources simultaneously": function() {
-    //   this.require(["php"]);
-    //
-    //   var count = 1,
-    //       upTo = 20,
-    //       startedAt = new Date(),
-    //       duration = 0;
-    //
-    //   for (var i=0; i<upTo; i++) {
-    //     var req = new qx.io.request.Xhr(),
-    //         url = this.noCache(this.getUrl("qx/test/xmlhttp/loading.php")) + "&duration=6";
-    //
-    //     req.addListener("success", function() {
-    //       this.resume(function() {
-    //         // In seconds
-    //         duration = (new Date() - startedAt) / 1000;
-    //         this.debug("Request #" + count + " completed (" +  duration + ")");
-    //         if (count == upTo) {
-    //           return;
-    //         }
-    //
-    //         ++count;
-    //         this.wait(6000 + 1000);
-    //       }, this);
-    //     }, this);
-    //
-    //     req.setUrl(url);
-    //     req.send();
-    //   }
-    //
-    //   // Provided two concurrent requests are made (each 6s), 20 requests
-    //   // (i.e. 10 packs of requests) should complete after 60s
-    //   this.wait(60000 + 1000);
-    // },
 
     //
     // Send (cont.)
@@ -253,9 +173,9 @@ qx.Class.define("qx.test.io.request.Xhr",
     // Header and Params (cont.)
     //
 
-    "test: set nocache request header": function() {
+    "test: set cache control header": function() {
       this.setUpFakeTransport();
-      this.req.setCache("force-validate");
+      this.req.setCache("no-cache");
       this.req.send();
 
       this.assertCalledWith(this.transport.setRequestHeader, "Cache-Control", "no-cache");
@@ -274,44 +194,6 @@ qx.Class.define("qx.test.io.request.Xhr",
       this.req.getResponseContentType();
 
       this.assertCalledWith(this.req.getResponseHeader, "Content-Type");
-    },
-
-    //
-    // Events (cont.)
-    //
-
-    "test: not fire success on erroneous status": function() {
-      this.setUpFakeTransport();
-      var req = this.req,
-          success = this.spy();
-
-      req.addListener("success", success);
-      this.respond(500);
-
-      this.assertNotCalled(success);
-    },
-
-    "test: fire remoteError": function() {
-      this.setUpFakeTransport();
-      var req = this.req,
-          remoteError = this.spy();
-
-      req.addListener("remoteError", remoteError);
-      this.respond(500);
-
-      this.assertCalledOnce(remoteError);
-    },
-
-
-    "test: fire fail on erroneous status": function() {
-      this.setUpFakeTransport();
-      var req = this.req,
-          fail = this.spy();
-
-      req.addListener("fail", fail);
-      this.respond(500);
-
-      this.assertCalledOnce(fail);
     },
 
     //
@@ -374,7 +256,7 @@ qx.Class.define("qx.test.io.request.Xhr",
       req.setMethod("GET");
 
       readyStates.push(req.getReadyState());
-      req.addListener("readystatechange", function() {
+      req.addListener("readyStateChange", function() {
         readyStates.push(req.getReadyState());
         statuses.push(req.getStatus());
       }, this);
@@ -384,7 +266,6 @@ qx.Class.define("qx.test.io.request.Xhr",
 
       this.assertArrayEquals([0, 1, 2, 3, 4], readyStates);
       this.assertArrayEquals([0, 0, 200, 200], statuses);
-      this.assertEquals("text/html", req.getAllResponseHeaders()["content-type"]);
       this.assertEquals("text/html", req.getResponseHeader("Content-Type"));
       this.assertEquals("OK", req.getStatusText());
       this.assertEquals("FOUND", req.getResponseText());
@@ -429,19 +310,19 @@ qx.Class.define("qx.test.io.request.Xhr",
     // Parsing
     //
 
-    "test: get parser": function() {
+    "test: getParser()": function() {
       var req = this.req;
       this.stub(req, "isDone").returns(true);
       this.stub(req, "getResponseContentType").returns("application/json");
       this.assertFunction(req._getParser());
     },
 
-    "test: get parser prematurely": function() {
+    "test: getParser() prematurely": function() {
       var req = this.req;
       req._getParser();
     },
 
-    "test: set parser function": function() {
+    "test: setParser() function": function() {
       var req = this.req,
           parser = function() {};
       req.setParser(parser);
@@ -449,7 +330,7 @@ qx.Class.define("qx.test.io.request.Xhr",
       this.assertEquals(parser, req._getParser());
     },
 
-    "test: set parser symbolically": function() {
+    "test: setParser() symbolically": function() {
       var req = this.req;
       req.setParser("json");
       this.assertFunction(req._getParser());

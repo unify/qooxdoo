@@ -58,13 +58,12 @@ qx.Mixin.define("qx.test.io.request.MRequest",
 
     "test: dispose transport on destruct": function() {
       this.setUpFakeTransport();
-      this.spy(this.transport, "dispose");
       this.req.dispose();
 
       this.assertCalled(this.transport.dispose);
     },
 
-    "test: get transport": function() {
+    "test: getTransport()": function() {
       this.setUpFakeTransport();
       this.assertEquals(this.transport, this.req.getTransport());
     },
@@ -73,7 +72,7 @@ qx.Mixin.define("qx.test.io.request.MRequest",
     // Send
     //
 
-    "test: send GET request": function() {
+    "test: send() GET": function() {
       this.setUpFakeTransport();
       this.req.send();
 
@@ -172,6 +171,17 @@ qx.Mixin.define("qx.test.io.request.MRequest",
     // Events
     //
 
+    "test: fire readyStateChange": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          readystatechange = this.spy();
+
+      req.addListener("readyStateChange", readystatechange);
+      this.respond();
+
+      this.assertCalledOnce(readystatechange);
+    },
+
     "test: fire success": function() {
       this.setUpFakeTransport();
       var req = this.req,
@@ -181,6 +191,17 @@ qx.Mixin.define("qx.test.io.request.MRequest",
       this.respond();
 
       this.assertCalledOnce(success);
+    },
+
+    "test: not fire success on erroneous status": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          success = this.spy();
+
+      req.addListener("success", success);
+      this.respond(500);
+
+      this.assertNotCalled(success);
     },
 
     "test: fire load": function() {
@@ -194,15 +215,15 @@ qx.Mixin.define("qx.test.io.request.MRequest",
       this.assertCalledOnce(load);
     },
 
-    "test: fire loadend": function() {
+    "test: fire loadEnd": function() {
       this.setUpFakeTransport();
       var req = this.req,
-          loadend = this.spy();
+          loadEnd = this.spy();
 
-      req.addListener("loadend", loadend);
+      req.addListener("loadEnd", loadEnd);
       this.respond();
 
-      this.assertCalledOnce(loadend);
+      this.assertCalledOnce(loadEnd);
     },
 
     "test: fire abort": function() {
@@ -243,6 +264,28 @@ qx.Mixin.define("qx.test.io.request.MRequest",
       this.assertCalledOnce(error);
     },
 
+    "test: fire statusError": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          statusError = this.spy();
+
+      req.addListener("statusError", statusError);
+      this.respond(500);
+
+      this.assertCalledOnce(statusError);
+    },
+
+    "test: fire fail on erroneous status": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          fail = this.spy();
+
+      req.addListener("fail", fail);
+      this.respond(500);
+
+      this.assertCalledOnce(fail);
+    },
+
     "test: fire fail on network error": function() {
       this.setUpFakeTransport();
       var req = this.req,
@@ -255,6 +298,115 @@ qx.Mixin.define("qx.test.io.request.MRequest",
       this.respondError();
 
       this.assertCalledOnce(fail);
+    },
+
+    "test: fire changePhase": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          that = this;
+
+      this.assertEventFired(req, "changePhase", function() {
+        that.respond();
+      }, function(evt) {
+        that.assertMatch(evt.getData(), "load|success");
+      });
+    },
+
+    //
+    // Phase
+    //
+
+    "test: phase is unsent": function() {
+      this.assertEquals("unsent", this.req.getPhase());
+    },
+
+    "test: phase was open before send": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          phases = [];
+
+      req.addListener("changePhase", function() {
+        phases.push(req.getPhase());
+      });
+
+      req.setUrl("/url");
+      req.send();
+
+      this.assertArrayEquals(["opened", "sent"], phases);
+    },
+
+    "test: phase is sent": function() {
+      this.setUpFakeTransport();
+      var req = this.req;
+
+      req.setUrl("/url");
+      req.send();
+
+      this.assertEquals("sent", req.getPhase());
+    },
+
+    "test: phase is loading": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport;
+
+      transport.readyState = 3;
+      transport.onreadystatechange();
+
+      this.assertEquals("loading", req.getPhase());
+    },
+
+    "test: phase is load intermediately": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport,
+          phases = [];
+
+      req.addListener("changePhase", function() {
+        phases.push(req.getPhase());
+      });
+
+      transport.readyState = 4;
+      transport.onreadystatechange();
+
+      // phases = ["load", "statusError"]
+      this.assertEquals("load", phases[0]);
+    },
+
+    "test: phase is success": function() {
+      this.setUpFakeTransport();
+      var req = this.req;
+
+      this.respond();
+      this.assertEquals("success", req.getPhase());
+    },
+
+    // Error handling
+
+    "test: phase is statusError": function() {
+      this.setUpFakeTransport();
+      var req = this.req;
+
+      this.respond(500);
+      this.assertEquals("statusError", req.getPhase());
+    },
+
+    "test: phase is abort": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport;
+
+      transport.onabort();
+      this.assertEquals("abort", req.getPhase());
+    },
+
+    "test: phase is timeout": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport;
+
+      transport.ontimeout();
+      this.assertEquals("timeout", req.getPhase());
     },
 
     getFakeReq: function() {

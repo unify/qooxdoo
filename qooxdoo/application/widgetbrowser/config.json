@@ -135,6 +135,12 @@
 
     "common" :
     {
+      "library" : 
+      [
+        {
+          "manifest"   : "${QOOXDOO_PATH}/component/library/formdemo/Manifest.json"
+        }
+      ],
       "environment" :
       {
         "qx.nativeScrollBars" : true

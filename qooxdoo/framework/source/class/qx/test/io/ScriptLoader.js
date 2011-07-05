@@ -171,12 +171,17 @@ qx.Class.define("qx.test.io.ScriptLoader",
 
     testTimeoutReached: function() {
       var loader = new qx.io.ScriptLoader(),
-          url = "http://fail.tld";
+          url = "http://fail.tld",
+          old = qx.io.ScriptLoader.TIMEOUT;
 
       // Actually, in browsers that support the "error" event, the
       // error is detected and handled (with status "fail") before
-      // the timeout is reached
-      loader.setTimeout(1);
+      // the timeout is reached.
+      //
+      // Work-around does not work for legacy IEs. Run test only in Opera.
+      this.require(["opera"]);
+
+      qx.io.ScriptLoader.TIMEOUT = 1;
       loader.load(url, function(status) {
         this.resume(function() {
           this.assertEquals("fail", status);
@@ -184,6 +189,8 @@ qx.Class.define("qx.test.io.ScriptLoader",
       }, this);
 
       this.wait();
+
+      qx.io.ScriptLoader.TIMEOUT = old;
     },
 
     hasNotOpera: function() {

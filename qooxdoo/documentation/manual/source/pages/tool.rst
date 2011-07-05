@@ -12,7 +12,7 @@ Generator Introduction
 
    tool/generator
    tool/generator_usage
-.. tool/generator_default_jobs
+   tool/generator_optimizations
 .. :download:`Generator Cheat Sheet (PDF) <pages/tool/generator_cheat_sheet_1.0.0-1.pdf>`
 
 Generator Configuration
@@ -34,15 +34,3 @@ Further Tools
 
    tool/source_code_validation
 
-Specific Topics
-===============
-
-.. _index#code_compilation:
-
-Code Compilation
-----------------
-
-.. toctree::
-   :maxdepth: 1
-
-   tool/astlets

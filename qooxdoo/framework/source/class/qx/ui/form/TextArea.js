@@ -139,7 +139,7 @@ qx.Class.define("qx.ui.form.TextArea",
       var contentElement = this.getContentElement();
       var scrollY = contentElement.getScrollY();
 
-      contentElement.scrollToY(scrollY + e.getWheelDelta() * this.getSingleStep());
+      contentElement.scrollToY(scrollY + e.getWheelDelta("y") * this.getSingleStep());
 
       var newScrollY = contentElement.getScrollY();
 
@@ -193,7 +193,7 @@ qx.Class.define("qx.ui.form.TextArea",
           this.addListenerOnce("appear", function() {
 
             // On init, the area has a scroll-bar – which is later hidden.
-            // Unfortunately, WebKit does not re-wrap text when the scroll-bar
+            // Unfortunately, WebKit does not rewrap text when the scroll-bar
             // disappears. Therefore, hide scroll-bar and force re-wrap in
             // WebKit. Otherwise, the height would be computed based on decreased
             // width due to the scroll-bar in content
@@ -238,6 +238,8 @@ qx.Class.define("qx.ui.form.TextArea",
         // for one line. Since this change appears instantly whereas the queue
         // is computed later, a flicker is visible.
         qx.ui.core.queue.Manager.flush();
+
+        this.__forceRewrap();
       }
     },
 
@@ -251,15 +253,6 @@ qx.Class.define("qx.ui.form.TextArea",
       var clone = this.__getAreaClone();
       var cloneDom = clone.getDomElement();
 
-      // Compute based on current value
-      var value = this.getValue();
-
-      // Force overflow "hidden", required in WebKit
-      cloneDom.style.overflow = "hidden";
-
-      clone.setValue(value);
-      clone.setWrap(this.getWrap(), true);
-
       if (cloneDom) {
 
         // Clone created but not yet in DOM. Try again.
@@ -268,6 +261,23 @@ qx.Class.define("qx.ui.form.TextArea",
           return this._getScrolledAreaHeight();
         }
 
+        // In WebKit, "wrap" must have been "soft" on DOM level before setting
+        // "off" can disable wrapping. To fix, make sure wrap is toggled.
+        // Otherwise, the height of an auto-size text area with wrapping
+        // disabled initially is incorrectly computed as if wrapping was enabled.
+        if (qx.core.Environment.get("engine.name") === "webkit") {
+          clone.setWrap(!this.getWrap(), true);
+        }
+
+        clone.setWrap(this.getWrap(), true);
+
+        // Reset overflow CSS property implicitly changed by setWrap
+        cloneDom.style.overflow = "hidden";
+
+        // Update value
+        clone.setValue(this.getValue());
+
+        // Recompute
         this.__scrollCloneToBottom(clone);
 
         if (qx.core.Environment.get("engine.name") == "mshtml") {
@@ -298,7 +308,7 @@ qx.Class.define("qx.ui.form.TextArea",
     /**
     * Creates and prepares the area clone.
     *
-    * @return {Element} DOM Element
+    * @return {Element} Element
     */
     __createAreaClone: function() {
       var orig,
@@ -328,7 +338,7 @@ qx.Class.define("qx.ui.form.TextArea",
         top: 0,
         left: -9999,
         height: 0,
-        overflow: "visible"
+        overflow: "hidden"
       }, true);
 
       // Fix attributes
@@ -355,7 +365,7 @@ qx.Class.define("qx.ui.form.TextArea",
     * @param clone {Element} The <code>TextArea</code> to scroll
     */
     __scrollCloneToBottom: function(clone) {
-      var clone = clone.getDomElement();
+      clone = clone.getDomElement();
       if (clone) {
         clone.scrollTop = 10000;
       }
@@ -429,6 +439,32 @@ qx.Class.define("qx.ui.form.TextArea",
       if (value === this.getMaxHeight()) {
         this.__autoSize();
       }
+    },
+
+    /**
+     * Force rewrapping of text.
+     *
+     * The distribution of characters depends on the space available.
+     * Unfortunately, browsers do not reliably (or not at all) rewrap text when
+     * the size of the text area changes.
+     *
+     * This method is called on change of the area's size.
+     */
+    __forceRewrap : function() {
+      var content = this.getContentElement();
+      var element = content.getDomElement();
+
+      // Temporarily increase width
+      var width = content.getStyle("width");
+      content.setStyle("width", parseInt(width, 10) + 1000 + "px", true);
+
+      // Force browser to render
+      if (element) {
+        qx.bom.element.Dimension.getWidth(element);
+      }
+
+      // Restore width
+      content.setStyle("width", width, true);
     },
 
     /**

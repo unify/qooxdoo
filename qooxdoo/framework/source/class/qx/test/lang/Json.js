@@ -56,15 +56,32 @@ qx.Class.define("qx.test.lang.Json",
 
     testReplacer : function()
     {
-      var json = [new Date(0), "foo"];
+      var obj = [new Date(0), "foo"];
 
       var self = this;
       var replacer = function(key, value) {
         return this[key] instanceof Date ? 'Date(' + this[key].getTime() + ')' : value;
       };
 
-      var text = this.JSON.stringify(json, replacer);
-      this.assertEquals('["Date(0)","foo"]', text);
+      var json = this.JSON.stringify(obj, replacer);
+      this.assertEquals('["Date(0)","foo"]', json);
+    },
+
+    // Uncovers browser bug found in Firefox >=3.5 && < 4, see
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=509184
+    testReplacerNestedObject : function()
+    {
+      var obj = {"prop": "value"};
+
+      var replacer = function(key, value) {
+        if (value == "value") {
+          return "replaced";
+        }
+        return value;
+      };
+
+      var json = this.JSON.stringify(obj, replacer);
+      this.assertMatch(json, /replaced/);
     },
 
 
@@ -200,17 +217,34 @@ qx.Class.define("qx.test.lang.Json",
     },
 
 
-    testParseNumber : function() {
+    testParseNumber : function()
+    {
       this.assertEquals(1234, this.JSON.parse("1234"));
       this.assertEquals(1234, this.JSON.parse(" 1234"));
     },
 
-    isIe8 : function() {
+    testParseRevive : function()
+    {
+      var json = '{"prop": "value"}';
+
+      var obj = this.JSON.parse(json, function(key, value) {
+        if (value == "value") {
+          return "revived";
+        }
+        return value;
+      });
+
+      this.assertEquals("revived", obj.prop);
+    },
+
+    isIe8 : function()
+    {
       return qx.core.Environment.get("engine.name") === "mshtml" &&
              qx.core.Environment.get("engine.version") == 8;
     },
 
-    isFirefox : function() {
+    isFirefox : function()
+    {
       return qx.core.Environment.get("engine.name") === "gecko";
     }
   }

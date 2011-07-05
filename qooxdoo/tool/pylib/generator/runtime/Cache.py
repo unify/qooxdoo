@@ -24,26 +24,31 @@ import os, sys, time, functools
 import cPickle as pickle
 from misc import filetool
 from misc.securehash import sha_construct
-from generator.action.ActionLib import ActionLib
+from generator.runtime.ShellCmd import ShellCmd
+from generator.runtime.Log import Log
 
 memcache  = {} # {key: {'content':content, 'time': (time.time()}}
-actionLib = None
 check_file     = u".cache_check_file"
-CACHE_REVISION = 27085  # Change this to the current qooxdoo svn revision when existing caches need clearing
+CACHE_REVISION = 27530 # Change this to the current qooxdoo svn revision when existing caches need clearing
 
 class Cache(object):
 
 
-    def __init__(self, path, context):
-        global actionLib
+    ##
+    # kwargs:
+    #  'console' : Log()
+    #  'cache/downloads' : path
+    #  'interruptRegistry' : generator.runtime.InterruptRegistry (mandatory)
+    #  'cache/invalidate-on-tool-change' : True|False
+    #
+    def __init__(self, path, **kwargs):
         self._cache_revision = CACHE_REVISION
         self._path           = path
-        self._context        = context
-        self._console        = self._context['console']
-        self._downloads      = self._context['jobconf'].get("cache/downloads")
+        self._context        = kwargs
+        self._console        = kwargs.get('console', Log())
+        self._downloads      = kwargs.get("cache/downloads", path+"/downloads")
         self._check_file     = os.path.join(self._path, check_file)
-        actionLib            = ActionLib(self._context['config'], self._console)
-        self._console.info("Initializing cache...")
+        self._console.debug("Initializing cache...")
         self._console.indent()
         self._check_path(self._path)
         self._locked_files   = set(())
@@ -62,7 +67,7 @@ class Cache(object):
     def _assureCacheIsValid(self, ):
         self._toolChainIsNewer = self._checkToolsNewer()
         if self._toolChainIsNewer:
-            if self._context['jobconf'].get("cache/invalidate-on-tool-change", False):
+            if self._context.get("cache/invalidate-on-tool-change", False):
                 self._console.info("Cleaning compile cache, as tool chain has changed")
                 self.cleanCompileCache()  # will also remove checkFile
             else:
@@ -136,9 +141,11 @@ class Cache(object):
 
     def cleanDownloadCache(self):
         if self._downloads:
-            actionLib.clean({"Deleting download cache" : [self._downloads]})
-        else:
-            self._console.warn("Cannot clean download cache - no path information!")
+            downdir = self._downloads
+            if os.path.splitdrive(downdir)[1] == os.sep:
+                raise RuntimeError, "I'm not going to delete '/' recursively!"
+            self._console.info("Deleting download cache")
+            ShellCmd().rm_rf(downdir)
 
 
     ##
@@ -236,10 +243,14 @@ class Cache(object):
         if dependsOn:
             dependsModTime = os.stat(dependsOn).st_mtime
 
+        if writeCond(cacheId):
+            print "\nReading %s ..." % (cacheId,),
         # Mem cache
         if cacheId in memcache:
             memitem = memcache[cacheId]
             if not dependsOn or dependsModTime < memitem['time']:
+                if writeCond(cacheId):
+                    print "from memcache"
                 return memitem['content'], memitem['time']
 
         # File cache
@@ -274,6 +285,9 @@ class Cache(object):
             if memory:
                 memcache[cacheId] = {'content':content, 'time': time.time()}
 
+            #print "read cacheId: %s" % cacheId
+            if writeCond(cacheId):
+                print "from disk"
             return content, cacheModTime
 
         except (IOError, EOFError, pickle.PickleError, pickle.UnpicklingError):
@@ -290,6 +304,8 @@ class Cache(object):
         filetool.directory(self._path)
         cacheFile = os.path.join(self._path, self.filename(cacheId))
 
+        if writeCond(cacheId):
+            print "\nWriting %s ..." % (cacheId,),
         if writeToFile:
             try:
                 if not cacheFile in self._locked_files:
@@ -305,12 +321,18 @@ class Cache(object):
                     filetool.unlock(cacheFile)
                     self._locked_files.remove(cacheFile)  # not atomic with the previous one!
 
+                #print "wrote cacheId: %s" % cacheId
+                if writeCond(cacheId):
+                    print "to disk"
+
             except (IOError, EOFError, pickle.PickleError, pickle.PicklingError), e:
                 e.args = ("Could not store cache to %s\n" % self._path + e.args[0], ) + e.args[1:]
                 raise e
 
         if memory:
             memcache[cacheId] = {'time': time.time(), 'content':content}
+            if writeCond(cacheId):
+                print "to memcache"
 
 
     def remove(self, cacheId, writeToFile=False):
@@ -321,6 +343,9 @@ class Cache(object):
         else:
             return None, None
 
+
+def writeCond(cacheId):
+    return False #cacheId.startswith("class-") and "Environment.js" in cacheId
 
 
 ##

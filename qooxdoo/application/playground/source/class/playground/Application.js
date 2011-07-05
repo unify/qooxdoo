@@ -93,6 +93,8 @@ qx.Class.define("playground.Application",
     /**
      * This method contains the initial application code and gets called
      * during startup of the application.
+     * 
+     * @lint ignoreUndefined(qxc)
      */
     main : function()
     {
@@ -163,7 +165,7 @@ qx.Class.define("playground.Application",
         this.__editor.unblock();
       }, this);
 
-      this.__log = new playground.view.Log();
+      this.__log = new qxc.ui.logpane.LogView();
 
       infosplit.add(this.__log, 1);
       this.__log.exclude();
@@ -414,7 +416,7 @@ qx.Class.define("playground.Application",
     __parseURLCode : function(state)
     {
       try {
-        var data = qx.util.Json.parse(state);
+        var data = qx.lang.Json.parse(state);
         return decodeURIComponent(data.code).replace(/%0D/g, "");
       } catch (e) {
         var error = this.tr("// Could not handle URL parameter! \n// %1", e);

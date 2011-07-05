@@ -14,67 +14,130 @@
 
    Authors:
      * Martin Wittemann (martinwittemann)
+     * Tristan Koch (tristankoch)
 
 ************************************************************************ */
 
 /**
- * This store is respoinsible for loading data using JSON-P
- * (http://ajaxian.com/archives/jsonp-json-with-padding).
- * All the callback handling is handled by the store itself. The only thing
- * which the store needs to know is the name of the parameter, with which he
- * could specify the name of the callback function.
+ *
+ * The JSONP data store is a specialization of {@link qx.data.store.Json}. It
+ * differs in the type of transport used ({@link qx.io.request.Jsonp}). In
+ * order to fullfill requirements of the JSONP service, the method
+ * {@link #setCallbackParam} can be used.
+ *
+ * Please note that the upgrade notices described in {@link qx.data.store.Json}
+ * also apply to this class.
+ *
  */
 qx.Class.define("qx.data.store.Jsonp",
 {
   extend : qx.data.store.Json,
 
   /**
-   * @param url {String?} URL of the web service.
+   * @param url {String?} URL of the JSONP service.
    * @param delegate {Object?null} The delegate containing one of the methods
    *   specified in {@link qx.data.store.IStoreDelegate}.
-   * @param callbackParam {String} The name of the callback param for JSON-P.
-   *   This is *not* the name of a static function. It is the name of the URL
-   *   parameter where the server expects the name of the statif cuntion used
-   *   in JSON-P. Its something given by the service you use. In this examle:
-   *   <code>http://twitter.com/statuses/friends_timeline.json?callback=methodName</code>
-   *   the parameter should be <code>callback</code>.
+   * @param callbackParam {String?} The name of the callback param. See
+   *   {@link qx.bom.request.Jsonp#setCallbackParam} for more details.
    */
   construct : function(url, delegate, callbackParam) {
     if (callbackParam != undefined) {
       this.setCallbackParam(callbackParam);
     }
+
     this.base(arguments, url, delegate);
   },
 
 
   properties : {
     /**
-     * The name of the callback parameter of the service.
+     * The name of the callback parameter of the service. See
+     * {@link qx.bom.request.Jsonp#setCallbackParam} for more details.
      */
     callbackParam : {
       check : "String",
-      nullable : false
+      init : "callback",
+      nullable : true
+    },
+
+
+    /**
+    * The name of the callback function. See
+    * {@link qx.bom.request.Jsonp#setCallbackName} for more details.
+    *
+    * Note: Ignored when legacy transport is used.
+    */
+    callbackName : {
+      check : "String",
+      nullable : true
     }
   },
 
 
   members :
   {
-    __loader : null,
-
 
     // overridden
     _createRequest: function(url) {
-      // if there is an old loader, dispose it
-      if (this.__loader) {
-        this.__loader.dispose();
+      if (this.isDeprecatedTransport()) {
+        this._warnDeprecated();
+        return this.__createRequestLoader(url);
       }
-      this.__loader = new qx.io.ScriptLoader();
+
+      // dispose old request
+      if (this._getRequest()) {
+        this._getRequest().dispose();
+      }
+
+      var req = new qx.io.request.Jsonp();
+      this._setRequest(req);
+
+      // default when null
+      req.setCallbackParam(this.getCallbackParam());
+      req.setCallbackName(this.getCallbackName());
+
+      // send
+      req.setUrl(url);
+
+      // register the internal event before the user has the change to
+      // register its own event in the delegate
+      req.addListener("success", this._onSuccess, this);
 
       // check for the request configuration hook
       var del = this._delegate;
       if (del && qx.lang.Type.isFunction(del.configureRequest)) {
-        this._delegate.configureRequest(this.__loader);
+        this._delegate.configureRequest(req);
+      }
+
+      // map request phase to it’s own phase
+      req.addListener("changePhase", this._onChangePhase, this);
+
+      // add failed, aborted and timeout listeners
+      req.addListener("fail", this._onFail, this);
+
+      req.send();
+    },
+
+    /**
+     * Creates and configures an instance of {@link qx.io.ScriptLoader}.
+     *
+     * @param url {String} The url for the request.
+     *
+     * @deprecated since 1.5
+     */
+    __createRequestLoader: function(url) {
+      // if there is an old loader, dispose it
+      if (this._getRequest()) {
+        this._getRequest().dispose();
+      }
+
+      var req = new qx.io.ScriptLoader();
+      this._setRequest(req);
+
+      // check for the request configuration hook
+      var del = this._delegate;
+      if (del && qx.lang.Type.isFunction(del.configureRequest)) {
+        this._delegate.configureRequest(req);
       }
 
       var prefix = url.indexOf("?") == -1 ? "?" : "&";
@@ -83,7 +146,7 @@ qx.Class.define("qx.data.store.Jsonp",
 
       qx.data.store.Jsonp[id] = this;
       url += 'qx.data.store.Jsonp[' + id + '].callback';
-      this.__loader.load(url, function(status) {
+      req.load(url, function(status) {
         delete this[id];
         if (status === "fail") {
           this.fireDataEvent("error");
@@ -97,22 +160,27 @@ qx.Class.define("qx.data.store.Jsonp",
      *
      * @param data {Object} The returned JSON data.
      * @internal
+     *
+     * @deprecated since 1.5
+     *
      */
     callback : function(data) {
       // check for disposed callback calls
       if (this.isDisposed()) {
         return;
       }
-      this.__loaded(data);
+      this.__loadedLoader(data);
     },
 
 
     /**
-     * Handles the completion of the request and the building of the model.
+     * Handles the completion of the legacy request and the building of the model.
      *
      * @param data {Object} The JSON data from the request.
+     *
+     * @deprecated since 1.5
      */
-    __loaded: function(data) {
+    __loadedLoader: function(data) {
       if (data == undefined) {
         this.setState("failed");
         this.fireEvent("error");
@@ -132,22 +200,17 @@ qx.Class.define("qx.data.store.Jsonp",
 
       // fire complete event
       this.fireDataEvent("loaded", this.getModel());
+    },
+
+
+    /**
+     * Warn about deprecated usage.
+     *
+     * @deprecated since 1.5
+     */
+    _warnDeprecated: function() {
+      qx.log.Logger.warn("Using qx.io.ScriptLoader in qx.data.store.Jsonp " +
+        "is deprecated. Please consult the API documentation.");
     }
-  },
-
-
-
-  /*
-  *****************************************************************************
-     DESTRUCTOR
-  *****************************************************************************
-  */
-
-  destruct : function()
-  {
-    if (this.__loader) {
-      this.__loader.dispose();
-    }
-    this.__loader = null;
   }
 });

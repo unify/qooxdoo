@@ -221,6 +221,62 @@ qx.Class.define("qx.ui.tabview.TabView",
     },
 
     /**
+     * Adds a page to the tabview including its needed button
+     * (contained in the page).
+     *
+     * @param page {qx.ui.tabview.Page} The page which should be added.
+     * @param index {Integer?null} Optional position where to add the page.
+     */
+    addAt : function(page, index)
+    {
+      if (qx.core.Environment.get("qx.debug"))
+      {
+        if (!(page instanceof qx.ui.tabview.Page)) {
+          throw new Error("Incompatible child for TabView: " + page);
+        }
+      }
+      var children = this.getChildren();
+      if(!(index == null) && index > children.length) {
+        throw new Error("Index should be less than : " + children.length);
+      }
+      
+      if(index == null) {
+        index = children.length;
+      }
+
+      var button = page.getButton();
+      var bar = this.getChildControl("bar");
+      var pane = this.getChildControl("pane");
+
+      // Exclude page
+      page.exclude();
+
+      // Add button and page
+      bar.addAt(button, index);
+      pane.addAt(page, index);
+
+      // Register button
+      this.__radioGroup.add(button);
+
+      // Add state to page
+      page.addState(this.__barPositionToState[this.getBarPosition()]);
+
+      // Update states
+      children = this.getChildren();
+      if(index == children.length-1) {
+        page.addState("lastTab");
+      }
+      
+      if (children[0] == page) {
+        page.addState("firstTab");
+      } else {
+        children[children.length-2].removeState("lastTab");
+      }
+
+      page.addListener("close", this._onPageClose, this);
+    },
+
+    /**
      * Removes a page (and its corresponding button) from the TabView.
      *
      * @param page {qx.ui.tabview.Page} The page to be removed.
