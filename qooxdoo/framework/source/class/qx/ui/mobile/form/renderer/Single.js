@@ -22,12 +22,12 @@
  *
  * Single is a class used to render forms into a mobile page.
  * It presents a label above each form element
- * 
+ *
  *
  */
 qx.Class.define("qx.ui.mobile.form.renderer.Single",
 {
-  
+
   extend : qx.ui.mobile.form.renderer.AbstractRenderer,
 
   /*
@@ -41,17 +41,17 @@ qx.Class.define("qx.ui.mobile.form.renderer.Single",
     this.base(arguments,form);
     this.__errorMessageContainers = [];
   },
-  
+
   members :
   {
-  
+
     /**
      * A collection of error containers used to keep the error messages
      * resulted after  form validation.
      * Also useful to clear them when the validation passes.
      */
     __errorMessageContainers : null,
-    
+
     // override
     _getTagName : function()
     {
@@ -69,7 +69,7 @@ qx.Class.define("qx.ui.mobile.form.renderer.Single",
         var row = new qx.ui.mobile.form.Row();
         if(names[i] != null) {
           var label = new qx.ui.mobile.basic.Label(names[i]);
-          label._setStyle('marginBottom', '5px');
+          label._setStyle('marginBottom', '7px');
           row.add(label);
         }
         row.add(items[i]);
@@ -89,14 +89,14 @@ qx.Class.define("qx.ui.mobile.form.renderer.Single",
       row.add(new qx.ui.mobile.basic.Label(title));
       this._add(row);
     },
-    
+
     // override
     addButton : function(button) {
         var row = new qx.ui.mobile.form.Row(new qx.ui.mobile.layout.HBox());
         row.add(button, {flex:1});
         this._add(row);
     },
-    
+
     // override
     showErrorForItem : function(item) {
       var errorNode = qx.bom.Element.create('div');
@@ -106,13 +106,13 @@ qx.Class.define("qx.ui.mobile.form.renderer.Single",
       qx.bom.Element.focus(item.getContainerElement());
       this.__errorMessageContainers.push(errorNode);
     },
-    
+
     // override
     resetForm : function() {
       for(var i=0; i<this.__errorMessageContainers.length; i++) {
         qx.dom.Element.remove(this.__errorMessageContainers[i]);
       }
-      
+
     }
   }
 });

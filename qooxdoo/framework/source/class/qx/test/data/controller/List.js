@@ -39,7 +39,7 @@ qx.Class.define("qx.test.data.controller.List",
     {
       // prevent the icon laod error with this stub
       this.stub(qx.io.ImageLoader, "load")
-      
+
       this.__list = new qx.ui.form.List();
     },
 
@@ -69,6 +69,22 @@ qx.Class.define("qx.test.data.controller.List",
 
       // create the controller
       this.__controller = new qx.data.controller.List(this.__model, this.__list);
+    },
+
+
+    testNumberModel : function() {
+      var selectBox = new qx.ui.form.SelectBox();
+
+      var model = qx.data.marshal.Json.createModel([1, 0]);
+      var controller = new qx.data.controller.List(model, selectBox);
+
+      controller.getSelection().push(0);
+      this.assertEquals(1, controller.getSelection().length);
+      this.assertEquals(0, controller.getSelection().getItem(0));
+
+      selectBox.destroy();
+      model.dispose();
+      controller.dispose();
     },
 
 
@@ -596,7 +612,7 @@ qx.Class.define("qx.test.data.controller.List",
 
       // check for the Selection
       this.assertEquals("10", box.getSelection()[0].getLabel(), "Wrong selection");
-      
+
       box.dispose();
     },
 
@@ -1124,8 +1140,6 @@ qx.Class.define("qx.test.data.controller.List",
         // check that it has not been scrolled
         this.assertEquals(40, this.__list.getScrollY());
       }
-      
-      this.getRoot().destroy();
     },
 
 
@@ -1227,7 +1241,7 @@ qx.Class.define("qx.test.data.controller.List",
       ctrl.bind("selection[0].Kid.Name", label, "value");
 
       ctrl.getSelection().push(parentA);
-      
+
       parentA.dispose();
       parentB.dispose();
       kid.dispose();
@@ -1310,7 +1324,7 @@ qx.Class.define("qx.test.data.controller.List",
       // select the second label
       list.addToSelection(list.getChildren()[1]);
       this.assertNull(label.getValue(), "Label has not been reseted.");
-      
+
       parentA.getKid().dispose();
       parentA.dispose();
       parentB.getKid().dispose();

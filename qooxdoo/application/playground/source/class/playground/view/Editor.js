@@ -100,8 +100,8 @@ qx.Class.define("playground.view.Editor",
       var highlightDisabled = false;
       var badIE = qx.core.Environment.get("engine.name") == "mshtml";
       if (badIE) {
-        badIE = parseFloat(qx.core.Environment.get("browser.version")) < 8 ||
-          qx.core.Environment.get("browser.documentmode") < 8;
+        badIE = parseFloat(qx.core.Environment.get("browser.version")) <= 8 ||
+          qx.core.Environment.get("browser.documentmode") <= 8;
       }
 
       // FF2 does not have that...
@@ -143,6 +143,14 @@ qx.Class.define("playground.view.Editor",
       // text on top of the gutter
       qx.event.Timer.once(function() {
         var container = this.__editor.getContentElement().getDomElement();
+
+        // HOTFIX for webkit to enable space entering
+        if (qx.core.Environment.get("engine.name") == "webkit") {
+          this.__editor.addListener("click", function(e) {
+            editor.textInput.blur();
+            editor.textInput.focus();
+          }, this);
+        }
 
         // create the editor
         var editor = this.__ace = ace.edit(container);
@@ -196,6 +204,11 @@ qx.Class.define("playground.view.Editor",
     setCode : function(code) {
       if (this.__ace) {
         this.__ace.getSession().setValue(code);
+
+        // move cursor to start to prevent scrolling to the bottom
+        this.__ace.renderer.scrollToX(0);
+        this.__ace.renderer.scrollToY(0);
+        this.__ace.selection.moveCursorFileStart();
       }
       this.__textarea.setValue(code);
     },

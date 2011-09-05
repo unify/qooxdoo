@@ -24,17 +24,25 @@
     "ROOT"         : "."
   },
 
+  "config-warnings" : 
+  {
+    "job-shadowing" : ["source", "build-resources", "common"]
+  },
+
   "jobs" :
   {
     "source" :
     {
-      "=run" : ["source-script-classic", "source-script-modern",  "source-script-simple"],
-      "let" : { "QXICONTHEME" : ["Oxygen", "Tango"] }
+      "=run" : ["source-script-classic", "source-script-modern",  "source-script-simple"]
     },
 
     "source-script-classic" :
     {
-      "let"     : { "QXTHEME" : "qx.theme.Classic"},
+      "let"     : 
+      { 
+        "QXTHEME" : "qx.theme.Classic",
+        "QXICONTHEME" : ["Oxygen"]
+      },
       "extend"  : ["source-script"],
       "compile-options" : {
         "paths" :
@@ -99,7 +107,11 @@
 
     "build-script-classic" :
     {
-      "let"     : { "QXTHEME" : "qx.theme.Classic" },
+      "let"     : 
+      { 
+        "QXTHEME" : "qx.theme.Classic",
+        "QXICONTHEME" : ["Oxygen"]
+      },
       "extend"  : ["build-script"],
       "compile-options" : {
         "paths" :

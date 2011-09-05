@@ -297,6 +297,15 @@ qx.Theme.define("qx.theme.modern.Appearance",
     ---------------------------------------------------------------------------
     */
 
+    "form-renderer-label" : {
+      include : "label",
+      style : function() {
+        return {
+          paddingTop: 4
+        };
+      }
+    },
+
     "checkbox":
     {
       alias : "atom",
@@ -900,7 +909,8 @@ qx.Theme.define("qx.theme.modern.Appearance",
             padding : useCSS ? [3, 0, 3, paddingLeft] : [2, 0, 2, paddingLeft],
             icon : icon,
             width: 15,
-            height: 14
+            height: 14,
+            margin: 0
           };
         }
         else
@@ -3103,7 +3113,19 @@ qx.Theme.define("qx.theme.modern.Appearance",
       alias : "virtual-list"
     },
 
-    "virtual-tree" : "list",
+    "virtual-tree" :
+    {
+      include : "tree",
+      alias : "tree",
+
+      style : function(states)
+      {
+        return {
+          itemHeight : 26
+        };
+      }
+    },
+
     "virtual-tree-folder" : "tree-folder",
     "virtual-tree-file" : "tree-file",
 
@@ -3180,7 +3202,9 @@ qx.Theme.define("qx.theme.modern.Appearance",
         return {
           decorator: "progressbar",
           padding: [1],
-          backgroundColor: "progressbar-background"
+          backgroundColor: "progressbar-background",
+          width : 200,
+          height: 20
         }
       }
     },

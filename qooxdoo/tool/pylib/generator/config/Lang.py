@@ -35,6 +35,7 @@ class Key(object):
     LIBRARY_KEY  = "library"
     INCLUDE_KEY  = "include"
     JOBS_KEY     = "jobs"
+    CONFIG_WARNINGS = "config-warnings"
     RESOLVED_KEY = "__resolved__"
     OVERRIDE_KEY = "__override__"
     META_KEYS    = [ RESOLVED_KEY, OVERRIDE_KEY ]
@@ -47,8 +48,10 @@ class Key(object):
                 "name"      : types.StringTypes,
                 "export"    : types.ListType,
                 "default-job" : types.StringTypes,
+                CONFIG_WARNINGS : types.DictType,
                 }
     JOB_LEVEL_KEYS = {
+                "add-css"       : types.ListType,
                 "add-script"    : types.ListType,
                 "api"           : types.DictType,
                 "asset-let"     : types.DictType,
@@ -58,7 +61,7 @@ class Key(object):
                 "combine-images": types.DictType,
                 "compile"       : types.DictType,
                 "compile-options"  : types.DictType,
-                "config-warnings"  : types.DictType,
+                CONFIG_WARNINGS : types.DictType,
                 "copy-files"    : types.DictType,
                 "copy-resources"   : types.DictType,
                 "dependencies"  : types.DictType,

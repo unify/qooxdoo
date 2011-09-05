@@ -87,6 +87,18 @@ qx.Class.define("qx.test.data.controller.Tree",
           init: "green",
           nullable: true
         }
+      },
+      
+      destruct : function()
+      {
+        if (this.getChildren()) {
+          this.getChildren().setAutoDisposeItems(true);
+          this.getChildren().dispose();
+        }
+        if (this.getAltChildren()) {
+          this.getAltChildren().setAutoDisposeItems(true);
+          this.getAltChildren().dispose();
+        }
       }
     });
   },
@@ -107,7 +119,7 @@ qx.Class.define("qx.test.data.controller.Tree",
     {
       // prevent the icon laod error with this stub
       this.stub(qx.io.ImageLoader, "load")
-      
+
       this.__tree = new qx.ui.tree.Tree();
 
       // create a model
@@ -154,10 +166,10 @@ qx.Class.define("qx.test.data.controller.Tree",
 
     tearDown : function()
     {
-      this.__controller = null;
-      this.__model = null;
+      this.__controller.dispose();
+      this.__model.dispose();
       this.__tree.dispose();
-      
+
       // clear the stub
       this.getSandbox().restore();
     },
@@ -402,6 +414,7 @@ qx.Class.define("qx.test.data.controller.Tree",
 
       // check if the old tree is empty
       this.assertNull(this.__tree.getRoot(), "Former tree is not empty.");
+      tree.dispose();
     },
 
 
@@ -423,6 +436,9 @@ qx.Class.define("qx.test.data.controller.Tree",
       // check the folders
       this.assertEquals("A", this.__tree.getRoot().getChildren()[0].getLabel(), "First node has a wrong name");
       this.assertEquals("B", this.__tree.getRoot().getChildren()[1].getLabel(), "Second node has a wrong name");
+      
+      this.__controller.setModel(null);
+      model.dispose();
     },
 
 
@@ -503,7 +519,9 @@ qx.Class.define("qx.test.data.controller.Tree",
       // add c to the selection
       this.__controller.getSelection().push(this.__c);
       // remove the c node
-      this.__model.getChildren().splice(2, 1);
+      var temp = this.__model.getChildren().splice(2, 1);
+      temp.setAutoDisposeItems(true);
+      temp.dispose();
       // check if the selection is empty
       this.assertEquals(0, this.__controller.getSelection().length, "Remove from selection does not work!");
 
@@ -511,7 +529,8 @@ qx.Class.define("qx.test.data.controller.Tree",
       this.__controller.getSelection().push(this.__b);
 
       // remove the first element of the controller 'this.__a'
-      this.__model.getChildren().shift();
+      temp = this.__model.getChildren().shift();
+      temp.dispose();
 
       // check if the selected item in the list is "b"
       this.assertTrue(this.__controller.getSelection().contains(this.__b), "Selection array wrong!");
@@ -537,6 +556,7 @@ qx.Class.define("qx.test.data.controller.Tree",
       };
 
       // create the controller
+      this.__controller.dispose();
       this.__controller = new qx.data.controller.Tree(this.__model, this.__tree, "children", "name");
       this.__controller.setLabelOptions(options);
 
@@ -560,6 +580,8 @@ qx.Class.define("qx.test.data.controller.Tree",
       };
 
       // create the controller
+      this.__controller.dispose();
+
       this.__controller = new qx.data.controller.Tree(this.__model, this.__tree, "children", "name");
       this.__controller.setIconPath("icon");
       this.__controller.setIconOptions(options);
@@ -607,6 +629,7 @@ qx.Class.define("qx.test.data.controller.Tree",
 
 
     testSetLateModel: function() {
+      this.__controller.dispose();
       // create the controller
       this.__controller = new qx.data.controller.Tree(null, this.__tree, "children", "name");
 
@@ -621,6 +644,7 @@ qx.Class.define("qx.test.data.controller.Tree",
 
 
     testSetLateTarget: function() {
+      this.__controller.dispose();
       // create the controller
       this.__controller = new qx.data.controller.Tree(this.__model, null, "children", "name");
 
@@ -635,6 +659,7 @@ qx.Class.define("qx.test.data.controller.Tree",
 
 
     testSetLateTargetAndModel: function() {
+      this.__controller.dispose();
       this.__controller = new qx.data.controller.Tree(null, null, "children", "name");
 
       this.__controller.setTarget(this.__tree);
@@ -647,6 +672,7 @@ qx.Class.define("qx.test.data.controller.Tree",
       this.assertEquals("c", this.__tree.getRoot().getChildren()[2].getLabel(), "Third node has a wrong name");
 
       // redo the test and set the modeln and target in different order
+      this.__controller.dispose();
       this.__controller = new qx.data.controller.Tree(null, null, "children", "name");
 
       this.__controller.setModel(this.__model);
@@ -661,6 +687,8 @@ qx.Class.define("qx.test.data.controller.Tree",
 
 
     testSetLateChildPath: function() {
+      this.__controller.dispose();
+
       this.__controller = new qx.data.controller.Tree(this.__model, this.__tree, null, "name");
 
       this.__controller.setChildPath("children");
@@ -674,6 +702,8 @@ qx.Class.define("qx.test.data.controller.Tree",
 
 
     testSetLateLabelPath: function() {
+      this.__controller.dispose();
+
       this.__controller = new qx.data.controller.Tree(this.__model, this.__tree, "children");
 
       this.__controller.setLabelPath("name");
@@ -687,6 +717,8 @@ qx.Class.define("qx.test.data.controller.Tree",
 
 
     testSetLateAll: function() {
+      this.__controller.dispose();
+
       this.__controller = new qx.data.controller.Tree();
 
       // set the needed properties
@@ -717,13 +749,16 @@ qx.Class.define("qx.test.data.controller.Tree",
       this.assertTrue(this.__tree.getRoot().getChildren()[0].getUserData("a"), "Delegation not working.");
       this.assertTrue(this.__tree.getRoot().getChildren()[1].getUserData("a"), "Delegation not working.");
       this.assertTrue(this.__tree.getRoot().getChildren()[2].getUserData("a"), "Delegation not working.");
+      
+      this.__controller.setDelegate(null);
+      delegate.dispose();
     },
 
 
     testDelegateConfigureLate : function()
     {
       // clear up the setup
-      this.__controller.setModel(null);
+      this.__controller.dispose();
 
       var controller = new qx.data.controller.Tree(null, this.__tree, "children", "name");
 
@@ -741,6 +776,8 @@ qx.Class.define("qx.test.data.controller.Tree",
       this.assertTrue(this.__tree.getRoot().getChildren()[0].getUserData("a"), "Delegation not working.");
       this.assertTrue(this.__tree.getRoot().getChildren()[1].getUserData("a"), "Delegation not working.");
       this.assertTrue(this.__tree.getRoot().getChildren()[2].getUserData("a"), "Delegation not working.");
+      
+      controller.dispose();
     },
 
 
@@ -769,6 +806,8 @@ qx.Class.define("qx.test.data.controller.Tree",
 
 
     testDelegateCreateFirst: function () {
+      this.__controller.dispose();
+
       this.__controller = new qx.data.controller.Tree();
       var delegate = {
         createItem : function() {
@@ -857,6 +896,8 @@ qx.Class.define("qx.test.data.controller.Tree",
 
       this.__model.setColor("black");
       this.assertEquals("black", tree.getRoot().getTextColor(), "Root node has a wrong name");
+      
+      tree.dispose();
     },
 
 
@@ -906,12 +947,10 @@ qx.Class.define("qx.test.data.controller.Tree",
         }
       });
 
-      // slush the dispose queue
+      // flush the dispose queue
       qx.ui.core.queue.Dispose.flush();
       // add the new model
       this.__model.getChildren().push(a);
-
-      a.dispose();
     },
 
 
@@ -927,6 +966,8 @@ qx.Class.define("qx.test.data.controller.Tree",
       var a = new qx.test.TreeNode();
       a.setName("new");
       children.push(a);
+      
+      var oldChildren = this.__a.getChildren();
 
       // change the children array
       //        this.__model
@@ -935,6 +976,8 @@ qx.Class.define("qx.test.data.controller.Tree",
       //    |
       //   a
       this.__a.setChildren(children);
+      
+      oldChildren.dispose();
 
       // Test if the tree nodes exist
       this.assertNotUndefined(this.__tree.getRoot(), "Root node does not exist");
@@ -953,6 +996,11 @@ qx.Class.define("qx.test.data.controller.Tree",
       });
 
       // init (copy of setUp)
+      this.__tree.dispose();
+      this.__model.dispose();
+      this.__a.dispose();
+      this.__b.dispose();
+      this.__c.dispose();
       this.__tree = new qx.ui.tree.Tree();
 
       // create a model
@@ -992,6 +1040,7 @@ qx.Class.define("qx.test.data.controller.Tree",
       this.__model.getAltChildren().push(this.__c, this.__b, this.__a);
 
       // create the controller
+      this.__controller.dispose();
       this.__controller = new qx.data.controller.Tree(this.__model, this.__tree, "children", "name");
 
       // check the initial Labels
@@ -1022,12 +1071,40 @@ qx.Class.define("qx.test.data.controller.Tree",
         nodes[i].getChildren().removeAll(); // THIS THROWS AN EXCEPTION ON 2ND ELEMENT...
       }
 
-      tree.dispose();
       controller.dispose();
+      tree.dispose();
+
       for (var i = 0; i < nodes.length; ++i) {
         nodes[i].dispose();
       }
-    }
+    },
 
+
+    testBindItemDouble: function(){
+      var delegate = {
+        bindItem : function(controller, item, id) {
+          controller.bindProperty("color", "textColor", null, item, id);
+          controller.bindProperty("color", "textColor", null, item, id);
+        }
+      };
+      var self = this;
+      this.assertException(function() {
+        self.__controller.setDelegate(delegate);
+      }, Error, /textColor/.g);
+    },
+
+
+    testBindItemDoubleReverse: function(){
+      var delegate = {
+        bindItem : function(controller, item, id) {
+          controller.bindPropertyReverse("color", "textColor", null, item, id);
+          controller.bindPropertyReverse("color", "textColor", null, item, id);
+        }
+      };
+      var self = this;
+      this.assertException(function() {
+        self.__controller.setDelegate(delegate);
+      }, Error, /textColor/.g);
+    }
   }
 });

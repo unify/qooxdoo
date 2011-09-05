@@ -57,7 +57,7 @@ CMD_SYNC_OFFLINE = $(CMD_NICE) rsync --recursive --delete --inplace --links --sa
 RELEASE_BUILD = release/temp/build/qooxdoo-$(FRAMEWORK_VERSION)-build
 RELEASE_SDK = release/temp/sdk/qooxdoo-$(FRAMEWORK_VERSION)-sdk
 
-APPLICATIONS = feedreader portal mobileshowcase playground showcase widgetbrowser demobrowser
+APPLICATIONS = feedreader portal mobileshowcase playground showcase widgetbrowser demobrowser featureconfigeditor
 COMPONENTS = apiviewer testrunner inspector
 FRAMEWORK_TARGETS = api test qxoo-build qxoo-noopt
 
@@ -325,7 +325,14 @@ check-banner:
 	@echo "  * Checking kit is complete..."
 
 check-apps:
-	@for TARGET in $(APPLICATIONS); do F="application/$$TARGET/build/script/$$TARGET.js"; [ -s $$F ] || [ "$$TARGET" = "widgetbrowser" ] || ( echo "Missing $$F; run 'make publish-build' first!"; exit 1 ); done
+	@for TARGET in $(APPLICATIONS); do \
+    if [ "$$TARGET" = "featureconfigeditor" ] ; then \
+      F="application/$$TARGET/build/script/fce.js"; \
+    else \
+      F="application/$$TARGET/build/script/$$TARGET.js"; \
+    fi; \
+    [ -s $$F ] || [ "$$TARGET" = "widgetbrowser" ] || ( echo "Missing $$F; run 'make publish-build' first!"; exit 1 ); \
+  done
 
 check-components:
 	@for TARGET in $(COMPONENTS); do \

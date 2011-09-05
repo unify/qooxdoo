@@ -35,16 +35,6 @@ qx.Class.define("qx.test.io.rest.Resource",
     setUp: function() {
       this.setUpDoubleRequest();
       this.setUpResource();
-
-      // Need to set up double request explicitly
-      //
-      // Use setUpPersistent() if you want a persistent double
-      qx.io.request.Xhr.restore();
-    },
-
-    setUpPersistent: function() {
-      this.setUpDoubleRequest();
-      this.setUpResource();
     },
 
     setUpDoubleRequest: function() {
@@ -95,9 +85,6 @@ qx.Class.define("qx.test.io.rest.Resource",
       msg = "Invoke #1";
       res.index();
       res.configureRequest(callback);
-
-      // Setup new double and update request to assert identity of
-      req = this.setUpDoubleRequest();
 
       msg = "Invoke #2";
       res.index();
@@ -237,6 +224,23 @@ qx.Class.define("qx.test.io.rest.Resource",
       this.assertSend();
     },
 
+    "test: invoke action while other is in progress": function() {
+      var res = this.res,
+          req1, req2;
+
+      req1 = this.req;
+      res.index();
+
+      qx.io.request.Xhr.restore();
+      this.setUpDoubleRequest();
+
+      req2 = this.req;
+      res.current();
+
+      this.assertCalledOnce(req1.send);
+      this.assertCalledOnce(req2.send);
+    },
+
     "test: invoke action with positional params": function() {
       var res = this.res,
           req = this.req;
@@ -245,6 +249,16 @@ qx.Class.define("qx.test.io.rest.Resource",
       res.show({id: "1"});
 
       this.assertCalledWith(req.setUrl, "/photos/1");
+    },
+
+    "test: invoke action with positional params that evaluate to false": function() {
+      var res = this.res,
+          req = this.req;
+
+      res.map("show", "GET", "/photos/:id");
+      res.show({id: 0});
+
+      this.assertCalledWith(req.setUrl, "/photos/0");
     },
 
     "test: invoke action with non-string params": function() {
@@ -382,7 +396,6 @@ qx.Class.define("qx.test.io.rest.Resource",
       res.index();
       this.assertSend();
 
-      req = this.setUpDoubleRequest();
       res.refresh("index");
       this.assertSend();
     },
@@ -395,7 +408,6 @@ qx.Class.define("qx.test.io.rest.Resource",
       res.show({id: "1"});
       this.assertSend("GET", "/photos/1");
 
-      req = this.setUpDoubleRequest();
       res.refresh("show");
       this.assertSend("GET", "/photos/1");
     },
@@ -442,7 +454,6 @@ qx.Class.define("qx.test.io.rest.Resource",
       res.show({id: "1"});
       this.assertSend("GET", "/photos/1");
 
-      req = this.setUpDoubleRequest();
       res.poll("show");
       this.assertSend("GET", "/photos/1");
     },
@@ -557,8 +568,6 @@ qx.Class.define("qx.test.io.rest.Resource",
     },
 
     "test: long poll action": function() {
-      this.setUpPersistent();
-
       var res = this.res,
           req = this.req,
           responses = [];
@@ -579,18 +588,17 @@ qx.Class.define("qx.test.io.rest.Resource",
     },
 
     "test: throttle long poll": function() {
-      this.setUpPersistent();
-
       var res = this.res,
           req = this.req;
 
       this.stub(req, "dispose");
       this.spy(res, "refresh");
+      this.stub(qx.io.rest.Resource, "POLL_THROTTLE_COUNT", "3");
 
       res.longPoll("index");
 
       // A number of immediate responses, above count
-      for (var i=0; i < 31; i++) {
+      for (var i=0; i < 4; i++) {
         this.respond();
       }
 
@@ -604,8 +612,6 @@ qx.Class.define("qx.test.io.rest.Resource",
     },
 
     "test: not throttle long poll when not received within limit": function() {
-      this.setUpPersistent();
-
       var res = this.res,
           req = this.req,
           sandbox = this.getSandbox();
@@ -629,8 +635,6 @@ qx.Class.define("qx.test.io.rest.Resource",
     },
 
     "test: not throttle long poll when not received subsequently": function() {
-      this.setUpPersistent();
-
       var res = this.res,
           req = this.req,
           sandbox = this.getSandbox();
@@ -659,8 +663,6 @@ qx.Class.define("qx.test.io.rest.Resource",
     },
 
     "test: end long poll action": function() {
-      this.setUpPersistent();
-
       var res = this.res,
           req = this.req,
           handlerId,
@@ -742,6 +744,49 @@ qx.Class.define("qx.test.io.rest.Resource",
       });
     },
 
+    //
+    // Dispose
+    //
+
+    "test: dispose requests": function() {
+      var res = this.res,
+          req1, req2;
+
+      req1 = this.req;
+      res.index();
+
+      qx.io.request.Xhr.restore();
+      this.setUpDoubleRequest();
+
+      req2 = this.req;
+      res.current();
+
+      this.spy(req1, "dispose");
+      this.spy(req2, "dispose");
+
+      res.dispose();
+
+      this.assertCalled(req1.dispose);
+      this.assertCalled(req2.dispose);
+
+      req1.dispose.restore();
+      req2.dispose.restore();
+    },
+
+    "test: dispose request on loadEnd": function() {
+      var res = this.res,
+          req = this.req;
+
+      this.spy(req, "dispose");
+
+      res.index();
+      this.respond();
+
+      this.assertCalledOnce(req.dispose);
+
+      req.dispose.restore();
+    },
+
     assertSend: function(method, url) {
       var req = this.req;
 
@@ -764,6 +809,7 @@ qx.Class.define("qx.test.io.rest.Resource",
       req.getPhase.returns("success");
       req.getResponse.returns(response);
       req.fireEvent("success");
+      req.fireEvent("loadEnd");
     },
 
     // Fake erroneous response

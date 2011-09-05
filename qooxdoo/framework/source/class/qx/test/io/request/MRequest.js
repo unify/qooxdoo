@@ -396,8 +396,98 @@ qx.Mixin.define("qx.test.io.request.MRequest",
       var req = this.req,
           transport = this.transport;
 
+      req.abort();
       transport.onabort();
+
+      // Transport switches to readyState DONE on abort
+      transport.readyState = 4;
+      transport.onreadystatechange();
+
       this.assertEquals("abort", req.getPhase());
+    },
+
+    "test: phase is abort when from cache": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport;
+
+      req.abort();
+      transport.onabort();
+
+      // Synchronously served from cached
+      transport.status = 304;
+
+      // Transport switches to readyState DONE on abort
+      transport.readyState = 4;
+      transport.onreadystatechange();
+
+      this.assertEquals("abort", req.getPhase());
+    },
+
+    "test: phase is abort on readyState DONE when aborted before": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport;
+
+      req.addListener("readyStateChange", function() {
+        if (req.getReadyState() == 4) {
+          this.assertEquals("abort", req.getPhase());
+        }
+      }, this);
+
+      req.send();
+      req.abort();
+
+      // Transport switches to readyState DONE on abort
+      transport.readyState = 4;
+      transport.onreadystatechange();
+
+      transport.onabort();
+    },
+
+    "test: phase is abort on readyState DONE when aborting loading": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport;
+
+      req.addListener("readyStateChange", function() {
+        if (req.getReadyState() == 4) {
+          this.assertEquals("abort", req.getPhase());
+        }
+      }, this);
+
+      req.send();
+
+      // Loading
+      transport.readyState = 3;
+      transport.onreadystatechange();
+
+      // Abort loading
+      req.abort();
+
+      // Transport switches to readyState DONE on abort
+      transport.readyState = 4;
+      transport.onreadystatechange();
+      transport.onabort();
+    },
+
+    "test: phase is abort on loadEnd when aborted before": function() {
+      this.setUpFakeTransport();
+      var req = this.req,
+          transport = this.transport;
+
+      req.addListener("loadEnd", function() {
+        this.assertEquals("abort", req.getPhase());
+      }, this);
+
+      req.send();
+      req.abort();
+
+      // Transport fires "onloadend" on abort
+      transport.readyState = 4;
+      transport.onloadend();
+
+      transport.onabort();
     },
 
     "test: phase is timeout": function() {

@@ -934,6 +934,11 @@ qx.Class.define("testrunner.view.widget.Widget", {
           if (old === "loading") {
             this.__setSelectionFromCookie();
           }
+          // no selection from cookie, select root node
+          if (this.getSelectedTests().length === 0) {
+            this.__testTree.getSelection().push(this.getTestModel());
+          }
+          
           if ( (this.getReloadAfterEachPackage() && this.__lastAutoRunItemName)
               || (this.getAutoReload() && this.__autoReloadActive == true) ) {
             this.fireEvent("runTests");
@@ -1098,6 +1103,7 @@ qx.Class.define("testrunner.view.widget.Widget", {
      */
     __reloadAut : function()
     {
+      this.__stack.setSelection([this.__loadingContainer]);
       this.getSelectedTests().removeAll();
       var src = this.__autUriField.getValue();
       this.resetAutUri();

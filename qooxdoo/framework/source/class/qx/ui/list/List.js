@@ -444,7 +444,12 @@ qx.Class.define("qx.ui.list.List",
      * @return {Number} The row or <code>-1</code>
      *  if the index is not a model index.
      */
-    _reverseLookup : function(index) {
+    _reverseLookup : function(index)
+    {
+      if (index < 0) {
+        return -1;
+      }
+
       return this.__lookupTable.indexOf(index);
     },
 
@@ -463,14 +468,14 @@ qx.Class.define("qx.ui.list.List",
 
     /**
      * Returns the selectable model items.
-     * 
+     *
      * @return {qx.data.Array} The selectable items.
      */
     _getSelectables : function() {
       return this.getModel();
     },
-    
-    
+
+
     /*
     ---------------------------------------------------------------------------
       APPLY ROUTINES

@@ -75,7 +75,7 @@ qx.Class.define("qx.data.marshal.Json",
      * classes under the namespace <code>qx.data.model</code>.
      *
      * @param data {Object} The JavaScript object from which the hash is
-     *   requeired.
+     *   required.
      * @return {String} The hash representation of the given JavaScript object.
      */
     __jsonToHash: function(data) {
@@ -106,6 +106,7 @@ qx.Class.define("qx.data.marshal.Json",
       // break on all primitive json types and qooxdoo objects
       if (
         !qx.lang.Type.isObject(data)
+        || !!data.$$isString // check for localized strings
         || data instanceof qx.core.Object
       ) {
         // check for arrays
@@ -149,7 +150,7 @@ qx.Class.define("qx.data.marshal.Json",
         key = key.replace(/-/g, "");
         // check for valid JavaScript identifier (leading numbers are ok)
         if (qx.core.Environment.get("qx.debug")) {
-          this.assertTrue((/^[0-9A-Za-z_]*$/).test(key),
+          this.assertTrue((/^[$0-9A-Za-z_]*$/).test(key),
           "The key '" + key + "' is not a valid JavaScript identifier.")
         }
 
@@ -277,6 +278,7 @@ qx.Class.define("qx.data.marshal.Json",
 
       if (
         (!isObject && !isArray)
+        || !!data.$$isString // check for localized strings
         || data instanceof qx.core.Object
       ) {
         return data;

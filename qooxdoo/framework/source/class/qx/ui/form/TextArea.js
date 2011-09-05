@@ -191,24 +191,7 @@ qx.Class.define("qx.ui.form.TextArea",
         // On init, the clone is not yet present. Try again on appear.
         } else {
           this.addListenerOnce("appear", function() {
-
-            // On init, the area has a scroll-bar – which is later hidden.
-            // Unfortunately, WebKit does not rewrap text when the scroll-bar
-            // disappears. Therefore, hide scroll-bar and force re-wrap in
-            // WebKit. Otherwise, the height would be computed based on decreased
-            // width due to the scroll-bar in content
-            if (qx.core.Environment.get("engine.name") == "webkit") {
-              var area = this.getContentElement();
-              var value = this.getValue();
-
-              area.setStyle("overflowY", "hidden", true);
-
-              this.setValue("");
-              this.setValue(value);
-            }
-
             this.__autoSize();
-
           }, this);
         }
       }
@@ -271,8 +254,16 @@ qx.Class.define("qx.ui.form.TextArea",
 
         clone.setWrap(this.getWrap(), true);
 
-        // Reset overflow CSS property implicitly changed by setWrap
-        cloneDom.style.overflow = "hidden";
+        // Webkit needs overflow "hidden" in order to correctly compute height
+        if (qx.core.Environment.get("engine.name") == "webkit") {
+          cloneDom.style.overflow = "hidden";
+        }
+
+        // IE >= 8 needs overflow "visible" in order to correctly compute height
+        if (qx.core.Environment.get("engine.name") == "mshtml" &&
+          qx.core.Environment.get("browser.documentmode") >= 8) {
+          cloneDom.style.overflow = "visible";
+        }
 
         // Update value
         clone.setValue(this.getValue());

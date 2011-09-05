@@ -346,6 +346,14 @@ qx.Theme.define("qx.theme.classic.Appearance",
       FORM FIELDS
     ---------------------------------------------------------------------------
     */
+    "form-renderer-label" : {
+      include : "label",
+      style : function() {
+        return {
+          paddingTop: 4
+        };
+      }
+    },
 
     "textfield" :
     {
@@ -735,7 +743,7 @@ qx.Theme.define("qx.theme.classic.Appearance",
           var border = "inset-thin";
           var padding = [ 3, 2, 1, 4 ];
         }
-        else if (states.hovered)
+        else if (states.hovered && !states.disabled)
         {
           var border = "outset-thin";
           var padding = [ 2, 3 ];
@@ -2544,7 +2552,19 @@ qx.Theme.define("qx.theme.classic.Appearance",
       alias : "virtual-list"
     },
 
-    "virtual-tree" : "list",
+    "virtual-tree" :
+    {
+      include : "tree",
+      alias : "tree",
+
+      style : function(states)
+      {
+        return {
+          itemHeight : 21
+        };
+      }
+    },
+
     "virtual-tree-folder" : "tree-folder",
     "virtual-tree-file" : "tree-file",
 
@@ -2609,7 +2629,9 @@ qx.Theme.define("qx.theme.classic.Appearance",
         return {
           decorator: "progressbar",
           padding: [1],
-          backgroundColor: "white"
+          backgroundColor: "white",
+          width : 200,
+          height : 20
         }
       }
     },

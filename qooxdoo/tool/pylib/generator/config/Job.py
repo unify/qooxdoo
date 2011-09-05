@@ -118,10 +118,12 @@ class Job(object):
 
     def checkSchema(self, checkTypes=False):
         jobconf = self.getData()
+        ignored_job_keys = self.get("config-warnings/job-unknown-keys", [])
         for key in jobconf.keys():
             # does key exist?
             if key not in Key.JOB_LEVEL_KEYS.keys() + Key.META_KEYS:
-                self.warnConfigError("! Unknown job config key \"%s\" - ignored." % key)
+                if key not in ignored_job_keys:
+                    self.warnConfigError("! Unknown job config key \"%s\" - ignored." % key)
             # does it have a correct value type?
             if checkTypes:
                 if key in Key.JOB_LEVEL_KEYS.keys() and not isinstance(jobconf[key], Key.JOB_LEVEL_KEYS[key]):
@@ -135,7 +137,8 @@ class Job(object):
         if self.hasFeature(Key.RESOLVED_KEY):
             return
 
-        self.includeGlobalLet() # make sure potential global let is included first
+        #self.includeGlobalLet() # make sure potential global let is included first
+        self.includeGlobalDefaults() # make sure potential global let is included first
 
         if self.hasFeature("extend"):
             # prepare a Let object for potential macro expansion
@@ -239,7 +242,8 @@ class Job(object):
 
 
     def resolveMacros(self):
-        self.includeGlobalLet() # make sure potential global let is included
+        #self.includeGlobalLet() # make sure potential global let is included
+        self.includeGlobalDefaults() # make sure potential global let is included
         if self.hasFeature(Key.LET_KEY):
             # exand macros in the let
             letMap = self.getFeature(Key.LET_KEY)
@@ -262,6 +266,14 @@ class Job(object):
             self._data = newdata
 
 
+    def includeGlobalDefaults(self):
+        global_defaults = {}
+        global_defaults[Key.LET_KEY] = self._config.get(Key.LET_KEY, {})
+        global_defaults[Key.CONFIG_WARNINGS] = self._config.get(Key.CONFIG_WARNINGS, {})
+        global_defaults = ExtMap(global_defaults) # using ExtMap to fake a Job
+        self.mergeJob(global_defaults)
+
+
     def includeGlobalLet(self, additionalLet=None):
         newlet = self.mapMerge(self.getFeature(Key.LET_KEY,{}),{}) # init with local let
         if additionalLet:
@@ -269,7 +281,6 @@ class Job(object):
         global_let = self._config.get(Key.LET_KEY,False)
         if global_let:
             newlet = self.mapMerge(global_let, newlet)
-
         if newlet:
             self.setFeature(Key.LET_KEY, newlet) # set cumulative let value
 
@@ -524,7 +535,13 @@ class Job(object):
 
             # add new key
             else:
-                target[key] = source[key]
+                if isinstance(source[key], types.ListType):
+                    s1 = source[key][:]
+                elif isinstance(source[key], types.DictType):
+                    s1 = source[key].copy()
+                else:
+                    s1 = source[key]
+                target[key] = s1
                 # carry over override protection:
                 # only add protection for new keys - don't add protection for keys that
                 # alreay exist in the target but are unprotected
@@ -548,7 +565,13 @@ class Job(object):
         t = []
         for e in source:
             if not e in target:
-                t.append(e)
+                if isinstance(e, types.ListType):
+                    e1 = e[:]
+                elif isinstance(e, types.DictType):
+                    e1 = e.copy()
+                else:
+                    e1 = e
+                t.append(e1) # make sure we have our own copy of container types
         return target + t
 
 

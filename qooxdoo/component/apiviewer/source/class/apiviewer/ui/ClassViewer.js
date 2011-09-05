@@ -492,7 +492,7 @@ qx.Class.define("apiviewer.ui.ClassViewer",
 
       for (var i=classHierarchy.length-1; i>=0; i--)
       {
-        if(apiviewer.dao.Class.isNativeObject(classHierarchy[i]) && classHierarchy[i].name==='Object') {
+        if(apiviewer.dao.Class.isNativeObject(classHierarchy[i]) && classHierarchy[i] === Object) {
           continue;
         }
         classHtml.add('<div>');
@@ -508,7 +508,10 @@ qx.Class.define("apiviewer.ui.ClassViewer",
           }
           else
           {
-            classHtml.add('<span style="white-space: nowrap;"><a href="'+apiviewer.ui.ClassViewer.MDC_LINKS[classHierarchy[i].name]+'" target="_blank" title="'+classHierarchy[i].name+'">'+classHierarchy[i].name+'</a></span>');
+            // it is safe to get the name of the type of the object as below, because only standard native objects are used here.
+            // the method below returns Object for user defined objects
+            var name = Object.prototype.toString.call(new classHierarchy[i]).match(/^\[object (.*)\]$/)[1];
+            classHtml.add('<span style="white-space: nowrap;"><a href="'+apiviewer.ui.ClassViewer.MDC_LINKS[name]+'" target="_blank" title="'+name+'">'+name+'</a></span>');
           }
         } else {
           classHtml.add(classHierarchy[i].getFullName());
@@ -603,11 +606,12 @@ qx.Class.define("apiviewer.ui.ClassViewer",
 
       // Handle mark
       if (this._markedElement) {
-        this._markedElement.className = "";
+        this._markedElement.className = apiviewer.ui.panels.InfoPanel.getItemCssClasses(this._markedItemNode);
       }
 
       elem.className = "marked";
       this._markedElement = elem;
+      this._markedItemNode = itemNode;
 
       // Use a timeout as pragmatic solution
       // Replace this later on with a kind of post-processing
@@ -690,6 +694,6 @@ qx.Class.define("apiviewer.ui.ClassViewer",
   */
 
   destruct : function() {
-    this._titleElem = this._classDescElem = this._markedElement = null;
+    this._titleElem = this._classDescElem = this._markedElement = this._markedItemNode = null;
   }
 });

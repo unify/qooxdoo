@@ -154,7 +154,7 @@ qx.Class.define("qx.dev.unit.TestResult",
       }
 
       this.fireDataEvent("startTest", test);
-      
+
       if (qx.core.Environment.get("qx.debug.dispose")) {
         qx.dev.Debug.startDisposeProfiling();
       }
@@ -225,18 +225,17 @@ qx.Class.define("qx.dev.unit.TestResult",
             this.fireDataEvent("wait", test);
           }
 
-        } else if (ex.classname == "qx.core.AssertionError") {
+        } else {
           try {
             this.tearDown(test);
           } catch(except) {}
-          this._createError("failure", [ex], test);
-        } else if (ex.classname == "qx.dev.unit.RequirementError") {
+          if (ex.classname == "qx.core.AssertionError") {
+            this._createError("failure", [ex], test);
+          } else if (ex.classname == "qx.dev.unit.RequirementError") {
             this._createError("skip", [ex], test);
           } else {
-          try {
-            this.tearDown(test);
-          } catch(except) {}
-          this._createError("error", [ex], test);
+            this._createError("error", [ex], test);
+          }
         }
       }
 
@@ -350,8 +349,8 @@ qx.Class.define("qx.dev.unit.TestResult",
       if (testClass[specificTearDown]) {
         testClass[specificTearDown]();
       }
-      
-      if (qx.core.Environment.get("qx.debug.dispose") 
+
+      if (qx.core.Environment.get("qx.debug.dispose")
         && qx.dev.Debug.disposeProfilingActive)
       {
         var testName = test.getFullName();
