@@ -164,6 +164,31 @@ qx.Bootstrap.define("qx.bom.client.Css",
       } catch (ex) {}
 
       return false;
+    },
+
+    /**
+     * checks if -webkit-overflow-scrolling: touch can be used
+     */
+   getWebkitOverflowScrollingTouch : function(){
+      if(!("WebkitOverflowScrolling" in document.documentElement.style)){
+        return false;
+      }
+      var el;
+      try {
+        el = document.createElement("div");
+      } catch (ex) {
+        el = document.createElement();
+      }
+
+      // try catch for IE
+      try {
+        el.style["WebkitOverflowScrolling"] = "touch";
+        if (el.style["WebkitOverflowScrolling"].indexOf("touch") != -1) {
+          return true;
+        }
+      } catch (ex) {}
+
+      return false;
     }
   }
 });

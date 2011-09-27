@@ -1070,6 +1070,10 @@ qx.Bootstrap.define("qx.core.Environment",
       if (this.useCheck("phonegap.notification")) {
         this._checks["phonegap.notification"] = qx.bom.client.PhoneGap.getNotification;
       }
+
+      if(this.useCheck("qx.mobile.nativescroll")){
+        this._checks["qx.mobile.nativescroll"] = qx.bom.client.Css.getWebkitOverflowScrollingTouch
+      }
     }
   },
 

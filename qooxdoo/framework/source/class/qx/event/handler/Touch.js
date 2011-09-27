@@ -370,11 +370,18 @@ qx.Class.define("qx.event.handler.Touch",
     {
       var clazz = qx.event.handler.Touch;
       var duration = new Date().getTime() - this.__startTime;
-      var axis = (Math.abs(deltaCoordinates.x) >= Math.abs(deltaCoordinates.y)) ? "x" : "y";
+      var deltaX=Math.abs(deltaCoordinates.x);
+      var deltaY=Math.abs(deltaCoordinates.y);
+      var axis =  deltaX>= deltaY ? "x" : "y";
       var distance = deltaCoordinates[axis];
       var direction = clazz.SWIPE_DIRECTION[axis][distance < 0 ? 0 : 1]
       var velocity = (duration !== 0) ? distance/duration : 0;
-
+      var directionAccuracy=0;
+      if(axis=="x"){
+        directionAccuracy=deltaX!==0?1-(deltaY/deltaX):0;
+      } else {
+        directionAccuracy=deltaY!==0?1-(deltaX/deltaY):0;
+      }
       var swipe = null;
       if (Math.abs(velocity) >= clazz.SWIPE_MIN_VELOCITY
           && Math.abs(distance) >= clazz.SWIPE_MIN_DISTANCE)
@@ -384,6 +391,7 @@ qx.Class.define("qx.event.handler.Touch",
             duration : duration,
             axis : axis,
             direction : direction,
+            directionAccuracy: directionAccuracy,
             distance : distance,
             velocity : velocity
         };
@@ -763,10 +771,10 @@ qx.Class.define("qx.event.handler.Touch",
       {
         document.addEventListener("touchstart", function(e) {
           e.preventDefault();
-        });
+        },false);
         document.addEventListener("touchmove", function(e) {
           e.preventDefault();
-        });
+        },false);
       }
 
       // get the handler to asure that the instance is created
