@@ -167,7 +167,8 @@ def patchSkeleton(dir, framework_dir, options):
         else:
             relPath = Path.rel_from_to(normalizePath(dir), normalizePath(framework_dir))
     else:
-        relPath = Path.rel_from_to(normalizePath(dir), normalizePath(framework_dir))
+        relPath = os.path.relpath(framework_dir, dir)
+        #relPath = Path.rel_from_to(normalizePath(dir), normalizePath(framework_dir))
 
     relPath = re.sub(r'\\', "/", relPath)
     if relPath[-1] == "/":
