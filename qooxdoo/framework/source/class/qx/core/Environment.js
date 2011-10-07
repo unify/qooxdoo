@@ -278,6 +278,10 @@
  *       <td>os.version</td><td><i>String</em></td><td><code>10.6</code></td>
  *       <td>{@link qx.bom.client.OperatingSystem#getVersion}</td>
  *     </tr>
+ *     <tr>
+ *       <td>os.scrollBarOverlayed</td><td><i>Boolean</em></td><td><code>false</code></td>
+ *       <td>{@link qx.bom.client.Scroll#scrollBarOverlayed}</td>
+ *     </tr>
 
  *     <tr>
  *       <td colspan="4"><b>phonegap</b></td>
@@ -471,7 +475,6 @@ qx.Bootstrap.define("qx.core.Environment",
 
     /** Internal cache for all checks. */
     __cache : {},
-
 
     /**
      * The default accessor for the checks. It returns the value the current
@@ -861,6 +864,9 @@ qx.Bootstrap.define("qx.core.Environment",
       }
       if (this.useCheck("os.version")) {
         this._checks["os.version"] = qx.bom.client.OperatingSystem.getVersion;
+      }
+      if (this.useCheck("os.scrollBarOverlayed")) {
+        this._checks["os.scrollBarOverlayed"] = qx.bom.client.Scroll.scrollBarOverlayed;
       }
 
       // /////////////////////////////////////////

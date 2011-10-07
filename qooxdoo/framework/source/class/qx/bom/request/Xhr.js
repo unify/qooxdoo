@@ -115,7 +115,7 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     /**
      * {Number} Timeout limit in milliseconds.
      *
-     * 0 (default) means no timeout.
+     * 0 (default) means no timeout. Not supported for synchronous requests.
      */
     timeout: 0,
 
@@ -140,11 +140,10 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
         return;
       }
 
-      // Send flag may have been set on previous request
-      this.__send = false;
-
-      // Abort flag may have been set on previous request
+      // Reset flags that may have been set on previous request
       this.__abort = false;
+      this.__send = false;
+      this.__conditional = false;
 
       if (typeof async == "undefined") {
         async = true;
@@ -261,6 +260,12 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
         return;
       }
 
+      // Detect conditional requests
+      if (key == "If-Match" || key == "If-Modified-Since" ||
+        key == "If-None-Match" || key == "If-Range") {
+        this.__conditional = true;
+      }
+
       this.__nativeXhr.setRequestHeader(key, value);
     },
 
@@ -281,6 +286,27 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       //
       if (!this.__async && this.__openError) {
         throw this.__openError;
+      }
+
+      // BUGFIX: Opera
+      // On network error, Opera stalls at readyState HEADERS_RECEIVED
+      // This violates the spec. See here http://www.w3.org/TR/XMLHttpRequest2/#send
+      // (Section: If there is a network error)
+      //
+      // To fix, assume a default timeout of 10 seconds. Note: The "error"
+      // event will be fired correctly, because the error flag is inferred
+      // from the statusText property. Of course, compared to other
+      // browsers there is an additional call to ontimeout(), but this call
+      // should not harm.
+      //
+      if (qx.core.Environment.get("engine.name") === "opera" &&
+          this.timeout === 0) {
+        this.timeout = 10000;
+      }
+
+      // Timeout
+      if (this.timeout > 0) {
+        this.__timerId = window.setTimeout(this.__onTimeoutBound, this.timeout);
       }
 
       // BUGFIX: Firefox 2
@@ -309,27 +335,6 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
 
       // Set send flag
       this.__send = true;
-
-      // BUGFIX: Opera
-      // On network error, Opera stalls at readyState HEADERS_RECEIVED
-      // This violates the spec. See here http://www.w3.org/TR/XMLHttpRequest2/#send
-      // (Section: If there is a network error)
-      //
-      // To fix, assume a default timeout of 10 seconds. Note: The "error"
-      // event will be fired correctly, because the error flag is inferred
-      // from the statusText property. Of course, compared to other
-      // browsers there is an additional call to ontimeout(), but this call
-      // should not harm.
-      //
-      if (qx.core.Environment.get("engine.name") === "opera" &&
-          this.timeout === 0) {
-        this.timeout = 10000;
-      }
-
-      // Timeout
-      if (this.timeout > 0) {
-        this.__timerId = window.setTimeout(this.__onTimeoutBound, this.timeout);
-      }
     },
 
     /**
@@ -585,6 +590,11 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
     __openError: null,
 
     /**
+     * {Boolean} Conditional get flag
+     */
+     __conditional: null,
+
+    /**
      * Init native XHR.
      */
     __initNativeXhr: function() {
@@ -784,7 +794,7 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
      * Normalize status property across browsers.
      */
     __normalizeStatus: function() {
-      var nxhr = this.__nativeXhr;
+      var isDone = this.readyState === qx.bom.request.Xhr.DONE;
 
       // BUGFIX: Most browsers
       // Most browsers tell status 0 when it should be 200 for local files
@@ -799,9 +809,18 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       }
 
       // BUGFIX: Opera
-      // Opera tells 0 when it should be 304
-      if (nxhr.readyState === qx.bom.request.Xhr.DONE && this.status === 0) {
-        this.status = 304;
+      // Opera tells 0 for conditional requests when it should be 304
+      //
+      // Detect response to conditional request that signals fresh cache.
+      if (qx.core.Environment.get("engine.name") === "opera") {
+        if (
+          isDone &&                 // Done
+          this.__conditional &&     // Conditional request
+          !this.__abort &&          // Not aborted
+          this.status === 0         // But status 0!
+        ) {
+          this.status = 304;
+        }
       }
     },
 

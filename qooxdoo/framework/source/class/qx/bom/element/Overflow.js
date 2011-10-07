@@ -30,6 +30,13 @@ qx.Class.define("qx.bom.element.Overflow",
 
   statics :
   {
+    /**
+     * The default width which is used for the width of the scroll bar if 
+     * overlayed.
+     */
+    DEFAULT_SCROLLBAR_WIDTH : 14,
+
+
     /** {Integer} The typical native scrollbar size in the environment */
     __scrollbarSize : null,
 
@@ -115,7 +122,7 @@ qx.Class.define("qx.bom.element.Overflow",
 
       document.body.appendChild(t);
       var c = getScrollBarSizeRight(t);
-      this.__scrollbarSize = c ? c : 16;
+      this.__scrollbarSize = c;
       document.body.removeChild(t);
 
       return this.__scrollbarSize;

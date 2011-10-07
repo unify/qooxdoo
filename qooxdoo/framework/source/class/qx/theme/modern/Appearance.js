@@ -1842,8 +1842,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
           decorator : decorator,
           shadow : shadow,
           contentPadding : [ 10, 10, 10, 10 ],
-          margin : [0, 5, 5, 0]
-
+          margin : states.maximized ? 0 : [0, 5, 5, 0]
         };
       }
     },
@@ -3074,16 +3073,7 @@ qx.Theme.define("qx.theme.modern.Appearance",
     "virtual-list" : "list",
     "virtual-list/row-layer" : "row-layer",
 
-    "row-layer" :
-    {
-      style : function(states)
-      {
-        return {
-          colorEven : "virtual-row-layer-background-even",
-          colorOdd : "virtual-row-layer-background-odd"
-        };
-      }
-    },
+    "row-layer" : "widget",
 
     "group-item" :
     {
