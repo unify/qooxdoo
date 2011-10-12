@@ -791,17 +791,23 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
       if (this._getProtocol() === "file:" && this.status === 0) {
         this.status = 200;
       }
-
-      // BUGFIX: IE
-      // IE sometimes tells 1223 when it should be 204
-      if (this.status === 1223) {
-        this.status = 204;
-      }
-
-      // BUGFIX: Opera
-      // Opera tells 0 when it should be 304
-      if (nxhr.readyState === qx.bom.request.Xhr.DONE && this.status === 0) {
-        this.status = 304;
+      switch(qx.core.Environment.get("engine.name")){
+        // BUGFIX IE
+        case "mshtml":
+          // IE sometimes tells 1223 when it should be 204
+          if (this.status === 1223) {
+            this.status = 204;
+          }
+        break;
+        // BUGFIX Opera
+        case "opera":
+          // Opera tells 0 when it should be 304
+          if (nxhr.readyState === qx.bom.request.Xhr.DONE && this.status === 0) {
+            this.status = 304;
+          }
+        break;
+        default:
+        break;
       }
     },
 
