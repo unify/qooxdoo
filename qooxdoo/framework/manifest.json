@@ -96,6 +96,25 @@
     {
       "default" : "qx.theme.Modern"
     }
+  },
+  "name" : "qx",
+  "package" : "",
+  "kind" : "full",
+  "fields" :
+  {
+    "qx.debug" : {
+      "check" : "Boolean",
+      "default" : false
+    },
+    "qx.aspects" :
+    {
+      "check" : "Boolean",
+      "default" : false
+    },
+    "qx.application :
+    {
+      "check" : "String"
+    }
   }
 }
 
