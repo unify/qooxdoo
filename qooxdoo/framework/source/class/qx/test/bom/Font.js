@@ -133,8 +133,15 @@ qx.Class.define("qx.test.bom.Font",
       this.getRoot().add(label);
       this.flush();
 
+      var useRgbValue = qx.core.Environment.get("browser.name") == "ie" && 
+                        qx.core.Environment.get("browser.version") >= 9;
+      var checkValue = useRgbValue ? "rgb(26, 26, 26)" : "#1a1a1a";
       var color = label.getContentElement().getDomElement().style["color"];
-      this.assertEquals("rgb(26, 26, 26)", color, "Wrong style applied for 'color' property!");
+
+      // the current implementation has a higher priority for the color which is
+      // set using the color theme. So this default color should show up and not
+      // the defined color of the font.
+      this.assertEquals(checkValue, color, "Wrong style applied for 'color' property!");
     },
 
 
@@ -142,13 +149,39 @@ qx.Class.define("qx.test.bom.Font",
     {
       var styles = this.__font.getStyles();
 
-      this.assertKeyInMap("fontFamily", styles, "Key 'fontFamily' is missing in map!");
-      this.assertKeyInMap("fontSize", styles, "Key 'fontSize' is missing in map!");
-      this.assertKeyInMap("textDecoration", styles, "Key 'textDecoration' is missing in map!");
-      this.assertKeyInMap("fontWeight", styles, "Key 'fontWeight' is missing in map!");
-      this.assertKeyInMap("fontStyle", styles, "Key 'fontStyle' is missing in map!");
-      this.assertKeyInMap("lineHeight", styles, "Key 'lineHeight' is missing in map!");
-      this.assertKeyInMap("color", styles, "Key 'color' is missing in map!");
+      // we expect a map with only 'fontFamily' set, otherwise the null values 
+      // which are returned are overwriting styles. Only return styles which are set.
+      var keys = qx.lang.Object.getKeys(styles);
+
+      this.assertMap(styles, "Method 'getStyles' should return a map!");
+      this.assertEquals(7, qx.lang.Object.getLength(styles), "Map should contain 7 key!");
+      this.assertNotUndefined(styles.fontFamily, "Key 'fontFamily' has to be present!");
+      this.assertNotUndefined(styles.fontStyle, "Key 'fontStyle' has to be present!");
+      this.assertNotUndefined(styles.fontWeight, "Key 'fontWeight' has to be present!");
+      this.assertNotUndefined(styles.fontSize, "Key 'fontSize' has to be present!");
+      this.assertNotUndefined(styles.lineHeight, "Key 'lineHeight' has to be present!");
+      this.assertNotUndefined(styles.textDecoration, "Key 'textDecoration' has to be present!");
+      this.assertNotUndefined(styles.color, "Key 'color' has to be present!");
+    },
+
+
+    testGetSomeStyles : function()
+    {
+      this.__font.setBold(true);
+      this.__font.setItalic(true);
+      this.__font.setColor("#3f3f3f");
+      this.__font.setDecoration("underline");
+
+      var styles = this.__font.getStyles();
+      var keys = qx.lang.Object.getKeys(styles);
+
+      this.assertMap(styles, "Method 'getStyles' should return a map!");
+      this.assertEquals("fontFamily", keys[0], "Key 'fontFamily' has to be present!");
+      this.assertEquals("", styles.fontFamily, "'fontFamily' has to have the value ''!");
+      this.assertEquals("italic", styles.fontStyle, "Wrong value for 'fontStyle'!");
+      this.assertEquals("bold", styles.fontWeight, "Wrong value for 'fontWeight'!");
+      this.assertEquals("#3f3f3f", styles.color, "Wrong value for 'color'!");
+      this.assertEquals("underline", styles.textDecoration, "Wrong value for 'textDecoration'!");
     },
 
 

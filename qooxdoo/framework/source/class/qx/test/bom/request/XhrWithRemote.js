@@ -42,8 +42,6 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     req : null,
 
     setUp: function() {
-      this.require(["php"]);
-
       this.req = new qx.bom.request.Xhr();
     },
 
@@ -57,16 +55,14 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: GET": function() {
       var req = this.req;
-      var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
-      url = url + "?affe=yippie&nocache=" + (new Date()).valueOf();
-      req.open("GET", url);
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
+      req.open("GET", this.noCache(url));
 
       var that = this;
       req.onreadystatechange = function() {
         if (req.readyState == 4) {
           that.resume(function() {
-            var data = qx.lang.Json.parse(req.responseText);
-            that.assertEquals("yippie", data["affe"]);
+            that.assertEquals(req.responseText, "SAMPLE");
           });
         }
       };
@@ -95,6 +91,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: handle arbitrary XML": function() {
+      this.require(["php"]);
+
       // Content-Type: foo/bar+xml
       var url = this.getUrl("qx/test/xmlhttp/xml.php");
 
@@ -134,6 +132,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: POST": function() {
+      this.require(["php"]);
+
       var req = this.req;
       var url = this.getUrl("qx/test/xmlhttp/echo_post_request.php");
       req.open("POST", this.noCache(url));
@@ -158,6 +158,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: have readyState OPENED": function() {
+      this.require(["php"]);
+
       var req = this.req;
       var url = this.getUrl("qx/test/xmlhttp/echo_post_request.php");
       req.open("GET", this.noCache(url));
@@ -189,6 +191,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     // this.wait();
 
     "test: abort pending request": function() {
+      this.require(["php"]);
+
       var req = this.req;
       var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
 
@@ -199,6 +203,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: have status 200 when modified": function() {
+      this.require(["php"]);
+
       var req = this.req;
       var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
 
@@ -262,7 +268,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: open throws error with insecure method": function() {
       var req = this.req,
-          url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
+          url = this.getUrl("qx/test/xmlhttp/sample.txt");
 
       this.assertException(function() {
         // Type of error is of no interest
@@ -293,7 +299,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
         }
       };
 
-      var url = this.getUrl("qx/test/xmlhttp/echo_post_request.php");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
       req.open("GET", this.noCache(url));
       req.send();
 
@@ -308,7 +314,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
         states.push(req.readyState);
       };
 
-      var url = this.getUrl("qx/test/xmlhttp/echo_post_request.php");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
       req.open("GET", this.noCache(url), false);
       req.send();
 
@@ -319,7 +325,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: progress to readyState DONE when from cache": function() {
       var primeReq = this.req,
-          url = this.noCache(this.getUrl("qx/test/xmlhttp/sample.html")),
+          url = this.noCache(this.getUrl("qx/test/xmlhttp/sample.txt")),
           states = [],
           count = 0,
           that = this;
@@ -356,6 +362,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: have status 304 when cache is fresh": function() {
+      this.require(["php"]);
+
       var req = this.req;
       var url = this.getUrl("qx/test/xmlhttp/not_modified.php");
 
@@ -401,7 +409,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: allow many requests with same object": function() {
       var req = this.req;
-      var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
       var count = 0;
 
       var that = this;
@@ -433,7 +441,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: call onreadystatechange for OPEN": function() {
       var req = this.req;
-      var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
 
       var that = this;
       var count = 0;
@@ -463,7 +471,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
       var req = this.req;
 
       // OPENED, without send flag
-      var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
       req.open("GET", this.noCache(url));
 
       this.spy(req, "onreadystatechange");
@@ -475,6 +483,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: call onreadystatechange when aborting LOADING": function() {
+      this.require(["php"]);
+
       var req = this.req;
       var that = this;
 
@@ -498,6 +508,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: call onloadend when aborting LOADING": function() {
+      this.require(["php"]);
+
       var req = this.req;
       var that = this;
 
@@ -543,6 +555,24 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
       this.wait(15000);
     },
 
+    "test: call onerror on file error": function() {
+      this.require(["file"]);
+
+      var req = this.req;
+
+      var that = this;
+      req.onerror = function() {
+        that.resume(function() {
+          that.assertEquals(4, req.readyState);
+        });
+      };
+
+      req.open("GET", "not-found");
+      req.send();
+
+      this.wait();
+    },
+
     "test: throw error on network error when sync": function() {
       var req = this.req;
 
@@ -564,7 +594,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: not call ontimeout when DONE and sync": function() {
       var req = this.req;
-      var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
       this.spy(req, "ontimeout");
 
       // Assume that request completes in given interval
@@ -581,6 +611,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     "test: timeout triggers timeout error": function() {
       // "timeout error" is specified here
       // http://www.w3.org/TR/XMLHttpRequest2/#timeout-error
+
+      this.require(["php"]);
 
       var req = this.req,
           url = this.getUrl("qx/test/xmlhttp/loading.php"),
@@ -608,6 +640,8 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
     },
 
     "test: timeout not call onabort": function() {
+      this.require(["php"]);
+
       var req = this.req,
           url = this.getUrl("qx/test/xmlhttp/loading.php"),
           that = this;
@@ -656,7 +690,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: call handler in order when request successful": function() {
       var req = this.req;
-      var url = this.getUrl("qx/test/xmlhttp/sample.html");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
 
       var that = this;
       req.onloadend = function() {
@@ -708,7 +742,7 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     "test: dispose hard-working": function() {
       var req = this.req;
-      var url = this.getUrl("qx/test/xmlhttp/echo_get_request.php");
+      var url = this.getUrl("qx/test/xmlhttp/sample.txt");
       req.open("GET", this.noCache(url));
 
       var that = this;
@@ -727,6 +761,10 @@ qx.Class.define("qx.test.bom.request.XhrWithRemote",
 
     noCache: function(url) {
       return url + "?nocache=" + (new Date()).valueOf();
+    },
+
+    hasFile: function() {
+      return location.protocol === "file:";
     }
   }
 });
