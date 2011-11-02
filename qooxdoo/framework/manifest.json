@@ -114,6 +114,11 @@
     "qx.application" :
     {
       "check" : "String"
+    },
+    "engine.name" : 
+    {
+      "check" : ["webkit","gecko","trident","presto"],
+      "detect" : "jasy.detect.Engine"
     }
   }
 }
