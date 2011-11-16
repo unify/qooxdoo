@@ -442,7 +442,7 @@ qx.Class.define("qx.bom.element.Style",
       for (var key in styles)
       {
         var value = styles[key];
-        var name = styleNames[key] || propertyCache[key] || key;
+        var name = styleNames[key] || propertyCache[key] || this.property(key);
 
         if (value === undefined)
         {
