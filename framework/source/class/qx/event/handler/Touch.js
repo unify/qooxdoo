@@ -321,7 +321,9 @@ qx.Class.define("qx.event.handler.Touch",
      */
     __gestureChange : function(domEvent, target, touch)
     {
-      this.__checkTouchLeave(domEvent,target,touch);
+      if(this.__isTouchHold&&!this.__hasTouchLeft){
+        this.__checkTouchLeave(domEvent,target,touch);
+      }
     },
 
 
@@ -370,11 +372,18 @@ qx.Class.define("qx.event.handler.Touch",
     {
       var clazz = qx.event.handler.Touch;
       var duration = new Date().getTime() - this.__startTime;
-      var axis = (Math.abs(deltaCoordinates.x) >= Math.abs(deltaCoordinates.y)) ? "x" : "y";
+      var deltaX=Math.abs(deltaCoordinates.x);
+      var deltaY=Math.abs(deltaCoordinates.y);
+      var axis =  deltaX>= deltaY ? "x" : "y";
       var distance = deltaCoordinates[axis];
       var direction = clazz.SWIPE_DIRECTION[axis][distance < 0 ? 0 : 1]
       var velocity = (duration !== 0) ? distance/duration : 0;
-
+      var directionAccuracy=0;
+      if(axis=="x"){
+        directionAccuracy=deltaX!==0?1-(deltaY/deltaX):0;
+      } else {
+        directionAccuracy=deltaY!==0?1-(deltaX/deltaY):0;
+      }
       var swipe = null;
       if (Math.abs(velocity) >= clazz.SWIPE_MIN_VELOCITY
           && Math.abs(distance) >= clazz.SWIPE_MIN_DISTANCE)
@@ -384,6 +393,7 @@ qx.Class.define("qx.event.handler.Touch",
             duration : duration,
             axis : axis,
             direction : direction,
+            directionAccuracy: directionAccuracy,
             distance : distance,
             velocity : velocity
         };
@@ -398,8 +408,12 @@ qx.Class.define("qx.event.handler.Touch",
      * @param target {Element} event target
      */
     __touchHold: function(domEvent,target){
+      if(target==this.__originalTarget){
         this.__isTouchHold = true;
-        this.__fireEvent(domEvent, "touchhold", target);
+        this.__hasTouchLeft = false;
+        this.__touchHoldLoc= qx.bom.element.Location.get(this.__originalTarget);
+        this.__fireEvent(domEvent, "touchhold", this.__originalTarget);
+      }
     },
 
     /**
@@ -410,17 +424,17 @@ qx.Class.define("qx.event.handler.Touch",
      * @param touch the tracked touch
      */
     __checkTouchLeave: function(domEvent,target,touch){
-      var loc=qx.bom.element.Location.get(target);
-      var x=touch.screenX;
-      var y=touch.screenY;
-
-      if (x<loc.left||x>loc.right||y<loc.top||y>loc.bottom){
-        this.__cancelTouchHoldTimer();
-        if(this.__isTouchHold&&!this.__hasTouchLeft)
-        {
-          this.__hasTouchLeft=true;
-          this.__fireEvent(domEvent, "touchleave", target);
-        }
+      var hasLeft=(target!=this.__originalTarget);
+      if(!hasLeft){
+        var loc= this.__touchHoldLoc;
+        var x=touch.pageX;
+        var y=touch.pageY;
+        hasLeft= (x<loc.left||x>loc.right||y<loc.top||y>loc.bottom);
+      }
+      if(hasLeft){
+        this.__touchHoldLoc=null;
+        this.__hasTouchLeft=true;
+        this.__fireEvent(domEvent, "touchleave", this.__originalTarget);
       }
     },
 
@@ -436,7 +450,7 @@ qx.Class.define("qx.event.handler.Touch",
       if(this.__isTouchHold)
       {
         this.__isTouchHold=false;
-        this.__fireEvent(domEvent, "touchrelease", target);
+        this.__fireEvent(domEvent, "touchrelease", this.__originalTarget);
       }
     },
 
