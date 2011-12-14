@@ -112,6 +112,15 @@ qx.Class.define("qx.event.type.Swipe",
        */
       getDistance : function() {
         return this._native.swipe.distance;
+      },
+
+          /**
+           *  Returns the accurary of the direction
+           *
+           *  @return {Number} the accuracy  of the swipe (1 = perfectly one direction, almost 0 = almost  45deg off
+           */
+      getDirectionAccuracy : function() {
+        return this._native.swipe.directionAccuracy;
       }
     }
   });
