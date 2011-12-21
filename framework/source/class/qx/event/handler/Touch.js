@@ -775,7 +775,12 @@ qx.Class.define("qx.event.handler.Touch",
     if (qx.core.Environment.get("event.touch")) {
       if (qx.core.Environment.get("qx.mobile.nativescroll") == false)
       {
+
         document.addEventListener("touchstart", function(e) {
+          var target=e.touches[0].target;
+          if(target.tagName && target.tagName.match(/input|textarea|select/i)){
+            return;//never prevent touchstart on an input, it would prevent required native behaviour like showing the keyboard on ios5
+          }
           e.preventDefault();
         });
         document.addEventListener("touchmove", function(e) {
