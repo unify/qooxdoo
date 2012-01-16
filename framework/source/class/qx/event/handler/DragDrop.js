@@ -1,3 +1,8 @@
+/**
+ * @require {qx.event.handler.Mouse}
+ * @require {qx.event.handler.Keyboard}
+ * @require {qx.event.handler.Capture}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

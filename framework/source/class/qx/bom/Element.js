@@ -1,3 +1,13 @@
+/**
+ * @require {qx.event.dispatch.Dispatch}
+ * @require {qx.event.dispatch.DomBubbling}
+ * @require {qx.event.handler.Keyboard}
+ * @require {qx.event.handler.Mouse}
+ * @require {qx.event.handler.DragDrop}
+ * @require {qx.event.handler.Element}
+ * @require {qx.event.handler.Appear}
+ * @require {qx.event.handler.Touch}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

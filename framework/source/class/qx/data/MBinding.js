@@ -1,3 +1,6 @@
+/**
+ * @break {qx.data.SingleValueBinding}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

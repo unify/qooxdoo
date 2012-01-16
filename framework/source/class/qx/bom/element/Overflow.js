@@ -1,3 +1,6 @@
+/**
+ * @break {qx.bom.element.Style}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

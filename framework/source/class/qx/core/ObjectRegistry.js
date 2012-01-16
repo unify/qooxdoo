@@ -1,3 +1,7 @@
+/**
+ * @break {qx.dev.Debug}
+ * @break {qx.dev.StackTrace}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

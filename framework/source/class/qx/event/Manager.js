@@ -1,3 +1,6 @@
+/**
+ * @break {qx.event.Pool}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

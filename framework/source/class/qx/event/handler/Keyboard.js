@@ -1,4 +1,6 @@
-
+/**
+ * @require {qx.event.handler.UserAction}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

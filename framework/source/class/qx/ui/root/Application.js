@@ -1,3 +1,6 @@
+/**
+ * @require {qx.event.handler.Window}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

@@ -1,3 +1,8 @@
+/**
+ * @break {qx.core.AssertError}
+ * @break {qx.lang.Json}
+ * @break {qx.lang.String}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

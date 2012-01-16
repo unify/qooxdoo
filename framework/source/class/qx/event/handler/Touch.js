@@ -1,3 +1,7 @@
+/**
+ * @require {qx.event.handler.UserAction}
+ * @require {qx.event.handler.Orientation}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

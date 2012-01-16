@@ -1,3 +1,6 @@
+/**
+ * @break {qx.data.IListData}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

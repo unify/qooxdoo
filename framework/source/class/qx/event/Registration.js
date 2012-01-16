@@ -1,3 +1,9 @@
+/**
+ * @break {qx.event.Manager}
+ * @break {qx.event.type.Event}
+ * @break {qx.event.Pool}
+ * @break {qx.event.IEventDispatcher}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

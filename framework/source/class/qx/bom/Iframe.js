@@ -1,3 +1,6 @@
+/**
+ * @require {qx.event.handler.Iframe}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

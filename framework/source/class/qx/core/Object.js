@@ -1,3 +1,7 @@
+/**
+ * @break {qx.event.type.Data}
+ * @require {qx.event.handler.Object}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development
