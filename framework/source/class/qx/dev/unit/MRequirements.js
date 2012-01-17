@@ -1,3 +1,6 @@
+/**
+ * @asset {qx/test/xmlhttp/php_version.php}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

@@ -1,3 +1,6 @@
+/**
+ * @asset {qx/static/blank.gif}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development
