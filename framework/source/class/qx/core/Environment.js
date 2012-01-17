@@ -489,28 +489,8 @@ qx.Bootstrap.define("qx.core.Environment",
      * @param key {String} The name of the check you want to query.
      */
     get : function(key) {
-      // check the cache
-      if (this.__cache[key] != undefined) {
-        return this.__cache[key];
-      }
-
-      // search for a fitting check
-      var check = this._checks[key];
-      if (check) {
-        // execute the check and write the result in the cache
-        var value = check();
-        this.__cache[key] = value;
-        return value;
-      }
-
-      // debug flag
-      if (qx.Bootstrap.DEBUG) {
-        qx.Bootstrap.warn(
-          key + " is not a valid key. Please see the API-doc of " +
-          "qx.core.Environment for a list of predefined keys."
-        );
-        qx.Bootstrap.trace(this);
-      }
+      var value = core.Env.getValue(key);
+      return value;
     },
 
 
@@ -525,33 +505,7 @@ qx.Bootstrap.define("qx.core.Environment",
      * @param self {var} The context to use when invoking the callback.
      */
     getAsync : function(key, callback, self) {
-      // check the cache
-      var env = this;
-      if (this.__cache[key] != undefined) {
-        // force async behavior
-        window.setTimeout(function() {
-          callback.call(self, env.__cache[key]);
-        }, 0);
-        return;
-      }
-
-      var check = this._asyncChecks[key];
-      if (check) {
-        check(function(result) {
-          env.__cache[key] = result;
-          callback.call(self, result);
-        });
-        return;
-      }
-
-      // debug flag
-      if (qx.Bootstrap.DEBUG) {
-        qx.Bootstrap.warn(
-          key + " is not a valid key. Please see the API-doc of " +
-          "qx.core.Environment for a list of predefined keys."
-        );
-        qx.Bootstrap.trace(this);
-      }
+      console.error("GET ASYNC ", key);
     },
 
 
@@ -581,10 +535,7 @@ qx.Bootstrap.define("qx.core.Environment",
      *   method in the values map.
      */
     selectAsync : function(key, values, self) {
-      this.getAsync(key, function(result) {
-        var value = this.__pickFromValues(key, values);
-        value.call(self, result)
-      }, this);
+      console.error("SELECT ASYNC ", key);
     },
 
 
@@ -636,7 +587,6 @@ qx.Bootstrap.define("qx.core.Environment",
      * @param key {String} The key of the check.
      */
     invalidateCacheKey : function(key) {
-      delete this.__cache[key];
     },
 
 
@@ -650,16 +600,7 @@ qx.Bootstrap.define("qx.core.Environment",
      *   result of the check.
      */
     add : function(key, check) {
-      // ignore already added checks.
-      if (this._checks[key] == undefined) {
-        // add functions directly
-        if (check instanceof Function) {
-          this._checks[key] = check;
-        // otherwise, create a check function and use that
-        } else {
-          this._checks[key] = this.__createCheck(check);
-        }
-      }
+      core.Env.define(key, check);
     },
 
 
@@ -673,9 +614,7 @@ qx.Bootstrap.define("qx.core.Environment",
      *   arguments. First one is the callback and the second one is the context.
      */
     addAsync : function(key, check) {
-      if (this._checks[key] == undefined) {
-        this._asyncChecks[key] = check;
-      }
+      console.error("ADD ASYNC ", key);
     },
 
 
@@ -687,7 +626,7 @@ qx.Bootstrap.define("qx.core.Environment",
      */
     getChecks : function()
     {
-      return this._checks;
+      console.error("GET CHECKS");
     },
 
 
@@ -699,7 +638,7 @@ qx.Bootstrap.define("qx.core.Environment",
      */
     getAsyncChecks : function()
     {
-      return this._asyncChecks;
+      console.error("GET ASYNC CHECKS");
     },
 
 
@@ -707,6 +646,11 @@ qx.Bootstrap.define("qx.core.Environment",
      * Initializer for the default values of the framework settings.
      */
     _initDefaultQxValues : function() {
+      this.add("engine.name", "webkit"); // FIX
+      this.add("qx.debug", true);
+      this.add("qx.aspects", false);
+      this.add("qx.application", "test.Application");
+      return;
       // old settings
       this.add("qx.allowUrlSettings", function() {return false;});
       this.add("qx.allowUrlVariants", function() {return false;});
@@ -733,57 +677,6 @@ qx.Bootstrap.define("qx.core.Environment",
       this.add("qx.optimization.variants", function() {return false;});
     },
 
-
-    /**
-     * Import checks from global qx.$$environment into the Environment class.
-     */
-    __importFromGenerator : function()
-    {
-      // import the environment map
-      if (qx && qx.$$environment)
-      {
-        for (var key in qx.$$environment) {
-          var value = qx.$$environment[key];
-
-          this._checks[key] = this.__createCheck(value);
-        }
-      }
-    },
-
-
-    /**
-     * Checks the URL for environment settings and imports these into the
-     * Environment class.
-     */
-    __importFromUrl : function() {
-      if (window.document && window.document.location) {
-        var urlChecks = window.document.location.search.slice(1).split("&");
-
-        for (var i = 0; i < urlChecks.length; i++)
-        {
-          var check = urlChecks[i].split(":");
-          if (check.length != 3 || check[0] != "qxenv") {
-            continue;
-          }
-
-          var key = check[1];
-          var value = decodeURIComponent(check[2]);
-
-          // implicit type conversion
-          if (value == "true") {
-            value = true;
-          } else if (value == "false") {
-            value = false;
-          } else if (/^(\d|\.)+$/.test(value)) {
-            value = parseFloat(value);
-          }
-
-          this._checks[key] = this.__createCheck(value);
-        }
-      }
-    },
-
-
     /**
      * Internal helper which creates a function retuning the given value.
      *
@@ -807,298 +700,6 @@ qx.Bootstrap.define("qx.core.Environment",
      */
     useCheck : function(key) {
       return true;
-    },
-
-
-    /**
-     * Initializer for the checks which are available on runtime.
-     */
-    _initChecksMap : function() {
-      // CAUTION! If you edit this function, be sure to use the following
-      // pattern to asure the removal of the generator on demand.
-      // if (this.useCheck("check.name")) {
-      //   this._checks["check.name"] = checkFunction;
-      // }
-      // Also keep in mind to change the class comment to reflect the current
-      // available checks.
-
-      // /////////////////////////////////////////
-      // Engine
-      // /////////////////////////////////////////
-      if (this.useCheck("engine.version")) {
-        this._checks["engine.version"] = qx.bom.client.Engine.getVersion;
-      }
-      if (this.useCheck("engine.name")) {
-        this._checks["engine.name"] = qx.bom.client.Engine.getName;
-      }
-
-      // /////////////////////////////////////////
-      // Browser
-      // /////////////////////////////////////////
-      if (this.useCheck("browser.name")) {
-        this._checks["browser.name"] = qx.bom.client.Browser.getName;
-      }
-      if (this.useCheck("browser.version")) {
-        this._checks["browser.version"] = qx.bom.client.Browser.getVersion;
-      }
-      if (this.useCheck("browser.documentmode")) {
-        this._checks["browser.documentmode"] = qx.bom.client.Browser.getDocumentMode;
-      }
-      if (this.useCheck("browser.quirksmode")) {
-        this._checks["browser.quirksmode"] = qx.bom.client.Browser.getQuirksMode;
-      }
-
-      // /////////////////////////////////////////
-      // RUNTIME
-      // /////////////////////////////////////////
-      if (this.useCheck("runtime.name")) {
-        this._checks["runtime.name"] = qx.bom.client.Runtime.getName;
-      }
-
-      // /////////////////////////////////////////
-      // DEVICE
-      // /////////////////////////////////////////
-      if (this.useCheck("device.name")) {
-        this._checks["device.name"] = qx.bom.client.Device.getName;
-      }
-      if (this.useCheck("device.runtime.name")) {
-        this._checks["device.runtime.name"] = qx.bom.client.DeviceRuntime.getName;
-      }
-      if (this.useCheck("device.runtime.version")) {
-        this._checks["device.runtime.version"] = qx.bom.client.DeviceRuntime.getVersion;
-      }
-
-      // /////////////////////////////////////////
-      // LOCALE
-      // /////////////////////////////////////////
-      if (this.useCheck("locale")) {
-        this._checks["locale"] = qx.bom.client.Locale.getLocale;
-      }
-
-      if (this.useCheck("locale.variant")) {
-        this._checks["locale.variant"] = qx.bom.client.Locale.getVariant;
-      }
-
-      // /////////////////////////////////////////
-      // OPERATING SYSTEM
-      // /////////////////////////////////////////
-      if (this.useCheck("os.name")) {
-        this._checks["os.name"] = qx.bom.client.OperatingSystem.getName;
-      }
-      if (this.useCheck("os.version")) {
-        this._checks["os.version"] = qx.bom.client.OperatingSystem.getVersion;
-      }
-      if (this.useCheck("os.scrollBarOverlayed")) {
-        this._checks["os.scrollBarOverlayed"] = qx.bom.client.Scroll.scrollBarOverlayed;
-      }
-
-      // /////////////////////////////////////////
-      // plugin
-      // /////////////////////////////////////////
-      if (this.useCheck("plugin.gears")) {
-        this._checks["plugin.gears"] = qx.bom.client.Plugin.getGears;
-      }
-
-      if (this.useCheck("plugin.quicktime")) {
-        this._checks["plugin.quicktime"] = qx.bom.client.Plugin.getQuicktime;
-      }
-      if (this.useCheck("plugin.quicktime.version")) {
-        this._checks["plugin.quicktime.version"] = qx.bom.client.Plugin.getQuicktimeVersion;
-      }
-
-      if (this.useCheck("plugin.windowsmedia")) {
-        this._checks["plugin.windowsmedia"] = qx.bom.client.Plugin.getWindowsMedia;
-      }
-      if (this.useCheck("plugin.windowsmedia.version")) {
-        this._checks["plugin.windowsmedia.version"] = qx.bom.client.Plugin.getWindowsMediaVersion;
-      }
-
-      if (this.useCheck("plugin.divx")) {
-        this._checks["plugin.divx"] = qx.bom.client.Plugin.getDivX;
-      }
-      if (this.useCheck("plugin.divx.version")) {
-        this._checks["plugin.divx.version"] = qx.bom.client.Plugin.getDivXVersion;
-      }
-
-      if (this.useCheck("plugin.silverlight")) {
-        this._checks["plugin.silverlight"] = qx.bom.client.Plugin.getSilverlight;
-      }
-      if (this.useCheck("plugin.silverlight.version")) {
-        this._checks["plugin.silverlight.version"] = qx.bom.client.Plugin.getSilverlightVersion;
-      }
-
-      if (this.useCheck("plugin.flash")) {
-        this._checks["plugin.flash"] = qx.bom.client.Flash.isAvailable;
-      }
-      if (this.useCheck("plugin.flash.version")) {
-        this._checks["plugin.flash.version"] = qx.bom.client.Flash.getVersion;
-      }
-      if (this.useCheck("plugin.flash.express")) {
-        this._checks["plugin.flash.express"] = qx.bom.client.Flash.getExpressInstall;
-      }
-      if (this.useCheck("plugin.flash.strictsecurity")) {
-        this._checks["plugin.flash.strictsecurity"] = qx.bom.client.Flash.getStrictSecurityModel;
-      }
-
-      if (this.useCheck("plugin.pdf")) {
-        this._checks["plugin.pdf"] = qx.bom.client.Plugin.getPdf;
-      }
-      if (this.useCheck("plugin.pdf.version")) {
-        this._checks["plugin.pdf.version"] = qx.bom.client.Plugin.getPdfVersion;
-      }
-
-      // /////////////////////////////////////////
-      // IO
-      // /////////////////////////////////////////
-      if (this.useCheck("io.maxrequests")) {
-        this._checks["io.maxrequests"] = qx.bom.client.Transport.getMaxConcurrentRequestCount;
-      }
-      if (this.useCheck("io.ssl")) {
-        this._checks["io.ssl"] = qx.bom.client.Transport.getSsl;
-      }
-      if (this.useCheck("io.xhr")) {
-        this._checks["io.xhr"] = qx.bom.client.Transport.getXmlHttpRequest;
-      }
-
-      // /////////////////////////////////////////
-      // EVENTS
-      // /////////////////////////////////////////
-      if (this.useCheck("event.touch")) {
-        this._checks["event.touch"] = qx.bom.client.Event.getTouch;
-      }
-
-      if (this.useCheck("event.pointer")) {
-        this._checks["event.pointer"] = qx.bom.client.Event.getPointer;
-      }
-
-      // /////////////////////////////////////////
-      // ECMA SCRIPT
-      // /////////////////////////////////////////
-      if (this.useCheck("ecmascript.objectcount")) {
-        this._checks["ecmascript.objectcount"] =
-          qx.bom.client.EcmaScript.getObjectCount;
-      }
-
-      // /////////////////////////////////////////
-      // HTML
-      // /////////////////////////////////////////
-      if (this.useCheck("html.webworker")) {
-        this._checks["html.webworker"] = qx.bom.client.Html.getWebWorker;
-      }
-      if (this.useCheck("html.filereader")) {
-        this._checks["html.filereader"] = qx.bom.client.Html.getFileReader;
-      }
-      if (this.useCheck("html.geolocation")) {
-        this._checks["html.geolocation"] = qx.bom.client.Html.getGeoLocation;
-      }
-      if (this.useCheck("html.audio")) {
-        this._checks["html.audio"] = qx.bom.client.Html.getAudio;
-      }
-      if (this.useCheck("html.audio.ogg")) {
-        this._checks["html.audio.ogg"] = qx.bom.client.Html.getAudioOgg;
-      }
-      if (this.useCheck("html.audio.mp3")) {
-        this._checks["html.audio.mp3"] = qx.bom.client.Html.getAudioMp3;
-      }
-      if (this.useCheck("html.audio.wav")) {
-        this._checks["html.audio.wav"] = qx.bom.client.Html.getAudioWav;
-      }
-      if (this.useCheck("html.audio.au")) {
-        this._checks["html.audio.au"] = qx.bom.client.Html.getAudioAu;
-      }
-      if (this.useCheck("html.audio.aif")) {
-        this._checks["html.audio.aif"] = qx.bom.client.Html.getAudioAif;
-      }
-      if (this.useCheck("html.video")) {
-        this._checks["html.video"] = qx.bom.client.Html.getVideo;
-      }
-      if (this.useCheck("html.video.ogg")) {
-        this._checks["html.video.ogg"] = qx.bom.client.Html.getVideoOgg;
-      }
-      if (this.useCheck("html.video.h264")) {
-        this._checks["html.video.h264"] = qx.bom.client.Html.getVideoH264;
-      }
-      if (this.useCheck("html.video.webm")) {
-        this._checks["html.video.webm"] = qx.bom.client.Html.getVideoWebm;
-      }
-      if (this.useCheck("html.storage.local")) {
-        this._checks["html.storage.local"] = qx.bom.client.Html.getLocalStorage;
-      }
-      if (this.useCheck("html.storage.session")) {
-        this._checks["html.storage.session"] = qx.bom.client.Html.getSessionStorage;
-      }
-      if (this.useCheck("html.classlist")) {
-        this._checks["html.classlist"] = qx.bom.client.Html.getClassList;
-      }
-
-      if (this.useCheck("html.xpath")) {
-        this._checks["html.xpath"] = qx.bom.client.Html.getXPath;
-      }
-      if (this.useCheck("html.xul")) {
-        this._checks["html.xul"] = qx.bom.client.Html.getXul;
-      }
-
-      if (this.useCheck("html.canvas")) {
-        this._checks["html.canvas"] = qx.bom.client.Html.getCanvas;
-      }
-      if (this.useCheck("html.svg")) {
-        this._checks["html.svg"] = qx.bom.client.Html.getSvg;
-      }
-      if (this.useCheck("html.vml")) {
-        this._checks["html.vml"] = qx.bom.client.Html.getVml;
-      }
-      if (this.useCheck("html.dataurl")) {
-        this._asyncChecks["html.dataurl"] = qx.bom.client.Html.getDataUrl;
-      }
-      if (this.useCheck("html.dataset")) {
-        this._checks["html.dataset"] = qx.bom.client.Html.getDataset;
-      }
-
-      // /////////////////////////////////////////
-      // CSS
-      // /////////////////////////////////////////
-      if (this.useCheck("css.textoverflow")) {
-        this._checks["css.textoverflow"] = qx.bom.client.Css.getTextOverflow;
-      }
-
-      if (this.useCheck("css.placeholder")) {
-        this._checks["css.placeholder"] = qx.bom.client.Css.getPlaceholder;
-      }
-
-      if (this.useCheck("css.borderradius")) {
-        this._checks["css.borderradius"] = qx.bom.client.Css.getBorderRadius;
-      }
-
-      if (this.useCheck("css.boxshadow")) {
-        this._checks["css.boxshadow"] = qx.bom.client.Css.getBoxShadow;
-      }
-
-      if (this.useCheck("css.gradients")) {
-        this._checks["css.gradients"] = qx.bom.client.Css.getGradients;
-      }
-
-      if (this.useCheck("css.boxmodel")) {
-        this._checks["css.boxmodel"] = qx.bom.client.Css.getBoxModel;
-      }
-
-      if (this.useCheck("css.translate3d")) {
-        this._checks["css.translate3d"] = qx.bom.client.Css.getTranslate3d;
-      }
-
-      if (this.useCheck("css.rgba")) {
-        this._checks["css.rgba"] = qx.bom.client.Css.getRgba;
-      }
-
-      // /////////////////////////////////////////
-      // PHONEGAP
-      // /////////////////////////////////////////
-      if (this.useCheck("phonegap")) {
-        this._checks["phonegap"] = qx.bom.client.PhoneGap.getPhoneGap;
-      }
-
-      if (this.useCheck("phonegap.notification")) {
-        this._checks["phonegap.notification"] = qx.bom.client.PhoneGap.getNotification;
-      }
     }
   },
 
@@ -1106,13 +707,5 @@ qx.Bootstrap.define("qx.core.Environment",
   defer : function(statics) {
     // create default values for the environment class
     statics._initDefaultQxValues();
-    // first initialize the defined checks
-    statics._initChecksMap();
-    // load the checks from the generator
-    statics.__importFromGenerator();
-    // load the checks from the url
-    if (statics.get("qx.allowUrlSettings") === true) {
-      statics.__importFromUrl();
-    }
   }
 });
