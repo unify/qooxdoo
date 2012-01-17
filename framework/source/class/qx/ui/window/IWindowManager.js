@@ -1,3 +1,6 @@
+/**
+ * @break {qx.ui.window.Window}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

@@ -1,3 +1,6 @@
+/**
+ * @break {qx.ui.core.Blocker}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

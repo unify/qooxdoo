@@ -1,3 +1,6 @@
+/**
+ * @break {qx.ui.menu.ButtonLayout}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development

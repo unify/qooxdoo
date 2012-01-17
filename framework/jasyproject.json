@@ -17,6 +17,9 @@
     "engine.name" : {
       "check" : ["webkit", "gecko", "trident", "presto"],
       "default" : "webkit"
+    },
+    "qx.dynlocale" : {
+      "check" : "Boolean"
     }
   }
 }

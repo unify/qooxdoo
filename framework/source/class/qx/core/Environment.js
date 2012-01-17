@@ -647,9 +647,9 @@ qx.Bootstrap.define("qx.core.Environment",
      */
     _initDefaultQxValues : function() {
       this.add("engine.name", "webkit"); // FIX
-      this.add("qx.debug", true);
+      /*this.add("qx.debug", true);
       this.add("qx.aspects", false);
-      this.add("qx.application", "test.Application");
+      this.add("qx.application", "test.Application");*/
       return;
       // old settings
       this.add("qx.allowUrlSettings", function() {return false;});
