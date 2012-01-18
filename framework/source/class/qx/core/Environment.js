@@ -489,6 +489,14 @@ qx.Bootstrap.define("qx.core.Environment",
      * @param key {String} The name of the check you want to query.
      */
     get : function(key) {
+      if (key == "qx.debug") {
+        return core.Env.getValue("debug");
+      }
+      
+      if (key == "engine.name") {
+        return core.Env.getValue("engine");
+      }
+      
       var value = core.Env.getValue(key);
       return value;
     },
