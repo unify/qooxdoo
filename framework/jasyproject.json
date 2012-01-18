@@ -20,6 +20,10 @@
     },
     "qx.dynlocale" : {
       "check" : "Boolean"
+    },
+    "qx.mobile.emulatetouch" : {
+      "check" : "String",
+      "default" : "true"
     }
   }
 }
