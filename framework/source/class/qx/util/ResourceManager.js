@@ -69,7 +69,8 @@ qx.Class.define("qx.util.ResourceManager",
      * @return {Boolean} <code>true</code> when the resource is known.
      */
     has : function(id) {
-      return !!this.self(arguments).__registry[id];
+      return core.io.Asset.has(id);
+      //return !!this.self(arguments).__registry[id];
     },
 
 
@@ -80,7 +81,8 @@ qx.Class.define("qx.util.ResourceManager",
      * @return {Array} Registered data or <code>null</code>
      */
     getData : function(id) {
-      return this.self(arguments).__registry[id] || null;
+      console.error("getData: ", id);
+      return nnull;
     },
 
 
@@ -94,8 +96,7 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getImageWidth : function(id)
     {
-      var entry = this.self(arguments).__registry[id];
-      return entry ? entry[0] : null;
+      return core.io.Asset.getImageSize(id).width;
     },
 
 
@@ -109,8 +110,7 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getImageHeight : function(id)
     {
-      var entry = this.self(arguments).__registry[id];
-      return entry ? entry[1] : null;
+      return core.io.Asset.getImageSize(id).height;
     },
 
 
@@ -124,8 +124,7 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getImageFormat : function(id)
     {
-      var entry = this.self(arguments).__registry[id];
-      return entry ? entry[2] : null;
+      this.error("getImageFormat ", id);
     },
 
     /**
@@ -138,6 +137,8 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getCombinedFormat : function(id)
     {
+      this.error("getCombinedFormat ", id);
+      return;
       var clippedtype = "";
       var entry = this.self(arguments).__registry[id];
       var isclipped = entry && entry.length > 4 && typeof(entry[4]) == "string"
@@ -159,36 +160,7 @@ qx.Class.define("qx.util.ResourceManager",
      */
     toUri : function(id)
     {
-      if (id == null) {
-        return id;
-      }
-
-      var entry = this.self(arguments).__registry[id];
-      if (!entry) {
-        return id;
-      }
-
-      if (typeof entry === "string") {
-        var lib = entry;
-      }
-      else
-      {
-        var lib = entry[3];
-
-        // no lib reference
-        // may mean that the image has been registered dynamically
-        if (!lib) {
-          return id;
-        }
-      }
-
-      var urlPrefix = "";
-      if ((qx.core.Environment.get("engine.name") == "mshtml") &&
-          qx.core.Environment.get("io.ssl")) {
-        urlPrefix = this.self(arguments).__urlPrefix[lib];
-      }
-
-      return urlPrefix + qx.$$libraries[lib].resourceUri + "/" + id;
+      return core.io.Asset.toUri(id);
     },
 
     /**
@@ -204,6 +176,8 @@ qx.Class.define("qx.util.ResourceManager",
      */
     toDataUri : function (resid)
     {
+      console.error("toDataUri ", resid);
+      return;
       var resentry = this.constructor.__registry[resid];
       var combined = this.constructor.__registry[resentry[4]];
       var uri;
