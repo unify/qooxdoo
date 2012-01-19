@@ -1,5 +1,7 @@
 /**
  * @asset {qx/static/blank.gif}
+ * @require {qx.ui.core.EventHandler}
+ * @require {qx.event.handler.DragDrop}
  */
 /* ************************************************************************
 

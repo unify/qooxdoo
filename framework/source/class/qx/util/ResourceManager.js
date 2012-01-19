@@ -124,7 +124,9 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getImageFormat : function(id)
     {
-      this.error("getImageFormat ", id);
+      var uri = this.toUri(id);
+      
+      return uri.slice(uri.lastIndexOf(".")+1);
     },
 
     /**
@@ -137,8 +139,9 @@ qx.Class.define("qx.util.ResourceManager",
      */
     getCombinedFormat : function(id)
     {
-      this.error("getCombinedFormat ", id);
-      return;
+      //this.error("getCombinedFormat ", id);
+      // TODO
+      return "";
       var clippedtype = "";
       var entry = this.self(arguments).__registry[id];
       var isclipped = entry && entry.length > 4 && typeof(entry[4]) == "string"
