@@ -1,7 +1,6 @@
 {
   "name" : "qx",
   "package" : "",
-  "kind" : "full",
   "fields" : {
     "qx.debug" : {
       "check" : "Boolean",
@@ -13,10 +12,6 @@
     },
     "qx.application" : {
       "check" : "String"
-    },
-    "engine.name" : {
-      "check" : ["webkit", "gecko", "trident", "presto"],
-      "default" : "webkit"
     },
     "qx.dynlocale" : {
       "check" : "Boolean"
