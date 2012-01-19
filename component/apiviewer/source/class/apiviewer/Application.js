@@ -1,3 +1,6 @@
+/**
+ * @asset {apiviewer/*}
+ */
 /* ************************************************************************
 
    qooxdoo - the new era of web development
