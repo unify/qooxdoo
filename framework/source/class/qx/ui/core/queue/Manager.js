@@ -225,7 +225,7 @@ qx.Class.define("qx.ui.core.queue.Manager",
           finallyCode();
         }
       }
-    }),
+    }) //,
 
 
     /**
@@ -238,7 +238,7 @@ qx.Class.define("qx.ui.core.queue.Manager",
      *
      * @param e {qx.event.type.Data} The user action data event.
      */
-    __onUserAction : function(e)
+    /*__onUserAction : function(e)
     {
       var statics = qx.ui.core.queue.Manager;
       // pospone the flush for 500ms due to the fact that iOS stops firing
@@ -258,7 +258,7 @@ qx.Class.define("qx.ui.core.queue.Manager",
       } else {
         statics.flush();
       }
-    }
+    }*/
   },
 
 
@@ -278,12 +278,14 @@ qx.Class.define("qx.ui.core.queue.Manager",
     // Replace default scheduler for HTML element with local one.
     // This is quite a hack, but allows us to force other flushes
     // before the HTML element flush.
-    qx.html.Element._scheduleFlush = statics.scheduleFlush;
+    
+    //We don't have an qx.html.Element so we don't need this
+    //qx.html.Element._scheduleFlush = statics.scheduleFlush;
 
     // Register to user action
-    qx.event.Registration.addListener(window, "useraction",
-      qx.core.Environment.get("event.touch") ?
+    qx.event.Registration.addListener(window, "useraction", statics.flush);
+    /*  qx.core.Environment.get("event.touch") ?
         statics.__onUserAction : statics.flush
-    );
+    );*/
   }
 });
