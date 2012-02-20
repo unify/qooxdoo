@@ -225,7 +225,8 @@ qx.Class.define("qx.ui.core.queue.Manager",
           finallyCode();
         }
       }
-    }) //,
+    })
+    //,
 
 
     /**
