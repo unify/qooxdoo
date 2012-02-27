@@ -422,8 +422,8 @@ qx.Class.define("qx.event.handler.Touch",
      */
     __checkTouchLeave: function(domEvent,target,touch){
       var hasLeft=(target!=this.__originalTarget);
-      if(!hasLeft){
-        var loc= this.__touchHoldLoc;
+      var loc= this.__touchHoldLoc;
+      if(!hasLeft && loc){
         var x=touch.pageX;
         var y=touch.pageY;
         hasLeft= (x<loc.left||x>loc.right||y<loc.top||y>loc.bottom);
