@@ -258,13 +258,13 @@ qx.Class.define("qx.lang.Function",
           args = options.args.concat(args);
         }
 
-        if (options.delay || options.periodical)
+        if ((options.delay != null) || options.periodical)
         {
           var returns = qx.event.GlobalError.observeMethod(function() {
             return func.apply(options.self||this, args);
           });
 
-          if (options.delay) {
+          if (options.delay != null) {
             return window.setTimeout(returns, options.delay);
           }
 
