@@ -710,8 +710,8 @@ qx.Class.define("qx.event.handler.Touch",
       var touch;
 
       if (type == "touchstart") {
-        if(this.__trackId){
-          return;//we are already tracking a finger, ignore additional touchstart event
+        if(this.__trackId && this.__findTouch(domEvent.touches,this.__trackId)){
+          return;//we are already tracking a finger that is still touching the screen , ignore additional touchstart event
         } else {
           touch = domEvent.changedTouches[0];
           this.__trackId = touch.identifier;//start tracking
