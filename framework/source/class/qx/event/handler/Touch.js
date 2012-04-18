@@ -183,6 +183,7 @@ qx.Class.define("qx.event.handler.Touch",
     __touchHoldTimer : null,
     __isTouchHold : false,
     __hasTouchLeft: false,
+    __touchHoldLoc: null,
 
 
     /*
@@ -758,7 +759,7 @@ qx.Class.define("qx.event.handler.Touch",
     this._stopTouchObserver();
     this._stopMouseObserver();
 
-    this.__manager = this.__window = this.__root = this.__originalTarget = null;
+    this.__manager = this.__window = this.__root = this.__originalTarget = this.__touchHoldLoc = null;
   },
 
 
