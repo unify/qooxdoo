@@ -856,7 +856,7 @@ qx.Class.define("qx.core.Object",
   */
 
   environment : {
-    "qx.disposerDebugLevel" : 2
+    "qx.disposerDebugLevel" : 0
   },
 
 
