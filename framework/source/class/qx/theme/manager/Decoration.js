@@ -44,7 +44,8 @@ qx.Class.define("qx.theme.manager.Decoration",
       check : "Theme",
       nullable : true,
       apply : "_applyTheme",
-      event : "changeTheme"
+      event : "changeTheme",
+      dereference: true
     }
   },
 

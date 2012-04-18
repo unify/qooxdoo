@@ -167,7 +167,8 @@ qx.Class.define("qx.io.request.AbstractRequest",
      */
     requestHeaders: {
       check: "Map",
-      nullable: true
+      nullable: true,
+      dereference: true
     },
 
     /**
@@ -772,6 +773,8 @@ qx.Class.define("qx.io.request.AbstractRequest",
       transport.onabort = transport.ontimeout = transport.onerror = noop;
 
       transport.dispose();
+      this._transport=null;
     }
+    this.__response = null;
   }
 });
