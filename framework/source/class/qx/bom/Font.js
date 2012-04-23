@@ -203,7 +203,8 @@ qx.Class.define("qx.bom.Font",
     {
       check : "Array",
       nullable : true,
-      apply : "_applyFamily"
+      apply : "_applyFamily",
+      dereference: true
     },
 
     /** Whether the font is bold */
@@ -325,5 +326,9 @@ qx.Class.define("qx.bom.Font",
     getStyles : function() {
       return this.__lookupMap;
     }
+  },
+  
+  destruct: function(){
+    this.__lookupMap=null;
   }
 });

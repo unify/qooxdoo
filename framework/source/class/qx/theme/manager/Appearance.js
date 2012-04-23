@@ -60,7 +60,8 @@ qx.Class.define("qx.theme.manager.Appearance",
       check : "Theme",
       nullable : true,
       event : "changeTheme",
-      apply : "_applyTheme"
+      apply : "_applyTheme",
+      dereference: true
     }
   },
 

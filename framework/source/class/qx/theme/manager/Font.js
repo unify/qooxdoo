@@ -41,7 +41,8 @@ qx.Class.define("qx.theme.manager.Font",
       check : "Theme",
       nullable : true,
       apply : "_applyTheme",
-      event : "changeTheme"
+      event : "changeTheme",
+      dereference: true
     }
   },
 
