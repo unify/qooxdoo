@@ -821,9 +821,21 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
 
       // BUGFIX: Most browsers
       // Most browsers tell status 0 when it should be 200 for local files
-      if (this._getProtocol() === "file:" && this.status === 0) {
-        this.status = 200;
+      // Also add statustext if status code indicates success and repsonsetext exists
+      if (this._getProtocol() === "file:") {
+        //assume status 200 for status 0
+        if( this.status === 0){
+          this.status = 200;
+        }
+        //set statusText to OK if status indicates success, no statusText exists and responseText is set
+        var status=this.status;
+        if( status === 304 || (status >= 200 && status < 300)){
+          if(!this.statusText && this.responseText){
+            this.statusText="OK";
+          }
+        };
       }
+
 
       // BUGFIX: IE
       // IE sometimes tells 1223 when it should be 204
