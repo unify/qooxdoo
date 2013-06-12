@@ -827,14 +827,17 @@ qx.Bootstrap.define("qx.bom.request.Xhr",
         if( this.status === 0){
           this.status = 200;
         }
-        //set statusText to OK if status indicates success, no statusText exists and responseText is set
-        var status=this.status;
-        if( status === 304 || (status >= 200 && status < 300)){
-          if(!this.statusText && this.responseText){
-            this.statusText="OK";
-          }
-        };
       }
+      
+      //set statusText to OK if status indicates success, no statusText exists and responseText is set
+      //12.6.2013: do the following for all requests. xhr responses served from html5 appcache might have status 200
+      //but empty statusText and existing response. Observed in webkit based browsers (ipad ios6 and android 3.0)
+      var status=this.status;
+      if( status === 304 || (status >= 200 && status < 300)){
+        if(!this.statusText && this.responseText){
+          this.statusText="OK";
+        }
+      };
 
 
       // BUGFIX: IE
